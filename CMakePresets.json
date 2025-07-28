@@ -1,0 +1,80 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 26,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "common",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build",
+            "generator": "Ninja",
+            "installDir": "${sourceDir}/dist",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "Python3_FIND_VIRTUALENV": "FIRST",
+                "Python3_EXECUTABLE": "${sourceDir}/venv",
+                "BUILD_SHARED_LIBS": "ON"
+            }
+        },
+        {
+            "name": "vcpkg",
+            "hidden": true,
+            "toolchainFile": "$penv{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+            "cacheVariables": {
+                "VCPKG_OVERLAY_PORTS": "${sourceDir}/cmake/overlays",
+                "CPM_USE_LOCAL_PACKAGES": true
+            }
+        },
+        {
+            "name": "debug-build",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "release-build",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "developer",
+            "displayName": "Developer",
+            "inherits": [
+                "common",
+                "debug-build",
+                "vcpkg"
+            ],
+            "cacheVariables": {
+                "BUILD_TESTING": true,
+                "CMAKE_SKIP_INSTALL_RULES": true,
+                "SANITIZE_ADDRESS": true,
+                "SANITIZE_UNDEFINED": true
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "developer",
+            "configurePreset": "developer"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "developer",
+            "configurePreset": "developer",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "ignore",
+                "stopOnFailure": true
+            }
+        }
+    ]
+}

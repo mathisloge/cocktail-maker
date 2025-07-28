@@ -1,0 +1,13 @@
+{
+    "name": "cocktail-maker",
+    "dependencies": [
+        "boost-asio",
+        {
+            "name": "libgpiod",
+            "features":[
+                "cxx-bindings"
+            ]
+        },
+        "mp-units"
+    ]
+}

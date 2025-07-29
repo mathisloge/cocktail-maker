@@ -24,9 +24,7 @@ Hx711Sensor::Hx711Sensor(InputPinDatConfig dat_pin, OutputPinClkConfig clk_pin)
                     .do_request()}
     , clk_offset_{clk_pin.offset}
 {
-    clk_line_.set_value(clk_offset_, gpiod::line::value::ACTIVE);
-    std::this_thread::sleep_for(std::chrono::milliseconds{1});
-    clk_line_.set_value(clk_offset_, gpiod::line::value::INACTIVE);
+    boost::asio::post([this]() { pulse_clock(); });
 }
 
 void Hx711Sensor::pulse_clock()
@@ -35,18 +33,18 @@ void Hx711Sensor::pulse_clock()
     clk_line_.set_value(clk_offset_, gpiod::line::value::INACTIVE);
 }
 
-void Hx711Sensor::tare()
+boost::asio::awaitable<void> Hx711Sensor::tare()
 {
-    offset_ = read_raw();
+    offset_ = co_await read_raw();
 }
 
-void Hx711Sensor::calibrate(Hx711RawValue reading, mp_units::quantity<mp_units::si::gram> for_known_mass)
+boost::asio::awaitable<void> Hx711Sensor::calibrate_with_ref_weight(mp_units::quantity<mp_units::si::gram> known_mass)
 {
-    raw_value_ = reading;
-    known_mass_ = for_known_mass;
+    raw_value_ = co_await read_raw();
+    known_mass_ = known_mass;
 }
 
-Hx711RawValue Hx711Sensor::read_raw()
+boost::asio::awaitable<Hx711RawValue> Hx711Sensor::read_raw()
 {
     // Wait for data line to go LOW (data ready)
     while (dat_line_.get_value(dat_offset_) != gpiod::line::value::INACTIVE)
@@ -71,17 +69,17 @@ Hx711RawValue Hx711Sensor::read_raw()
     {
         value |= 0xFF000000; // fill upper 8 bits
     }
-    return Hx711RawValue{static_cast<std::int32_t>(value) * hx711_unit};
+    co_return Hx711RawValue{static_cast<std::int32_t>(value) * hx711_unit};
 }
 
-mp_units::quantity<mp_units::si::gram> Hx711Sensor::read()
+boost::asio::awaitable<mp_units::quantity<mp_units::si::gram>> Hx711Sensor::read()
 {
     mp_units::quantity<mp_units::si::gram> known_mass{};
     mp_units::quantity<hx711_unit> raw_value{};
 
     const auto delta = raw_value - offset_;
     const auto scale = known_mass / delta;
-
-    return (read_raw() - offset_) * scale;
+    const auto raw = co_await read_raw();
+    co_return (raw - offset_) * scale;
 }
 } // namespace cm

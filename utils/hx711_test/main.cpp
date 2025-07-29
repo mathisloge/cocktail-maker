@@ -1,4 +1,5 @@
 #include <thread>
+#include <boost/asio.hpp>
 #include <cm/hw/hx711_sensor.hpp>
 #include <fmt/core.h>
 
@@ -6,22 +7,35 @@ using namespace mp_units::si::unit_symbols;
 
 int main()
 {
-
+    boost::asio::io_context io;
     cm::Hx711Sensor load_cell{cm::InputPinDatConfig{.chip = "/dev/gpiochip0", .offset = {24}},
                               cm::OutputPinClkConfig{.chip = "/dev/gpiochip0", .offset = {23}}};
-    fmt::println("start");
-    std::this_thread::sleep_for(std::chrono::milliseconds{1000});
-    load_cell.tare();
 
-    fmt::println("place ref weight");
-    std::this_thread::sleep_for(std::chrono::milliseconds{5000});
-    load_cell.calibrate(load_cell.read_raw(), 100 * g);
+    boost::asio::co_spawn(
+        io,
+        [&load_cell] -> boost::asio::awaitable<void> {
+            boost::asio::steady_timer timer{co_await boost::asio::this_coro::executor};
 
-    while (true)
-    {
-        fmt::println("read: {}", load_cell.read_raw().in<std::int32_t>());
-        fmt::println("read: {}", load_cell.read());
-        std::this_thread::sleep_for(std::chrono::milliseconds{500});
-    }
+            fmt::println("start");
+            timer.expires_after(std::chrono::seconds{1});
+            co_await timer.async_wait(boost::asio::use_awaitable);
+            co_await load_cell.tare();
+
+            fmt::println("place ref weight");
+            timer.expires_after(std::chrono::seconds{5});
+            co_await timer.async_wait(boost::asio::use_awaitable);
+            co_await load_cell.calibrate_with_ref_weight(100 * g);
+
+            while (true)
+            {
+                fmt::println("read: {}", co_await load_cell.read());
+                timer.expires_after(std::chrono::milliseconds{500});
+                co_await timer.async_wait(boost::asio::use_awaitable);
+            }
+            co_return;
+        },
+        boost::asio::detached);
+
+    io.run();
     return 0;
 }

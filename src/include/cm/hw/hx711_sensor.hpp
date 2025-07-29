@@ -1,5 +1,6 @@
 #pragma once
 #include <filesystem>
+#include <boost/asio/awaitable.hpp>
 #include <gpiod.hpp>
 #include <mp-units/systems/si.h>
 
@@ -27,13 +28,12 @@ class Hx711Sensor
 {
   public:
     Hx711Sensor(InputPinDatConfig dat_pin, OutputPinClkConfig clk_pin);
-    void tare();
-    void calibrate(Hx711RawValue reading, mp_units::quantity<mp_units::si::gram> for_known_mass);
-
-    [[nodiscard]] Hx711RawValue read_raw();
-    [[nodiscard]] mp_units::quantity<mp_units::si::gram> read();
+    boost::asio::awaitable<void> tare();
+    boost::asio::awaitable<void> calibrate_with_ref_weight(mp_units::quantity<mp_units::si::gram> known_mass);
+    [[nodiscard]] boost::asio::awaitable<mp_units::quantity<mp_units::si::gram>> read();
 
   private:
+    [[nodiscard]] boost::asio::awaitable<Hx711RawValue> read_raw();
     void pulse_clock();
 
   private:

@@ -2,6 +2,9 @@
 #include <thread>
 #include <gpiod.hpp>
 
+#include <mp-units/systems/si.h>
+#include <mp-units/systems/usc.h>
+
 namespace cm
 {
 constexpr auto kClockDelay = std::chrono::microseconds(1); // ~1us
@@ -32,7 +35,12 @@ void Hx711Sensor::pulse_clock()
     clk_line_.set_value(clk_offset_, gpiod::line::value::INACTIVE);
 }
 
-std::int32_t Hx711Sensor::read()
+void Hx711Sensor::tare()
+{
+    offset_ = read_raw();
+}
+
+Hx711RawValue Hx711Sensor::read_raw()
 {
     // Wait for data line to go LOW (data ready)
     while (dat_line_.get_value(dat_offset_) != gpiod::line::value::INACTIVE)
@@ -57,7 +65,17 @@ std::int32_t Hx711Sensor::read()
     {
         value |= 0xFF000000; // fill upper 8 bits
     }
+    return Hx711RawValue{static_cast<std::int32_t>(value) * hx711_unit};
+}
 
-    return static_cast<std::int32_t>(value);
+mp_units::quantity<mp_units::si::gram> Hx711Sensor::read()
+{
+    mp_units::quantity<mp_units::si::gram> known_mass{};
+    mp_units::quantity<hx711_unit> raw_value{};
+
+    auto delta = raw_value - offset_;
+    auto scale_ = known_mass / delta;
+
+    return (read_raw() - offset_) * scale_;
 }
 } // namespace cm

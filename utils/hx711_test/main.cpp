@@ -8,6 +8,9 @@ int main()
     cm::Hx711Sensor load_cell{cm::InputPinDatConfig{.chip = "/dev/gpiochip0", .offset = {24}},
                               cm::OutputPinClkConfig{.chip = "/dev/gpiochip0", .offset = {23}}};
     fmt::println("start");
+    std::this_thread::sleep_for(std::chrono::milliseconds{500});
+    load_cell.tare();
+
     while (true)
     {
         fmt::println("read: {}", load_cell.read());

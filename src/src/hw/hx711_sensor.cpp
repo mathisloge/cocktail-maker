@@ -74,11 +74,8 @@ boost::asio::awaitable<Hx711RawValue> Hx711Sensor::read_raw()
 
 boost::asio::awaitable<mp_units::quantity<mp_units::si::gram>> Hx711Sensor::read()
 {
-    mp_units::quantity<mp_units::si::gram> known_mass{};
-    mp_units::quantity<hx711_unit> raw_value{};
-
-    const auto delta = raw_value - offset_;
-    const auto scale = known_mass / delta;
+    const auto delta = raw_value_ - offset_;
+    const auto scale = known_mass_ / delta;
     const auto raw = co_await read_raw();
     co_return (raw - offset_) * scale;
 }

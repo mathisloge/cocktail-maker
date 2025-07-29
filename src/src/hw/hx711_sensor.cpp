@@ -40,6 +40,12 @@ void Hx711Sensor::tare()
     offset_ = read_raw();
 }
 
+void Hx711Sensor::calibrate(Hx711RawValue reading, mp_units::quantity<mp_units::si::gram> for_known_mass)
+{
+    raw_value_ = reading;
+    known_mass_ = for_known_mass;
+}
+
 Hx711RawValue Hx711Sensor::read_raw()
 {
     // Wait for data line to go LOW (data ready)
@@ -73,9 +79,9 @@ mp_units::quantity<mp_units::si::gram> Hx711Sensor::read()
     mp_units::quantity<mp_units::si::gram> known_mass{};
     mp_units::quantity<hx711_unit> raw_value{};
 
-    auto delta = raw_value - offset_;
-    auto scale_ = known_mass / delta;
+    const auto delta = raw_value - offset_;
+    const auto scale = known_mass / delta;
 
-    return (read_raw() - offset_) * scale_;
+    return (read_raw() - offset_) * scale;
 }
 } // namespace cm

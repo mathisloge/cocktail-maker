@@ -28,6 +28,7 @@ class Hx711Sensor
   public:
     Hx711Sensor(InputPinDatConfig dat_pin, OutputPinClkConfig clk_pin);
     void tare();
+    void calibrate(Hx711RawValue reading, mp_units::quantity<mp_units::si::gram> for_known_mass);
 
     [[nodiscard]] Hx711RawValue read_raw();
     [[nodiscard]] mp_units::quantity<mp_units::si::gram> read();
@@ -43,7 +44,7 @@ class Hx711Sensor
     gpiod::line::offset clk_offset_;
 
     Hx711RawValue offset_{};
-    mp_units::quantity<mp_units::si::gram> known_mass_{};
     Hx711RawValue raw_value_{};
+    mp_units::quantity<mp_units::si::gram> known_mass_{};
 };
 } // namespace cm

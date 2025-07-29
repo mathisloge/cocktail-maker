@@ -1,6 +1,6 @@
 {
-  "name": "quite",
-  "version": "1.2.0",
+  "name": "cocktail-maker",
+  "version": "1.0.0",
   "private": true,
   "devDependencies": {
     "@semantic-release/exec": "^7.1.0",
@@ -9,7 +9,7 @@
     "semantic-release": "^24.2.7"
   },
   "release": {
-    "repositoryUrl": "https://github.com/mathisloge/quite.git",
+    "repositoryUrl": "https://github.com/mathisloge/cocktail-maker.git",
     "branches": [
       {
         "name": "main"

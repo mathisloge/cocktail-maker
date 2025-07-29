@@ -6,7 +6,17 @@ set_target_properties(
     PROPERTIES POSITION_INDEPENDENT_CODE ON VISIBILITY_INLINES_HIDDEN ON
 )
 
-target_link_libraries(cocktail-maker-core PUBLIC PkgConfig::libgpiodcxx Boost::asio mp-units::core mp-units::systems mp-units::mp-units mp-units::mp-units-contracts )
+target_link_libraries(
+    cocktail-maker-core
+    PUBLIC
+        PkgConfig::libgpiodcxx
+        Boost::asio
+        mp-units::core
+        mp-units::systems
+        mp-units::mp-units
+        mp-units::mp-units-contracts
+        fmt::fmt
+)
 
 target_sources(
     cocktail-maker-core
@@ -14,8 +24,10 @@ target_sources(
         FILE_SET headers
             TYPE HEADERS
             BASE_DIRS include
-            FILES
+            FILES 
                 include/cm/units.hpp
-    PRIVATE
+                include/cm/hw/hx711_sensor.hpp
+    PRIVATE 
         src/units.cpp
+        src/hw/hx711_sensor.cpp
 )

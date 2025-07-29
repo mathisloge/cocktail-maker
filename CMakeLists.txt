@@ -42,7 +42,7 @@ message(STATUS "git_branch: ${git_branch}")
 find_package(Sanitizers REQUIRED)
 find_package(Boost REQUIRED COMPONENTS asio)
 find_package(mp-units CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 pkg_check_modules(libgpiodcxx REQUIRED IMPORTED_TARGET libgpiodcxx)
-
 
 add_subdirectory(src)

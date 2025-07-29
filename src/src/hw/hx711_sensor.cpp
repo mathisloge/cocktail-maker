@@ -8,7 +8,7 @@
 namespace cm
 {
 constexpr auto kClockDelay = std::chrono::microseconds(1); // ~1us
-Hx711Sensor::Hx711Sensor(InputPinDatConfig dat_pin, OutputPinClkConfig clk_pin)
+Hx711Sensor::Hx711Sensor(Hx711DatPin dat_pin, Hx711ClkPin clk_pin)
     : dat_line_{gpiod::chip{std::move(dat_pin.chip)}
                     .prepare_request()
                     .set_consumer("hx711-dat")

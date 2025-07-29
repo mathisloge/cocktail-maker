@@ -8,8 +8,8 @@ using namespace mp_units::si::unit_symbols;
 int main()
 {
     boost::asio::io_context io;
-    cm::Hx711Sensor load_cell{cm::InputPinDatConfig{.chip = "/dev/gpiochip0", .offset = {24}},
-                              cm::OutputPinClkConfig{.chip = "/dev/gpiochip0", .offset = {23}}};
+    cm::Hx711Sensor load_cell{cm::Hx711DatPin{.chip = "/dev/gpiochip0", .offset = {24}},
+                              cm::Hx711ClkPin{.chip = "/dev/gpiochip0", .offset = {23}}};
 
     boost::asio::co_spawn(
         io,

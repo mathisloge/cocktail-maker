@@ -3,20 +3,13 @@
 #include <boost/asio/awaitable.hpp>
 #include <gpiod.hpp>
 #include <mp-units/systems/si.h>
+#include "pin_selection.hpp"
 
 namespace cm
 {
 
-struct InputPinDatConfig
-{
-    std::filesystem::path chip;
-    gpiod::line::offset offset;
-};
-struct OutputPinClkConfig
-{
-    std::filesystem::path chip;
-    gpiod::line::offset offset;
-};
+using Hx711DatPin = PinSelection<struct Hx711Dat>;
+using Hx711ClkPin = PinSelection<struct Hx711Clk>;
 
 inline static constexpr struct Hx711Unit final : mp_units::named_unit<"hx711_raw", mp_units::one>
 {
@@ -27,7 +20,7 @@ struct Hx711RawValue final : mp_units::quantity<hx711_unit, std::int32_t>
 class Hx711Sensor
 {
   public:
-    Hx711Sensor(InputPinDatConfig dat_pin, OutputPinClkConfig clk_pin);
+    Hx711Sensor(Hx711DatPin dat_pin, Hx711ClkPin clk_pin);
     boost::asio::awaitable<void> tare();
     boost::asio::awaitable<void> calibrate_with_ref_weight(mp_units::quantity<mp_units::si::gram> known_mass);
     [[nodiscard]] boost::asio::awaitable<mp_units::quantity<mp_units::si::gram>> read();

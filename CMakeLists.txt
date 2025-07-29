@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.25)
 file(READ "${CMAKE_SOURCE_DIR}/package.json" PACKAGE_JSON)
 string(JSON PACKAGE_JSON_PROJECT_VERSION GET "${PACKAGE_JSON}" version)
 string(
@@ -10,7 +10,7 @@ string(
 )
 
 project(cocktail-maker VERSION ${BASE_VERSION} LANGUAGES CXX)
-cmake_policy(SET CMP0167 NEW)
+#cmake_policy(SET CMP0167 NEW)
 message(STATUS "Project version: ${PROJECT_VERSION}")
 
 list(
@@ -43,6 +43,8 @@ find_package(Sanitizers REQUIRED)
 find_package(Boost REQUIRED COMPONENTS asio)
 find_package(mp-units CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
+pkg_check_modules(libgpiod REQUIRED IMPORTED_TARGET libgpiod)
 pkg_check_modules(libgpiodcxx REQUIRED IMPORTED_TARGET libgpiodcxx)
 
 add_subdirectory(src)
+add_subdirectory(utils)

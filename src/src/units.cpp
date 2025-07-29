@@ -1,4 +1,3 @@
-#include <print>
 #include <fmt/core.h>
 #include <mp-units/systems/international.h>
 #include <mp-units/systems/isq.h>

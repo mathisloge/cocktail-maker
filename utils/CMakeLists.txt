@@ -1,0 +1,1 @@
+add_subdirectory(hx711_test)

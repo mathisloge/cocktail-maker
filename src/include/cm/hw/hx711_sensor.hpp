@@ -1,6 +1,7 @@
 #pragma once
 #include <filesystem>
 #include <gpiod.hpp>
+#include <mp-units/framework.h>
 
 namespace cm
 {
@@ -20,6 +21,10 @@ class Hx711Sensor
 {
   public:
     Hx711Sensor(InputPinDatConfig dat_pin, OutputPinClkConfig clk_pin);
+
+    std::int32_t read();
+  private:
+    void pulse_clock();
 
   private:
     gpiod::line_request dat_line_;

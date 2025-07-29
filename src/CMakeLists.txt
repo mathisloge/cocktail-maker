@@ -9,7 +9,8 @@ set_target_properties(
 target_link_libraries(
     cocktail-maker-core
     PUBLIC
-        PkgConfig::libgpiodcxx
+        PkgConfig::libgpiodcxx # order is important here!
+        PkgConfig::libgpiod # order is important here!
         Boost::asio
         mp-units::core
         mp-units::systems

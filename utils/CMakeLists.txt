@@ -1,1 +1,2 @@
 add_subdirectory(hx711_test)
+add_subdirectory(drv8825_test)

@@ -11,7 +11,6 @@ vcpkg_from_github(
       config.patch
 )
 
-
 vcpkg_cmake_configure(
     SOURCE_PATH "${SOURCE_PATH}/src"
 )
@@ -22,7 +21,13 @@ vcpkg_cmake_config_fixup(CONFIG_PATH "lib/cmake/${PORT}")
 
 # Handle copyright/readme/package files
 vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE.md")
-file(INSTALL "${SOURCE_PATH}/README.md" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}")
+file(
+    INSTALL "${SOURCE_PATH}/README.md"
+    DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}"
+)
 
-file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug"
-                    "${CURRENT_PACKAGES_DIR}/lib") # Header only
+file(
+    REMOVE_RECURSE
+    "${CURRENT_PACKAGES_DIR}/debug"
+    "${CURRENT_PACKAGES_DIR}/lib"
+) # Header only

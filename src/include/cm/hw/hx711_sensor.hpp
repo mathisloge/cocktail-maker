@@ -2,8 +2,8 @@
 #include <filesystem>
 #include <boost/asio/awaitable.hpp>
 #include <gpiod.hpp>
-#include <mp-units/systems/si.h>
 #include "pin_selection.hpp"
+#include <mp-units/systems/si.h>
 
 namespace cm
 {

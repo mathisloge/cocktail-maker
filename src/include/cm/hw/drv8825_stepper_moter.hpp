@@ -21,7 +21,7 @@ class Drv8825StepperMotorDriver : public StepperMotor
     boost::asio::awaitable<void> step(Steps steps, StepsPerSecond velocity);
 
   private:
-     boost::asio::awaitable<void> step_one(boost::asio::steady_timer& timer, std::chrono::microseconds wait_after);
+    boost::asio::awaitable<void> step_one(boost::asio::steady_timer &timer, std::chrono::microseconds wait_after);
 
   private:
     gpiod::line_request enable_line_;

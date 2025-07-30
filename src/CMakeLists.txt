@@ -25,11 +25,9 @@ target_sources(
         FILE_SET headers
             TYPE HEADERS
             BASE_DIRS include
-            FILES 
+            FILES
                 include/cm/units.hpp
                 include/cm/hw/hx711_sensor.hpp
                 include/cm/hw/drv8825_stepper_moter.hpp
-    PRIVATE 
-        src/units.cpp
-        src/hw/hx711_sensor.cpp
+    PRIVATE src/units.cpp src/hw/hx711_sensor.cpp
 )

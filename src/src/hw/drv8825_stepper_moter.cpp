@@ -56,21 +56,24 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(Steps steps, StepsP
     for (Steps i = 1 * cm::step; i <= ramp_steps; i += 1 * cm::step)
     {
         const SecondsPerStep delay = 1 / mp_units::sqrt(2.0 * kAcceleration * i); // v = √(2a * s)
-        co_await step_one(timer, std::chrono::duration_cast<std::chrono::microseconds>(mp_units::to_chrono_duration(delay)));
+        co_await step_one(timer,
+                          std::chrono::duration_cast<std::chrono::microseconds>(mp_units::to_chrono_duration(delay)));
     }
 
     // 4. Cruise phase
     const SecondsPerStep cruise_delay = 1.0 / velocity; // delay = 1/velocity gives seconds per step
     for (Steps i = 0 * cm::step; i < cruise_steps; i += 1 * cm::step)
     {
-        co_await step_one(timer, std::chrono::duration_cast<std::chrono::microseconds>(mp_units::to_chrono_duration(cruise_delay)));
+        co_await step_one(
+            timer, std::chrono::duration_cast<std::chrono::microseconds>(mp_units::to_chrono_duration(cruise_delay)));
     }
 
     // 5. Deceleration phase
     for (Steps i = ramp_steps; i >= 1 * cm::step; i -= 1 * cm::step)
     {
         const SecondsPerStep delay = 1 / mp_units::sqrt(2.0 * kAcceleration * i); // v = √(2a * s)
-        co_await step_one(timer, std::chrono::duration_cast<std::chrono::microseconds>(mp_units::to_chrono_duration(delay)));
+        co_await step_one(timer,
+                          std::chrono::duration_cast<std::chrono::microseconds>(mp_units::to_chrono_duration(delay)));
     }
 }
 

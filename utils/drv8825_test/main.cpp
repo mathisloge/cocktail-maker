@@ -21,7 +21,7 @@ int main()
             timer.expires_after(std::chrono::seconds{1});
             co_await timer.async_wait(boost::asio::use_awaitable);
 
-            co_await stepper.step(1000, (2 * cm::step) / s);
+            co_await stepper.step(500, (2 * cm::step) / s);
 
             co_return;
         },

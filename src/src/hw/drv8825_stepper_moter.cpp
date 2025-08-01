@@ -6,7 +6,7 @@
 namespace async = boost::asio;
 namespace cm
 {
-using SecondsPerStep = decltype(1. * mp_units::si::second / 1. * cm::step);
+using SecondsPerStep = decltype(1. * mp_units::si::second / 1. * units::step);
 constexpr std::chrono::microseconds kPulseWidth{10};
 
 Drv8825StepperMotorDriver::Drv8825StepperMotorDriver(Drv8825EnablePin enable_pin,
@@ -58,7 +58,7 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::disable()
     co_await timer.async_wait(async::use_awaitable);
 }
 
-boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(Steps steps, StepsPerSecond velocity)
+boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(units::Steps steps, units::StepsPerSecond velocity)
 {
     auto exec = co_await async::this_coro::executor;
     async::steady_timer timer{exec};
@@ -76,18 +76,18 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(Steps steps, StepsP
     const auto ramp_time = velocity / kAcceleration;
 
     // 2. Compute ramp distance (steps) with: s = 0.5 * a * t^2
-    auto steps_double = (0.5 * kAcceleration * mp_units::pow<2>(ramp_time)).numerical_value_in(cm::step);
-    Steps ramp_steps = Steps{static_cast<std::int32_t>(std::floor(steps_double))};
+    auto steps_double = (0.5 * kAcceleration * mp_units::pow<2>(ramp_time)).numerical_value_in(units::step);
+    units::Steps ramp_steps = units::Steps{static_cast<std::int32_t>(std::floor(steps_double))};
 
     if ((2 * ramp_steps) > steps)
     {
         ramp_steps = steps / 2; // triangle profile
     }
 
-    const Steps cruise_steps = steps - (2 * ramp_steps);
+    const units::Steps cruise_steps = steps - (2 * ramp_steps);
 
     // 3. Acceleration phase
-    for (Steps i = 1 * cm::step; i <= ramp_steps; i += 1 * cm::step)
+    for (units::Steps i = 1 * units::step; i <= ramp_steps; i += 1 * units::step)
     {
         const SecondsPerStep delay = 1 / mp_units::sqrt(2.0 * kAcceleration * i); // v = √(2a * s)
         co_await step_one(timer,
@@ -96,14 +96,14 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(Steps steps, StepsP
 
     // 4. Cruise phase
     const SecondsPerStep cruise_delay = 1.0 / velocity; // delay = 1/velocity gives seconds per step
-    for (Steps i = 0 * cm::step; i < cruise_steps; i += 1 * cm::step)
+    for (units::Steps i = 0 * units::step; i < cruise_steps; i += 1 * units::step)
     {
         co_await step_one(
             timer, std::chrono::duration_cast<std::chrono::microseconds>(mp_units::to_chrono_duration(cruise_delay)));
     }
 
     // 5. Deceleration phase
-    for (Steps i = ramp_steps; i >= 1 * cm::step; i -= 1 * cm::step)
+    for (units::Steps i = ramp_steps; i >= 1 * units::step; i -= 1 * units::step)
     {
         const SecondsPerStep delay = 1 / mp_units::sqrt(2.0 * kAcceleration * i); // v = √(2a * s)
         co_await step_one(timer,

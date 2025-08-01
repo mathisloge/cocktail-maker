@@ -1,17 +1,14 @@
 #pragma once
+#include <boost/asio/awaitable.hpp>
+#include "cm/units.hpp"
 #include "motor.hpp"
-#include <mp-units/core.h>
-#include <mp-units/systems/si/units.h>
-
 namespace cm
 {
-
-inline constexpr struct Step final : mp_units::named_unit<"steps", mp_units::one>
-{
-} step; // NOLINT(readability-identifier-naming)
-
-using Steps = mp_units::quantity<step, std::int32_t>;
-
 class StepperMotor : public Motor
-{};
+{
+  public:
+    virtual boost::asio::awaitable<void> step(units::Steps steps, units::StepsPerSecond velocity) = 0;
+    virtual boost::asio::awaitable<void> enable() = 0;
+    virtual boost::asio::awaitable<void> disable() = 0;
+};
 } // namespace cm

@@ -26,10 +26,17 @@ target_sources(
             TYPE HEADERS
             BASE_DIRS include
             FILES
+                include/cm/liquid_dispenser_stepper_pump.hpp
+                include/cm/machine_state.hpp
+                include/cm/units.hpp
                 include/cm/hw/pin_selection.hpp
                 include/cm/hw/hx711_sensor.hpp
                 include/cm/hw/motor.hpp
                 include/cm/hw/stepper_motor.hpp
                 include/cm/hw/drv8825_stepper_moter.hpp
-    PRIVATE src/hw/hx711_sensor.cpp src/hw/drv8825_stepper_moter.cpp
+    PRIVATE
+        src/hw/hx711_sensor.cpp
+        src/hw/drv8825_stepper_moter.cpp
+        src/liquid_dispenser_stepper_pump.cpp
+        src/machine_state.cpp
 )

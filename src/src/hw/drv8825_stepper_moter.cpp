@@ -76,7 +76,8 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(Steps steps, StepsP
     const auto ramp_time = velocity / kAcceleration;
 
     // 2. Compute ramp distance (steps) with: s = 0.5 * a * t^2
-    Steps ramp_steps{mp_units::floor<cm::step>(0.5 * kAcceleration * mp_units::pow<2>(ramp_time))};
+    auto steps_double = (0.5 * kAcceleration * mp_units::pow<2>(ramp_time)).numerical_value_in(cm::step);
+    Steps ramp_steps = Steps{static_cast<std::int32_t>(std::floor(steps_double))};
 
     if ((2 * ramp_steps) > steps)
     {

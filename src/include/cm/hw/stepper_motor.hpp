@@ -8,7 +8,7 @@ namespace cm
 
 inline constexpr struct Step final : mp_units::named_unit<"steps", mp_units::one>
 {
-} step;
+} step; // NOLINT(readability-identifier-naming)
 
 using Steps = mp_units::quantity<step, std::int32_t>;
 

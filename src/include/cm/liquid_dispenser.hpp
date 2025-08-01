@@ -2,6 +2,6 @@
 
 namespace cm
 {
-class Motor
+class LiquidDispenser
 {};
 } // namespace cm

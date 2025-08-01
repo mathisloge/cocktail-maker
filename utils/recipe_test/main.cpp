@@ -17,6 +17,9 @@ struct LiquidProductionStep
     mp_units::quantity_point<mp_units::si::litre> amount;
 };
 
+class Recipe
+{};
+
 int main()
 {
 

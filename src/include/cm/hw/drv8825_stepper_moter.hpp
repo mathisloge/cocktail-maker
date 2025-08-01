@@ -19,6 +19,8 @@ class Drv8825StepperMotorDriver : public StepperMotor
   public:
     Drv8825StepperMotorDriver(Drv8825EnablePin enable_pin, Drv8825StepPin step_pin, Drv8825DirectionPin direction_pin);
     boost::asio::awaitable<void> step(Steps steps, StepsPerSecond velocity);
+    boost::asio::awaitable<void> enable();
+    boost::asio::awaitable<void> disable();
 
   private:
     boost::asio::awaitable<void> step_one(boost::asio::steady_timer &timer, std::chrono::microseconds wait_after);
@@ -33,6 +35,6 @@ class Drv8825StepperMotorDriver : public StepperMotor
     gpiod::line_request direction_line_;
     gpiod::line::offset direction_offset_;
 
-    static constexpr StepsPerSecondSq kAcceleration = 2000 * (cm::step / (mp_units::si::second * mp_units::si::second));
+    static constexpr StepsPerSecondSq kAcceleration = 500 * (cm::step / (mp_units::si::second * mp_units::si::second));
 };
 } // namespace cm

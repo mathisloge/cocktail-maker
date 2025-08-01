@@ -33,12 +33,45 @@ Drv8825StepperMotorDriver::Drv8825StepperMotorDriver(Drv8825EnablePin enable_pin
                                              gpiod::line_settings{}.set_direction(gpiod::line::direction::OUTPUT))
                           .do_request()}
     , direction_offset_{direction_pin.offset}
-{}
+{
+    // disable at start
+    enable_line_.set_value(enable_offset_, gpiod::line::value::ACTIVE);
+}
+
+boost::asio::awaitable<void> Drv8825StepperMotorDriver::enable()
+{
+    auto exec = co_await async::this_coro::executor;
+    enable_line_.set_value(enable_offset_, gpiod::line::value::INACTIVE);
+
+    async::steady_timer timer{exec};
+    timer.expires_after(std::chrono::milliseconds{10});
+    co_await timer.async_wait(async::use_awaitable);
+}
+
+boost::asio::awaitable<void> Drv8825StepperMotorDriver::disable()
+{
+    auto exec = co_await async::this_coro::executor;
+    enable_line_.set_value(enable_offset_, gpiod::line::value::ACTIVE);
+
+    async::steady_timer timer{exec};
+    timer.expires_after(std::chrono::milliseconds{10});
+    co_await timer.async_wait(async::use_awaitable);
+}
 
 boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(Steps steps, StepsPerSecond velocity)
 {
     auto exec = co_await async::this_coro::executor;
     async::steady_timer timer{exec};
+
+    const auto direction = steps > 0 ? gpiod::line::value::ACTIVE : gpiod::line::value::INACTIVE;
+    if (steps < 0)
+    {
+        steps *= -1;
+    }
+    direction_line_.set_value(direction_offset_, direction);
+    timer.expires_after(kPulseWidth);
+    co_await timer.async_wait(async::use_awaitable);
+
     // 1. Compute ramp time
     const auto ramp_time = velocity / kAcceleration;
 
@@ -80,8 +113,8 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(Steps steps, StepsP
 boost::asio::awaitable<void> Drv8825StepperMotorDriver::step_one(boost::asio::steady_timer &timer,
                                                                  std::chrono::microseconds wait_after)
 {
-    timer.expires_after(kPulseWidth);
     step_line_.set_value(step_offset_, gpiod::line::value::ACTIVE);
+    timer.expires_after(kPulseWidth);
     co_await timer.async_wait(async::use_awaitable);
     step_line_.set_value(step_offset_, gpiod::line::value::INACTIVE);
 

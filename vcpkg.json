@@ -2,6 +2,7 @@
     "name": "cocktail-maker",
     "dependencies": [
         "boost-asio",
+        "boost-signals2",
         {
             "name": "libgpiod",
             "features":[

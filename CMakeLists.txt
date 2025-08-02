@@ -40,7 +40,7 @@ message(STATUS "git_sha: ${git_sha}")
 message(STATUS "git_branch: ${git_branch}")
 
 find_package(Sanitizers REQUIRED)
-find_package(Boost REQUIRED COMPONENTS asio)
+find_package(Boost REQUIRED COMPONENTS asio signals2)
 find_package(mp-units CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 pkg_check_modules(libgpiod REQUIRED IMPORTED_TARGET libgpiod)

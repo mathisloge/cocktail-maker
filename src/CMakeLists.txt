@@ -12,6 +12,7 @@ target_link_libraries(
         PkgConfig::libgpiodcxx # order is important here!
         PkgConfig::libgpiod # order is important here!
         Boost::asio
+        Boost::signals2
         mp-units::core
         mp-units::systems
         mp-units::mp-units
@@ -29,6 +30,11 @@ target_sources(
                 include/cm/liquid_dispenser_stepper_pump.hpp
                 include/cm/machine_state.hpp
                 include/cm/units.hpp
+                include/cm/ingredient_id.hpp
+                include/cm/events/event_bus.hpp
+                include/cm/events/execution_canceled_event.hpp
+                include/cm/events/manual_action_event.hpp
+                include/cm/events/refill_ingredient_event.hpp
                 include/cm/hw/pin_selection.hpp
                 include/cm/hw/hx711_sensor.hpp
                 include/cm/hw/motor.hpp
@@ -39,4 +45,5 @@ target_sources(
         src/hw/drv8825_stepper_moter.cpp
         src/liquid_dispenser_stepper_pump.cpp
         src/machine_state.cpp
+        src/events/event_bus.cpp
 )

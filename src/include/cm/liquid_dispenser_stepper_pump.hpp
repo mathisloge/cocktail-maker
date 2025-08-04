@@ -9,6 +9,7 @@ class StepperPumpLiquidDispenser : public LiquidDispenser
   public:
     StepperPumpLiquidDispenser(std::string identifier,
                                std::unique_ptr<StepperMotor> motor,
+                               units::Litre source_volume,
                                units::StepsPerLitre calibration,
                                units::Litre tube_volume);
     boost::asio::awaitable<void> dispense(units::Litre volume) override;
@@ -19,8 +20,9 @@ class StepperPumpLiquidDispenser : public LiquidDispenser
     std::string identifier_;
     std::unique_ptr<StepperMotor> motor_;
     units::StepsPerLitre steps_per_litre_{};
-    units::Litre tube_volume_{1000 * mp_units::si::litre};
+    units::Litre source_volume_{};
     units::Litre source_remaining_volume_{};
+    units::Litre tube_volume_{1000 * mp_units::si::litre};
     bool tube_filled_{false};
 };
 } // namespace cm

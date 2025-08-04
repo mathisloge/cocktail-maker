@@ -24,14 +24,21 @@ int main()
             cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {17}},
             cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {27}},
             cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {22}}),
+        1 * mp_units::si::litre,
         (1000 * cm::units::step) / (100 * mp_units::si::milli<mp_units::si::litre>),
         52 * mp_units::si::milli<mp_units::si::litre>);
 
     std::shared_ptr<cm::ExecutionContext> ctx = std::make_shared<cm::ExecutionContext>(io);
     ctx->liquid_registry().register_dispenser("water", std::move(liquid_dispenser));
 
-    ctx->event_bus().subscribe([logger = cm::LoggingContext::instance().create_logger("Events")](auto &&event) {
+    ctx->event_bus().subscribe([logger = cm::LoggingContext::instance().create_logger("Events"), ctx](auto &&event) {
         SPDLOG_LOGGER_DEBUG(logger, "Received event {}", event);
+
+        if (std::holds_alternative<cm::RefillIngredientEvent>(event))
+        {
+            SPDLOG_LOGGER_DEBUG(logger, "Resume... {}", event);
+            boost::asio::post([ctx]() { ctx->resume(); });
+        }
     });
 
     auto recipe =

@@ -5,16 +5,20 @@ namespace cm
 {
 StepperPumpLiquidDispenser::StepperPumpLiquidDispenser(std::string identifier,
                                                        std::unique_ptr<StepperMotor> motor,
+                                                       units::Litre source_volume,
                                                        units::StepsPerLitre calibration,
                                                        units::Litre tube_volume)
     : identifier_{std::move(identifier)}
     , motor_{std::move(motor)}
+    , source_volume_{source_volume}
+    , source_remaining_volume_{source_volume_}
     , steps_per_litre_{calibration}
     , tube_volume_{tube_volume}
 {
-    fmt::println("StepperPumpLiquidDispenser \"{}\" initialized with {} and {} tube volume",
+    fmt::println("StepperPumpLiquidDispenser \"{}\" initialized with {}, {} source volume and {} tube volume",
                  identifier,
                  steps_per_litre_,
+                 source_volume,
                  tube_volume_);
 }
 

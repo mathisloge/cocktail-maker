@@ -9,7 +9,7 @@ class DispenseLiquidCmd : public Command
 {
   public:
     DispenseLiquidCmd(IngredientId ingredient, units::Litre volume);
-    boost::asio::awaitable<void> run(ExecutionContext &ctx) override;
+    boost::asio::awaitable<void> run(ExecutionContext &ctx) const override;
 
   private:
     IngredientId ingredient_;

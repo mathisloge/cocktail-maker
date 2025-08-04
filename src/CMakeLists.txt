@@ -29,6 +29,7 @@ target_sources(
             FILES
                 include/cm/liquid_dispenser_stepper_pump.hpp
                 include/cm/machine_state.hpp
+                include/cm/execution_context.hpp
                 include/cm/units.hpp
                 include/cm/ingredient_id.hpp
                 include/cm/events/event_bus.hpp
@@ -45,5 +46,6 @@ target_sources(
         src/hw/drv8825_stepper_moter.cpp
         src/liquid_dispenser_stepper_pump.cpp
         src/machine_state.cpp
+        src/execution_context.cpp
         src/events/event_bus.cpp
 )

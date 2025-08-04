@@ -17,8 +17,8 @@ int main()
             cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {17}},
             cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {27}},
             cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {22}}),
-        (500 * cm::units::step) / (100 * mp_units::si::milli<mp_units::si::litre>),
-        150 * mp_units::si::milli<mp_units::si::litre>};
+        (1000 * cm::units::step) / (100 * mp_units::si::milli<mp_units::si::litre>),
+        52 * mp_units::si::milli<mp_units::si::litre>};
 
     boost::asio::co_spawn(
         io,
@@ -32,6 +32,7 @@ int main()
             co_await liquid_dispenser.dispense(500 * mp_units::si::milli<mp_units::si::litre>);
         },
         boost::asio::detached);
+
     io.run();
     return 0;
 }

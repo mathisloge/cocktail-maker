@@ -9,5 +9,6 @@ class LiquidDispenser
     virtual ~LiquidDispenser() = default;
     virtual boost::asio::awaitable<void> dispense(mp_units::quantity<mp_units::si::litre> volume) = 0;
     virtual const std::string &name() const = 0;
+    virtual mp_units::quantity<mp_units::si::litre> remaining_volume() const = 0;
 };
 } // namespace cm

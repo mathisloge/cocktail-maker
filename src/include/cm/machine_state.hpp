@@ -19,6 +19,6 @@ class MachineState
   private:
     boost::asio::cancellation_signal cancel_signal_;
     std::unique_ptr<Hx711Sensor> load_cell_;
-    units::Grams measured_weight_;
+    units::Grams measured_weight_{};
 };
 } // namespace cm

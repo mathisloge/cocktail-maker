@@ -13,7 +13,9 @@ LoggingContext &LoggingContext::instance()
 
 LoggingContext::LoggingContext()
 {
-    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    spdlog::set_automatic_registration(false);
+    spdlog::set_level(spdlog::level::level_enum{SPDLOG_ACTIVE_LEVEL});
+    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_st>();
     console_sink->set_level(spdlog::level::debug);
     console_sink->set_pattern("%+");
 

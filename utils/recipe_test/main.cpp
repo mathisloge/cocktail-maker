@@ -3,9 +3,11 @@
 #include <cm/execution_context.hpp>
 #include <cm/hw/drv8825_stepper_moter.hpp>
 #include <cm/liquid_dispenser_stepper_pump.hpp>
+#include <cm/logging.hpp>
 #include <cm/machine_state.hpp>
 #include <cm/recipe.hpp>
 #include <cm/recipe_executor.hpp>
+#include <spdlog/spdlog.h>
 #include "cm/hw/hx711_sensor.hpp"
 
 int main()
@@ -28,8 +30,8 @@ int main()
     std::shared_ptr<cm::ExecutionContext> ctx = std::make_shared<cm::ExecutionContext>(io);
     ctx->liquid_registry().register_dispenser("water", std::move(liquid_dispenser));
 
-    ctx->event_bus().subscribe([](auto &&event) {
-
+    ctx->event_bus().subscribe([logger = cm::LoggingContext::instance().create_logger("Events")](auto &&event) {
+        SPDLOG_LOGGER_DEBUG(logger, "Received event {}", event);
     });
 
     auto recipe =
@@ -42,6 +44,12 @@ int main()
     cm::RecipeExecutor recipe_executor{ctx, recipe};
     recipe_executor.run();
 
+    std::vector<std::thread> threads;
+
+    for (int i = 0; i < 1; i++)
+    {
+        threads.emplace_back(std::thread{[&io]() { io.run(); }});
+    }
     io.run();
     return 0;
 }

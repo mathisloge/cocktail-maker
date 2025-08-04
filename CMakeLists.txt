@@ -43,6 +43,7 @@ find_package(Sanitizers REQUIRED)
 find_package(Boost REQUIRED COMPONENTS asio signals2)
 find_package(mp-units CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 pkg_check_modules(libgpiod REQUIRED IMPORTED_TARGET libgpiod)
 pkg_check_modules(libgpiodcxx REQUIRED IMPORTED_TARGET libgpiodcxx)
 

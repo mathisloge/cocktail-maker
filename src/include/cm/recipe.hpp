@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <vector>
+#include <fmt/core.h>
 
 namespace cm
 {
@@ -43,5 +44,13 @@ class Recipe
   private:
     std::string name_;
     ProductionSteps steps_;
+
+    friend struct fmt::formatter<Recipe>;
 };
 } // namespace cm
+
+template <>
+struct fmt::formatter<cm::Recipe> : formatter<string_view>
+{
+    auto format(const cm::Recipe &r, format_context &ctx) const -> format_context::iterator;
+};

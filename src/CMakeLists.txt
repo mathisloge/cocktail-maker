@@ -6,6 +6,11 @@ set_target_properties(
     PROPERTIES POSITION_INDEPENDENT_CODE ON VISIBILITY_INLINES_HIDDEN ON
 )
 
+target_compile_definitions(
+    cocktail-maker-core
+    PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG
+)
+
 target_link_libraries(
     cocktail-maker-core
     PUBLIC
@@ -17,6 +22,7 @@ target_link_libraries(
         mp-units::systems
         mp-units::mp-units
         mp-units::mp-units-contracts
+        spdlog::spdlog
         fmt::fmt
 )
 
@@ -27,6 +33,7 @@ target_sources(
             TYPE HEADERS
             BASE_DIRS include
             FILES
+                include/cm/logging.hpp
                 include/cm/liquid_dispenser_stepper_pump.hpp
                 include/cm/machine_state.hpp
                 include/cm/execution_context.hpp
@@ -46,6 +53,7 @@ target_sources(
                 include/cm/hw/stepper_motor.hpp
                 include/cm/hw/drv8825_stepper_moter.hpp
     PRIVATE
+        src/logging.cpp
         src/hw/hx711_sensor.cpp
         src/hw/drv8825_stepper_moter.cpp
         src/execution_context.cpp

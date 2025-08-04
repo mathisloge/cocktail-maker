@@ -10,6 +10,7 @@
             ]
         },
         "mp-units",
-        "fmt"
+        "fmt",
+        "spdlog"
     ]
 }

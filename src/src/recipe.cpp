@@ -1,4 +1,5 @@
 #include "cm/recipe.hpp"
+#include <fmt/ranges.h>
 #include "cm/commands/command.hpp"
 
 namespace cm
@@ -54,3 +55,8 @@ const ProductionSteps &Recipe::production_steps() const
 }
 
 } // namespace cm
+
+auto fmt::formatter<cm::Recipe>::format(const cm::Recipe &r, format_context &ctx) const -> format_context::iterator
+{
+    return formatter<string_view>::format(fmt::format("Recipe({})", r.name_), ctx);
+}

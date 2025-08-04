@@ -10,7 +10,7 @@ class Hx711Sensor;
 class MachineState
 {
   public:
-    explicit MachineState(boost::asio::io_context &io);
+    explicit MachineState(boost::asio::io_context &io, std::unique_ptr<Hx711Sensor> load_cell);
     ~MachineState();
 
     units::OperationalState load_cell_status() const;
@@ -18,7 +18,7 @@ class MachineState
 
   private:
     boost::asio::cancellation_signal cancel_signal_;
-    std::shared_ptr<Hx711Sensor> load_cell_;
+    std::unique_ptr<Hx711Sensor> load_cell_;
     units::Grams measured_weight_;
 };
 } // namespace cm

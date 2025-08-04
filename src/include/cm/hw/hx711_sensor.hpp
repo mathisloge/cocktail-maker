@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <boost/asio/awaitable.hpp>
 #include <gpiod.hpp>
+#include "cm/units.hpp"
 #include "pin_selection.hpp"
 #include <mp-units/systems/si.h>
 
@@ -22,8 +23,8 @@ class Hx711Sensor
   public:
     Hx711Sensor(Hx711DatPin dat_pin, Hx711ClkPin clk_pin);
     boost::asio::awaitable<void> tare();
-    boost::asio::awaitable<void> calibrate_with_ref_weight(mp_units::quantity<mp_units::si::gram> known_mass);
-    [[nodiscard]] boost::asio::awaitable<mp_units::quantity<mp_units::si::gram>> read();
+    boost::asio::awaitable<void> calibrate_with_ref_weight(units::Grams known_mass);
+    [[nodiscard]] boost::asio::awaitable<units::Grams> read();
 
   private:
     [[nodiscard]] boost::asio::awaitable<Hx711RawValue> read_raw();
@@ -38,6 +39,6 @@ class Hx711Sensor
 
     Hx711RawValue offset_{};
     Hx711RawValue raw_value_{};
-    mp_units::quantity<mp_units::si::gram> known_mass_{};
+    units::Grams known_mass_{};
 };
 } // namespace cm

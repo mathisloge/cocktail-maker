@@ -72,7 +72,7 @@ boost::asio::awaitable<Hx711RawValue> Hx711Sensor::read_raw()
     co_return Hx711RawValue{static_cast<std::int32_t>(value) * hx711_unit};
 }
 
-boost::asio::awaitable<mp_units::quantity<mp_units::si::gram>> Hx711Sensor::read()
+boost::asio::awaitable<units::Grams> Hx711Sensor::read()
 {
     const auto delta = raw_value_ - offset_;
     const auto scale = known_mass_ / delta;

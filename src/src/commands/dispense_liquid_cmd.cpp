@@ -1,0 +1,35 @@
+#include "cm/commands/dispense_liquid_cmd.hpp"
+#include "cm/events/refill_ingredient_event.hpp"
+#include "cm/execution_context.hpp"
+
+namespace cm
+{
+DispenseLiquidCmd::DispenseLiquidCmd(IngredientId ingredient, units::Litre volume)
+    : ingredient_{std::move(ingredient)}
+    , volume_{volume}
+{}
+
+boost::asio::awaitable<void> DispenseLiquidCmd::run(ExecutionContext &ctx) const
+{
+    auto &&dispenser = ctx.liquid_registry().dispenser(ingredient_);
+
+    auto remaining = volume_;
+    while (remaining > 0 * mp_units::si::litre)
+    {
+        auto available = dispenser.remaining_volume();
+        auto to_dispense = std::min(available, remaining);
+
+        if (to_dispense > 0 * mp_units::si::litre)
+        {
+            co_await dispenser.dispense(to_dispense);
+            remaining -= to_dispense;
+        }
+
+        if (remaining > 0 * mp_units::si::litre)
+        {
+            ctx.event_bus().publish(RefillIngredientEvent{.ingredient_id = ingredient_});
+            co_await ctx.wait_for_resume();
+        }
+    }
+}
+} // namespace cm

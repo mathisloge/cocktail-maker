@@ -2,12 +2,9 @@
 
 namespace cm
 {
-enum class Direction
-{
-    forward,
-    backward
-};
-
 class Motor
-{};
+{
+  public:
+    virtual ~Motor() = default;
+};
 } // namespace cm

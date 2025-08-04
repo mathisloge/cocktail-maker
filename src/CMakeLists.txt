@@ -30,8 +30,12 @@ target_sources(
                 include/cm/liquid_dispenser_stepper_pump.hpp
                 include/cm/machine_state.hpp
                 include/cm/execution_context.hpp
+                include/cm/recipe.hpp
                 include/cm/units.hpp
                 include/cm/ingredient_id.hpp
+                include/cm/commands/command.hpp
+                include/cm/commands/dispense_liquid_cmd.hpp
+                include/cm/commands/manual_cmd.hpp
                 include/cm/events/event_bus.hpp
                 include/cm/events/execution_canceled_event.hpp
                 include/cm/events/manual_action_event.hpp
@@ -44,8 +48,13 @@ target_sources(
     PRIVATE
         src/hw/hx711_sensor.cpp
         src/hw/drv8825_stepper_moter.cpp
+        src/execution_context.cpp
+        src/liquid_dispenser_registry.cpp
         src/liquid_dispenser_stepper_pump.cpp
         src/machine_state.cpp
-        src/execution_context.cpp
+        src/recipe_executor.cpp
+        src/recipe.cpp
         src/events/event_bus.cpp
+        src/commands/dispense_liquid_cmd.cpp
+        src/commands/manual_cmd.cpp
 )

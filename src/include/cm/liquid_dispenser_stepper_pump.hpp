@@ -18,9 +18,9 @@ class StepperPumpLiquidDispenser : public LiquidDispenser
   private:
     std::string identifier_;
     std::unique_ptr<StepperMotor> motor_;
-    units::StepsPerLitre steps_per_litre_;
-    units::Litre tube_volume_;
-    units::Litre source_remaining_volume_;
+    units::StepsPerLitre steps_per_litre_{};
+    units::Litre tube_volume_{};
+    units::Litre source_remaining_volume_{};
     bool tube_filled_{false};
 };
 } // namespace cm

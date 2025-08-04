@@ -21,5 +21,9 @@ boost::asio::awaitable<void> DispenseLiquidCmd::run(ExecutionContext &ctx) const
         co_await ctx.wait_for_resume();
         co_await dispenser.dispense(remaining);
     }
+    else
+    {
+        co_await dispenser.dispense(volume_);
+    }
 }
 } // namespace cm

@@ -30,6 +30,7 @@ MachineState::MachineState(boost::asio::io_context &io, std::unique_ptr<Hx711Sen
             {
                 measured_weight_ = co_await load_cell_->read();
                 fmt::println("read: {}", measured_weight_);
+                timer.expires_after(std::chrono::milliseconds{100});
                 co_await timer.async_wait(boost::asio::use_awaitable);
             }
             co_return;

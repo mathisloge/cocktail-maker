@@ -27,14 +27,6 @@ include(GNUInstallDirs)
 include(FindPkgConfig)
 include(GetGitRevisionDescription)
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
-set(CMAKE_CXX_EXTENSIONS ON)
-set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime")
-
 get_git_head_revision(git_branch git_sha)
 message(STATUS "git_sha: ${git_sha}")
 message(STATUS "git_branch: ${git_branch}")
@@ -47,5 +39,24 @@ find_package(spdlog CONFIG REQUIRED)
 pkg_check_modules(libgpiod REQUIRED IMPORTED_TARGET libgpiod)
 pkg_check_modules(libgpiodcxx REQUIRED IMPORTED_TARGET libgpiodcxx)
 
+find_package(
+    Qt6
+    COMPONENTS Core Widgets Gui Qml Quick QuickControls2
+)
+qt_standard_project_setup()
+qt_policy(SET QTP0001 NEW)
+qt_policy(SET QTP0003 NEW)
+qt_policy(SET QTP0004 NEW)
+qt_policy(SET QTP0005 NEW)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+set(CMAKE_CXX_EXTENSIONS ON)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime")
+
 add_subdirectory(src)
 add_subdirectory(utils)
+add_subdirectory(ui)

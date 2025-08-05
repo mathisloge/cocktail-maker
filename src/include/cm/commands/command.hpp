@@ -3,10 +3,12 @@
 namespace cm
 {
 class ExecutionContext;
+class CommandVisitor;
 class Command
 {
   public:
-    virtual boost::asio::awaitable<void> run(ExecutionContext &ctx) const = 0;
     virtual ~Command() = default;
+    virtual boost::asio::awaitable<void> run(ExecutionContext &ctx) const = 0;
+    virtual void accept(CommandVisitor &visitor) const = 0;
 };
 } // namespace cm

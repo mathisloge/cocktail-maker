@@ -5,8 +5,10 @@ namespace cm
 class ManualCmd : public Command
 {
   public:
-    ManualCmd(std::string instruction);
+    explicit ManualCmd(std::string instruction);
+    const std::string &instruction() const;
     boost::asio::awaitable<void> run(ExecutionContext &ctx) const override;
+    void accept(CommandVisitor &visitor) const override;
 
   private:
     std::string instruction_;

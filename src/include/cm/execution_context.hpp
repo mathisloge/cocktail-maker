@@ -8,15 +8,15 @@ namespace cm
 class ExecutionContext
 {
   public:
-    explicit ExecutionContext(boost::asio::io_context &io);
+    explicit ExecutionContext(boost::asio::any_io_executor executor);
     boost::asio::awaitable<void> wait_for_resume();
     void resume();
     EventBus &event_bus();
     LiquidDispenserRegistry &liquid_registry();
-    boost::asio::io_context &io_context();
+    boost::asio::any_io_executor async_executor();
 
   private:
-    boost::asio::io_context &io_context_;
+    boost::asio::any_io_executor io_context_;
     boost::asio::steady_timer resume_timer_;
     EventBus event_bus_;
     LiquidDispenserRegistry liquid_registry_;

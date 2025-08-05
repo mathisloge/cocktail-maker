@@ -32,6 +32,12 @@ auto fmt::formatter<cm::ExecutionCanceledEvent>::format(const cm::ExecutionCance
     return fmt::format_to(ctx.out(), "ExecutionCanceled");
 }
 
+auto fmt::formatter<cm::RecipeFinishedEvent>::format(const cm::RecipeFinishedEvent &e, format_context &ctx) const
+    -> format_context::iterator
+{
+    return fmt::format_to(ctx.out(), "RecipeFinishedEvent");
+}
+
 auto fmt::formatter<cm::Event>::format(const cm::Event &e, format_context &ctx) const -> format_context::iterator
 {
     return std::visit([&ctx](auto const &v) { return fmt::format_to(ctx.out(), "Event({})", v); }, e);

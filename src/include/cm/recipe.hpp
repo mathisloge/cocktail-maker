@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <memory>
 #include <vector>
 #include <fmt/core.h>
@@ -24,11 +25,15 @@ class RecipeBuilder
         RecipeBuilder &add();
     };
     RecipeBuilder &with_name(std::string name);
+    RecipeBuilder &with_description(std::string description);
+    RecipeBuilder &with_image(std::filesystem::path image_path);
     StepBuilder with_steps();
     std::shared_ptr<Recipe> create();
 
   private:
     std::string name_;
+    std::string description_;
+    std::filesystem::path image_path_;
     ProductionSteps steps_;
 };
 RecipeBuilder make_recipe();
@@ -36,14 +41,18 @@ RecipeBuilder make_recipe();
 class Recipe
 {
   public:
-    Recipe(std::string name, ProductionSteps steps);
+    Recipe(std::string name, ProductionSteps steps, std::string description, std::filesystem::path image_path);
     ~Recipe();
 
     const std::string &name() const;
+    const std::string &description() const;
+    const std::filesystem::path &image_path() const;
     const ProductionSteps &production_steps() const;
 
   private:
     std::string name_;
+    std::string description_;
+    std::filesystem::path image_path_;
     ProductionSteps steps_;
 
     friend struct fmt::formatter<Recipe>;

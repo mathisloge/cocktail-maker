@@ -22,6 +22,12 @@ StepperPumpLiquidDispenser::StepperPumpLiquidDispenser(std::string identifier,
                  tube_volume_);
 }
 
+void StepperPumpLiquidDispenser::refill(units::Litre volume)
+{
+    source_remaining_volume_ = volume;
+    tube_filled_ = false;
+}
+
 boost::asio::awaitable<void> StepperPumpLiquidDispenser::dispense(mp_units::quantity<mp_units::si::litre> volume)
 {
     constexpr units::StepsPerSecond kVelocity{1000 * units::step / mp_units::si::second};

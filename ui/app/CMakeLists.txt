@@ -10,6 +10,7 @@ target_link_libraries(
         Qt6::Widgets
         Qt6::QuickControls2
         cm::core
+        cm::ui
 )
 
 qt_add_qml_module(CocktailMakerApp
@@ -18,6 +19,8 @@ qt_add_qml_module(CocktailMakerApp
     QML_FILES
         Main.qml
         RecipeListPage.qml
+        RecipeDetailPage.qml
+        MixPage.qml
     DEPENDENCIES
         TARGET cocktail-maker-ui
     SOURCES

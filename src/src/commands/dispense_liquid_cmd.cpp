@@ -1,4 +1,5 @@
 #include "cm/commands/dispense_liquid_cmd.hpp"
+#include "cm/commands/command_visitor.hpp"
 #include "cm/events/refill_ingredient_event.hpp"
 #include "cm/execution_context.hpp"
 
@@ -32,4 +33,20 @@ boost::asio::awaitable<void> DispenseLiquidCmd::run(ExecutionContext &ctx) const
         }
     }
 }
+
+void DispenseLiquidCmd::accept(CommandVisitor &visitor) const
+{
+    visitor.visit(*this);
+}
+
+const IngredientId &DispenseLiquidCmd::ingredient() const
+{
+    return ingredient_;
+}
+
+units::Litre DispenseLiquidCmd::volume() const
+{
+    return volume_;
+}
+
 } // namespace cm

@@ -28,7 +28,7 @@ int main()
         (1000 * cm::units::step) / (100 * mp_units::si::milli<mp_units::si::litre>),
         52 * mp_units::si::milli<mp_units::si::litre>);
 
-    std::shared_ptr<cm::ExecutionContext> ctx = std::make_shared<cm::ExecutionContext>(io);
+    std::shared_ptr<cm::ExecutionContext> ctx = std::make_shared<cm::ExecutionContext>(io.get_executor());
     ctx->liquid_registry().register_dispenser("water", std::move(liquid_dispenser));
 
     ctx->event_bus().subscribe([logger = cm::LoggingContext::instance().create_logger("Events"), ctx](auto &&event) {

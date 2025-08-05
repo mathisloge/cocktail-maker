@@ -13,6 +13,7 @@ class StepperPumpLiquidDispenser : public LiquidDispenser
                                units::StepsPerLitre calibration,
                                units::Litre tube_volume);
     boost::asio::awaitable<void> dispense(units::Litre volume) override;
+    void refill(units::Litre volume) override;
     units::Litre remaining_volume() const override;
     const std::string &name() const override;
 

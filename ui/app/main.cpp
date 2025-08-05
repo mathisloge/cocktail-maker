@@ -4,10 +4,14 @@
 #include <QQmlContext>
 #include <QQmlExtensionPlugin>
 #include <QQuickStyle>
+#include <cm/execution_context.hpp>
 #include <cm/recipe.hpp>
 #include <cm/recipe_store.hpp>
 #include "ApplicationState.hpp"
 #include "cm/commands/dispense_liquid_cmd.hpp"
+#include "cm/commands/manual_cmd.hpp"
+#include <mp-units/systems/imperial.h>
+#include <mp-units/systems/international.h>
 
 Q_IMPORT_QML_PLUGIN(CocktailMaker_UiPlugin)
 
@@ -29,17 +33,50 @@ int main(int argc, char *argv[])
     Q_ASSERT(app_state != nullptr);
 
     std::shared_ptr<cm::RecipeStore> recipe_store = std::make_shared<cm::RecipeStore>();
+    std::shared_ptr<cm::ui::RecipeFactory> recipe_factory = std::make_shared<cm::ui::RecipeFactory>(recipe_store);
 
-    auto recipe =
+    boost::asio::thread_pool thread_pool{3};
+    std::shared_ptr<cm::ExecutionContext> execution_context =
+        std::make_shared<cm::ExecutionContext>(thread_pool.get_executor());
+
+    auto water =
         cm::make_recipe()
             .with_name("Only Water")
+            .with_description("Klassisches Wasser ohne Schickschnack")
             .with_steps()
             .with_step(std::make_unique<cm::DispenseLiquidCmd>("water", 250 * mp_units::si::milli<mp_units::si::litre>))
             .add()
+            .with_steps()
+            .with_step(std::make_unique<cm::ManualCmd>("2 Eiswürfel"))
+            .add()
             .create();
-    recipe_store->add_recipe(std::move(recipe));
+
+    auto mojito =
+        cm::make_recipe()
+            .with_name("Mojito")
+            .with_description(
+                "Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, Zucker und " // codespell:ignore
+                "Soda – "                                                                        // codespell:ignore
+                "perfekt für den Sommer.")                                                       // codespell:ignore
+            .with_steps()
+            .with_step(std::make_unique<cm::DispenseLiquidCmd>("bacardi", 3 * mp_units::imperial::fluid_ounce))
+            .with_step(std::make_unique<cm::DispenseLiquidCmd>("soda", 120 * mp_units::si::milli<mp_units::si::litre>))
+            .with_step(std::make_unique<cm::DispenseLiquidCmd>("lime_juice",
+                                                               30 * mp_units::si::milli<mp_units::si::litre>))
+            .add()
+            .with_steps()
+            .with_step(std::make_unique<cm::ManualCmd>("2 Minzblätter")) // codespell:ignore
+            .add()
+            .with_steps()
+            .with_step(std::make_unique<cm::ManualCmd>("2 TL Zucker")) // codespell:ignore
+            .add()
+            .create();
+    recipe_store->add_recipe(std::move(water));
+    recipe_store->add_recipe(std::move(mojito));
 
     app_state->recipe_store = recipe_store;
+    app_state->recipe_factory = recipe_factory;
+    app_state->recipe_executor = std::make_unique<cm::ui::RecipeExecutorAdapter>(execution_context);
 
     engine.loadFromModule("CocktailMaker.App", "Main");
 

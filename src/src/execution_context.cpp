@@ -3,9 +3,9 @@
 namespace cm
 {
 
-ExecutionContext::ExecutionContext(boost::asio::io_context &io)
-    : io_context_{io}
-    , resume_timer_{io}
+ExecutionContext::ExecutionContext(boost::asio::any_io_executor executor)
+    : io_context_{executor}
+    , resume_timer_{executor}
 {}
 
 boost::asio::awaitable<void> ExecutionContext::wait_for_resume()
@@ -31,7 +31,7 @@ LiquidDispenserRegistry &ExecutionContext::liquid_registry()
     return liquid_registry_;
 }
 
-boost::asio::io_context &ExecutionContext::io_context()
+boost::asio::any_io_executor ExecutionContext::async_executor()
 {
     return io_context_;
 }

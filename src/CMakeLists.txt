@@ -33,8 +33,11 @@ target_sources(
             TYPE HEADERS
             BASE_DIRS include
             FILES
+                include/cm/overloads.hpp
                 include/cm/logging.hpp
+                include/cm/liquid_dispenser_registry.hpp
                 include/cm/liquid_dispenser_stepper_pump.hpp
+                include/cm/liquid_dispenser_simulated.hpp
                 include/cm/machine_state.hpp
                 include/cm/execution_context.hpp
                 include/cm/recipe.hpp
@@ -49,6 +52,7 @@ target_sources(
                 include/cm/events/execution_canceled_event.hpp
                 include/cm/events/manual_action_event.hpp
                 include/cm/events/refill_ingredient_event.hpp
+                include/cm/events/recipe_finished.hpp
                 include/cm/hw/pin_selection.hpp
                 include/cm/hw/hx711_sensor.hpp
                 include/cm/hw/motor.hpp
@@ -60,6 +64,7 @@ target_sources(
         src/hw/drv8825_stepper_moter.cpp
         src/execution_context.cpp
         src/liquid_dispenser_registry.cpp
+        src/liquid_dispenser_simulated.cpp
         src/liquid_dispenser_stepper_pump.cpp
         src/machine_state.cpp
         src/recipe_executor.cpp

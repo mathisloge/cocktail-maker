@@ -39,6 +39,7 @@ class Recipe
     Recipe(std::string name, ProductionSteps steps);
     ~Recipe();
 
+    const std::string &name() const;
     const ProductionSteps &production_steps() const;
 
   private:

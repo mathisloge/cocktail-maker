@@ -9,6 +9,7 @@ target_link_libraries(
         Qt6::Quick
         Qt6::Widgets
         Qt6::QuickControls2
+        cm::core
 )
 
 qt_add_qml_module(CocktailMakerApp
@@ -16,8 +17,11 @@ qt_add_qml_module(CocktailMakerApp
     VERSION 1.0
     QML_FILES
         Main.qml
+        RecipeListPage.qml
     DEPENDENCIES
         TARGET cocktail-maker-ui
+    SOURCES
+        ApplicationState.hpp
 )
 
 install(

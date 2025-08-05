@@ -49,6 +49,11 @@ Recipe::Recipe(std::string name, ProductionSteps steps)
     , steps_{std::move(steps)}
 {}
 
+const std::string &Recipe::name() const
+{
+    return name_;
+}
+
 const ProductionSteps &Recipe::production_steps() const
 {
     return steps_;

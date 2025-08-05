@@ -32,7 +32,8 @@
             "name": "debug-build",
             "hidden": true,
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "QT_QML_GENERATE_QMLLS_INI": true
             }
         },
         {

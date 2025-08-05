@@ -38,6 +38,8 @@ target_sources(
                 include/cm/machine_state.hpp
                 include/cm/execution_context.hpp
                 include/cm/recipe.hpp
+                include/cm/recipe_store.hpp
+                include/cm/recipe_executor.hpp
                 include/cm/units.hpp
                 include/cm/ingredient_id.hpp
                 include/cm/commands/command.hpp
@@ -62,6 +64,7 @@ target_sources(
         src/machine_state.cpp
         src/recipe_executor.cpp
         src/recipe.cpp
+        src/recipe_store.cpp
         src/events/event_bus.cpp
         src/commands/dispense_liquid_cmd.cpp
         src/commands/manual_cmd.cpp

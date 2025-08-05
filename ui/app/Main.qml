@@ -48,82 +48,8 @@ ApplicationWindow {
 
     Component {
         id: cocktailSelectionPage
+        RecipeListPage {
 
-        Item {
-            RowLayout {
-                id: headerLayout
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.right: parent.right
-                Text {
-                    text: "🍹 Cocktail Automat"
-                    font.family: "Helvetica"
-                    font.pointSize: 48
-                    color: systemPalette.text
-
-                    Layout.alignment: Qt.AlignHCenter
-                }
-            }
-            ScrollView {
-                anchors.bottom: parent.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: headerLayout.bottom
-
-                ListModel {
-                    id: cocktails
-                    ListElement {
-                        name: "Mojito"
-                        description: "A refreshing Cuban cocktail"
-                    }
-                    ListElement {
-                        name: "Margarita"
-                        description: "Classic Mexican tequila cocktail"
-                    }
-                    ListElement {
-                        name: "Old Fashioned"
-                        description: "Timeless whiskey cocktail"
-                    }
-                    ListElement {
-                        name: "Cosmopolitan"
-                        description: "Elegant pink cocktail"
-                    }
-                    ListElement {
-                        name: "Piña Colada"
-                        description: "Tropical paradise in a glass"
-                    }
-                    ListElement {
-                        name: "Manhattan"
-                        description: "Sophisticated whiskey cocktail"
-                    }
-                }
-                GridLayout {
-                    id: cocktailGrid
-                    columns: 3
-                    columnSpacing: 20
-                    rowSpacing: 20
-                    width: window.width
-                }
-
-                Instantiator {
-                    id: cocktailInstantiator
-                    model: cocktails
-
-                    delegate: ImageCard {
-                        required property var model
-                        clip: true
-                        Layout.preferredWidth: (cocktailGrid.width - ((cocktailGrid.columns - 1) * cocktailGrid.columnSpacing)) / cocktailGrid.columns
-                        Layout.preferredHeight: width
-                        text: model.name
-                        iconSrc: "mojito.png"
-
-                        parent: cocktailGrid
-                        onClicked: {
-                            stackView.push(cocktailDetailPage);
-                        }
-                    }
-                }
-            }
         }
     }
 

@@ -1,0 +1,20 @@
+#pragma once
+#include <memory>
+#include <string>
+#include <unordered_map>
+
+namespace cm
+{
+class Recipe;
+using RecipeMap = std::unordered_map<std::string, std::shared_ptr<Recipe>>;
+class RecipeStore
+{
+  public:
+    void add_recipe(std::shared_ptr<Recipe> recipe);
+    const RecipeMap &recipes() const;
+    ~RecipeStore();
+
+  private:
+    RecipeMap recipes_;
+};
+} // namespace cm

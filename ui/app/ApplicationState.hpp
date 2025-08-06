@@ -31,13 +31,12 @@ class ApplicationState : public QObject
 
     ui::RecipeExecutorAdapter *get_recipe_executor() const
     {
-        QQmlEngine::setObjectOwnership(recipe_executor.get(), QQmlEngine::CppOwnership);
         return recipe_executor.get();
     }
 
   public:
     std::shared_ptr<RecipeStore> recipe_store;
     std::shared_ptr<ui::RecipeFactory> recipe_factory;
-    std::unique_ptr<ui::RecipeExecutorAdapter> recipe_executor;
+    std::shared_ptr<ui::RecipeExecutorAdapter> recipe_executor;
 };
 } // namespace cm::app

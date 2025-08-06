@@ -4,8 +4,8 @@
 
 namespace cm
 {
-SimulatedLiquidDispenser::SimulatedLiquidDispenser(units::Litre capacity,
-                                                   decltype(mp_units::si::litre / mp_units::si::second) flow_rate)
+SimulatedLiquidDispenser::SimulatedLiquidDispenser(
+    units::Litre capacity, mp_units::quantity<mp_units::si::litre / mp_units::si::second> flow_rate)
     : remaining_capacity_{capacity}
     , flow_rate_{flow_rate}
 {}

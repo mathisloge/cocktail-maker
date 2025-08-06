@@ -5,6 +5,7 @@
 #include <QQmlExtensionPlugin>
 #include <QQuickStyle>
 #include <cm/execution_context.hpp>
+#include <cm/liquid_dispenser_simulated.hpp>
 #include <cm/recipe.hpp>
 #include <cm/recipe_store.hpp>
 #include "ApplicationState.hpp"
@@ -32,12 +33,18 @@ int main(int argc, char *argv[])
     auto &&app_state = engine.singletonInstance<cm::app::ApplicationState *>("CocktailMaker.App", "ApplicationState");
     Q_ASSERT(app_state != nullptr);
 
-    std::shared_ptr<cm::RecipeStore> recipe_store = std::make_shared<cm::RecipeStore>();
-    std::shared_ptr<cm::ui::RecipeFactory> recipe_factory = std::make_shared<cm::ui::RecipeFactory>(recipe_store);
-
     boost::asio::thread_pool thread_pool{3};
     std::shared_ptr<cm::ExecutionContext> execution_context =
         std::make_shared<cm::ExecutionContext>(thread_pool.get_executor());
+
+    auto recipe_store = std::make_shared<cm::RecipeStore>();
+    auto recipe_factory = std::make_shared<cm::ui::RecipeFactory>(recipe_store);
+    auto recipe_executor = std::make_shared<cm::ui::RecipeExecutorAdapter>(execution_context);
+
+    execution_context->liquid_registry().register_dispenser(
+        "water",
+        std::make_unique<cm::SimulatedLiquidDispenser>(1 * mp_units::si::litre,
+                                                       (0.1 * mp_units::si::litre) / (0.5 * mp_units::si::second)));
 
     auto water =
         cm::make_recipe()
@@ -76,7 +83,7 @@ int main(int argc, char *argv[])
 
     app_state->recipe_store = recipe_store;
     app_state->recipe_factory = recipe_factory;
-    app_state->recipe_executor = std::make_unique<cm::ui::RecipeExecutorAdapter>(execution_context);
+    app_state->recipe_executor = recipe_executor;
 
     engine.loadFromModule("CocktailMaker.App", "Main");
 

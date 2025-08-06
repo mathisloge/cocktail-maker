@@ -49,12 +49,46 @@ Item {
             }
         }
     }
+    ManualCommandPopup {
+        id: manualActionPopup
+        anchors.centerIn: parent
+        titleText: "Bitte füge den angezeigten Schritt aus:"
+        instructionText: "TBD"
+        confirmButtonText: "Fertig ▶"
+
+        onConfirmClicked: {
+            manualActionPopup.close();
+            ApplicationState.recipeExecutor.continue_mix();
+        }
+    }
+
+    ManualCommandPopup {
+        id: refillActionPopup
+        anchors.centerIn: parent
+        titleText: "Bitte fülle nach:"
+        instructionText: "TBD"
+        confirmButtonText: "Aufgefüllt ▶"
+
+        onConfirmClicked: {
+            refillActionPopup.close();
+            ApplicationState.recipeExecutor.continue_mix();
+        }
+    }
 
     Connections {
         target: ApplicationState.recipeExecutor
-        function finished() {
-            textLabel.text = "FINISHED";
+        function onFinished() {
             root.finished();
+        }
+
+        function onManualActionRequired(instruction) {
+            manualActionPopup.instructionText = instruction;
+            manualActionPopup.open();
+        }
+
+        function onRefillActionRequired(ingredient) {
+            refillActionPopup.instructionText = ingredient
+            refillActionPopup.open()
         }
     }
 }

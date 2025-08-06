@@ -7,6 +7,7 @@ qt_add_qml_module(cocktail-maker-ui
         qml/Slider.qml
         qml/Button.qml
         qml/Section.qml
+        qml/ManualCommandPopup.qml
     RESOURCES
         mojito.png
 )

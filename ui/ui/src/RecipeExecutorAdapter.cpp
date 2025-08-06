@@ -6,6 +6,8 @@ namespace cm::ui
 RecipeExecutorAdapter::RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> ctx)
     : ctx_{std::move(ctx)}
 {
+
+    connect(this, &RecipeExecutorAdapter::refillActionRequired, this, [](auto &&ing) { qDebug() << ing; });
     ctx_->event_bus().subscribe([self = QPointer{this}](auto &&event) {
         if (self.isNull())
         {
@@ -20,9 +22,7 @@ RecipeExecutorAdapter::RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> c
                           Q_EMIT self->refillActionRequired(QString::fromStdString(ev.ingredient_id));
                       },
                       [self]([[maybe_unused]] const ExecutionCanceledEvent &ev) { Q_EMIT self->executionAborted(); },
-                      [self]([[maybe_unused]] RecipeFinishedEvent ev) {
-                          QMetaObject::invokeMethod(self, &RecipeExecutorAdapter::finished, Qt::QueuedConnection);
-                      }},
+                      [self]([[maybe_unused]] RecipeFinishedEvent ev) { Q_EMIT self->finished(); }},
             event);
     });
 }

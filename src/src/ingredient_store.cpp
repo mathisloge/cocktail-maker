@@ -2,9 +2,10 @@
 namespace cm
 {
 
-void IngredientStore::add_ingredient(Ingredient ingredient)
+const Ingredient &IngredientStore::add_ingredient(Ingredient ingredient)
 {
-    ingredients_.emplace(ingredient.id, std::move(ingredient));
+    auto &&[it, _] = ingredients_.emplace(ingredient.id, std::move(ingredient));
+    return it->second;
 }
 
 const Ingredient &IngredientStore::find_ingredient(const IngredientId &id) const

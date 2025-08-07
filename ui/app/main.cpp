@@ -42,27 +42,28 @@ int main(int argc, char *argv[])
     auto recipe_factory = std::make_shared<cm::ui::RecipeFactory>(recipe_store, ingredient_store);
     auto recipe_executor = std::make_shared<cm::ui::RecipeExecutorAdapter>(execution_context, ingredient_store);
 
-    ingredient_store->add_ingredient(Ingredient{.id = "water", .display_name = "Wasser"});
-    ingredient_store->add_ingredient(Ingredient{.id = "bacardi", .display_name = "Bacardi"});
-    ingredient_store->add_ingredient(Ingredient{.id = "soda", .display_name = "Soda Wasser"});
-    ingredient_store->add_ingredient(Ingredient{.id = "lime_juice", .display_name = "Limettensaft"});
+    auto &&water = ingredient_store->add_ingredient(Ingredient{.id = "water", .display_name = "Wasser"});
+    auto &&bacardi = ingredient_store->add_ingredient(Ingredient{.id = "bacardi", .display_name = "Bacardi"});
+    auto &&soda = ingredient_store->add_ingredient(Ingredient{.id = "soda", .display_name = "Soda Wasser"});
+    auto &&lime_juice =
+        ingredient_store->add_ingredient(Ingredient{.id = "lime_juice", .display_name = "Limettensaft"});
 
     execution_context->liquid_registry().register_dispenser(
-        "water",
+        water.id,
         std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre,
                                                        (0.1 * units::si::litre) / (0.5 * units::si::second)));
 
-    auto water = cm::make_recipe()
-                     .with_name("Only Water")
-                     .with_description("Klassisches Wasser ohne Schickschnack")
-                     .with_steps()
-                     .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                         "water", 250 * units::si::milli<units::si::litre>, generate_unique_command_id()))
-                     .add()
-                     .with_steps()
-                     .with_step(std::make_unique<cm::ManualCmd>("2 Eiswürfel", generate_unique_command_id()))
-                     .add()
-                     .create();
+    auto only_water = cm::make_recipe()
+                          .with_name("Only Water")
+                          .with_description("Klassisches Wasser ohne Schickschnack")
+                          .with_steps()
+                          .with_step(std::make_unique<cm::DispenseLiquidCmd>(
+                              water.id, 250 * units::si::milli<units::si::litre>, generate_unique_command_id()))
+                          .add()
+                          .with_steps()
+                          .with_step(std::make_unique<cm::ManualCmd>("2 Eiswürfel", generate_unique_command_id()))
+                          .add()
+                          .create();
 
     auto mojito =
         cm::make_recipe()
@@ -73,11 +74,11 @@ int main(int argc, char *argv[])
                 "perfekt für den Sommer.")                                                       // codespell:ignore
             .with_steps()
             .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                "bacardi", 3 * units::imperial::fluid_ounce, generate_unique_command_id()))
+                bacardi.id, 3 * units::imperial::fluid_ounce, generate_unique_command_id()))
             .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                "soda", 120 * units::si::milli<units::si::litre>, generate_unique_command_id()))
+                soda.id, 120 * units::si::milli<units::si::litre>, generate_unique_command_id()))
             .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                "lime_juice", 30 * mp_units::si::milli<mp_units::si::litre>, generate_unique_command_id()))
+                lime_juice.id, 30 * mp_units::si::milli<mp_units::si::litre>, generate_unique_command_id()))
             .add()
             .with_steps()
             .with_step(
@@ -87,7 +88,7 @@ int main(int argc, char *argv[])
             .with_step(std::make_unique<cm::ManualCmd>("2 TL Zucker", generate_unique_command_id())) // codespell:ignore
             .add()
             .create();
-    recipe_store->add_recipe(std::move(water));
+    recipe_store->add_recipe(only_water);
     recipe_store->add_recipe(std::move(mojito));
 
     app_state->recipe_store = recipe_store;

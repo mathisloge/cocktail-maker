@@ -6,7 +6,7 @@ namespace cm
 class IngredientStore
 {
   public:
-    void add_ingredient(Ingredient ingredient);
+    const Ingredient &add_ingredient(Ingredient ingredient);
     const Ingredient &find_ingredient(const IngredientId &id) const;
 
   private:

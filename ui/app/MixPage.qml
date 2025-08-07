@@ -106,7 +106,7 @@ Item {
     ManualCommandPopup {
         id: manualActionPopup
         anchors.centerIn: parent
-        titleText: "Bitte füge den angezeigten Schritt aus:"
+        titleText: "Bitte führe den angezeigten Schritt aus:"
         instructionText: "TBD"
         confirmButtonText: "Fertig ▶"
 

@@ -3,6 +3,7 @@
 #include <QtQmlIntegration>
 #include <cm/execution_context.hpp>
 #include <cm/recipe_executor.hpp>
+#include "RecipeCommandStatusModel.hpp"
 #include "RecipeDetail.hpp"
 #include "cm/ingredient_store.hpp"
 
@@ -13,12 +14,15 @@ class RecipeExecutorAdapter : public QObject
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("Provided by ApplicationState")
+    Q_PROPERTY(cm::ui::RecipeCommandStatusModel *commandStatusModel READ command_status_model CONSTANT)
   public:
     explicit RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> ctx,
                                    std::shared_ptr<const IngredientStore> ingredient_store);
     Q_INVOKABLE void make_recipe(RecipeDetail *recipe);
     Q_INVOKABLE void continue_mix();
     Q_INVOKABLE void cancel();
+
+    RecipeCommandStatusModel *command_status_model();
 
   Q_SIGNALS:
     void manualActionRequired(QString instruction);
@@ -30,5 +34,6 @@ class RecipeExecutorAdapter : public QObject
     std::shared_ptr<ExecutionContext> ctx_;
     std::shared_ptr<const IngredientStore> ingredient_store_;
     std::unique_ptr<RecipeExecutor> executor_;
+    RecipeCommandStatusModel command_model_;
 };
 } // namespace cm::ui

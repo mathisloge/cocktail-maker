@@ -7,13 +7,13 @@ namespace cm::ui
 {
 namespace
 {
-struct StepUiFormatter final : public CommandVisitor
+struct CommandUiFormatter final : public CommandVisitor
 {
-    StepUiFormatter(const IngredientStore &ingredient_store)
+    CommandUiFormatter(const IngredientStore &ingredient_store)
         : ingredient_store{ingredient_store}
     {}
 
-    void visit(const DispenseLiquidCmd &cmd)
+    void visit(const DispenseLiquidCmd &cmd) override
     {
         auto &&ingredient = ingredient_store.find_ingredient(cmd.ingredient());
         step.name = QString::fromStdString(ingredient.display_name);
@@ -21,7 +21,7 @@ struct StepUiFormatter final : public CommandVisitor
             QString::fromStdString(fmt::format("{}", cmd.volume().in(mp_units::si::centi<mp_units::si::litre>)));
     }
 
-    void visit(const ManualCmd &cmd)
+    void visit(const ManualCmd &cmd) override
     {
         step.name = "Manuell"; // codespell:ignore
         step.detail = QString::fromStdString(cmd.instruction());
@@ -40,7 +40,7 @@ RecipeDetail::RecipeDetail(std::shared_ptr<Recipe> recipe, std::shared_ptr<const
     {
         for (auto &&cmd : steps)
         {
-            StepUiFormatter formatter{*ingredient_store_};
+            CommandUiFormatter formatter{*ingredient_store_};
             cmd->accept(formatter);
             steps_.emplace_back(std::move(formatter.step));
         }

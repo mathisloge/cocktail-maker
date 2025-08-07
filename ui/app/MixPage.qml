@@ -20,12 +20,70 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
             }
 
-            Label {
-                id: textLabel
-                text: "Schritt 1/3"
-                color: "#b3ffffff"
-                font.pointSize: 28
+            Section {
                 Layout.alignment: Qt.AlignHCenter
+                Layout.fillWidth: true
+                ColumnLayout {
+                    width: parent.width
+                    Label {
+                        Layout.alignment: Qt.AlignHCenter
+                        font.pointSize: 18
+                        text: "Schritte:"
+                    }
+
+                    Repeater {
+                        model: ApplicationState.recipeExecutor.commandStatusModel
+
+                        delegate: Section {
+                            id: section
+
+                            required property string name
+                            required property var status
+                            Layout.fillWidth: true
+                            RowLayout {
+                                width: parent.width
+                                Label {
+                                    Layout.alignment: Qt.AlignLeft
+                                    text: section.name
+                                    font.pointSize: 14
+                                }
+                                BusyIndicator {
+                                    Layout.alignment: Qt.AlignRight
+                                    running: section.status === RecipeCommandStatusModel.CommandStatus.Started
+                                }
+                            }
+                            states: [
+                                State {
+                                    name: "notStarted"
+                                    when: section.status === RecipeCommandStatusModel.CommandStatus.NotStarted
+                                },
+                                State {
+                                    name: "active"
+                                    when: section.status === RecipeCommandStatusModel.CommandStatus.Started
+                                    PropertyChanges {
+                                        section.backgroundColor: "#65f59f0b"
+                                    }
+                                },
+                                State {
+                                    name: "finished"
+                                    when: section.status === RecipeCommandStatusModel.CommandStatus.Finished
+                                    PropertyChanges {
+                                        section.backgroundColor: "#6510b981"
+                                    }
+                                }
+                            ]
+                            transitions: [
+                                Transition {
+                                    to: "*"
+                                    ColorAnimation {
+                                        target: section
+                                        duration: 100
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
             }
 
             ProgressBar {
@@ -83,8 +141,8 @@ Item {
         }
 
         function onRefillActionRequired(ingredient) {
-            refillActionPopup.instructionText = ingredient
-            refillActionPopup.open()
+            refillActionPopup.instructionText = ingredient;
+            refillActionPopup.open();
         }
     }
 }

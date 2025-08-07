@@ -52,6 +52,18 @@ int main(int argc, char *argv[])
         water.id,
         std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre,
                                                        (0.1 * units::si::litre) / (0.5 * units::si::second)));
+    execution_context->liquid_registry().register_dispenser(
+        bacardi.id,
+        std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre,
+                                                       (0.1 * units::si::litre) / (0.5 * units::si::second)));
+    execution_context->liquid_registry().register_dispenser(
+        soda.id,
+        std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre,
+                                                       (0.1 * units::si::litre) / (2 * units::si::second)));
+    execution_context->liquid_registry().register_dispenser(
+        lime_juice.id,
+        std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre,
+                                                       (0.1 * units::si::litre) / (1 * units::si::second)));
 
     auto only_water = cm::make_recipe()
                           .with_name("Only Water")

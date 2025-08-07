@@ -26,11 +26,13 @@ target_sources(
                 include/cm/ui/RecipeDetail.hpp
                 include/cm/ui/RecipeListModel.hpp
                 include/cm/ui/RecipeFactory.hpp
+                include/cm/ui/RecipeCommandStatusModel.hpp
     PRIVATE
         src/RecipeDetail.cpp
         src/RecipeExecutorAdapter.cpp
         src/RecipeFactory.cpp
         src/RecipeListModel.cpp
+        src/RecipeCommandStatusModel.cpp
 )
 # needed for moc
 target_include_directories(

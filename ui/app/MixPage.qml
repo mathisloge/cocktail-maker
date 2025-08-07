@@ -42,10 +42,6 @@ Item {
                     text: "Abbrechen"
                     onClicked: root.cancelClicked()
                 }
-                Button {
-                    text: "Getränk aufgefüllt ▶"
-                    onClicked: ApplicationState.recipeExecutor.continue_mix()
-                }
             }
         }
     }

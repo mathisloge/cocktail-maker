@@ -1,5 +1,6 @@
 #pragma once
 #include <boost/asio/awaitable.hpp>
+#include "command_id.hpp"
 namespace cm
 {
 class ExecutionContext;
@@ -7,8 +8,13 @@ class CommandVisitor;
 class Command
 {
   public:
+    explicit Command(CommandId command_id);
     virtual ~Command() = default;
-    virtual boost::asio::awaitable<void> run(ExecutionContext &ctx) const = 0;
+    [[nodiscard]] CommandId id() const;
+    [[nodiscard]] virtual boost::asio::awaitable<void> run(ExecutionContext &ctx) const = 0;
     virtual void accept(CommandVisitor &visitor) const = 0;
+
+  private:
+    CommandId command_id_{};
 };
 } // namespace cm

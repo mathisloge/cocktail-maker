@@ -5,8 +5,9 @@
 
 namespace cm
 {
-ManualCmd::ManualCmd(std::string instruction)
-    : instruction_{std::move(instruction)}
+ManualCmd::ManualCmd(std::string instruction, CommandId id)
+    : Command{id}
+    , instruction_{std::move(instruction)}
 {}
 
 const std::string &ManualCmd::instruction() const

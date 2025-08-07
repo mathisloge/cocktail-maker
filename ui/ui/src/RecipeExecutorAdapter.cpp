@@ -3,11 +3,11 @@
 
 namespace cm::ui
 {
-RecipeExecutorAdapter::RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> ctx)
+RecipeExecutorAdapter::RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> ctx,
+                                             std::shared_ptr<const IngredientStore> ingredient_store)
     : ctx_{std::move(ctx)}
+    , ingredient_store_{std::move(ingredient_store)}
 {
-
-    connect(this, &RecipeExecutorAdapter::refillActionRequired, this, [](auto &&ing) { qDebug() << ing; });
     ctx_->event_bus().subscribe([self = QPointer{this}](auto &&event) {
         if (self.isNull())
         {
@@ -19,7 +19,8 @@ RecipeExecutorAdapter::RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> c
                           Q_EMIT self->manualActionRequired(QString::fromStdString(ev.instruction));
                       },
                       [self](const RefillIngredientEvent &ev) {
-                          Q_EMIT self->refillActionRequired(QString::fromStdString(ev.ingredient_id));
+                          auto &&ingredient = self->ingredient_store_->find_ingredient(ev.ingredient_id);
+                          Q_EMIT self->refillActionRequired(QString::fromStdString(ingredient.display_name));
                       },
                       [self]([[maybe_unused]] const ExecutionCanceledEvent &ev) { Q_EMIT self->executionAborted(); },
                       [self]([[maybe_unused]] RecipeFinishedEvent ev) { Q_EMIT self->finished(); }},

@@ -4,6 +4,7 @@
 #include <cm/execution_context.hpp>
 #include <cm/recipe_executor.hpp>
 #include "RecipeDetail.hpp"
+#include "cm/ingredient_store.hpp"
 
 namespace cm::ui
 {
@@ -13,7 +14,8 @@ class RecipeExecutorAdapter : public QObject
     QML_ELEMENT
     QML_UNCREATABLE("Provided by ApplicationState")
   public:
-    explicit RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> ctx);
+    explicit RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> ctx,
+                                   std::shared_ptr<const IngredientStore> ingredient_store);
     Q_INVOKABLE void make_recipe(RecipeDetail *recipe);
     Q_INVOKABLE void continue_mix();
     Q_INVOKABLE void cancel();
@@ -26,6 +28,7 @@ class RecipeExecutorAdapter : public QObject
 
   private:
     std::shared_ptr<ExecutionContext> ctx_;
+    std::shared_ptr<const IngredientStore> ingredient_store_;
     std::unique_ptr<RecipeExecutor> executor_;
 };
 } // namespace cm::ui

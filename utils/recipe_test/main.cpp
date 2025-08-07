@@ -41,13 +41,13 @@ int main()
         }
     });
 
-    auto recipe =
-        cm::make_recipe()
-            .with_name("Only Water")
-            .with_steps()
-            .with_step(std::make_unique<cm::DispenseLiquidCmd>("water", 250 * mp_units::si::milli<mp_units::si::litre>))
-            .add()
-            .create();
+    auto recipe = cm::make_recipe()
+                      .with_name("Only Water")
+                      .with_steps()
+                      .with_step(std::make_unique<cm::DispenseLiquidCmd>(
+                          "water", 250 * cm::units::si::milli<cm::units::si::litre>, cm::generate_unique_command_id()))
+                      .add()
+                      .create();
     cm::RecipeExecutor recipe_executor{ctx, recipe};
     recipe_executor.run();
 

@@ -15,7 +15,7 @@
 #include <mp-units/systems/international.h>
 
 Q_IMPORT_QML_PLUGIN(CocktailMaker_UiPlugin)
-
+using namespace cm;
 int main(int argc, char *argv[])
 {
     QApplication app{argc, argv};
@@ -37,26 +37,32 @@ int main(int argc, char *argv[])
     std::shared_ptr<cm::ExecutionContext> execution_context =
         std::make_shared<cm::ExecutionContext>(thread_pool.get_executor());
 
+    auto ingredient_store = std::make_shared<cm::IngredientStore>();
     auto recipe_store = std::make_shared<cm::RecipeStore>();
-    auto recipe_factory = std::make_shared<cm::ui::RecipeFactory>(recipe_store);
-    auto recipe_executor = std::make_shared<cm::ui::RecipeExecutorAdapter>(execution_context);
+    auto recipe_factory = std::make_shared<cm::ui::RecipeFactory>(recipe_store, ingredient_store);
+    auto recipe_executor = std::make_shared<cm::ui::RecipeExecutorAdapter>(execution_context, ingredient_store);
+
+    ingredient_store->add_ingredient(Ingredient{.id = "water", .display_name = "Wasser"});
+    ingredient_store->add_ingredient(Ingredient{.id = "bacardi", .display_name = "Bacardi"});
+    ingredient_store->add_ingredient(Ingredient{.id = "soda", .display_name = "Soda Wasser"});
+    ingredient_store->add_ingredient(Ingredient{.id = "lime_juice", .display_name = "Limettensaft"});
 
     execution_context->liquid_registry().register_dispenser(
         "water",
-        std::make_unique<cm::SimulatedLiquidDispenser>(1 * mp_units::si::litre,
-                                                       (0.1 * mp_units::si::litre) / (0.5 * mp_units::si::second)));
+        std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre,
+                                                       (0.1 * units::si::litre) / (0.5 * units::si::second)));
 
-    auto water =
-        cm::make_recipe()
-            .with_name("Only Water")
-            .with_description("Klassisches Wasser ohne Schickschnack")
-            .with_steps()
-            .with_step(std::make_unique<cm::DispenseLiquidCmd>("water", 250 * mp_units::si::milli<mp_units::si::litre>))
-            .add()
-            .with_steps()
-            .with_step(std::make_unique<cm::ManualCmd>("2 Eiswürfel"))
-            .add()
-            .create();
+    auto water = cm::make_recipe()
+                     .with_name("Only Water")
+                     .with_description("Klassisches Wasser ohne Schickschnack")
+                     .with_steps()
+                     .with_step(std::make_unique<cm::DispenseLiquidCmd>(
+                         "water", 250 * units::si::milli<units::si::litre>, generate_unique_command_id()))
+                     .add()
+                     .with_steps()
+                     .with_step(std::make_unique<cm::ManualCmd>("2 Eiswürfel", generate_unique_command_id()))
+                     .add()
+                     .create();
 
     auto mojito =
         cm::make_recipe()
@@ -66,16 +72,19 @@ int main(int argc, char *argv[])
                 "Soda – "                                                                        // codespell:ignore
                 "perfekt für den Sommer.")                                                       // codespell:ignore
             .with_steps()
-            .with_step(std::make_unique<cm::DispenseLiquidCmd>("bacardi", 3 * mp_units::imperial::fluid_ounce))
-            .with_step(std::make_unique<cm::DispenseLiquidCmd>("soda", 120 * mp_units::si::milli<mp_units::si::litre>))
-            .with_step(std::make_unique<cm::DispenseLiquidCmd>("lime_juice",
-                                                               30 * mp_units::si::milli<mp_units::si::litre>))
+            .with_step(std::make_unique<cm::DispenseLiquidCmd>(
+                "bacardi", 3 * units::imperial::fluid_ounce, generate_unique_command_id()))
+            .with_step(std::make_unique<cm::DispenseLiquidCmd>(
+                "soda", 120 * units::si::milli<units::si::litre>, generate_unique_command_id()))
+            .with_step(std::make_unique<cm::DispenseLiquidCmd>(
+                "lime_juice", 30 * mp_units::si::milli<mp_units::si::litre>, generate_unique_command_id()))
             .add()
             .with_steps()
-            .with_step(std::make_unique<cm::ManualCmd>("2 Minzblätter")) // codespell:ignore
+            .with_step(
+                std::make_unique<cm::ManualCmd>("2 Minzblätter", generate_unique_command_id())) // codespell:ignore
             .add()
             .with_steps()
-            .with_step(std::make_unique<cm::ManualCmd>("2 TL Zucker")) // codespell:ignore
+            .with_step(std::make_unique<cm::ManualCmd>("2 TL Zucker", generate_unique_command_id())) // codespell:ignore
             .add()
             .create();
     recipe_store->add_recipe(std::move(water));

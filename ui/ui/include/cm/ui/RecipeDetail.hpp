@@ -1,6 +1,7 @@
 #pragma once
 #include <QObject>
 #include <QtQmlIntegration>
+#include "cm/ingredient_store.hpp"
 #include "cm/recipe.hpp"
 
 namespace cm::ui
@@ -26,7 +27,7 @@ class RecipeDetail : public QObject
     Q_PROPERTY(QString imageSource READ image_path CONSTANT)
     Q_PROPERTY(QList<cm::ui::RecipeStepDetail> steps READ steps CONSTANT)
   public:
-    explicit RecipeDetail(std::shared_ptr<Recipe> recipe);
+    explicit RecipeDetail(std::shared_ptr<Recipe> recipe, std::shared_ptr<const IngredientStore> ingredient_store);
     QString name() const;
     QString description() const;
     QString image_path() const;
@@ -35,6 +36,7 @@ class RecipeDetail : public QObject
 
   private:
     std::shared_ptr<Recipe> recipe_;
+    std::shared_ptr<const IngredientStore> ingredient_store_;
     QList<RecipeStepDetail> steps_;
 };
 } // namespace cm::ui

@@ -43,8 +43,11 @@ target_sources(
                 include/cm/recipe.hpp
                 include/cm/recipe_store.hpp
                 include/cm/recipe_executor.hpp
-                include/cm/units.hpp
+                include/cm/ingredient_store.hpp
                 include/cm/ingredient_id.hpp
+                include/cm/ingredient.hpp
+                include/cm/units.hpp
+                include/cm/commands/command_id.hpp
                 include/cm/commands/command.hpp
                 include/cm/commands/dispense_liquid_cmd.hpp
                 include/cm/commands/manual_cmd.hpp
@@ -70,7 +73,10 @@ target_sources(
         src/recipe_executor.cpp
         src/recipe.cpp
         src/recipe_store.cpp
+        src/ingredient_store.cpp
         src/events/event_bus.cpp
+        src/commands/command.cpp
+        src/commands/command_id.cpp
         src/commands/dispense_liquid_cmd.cpp
         src/commands/manual_cmd.cpp
 )

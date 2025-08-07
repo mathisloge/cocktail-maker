@@ -5,8 +5,9 @@
 
 namespace cm
 {
-DispenseLiquidCmd::DispenseLiquidCmd(IngredientId ingredient, units::Litre volume)
-    : ingredient_{std::move(ingredient)}
+DispenseLiquidCmd::DispenseLiquidCmd(IngredientId ingredient, units::Litre volume, CommandId id)
+    : Command{id}
+    , ingredient_{std::move(ingredient)}
     , volume_{volume}
 {}
 

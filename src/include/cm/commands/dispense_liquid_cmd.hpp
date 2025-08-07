@@ -8,7 +8,7 @@ namespace cm
 class DispenseLiquidCmd : public Command
 {
   public:
-    DispenseLiquidCmd(IngredientId ingredient, units::Litre volume);
+    DispenseLiquidCmd(IngredientId ingredient, units::Litre volume, CommandId id);
     const IngredientId &ingredient() const;
     units::Litre volume() const;
     boost::asio::awaitable<void> run(ExecutionContext &ctx) const override;

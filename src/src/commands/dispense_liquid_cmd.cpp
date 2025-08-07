@@ -2,6 +2,7 @@
 #include "cm/commands/command_visitor.hpp"
 #include "cm/events/refill_ingredient_event.hpp"
 #include "cm/execution_context.hpp"
+#include "command_event_publisher.hpp"
 
 namespace cm
 {
@@ -16,6 +17,7 @@ boost::asio::awaitable<void> DispenseLiquidCmd::run(ExecutionContext &ctx) const
     auto &&dispenser = ctx.liquid_registry().dispenser(ingredient_);
 
     auto remaining = volume_;
+    CommandEventPublisher publisher{ctx.event_bus(), id()};
     while (remaining > 0 * mp_units::si::litre)
     {
         auto available = dispenser.remaining_volume();

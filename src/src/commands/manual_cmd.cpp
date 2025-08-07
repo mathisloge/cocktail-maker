@@ -2,6 +2,7 @@
 #include "cm/commands/command_visitor.hpp"
 #include "cm/events/manual_action_event.hpp"
 #include "cm/execution_context.hpp"
+#include "command_event_publisher.hpp"
 
 namespace cm
 {
@@ -17,6 +18,7 @@ const std::string &ManualCmd::instruction() const
 
 boost::asio::awaitable<void> ManualCmd::run(ExecutionContext &ctx) const
 {
+    CommandEventPublisher publisher{ctx.event_bus(), id()};
     ctx.event_bus().publish(ManualActionEvent{.instruction = instruction_});
     co_await ctx.wait_for_resume();
 }

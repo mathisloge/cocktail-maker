@@ -1,0 +1,22 @@
+#include "command_event_publisher.hpp"
+
+namespace cm
+{
+CommandEventPublisher::CommandEventPublisher(EventBus &bus, CommandId command_id)
+    : bus_{bus}
+    , command_id_{command_id}
+{
+    bus_.publish(CommandStarted{.cmd_id = command_id_});
+}
+
+CommandEventPublisher::~CommandEventPublisher()
+{
+    bus_.publish(CommandFinished{.cmd_id = command_id_});
+}
+
+void CommandEventPublisher::progress(units::quantity<units::percent> percentage)
+{
+    bus_.publish(CommandProgress{.cmd_id = command_id_, .progress = percentage});
+}
+
+} // namespace cm

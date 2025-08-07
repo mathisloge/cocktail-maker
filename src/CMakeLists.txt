@@ -79,4 +79,6 @@ target_sources(
         src/commands/command_id.cpp
         src/commands/dispense_liquid_cmd.cpp
         src/commands/manual_cmd.cpp
+        src/commands/command_event_publisher.hpp
+        src/commands/command_event_publisher.cpp
 )

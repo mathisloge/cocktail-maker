@@ -17,8 +17,7 @@ class RecipeExecutorAdapter : public QObject
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("Provided by ApplicationState")
-    Q_PROPERTY(
-        cm::ui::RecipeCommandStatusModel* commandStatusModel READ command_status_model CONSTANT)
+    Q_PROPERTY(cm::ui::RecipeCommandStatusModel* commandStatusModel READ command_status_model CONSTANT)
   public:
     explicit RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> ctx,
                                    std::shared_ptr<const IngredientStore> ingredient_store);

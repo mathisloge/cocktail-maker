@@ -12,10 +12,9 @@ using namespace mp_units::si::unit_symbols;
 int main()
 {
     boost::asio::io_context io;
-    cm::Drv8825StepperMotorDriver stepper{
-        cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {24}},
-        cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {23}},
-        cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {23}}};
+    cm::Drv8825StepperMotorDriver stepper{cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {24}},
+                                          cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {23}},
+                                          cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {23}}};
 
     boost::asio::co_spawn(
         io,

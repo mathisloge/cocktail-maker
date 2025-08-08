@@ -47,10 +47,7 @@ RecipeBuilder make_recipe();
 class Recipe
 {
   public:
-    Recipe(std::string name,
-           ProductionSteps steps,
-           std::string description,
-           std::filesystem::path image_path);
+    Recipe(std::string name, ProductionSteps steps, std::string description, std::filesystem::path image_path);
     ~Recipe();
 
     const std::string& name() const;

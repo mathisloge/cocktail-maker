@@ -52,8 +52,7 @@ RecipeBuilder::StepBuilder RecipeBuilder::with_steps()
 
 std::shared_ptr<Recipe> RecipeBuilder::create()
 {
-    return std::make_shared<Recipe>(
-        std::move(name_), std::move(steps_), std::move(description_), std::move(image_path_));
+    return std::make_shared<Recipe>(std::move(name_), std::move(steps_), std::move(description_), std::move(image_path_));
 }
 
 RecipeBuilder make_recipe()
@@ -61,10 +60,7 @@ RecipeBuilder make_recipe()
     return RecipeBuilder{};
 }
 
-Recipe::Recipe(std::string name,
-               ProductionSteps steps,
-               std::string description,
-               std::filesystem::path image_path)
+Recipe::Recipe(std::string name, ProductionSteps steps, std::string description, std::filesystem::path image_path)
     : name_{std::move(name)}
     , description_{std::move(description)}
     , image_path_{std::move(image_path)}
@@ -94,8 +90,7 @@ const ProductionSteps& Recipe::production_steps() const
 
 } // namespace cm
 
-auto fmt::formatter<cm::Recipe>::format(const cm::Recipe& r, format_context& ctx) const
-    -> format_context::iterator
+auto fmt::formatter<cm::Recipe>::format(const cm::Recipe& r, format_context& ctx) const -> format_context::iterator
 {
     return formatter<string_view>::format(fmt::format("Recipe({})", r.name_), ctx);
 }

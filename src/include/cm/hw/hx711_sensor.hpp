@@ -15,8 +15,7 @@ using Hx711DatPin = PinSelection<struct Hx711Dat>;
 using Hx711ClkPin = PinSelection<struct Hx711Clk>;
 
 // NOLINTBEGIN(readability-identifier-naming)
-inline static constexpr struct hx711_unit final :
-    units::named_unit<"hx711_raw", units::kind_of<units::isq::mass>>
+inline static constexpr struct hx711_unit final : units::named_unit<"hx711_raw", units::kind_of<units::isq::mass>>
 {
 } hx711_unit;
 

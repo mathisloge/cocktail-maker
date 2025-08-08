@@ -16,8 +16,7 @@ class RecipeFactory : public QObject
     QML_ELEMENT
     QML_UNCREATABLE("Provided by ApplicationState")
   public:
-    explicit RecipeFactory(std::shared_ptr<RecipeStore> recipe_store,
-                           std::shared_ptr<const IngredientStore> ingredient_store);
+    explicit RecipeFactory(std::shared_ptr<RecipeStore> recipe_store, std::shared_ptr<const IngredientStore> ingredient_store);
     // Raw-pointer as qml takes ownership
     Q_INVOKABLE RecipeDetail* create(const QString& recipeName);
 

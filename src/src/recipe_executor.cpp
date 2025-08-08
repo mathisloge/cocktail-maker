@@ -26,8 +26,7 @@ struct CommandDebugPrinter final : public CommandVisitor
 
     void visit(const DispenseLiquidCmd& cmd) override
     {
-        SPDLOG_LOGGER_DEBUG(
-            logger, "Begin DispenseLiquidCmd with {}={}", cmd.ingredient(), cmd.volume());
+        SPDLOG_LOGGER_DEBUG(logger, "Begin DispenseLiquidCmd with {}={}", cmd.ingredient(), cmd.volume());
     }
 
     void visit(const ManualCmd& cmd) override
@@ -39,8 +38,7 @@ struct CommandDebugPrinter final : public CommandVisitor
 };
 } // namespace
 
-RecipeExecutor::RecipeExecutor(std::shared_ptr<ExecutionContext> ctx,
-                               std::shared_ptr<Recipe> recipe)
+RecipeExecutor::RecipeExecutor(std::shared_ptr<ExecutionContext> ctx, std::shared_ptr<Recipe> recipe)
     : ctx_{std::move(ctx)}
     , recipe_{std::move(recipe)}
 {

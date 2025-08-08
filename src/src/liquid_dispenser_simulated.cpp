@@ -7,8 +7,8 @@
 #include <boost/asio/use_awaitable.hpp>
 
 namespace cm {
-SimulatedLiquidDispenser::SimulatedLiquidDispenser(
-    units::Litre capacity, mp_units::quantity<mp_units::si::litre / mp_units::si::second> flow_rate)
+SimulatedLiquidDispenser::SimulatedLiquidDispenser(units::Litre capacity,
+                                                   mp_units::quantity<mp_units::si::litre / mp_units::si::second> flow_rate)
     : remaining_capacity_{capacity}
     , flow_rate_{flow_rate}
 {
@@ -19,8 +19,7 @@ boost::asio::awaitable<void> SimulatedLiquidDispenser::dispense(units::Litre vol
     boost::asio::steady_timer timer{co_await boost::asio::this_coro::executor};
 
     remaining_capacity_ -= volume;
-    timer.expires_after(std::chrono::duration_cast<std::chrono::microseconds>(
-        mp_units::to_chrono_duration(volume / flow_rate_)));
+    timer.expires_after(std::chrono::duration_cast<std::chrono::microseconds>(mp_units::to_chrono_duration(volume / flow_rate_)));
     co_await timer.async_wait(boost::asio::use_awaitable);
 }
 

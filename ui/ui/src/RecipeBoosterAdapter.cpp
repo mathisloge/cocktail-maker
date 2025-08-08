@@ -27,8 +27,8 @@ bool RecipeBoosterAdapter::is_boostable() const
 
 cm::ui::RecipeDetail* RecipeBoosterAdapter::boost(std::int32_t percentage)
 {
-    auto boosted_recipe = RecipeBooster::boost_recipe(
-        *original_recipe_->recipe(), *ingredient_store_, percentage * units::percent);
+    auto boosted_recipe =
+        RecipeBooster::boost_recipe(*original_recipe_->recipe(), *ingredient_store_, percentage * units::percent);
     return new RecipeDetail{std::move(boosted_recipe), ingredient_store_}; // NOLINT
 }
 } // namespace cm::ui

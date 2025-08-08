@@ -33,8 +33,8 @@ struct CommandUiFormatter final : public CommandVisitor
 };
 } // namespace
 
-RecipeExecutorAdapter::RecipeExecutorAdapter(
-    std::shared_ptr<ExecutionContext> ctx, std::shared_ptr<const IngredientStore> ingredient_store)
+RecipeExecutorAdapter::RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> ctx,
+                                             std::shared_ptr<const IngredientStore> ingredient_store)
     : ctx_{std::move(ctx)}
     , ingredient_store_{std::move(ingredient_store)}
 {
@@ -43,29 +43,21 @@ RecipeExecutorAdapter::RecipeExecutorAdapter(
             return;
         }
 
-        std::visit(
-            overloads{
-                [self](const ManualActionEvent& ev) {
-                    Q_EMIT self->manualActionRequired(QString::fromStdString(ev.instruction));
-                },
-                [self](const RefillIngredientEvent& ev) {
-                    auto&& ingredient = self->ingredient_store_->find_ingredient(ev.ingredient_id);
-                    Q_EMIT self->refillActionRequired(
-                        QString::fromStdString(ingredient.display_name));
-                },
-                [self]([[maybe_unused]] const ExecutionCanceledEvent& ev) {
-                    Q_EMIT self->executionAborted();
-                },
-                [self]([[maybe_unused]] RecipeFinishedEvent ev) { Q_EMIT self->finished(); },
-                [self]([[maybe_unused]] const CommandStarted& ev) {
-                    self->command_model_.command_started(ev.cmd_id);
-                },
-                [self]([[maybe_unused]] const CommandProgress& ev) {},
-                [self]([[maybe_unused]] const CommandFinished& ev) {
-                    self->command_model_.command_finished(ev.cmd_id);
-                },
-            },
-            event);
+        std::visit(overloads{
+                       [self](const ManualActionEvent& ev) {
+                           Q_EMIT self->manualActionRequired(QString::fromStdString(ev.instruction));
+                       },
+                       [self](const RefillIngredientEvent& ev) {
+                           auto&& ingredient = self->ingredient_store_->find_ingredient(ev.ingredient_id);
+                           Q_EMIT self->refillActionRequired(QString::fromStdString(ingredient.display_name));
+                       },
+                       [self]([[maybe_unused]] const ExecutionCanceledEvent& ev) { Q_EMIT self->executionAborted(); },
+                       [self]([[maybe_unused]] RecipeFinishedEvent ev) { Q_EMIT self->finished(); },
+                       [self]([[maybe_unused]] const CommandStarted& ev) { self->command_model_.command_started(ev.cmd_id); },
+                       [self]([[maybe_unused]] const CommandProgress& ev) {},
+                       [self]([[maybe_unused]] const CommandFinished& ev) { self->command_model_.command_finished(ev.cmd_id); },
+                   },
+                   event);
     });
 }
 

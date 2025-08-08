@@ -9,9 +9,7 @@ namespace cm {
 class SimulatedLiquidDispenser : public LiquidDispenser
 {
   public:
-    SimulatedLiquidDispenser(
-        units::Litre capacity,
-        mp_units::quantity<mp_units::si::litre / mp_units::si::second> flow_rate);
+    SimulatedLiquidDispenser(units::Litre capacity, mp_units::quantity<mp_units::si::litre / mp_units::si::second> flow_rate);
     boost::asio::awaitable<void> dispense(units::Litre volume) override;
     units::Litre remaining_volume() const override;
     void refill(units::Litre volume) override;

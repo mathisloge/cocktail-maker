@@ -7,7 +7,7 @@ BasedOnStyle: Microsoft
 AlwaysBreakTemplateDeclarations: Yes
 BinPackArguments: false
 BinPackParameters: false
-ColumnLimit: 100
+ColumnLimit: 130
 MaxEmptyLinesToKeep: 1
 SeparateDefinitionBlocks: Always
 

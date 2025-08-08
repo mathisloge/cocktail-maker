@@ -32,8 +32,7 @@ void StepperPumpLiquidDispenser::refill(units::Litre volume)
     tube_filled_ = false;
 }
 
-boost::asio::awaitable<void> StepperPumpLiquidDispenser::dispense(
-    mp_units::quantity<mp_units::si::litre> volume)
+boost::asio::awaitable<void> StepperPumpLiquidDispenser::dispense(mp_units::quantity<mp_units::si::litre> volume)
 {
     constexpr units::StepsPerSecond kVelocity{1000 * units::step / mp_units::si::second};
     co_await motor_->enable();

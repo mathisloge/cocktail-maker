@@ -8,9 +8,7 @@
 namespace cm::ui {
 RecipeListModel::RecipeListModel()
 {
-    connect(this, &RecipeListModel::recipeStoreChanged, this, [this]() {
-        Q_EMIT dataChanged(index(0), index(rowCount({})));
-    });
+    connect(this, &RecipeListModel::recipeStoreChanged, this, [this]() { Q_EMIT dataChanged(index(0), index(rowCount({}))); });
 }
 
 QHash<int, QByteArray> RecipeListModel::roleNames() const

@@ -27,58 +27,49 @@ void EventBus::publish(const Event& e)
 
 } // namespace cm
 
-auto fmt::formatter<cm::ManualActionEvent>::format(const cm::ManualActionEvent& e,
-                                                   format_context& ctx) const
+auto fmt::formatter<cm::ManualActionEvent>::format(const cm::ManualActionEvent& e, format_context& ctx) const
     -> format_context::iterator
 {
     return fmt::format_to(ctx.out(), "ManualActionEvent({})", e.instruction);
 }
 
-auto fmt::formatter<cm::RefillIngredientEvent>::format(const cm::RefillIngredientEvent& e,
-                                                       format_context& ctx) const
+auto fmt::formatter<cm::RefillIngredientEvent>::format(const cm::RefillIngredientEvent& e, format_context& ctx) const
     -> format_context::iterator
 {
     return fmt::format_to(ctx.out(), "RefillIngredient({})", e.ingredient_id);
 }
 
-auto fmt::formatter<cm::ExecutionCanceledEvent>::format(const cm::ExecutionCanceledEvent& e,
-                                                        format_context& ctx) const
+auto fmt::formatter<cm::ExecutionCanceledEvent>::format(const cm::ExecutionCanceledEvent& e, format_context& ctx) const
     -> format_context::iterator
 {
     return fmt::format_to(ctx.out(), "ExecutionCanceled");
 }
 
-auto fmt::formatter<cm::RecipeFinishedEvent>::format(const cm::RecipeFinishedEvent& e,
-                                                     format_context& ctx) const
+auto fmt::formatter<cm::RecipeFinishedEvent>::format(const cm::RecipeFinishedEvent& e, format_context& ctx) const
     -> format_context::iterator
 {
     return fmt::format_to(ctx.out(), "RecipeFinishedEvent");
 }
 
-auto fmt::formatter<cm::CommandStarted>::format(const cm::CommandStarted& e,
-                                                format_context& ctx) const
+auto fmt::formatter<cm::CommandStarted>::format(const cm::CommandStarted& e, format_context& ctx) const
     -> format_context::iterator
 {
     return fmt::format_to(ctx.out(), "CommandStarted({})", e.cmd_id);
 }
 
-auto fmt::formatter<cm::CommandProgress>::format(const cm::CommandProgress& e,
-                                                 format_context& ctx) const
+auto fmt::formatter<cm::CommandProgress>::format(const cm::CommandProgress& e, format_context& ctx) const
     -> format_context::iterator
 {
     return fmt::format_to(ctx.out(), "CommandProgress({}, {})", e.cmd_id, e.progress);
 }
 
-auto fmt::formatter<cm::CommandFinished>::format(const cm::CommandFinished& e,
-                                                 format_context& ctx) const
+auto fmt::formatter<cm::CommandFinished>::format(const cm::CommandFinished& e, format_context& ctx) const
     -> format_context::iterator
 {
     return fmt::format_to(ctx.out(), "CommandFinished({})", e.cmd_id);
 }
 
-auto fmt::formatter<cm::Event>::format(const cm::Event& e, format_context& ctx) const
-    -> format_context::iterator
+auto fmt::formatter<cm::Event>::format(const cm::Event& e, format_context& ctx) const -> format_context::iterator
 {
-    return std::visit([&ctx](const auto& v) { return fmt::format_to(ctx.out(), "Event({})", v); },
-                      e);
+    return std::visit([&ctx](const auto& v) { return fmt::format_to(ctx.out(), "Event({})", v); }, e);
 }

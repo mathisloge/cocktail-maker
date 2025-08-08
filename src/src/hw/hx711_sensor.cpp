@@ -15,17 +15,13 @@ Hx711Sensor::Hx711Sensor(Hx711DatPin dat_pin, Hx711ClkPin clk_pin)
     : dat_line_{gpiod::chip{std::move(dat_pin.chip)}
                     .prepare_request()
                     .set_consumer("hx711-dat")
-                    .add_line_settings(
-                        dat_pin.offset,
-                        gpiod::line_settings{}.set_direction(gpiod::line::direction::INPUT))
+                    .add_line_settings(dat_pin.offset, gpiod::line_settings{}.set_direction(gpiod::line::direction::INPUT))
                     .do_request()}
     , dat_offset_{dat_pin.offset}
     , clk_line_{gpiod::chip{std::move(clk_pin.chip)}
                     .prepare_request()
                     .set_consumer("hx711-clk")
-                    .add_line_settings(
-                        clk_pin.offset,
-                        gpiod::line_settings{}.set_direction(gpiod::line::direction::OUTPUT))
+                    .add_line_settings(clk_pin.offset, gpiod::line_settings{}.set_direction(gpiod::line::direction::OUTPUT))
                     .do_request()}
     , clk_offset_{clk_pin.offset}
 {
@@ -43,8 +39,7 @@ boost::asio::awaitable<void> Hx711Sensor::tare()
     offset_ = co_await read_raw();
 }
 
-boost::asio::awaitable<void> Hx711Sensor::calibrate_with_ref_weight(
-    mp_units::quantity<mp_units::si::gram> known_mass)
+boost::asio::awaitable<void> Hx711Sensor::calibrate_with_ref_weight(mp_units::quantity<mp_units::si::gram> known_mass)
 {
     raw_value_ = co_await read_raw();
     known_mass_ = known_mass;

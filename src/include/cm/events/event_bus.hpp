@@ -39,29 +39,25 @@ class EventBus
 template <>
 struct fmt::formatter<cm::ManualActionEvent> : formatter<string_view>
 {
-    auto format(const cm::ManualActionEvent& e, format_context& ctx) const
-        -> format_context::iterator;
+    auto format(const cm::ManualActionEvent& e, format_context& ctx) const -> format_context::iterator;
 };
 
 template <>
 struct fmt::formatter<cm::RefillIngredientEvent> : formatter<string_view>
 {
-    auto format(const cm::RefillIngredientEvent& e, format_context& ctx) const
-        -> format_context::iterator;
+    auto format(const cm::RefillIngredientEvent& e, format_context& ctx) const -> format_context::iterator;
 };
 
 template <>
 struct fmt::formatter<cm::ExecutionCanceledEvent> : formatter<string_view>
 {
-    auto format(const cm::ExecutionCanceledEvent& e, format_context& ctx) const
-        -> format_context::iterator;
+    auto format(const cm::ExecutionCanceledEvent& e, format_context& ctx) const -> format_context::iterator;
 };
 
 template <>
 struct fmt::formatter<cm::RecipeFinishedEvent> : formatter<string_view>
 {
-    auto format(const cm::RecipeFinishedEvent& e, format_context& ctx) const
-        -> format_context::iterator;
+    auto format(const cm::RecipeFinishedEvent& e, format_context& ctx) const -> format_context::iterator;
 };
 
 template <>
@@ -73,15 +69,13 @@ struct fmt::formatter<cm::CommandStarted> : formatter<string_view>
 template <>
 struct fmt::formatter<cm::CommandProgress> : formatter<string_view>
 {
-    auto format(const cm::CommandProgress& e, format_context& ctx) const
-        -> format_context::iterator;
+    auto format(const cm::CommandProgress& e, format_context& ctx) const -> format_context::iterator;
 };
 
 template <>
 struct fmt::formatter<cm::CommandFinished> : formatter<string_view>
 {
-    auto format(const cm::CommandFinished& e, format_context& ctx) const
-        -> format_context::iterator;
+    auto format(const cm::CommandFinished& e, format_context& ctx) const -> format_context::iterator;
 };
 
 template <>

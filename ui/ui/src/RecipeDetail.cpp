@@ -20,10 +20,8 @@ struct CommandUiFormatter final : public CommandVisitor
     {
         auto&& ingredient = ingredient_store.find_ingredient(cmd.ingredient());
         step.name = QString::fromStdString(ingredient.display_name);
-        step.detail =
-            QString::fromStdString(fmt::format("{}",
-                                               units::value_cast<std::int32_t>(cmd.volume().in(
-                                                   mp_units::si::milli<mp_units::si::litre>))));
+        step.detail = QString::fromStdString(
+            fmt::format("{}", units::value_cast<std::int32_t>(cmd.volume().in(mp_units::si::milli<mp_units::si::litre>))));
     }
 
     void visit(const ManualCmd& cmd) override
@@ -37,8 +35,7 @@ struct CommandUiFormatter final : public CommandVisitor
 };
 } // namespace
 
-RecipeDetail::RecipeDetail(std::shared_ptr<Recipe> recipe,
-                           std::shared_ptr<const IngredientStore> ingredient_store)
+RecipeDetail::RecipeDetail(std::shared_ptr<Recipe> recipe, std::shared_ptr<const IngredientStore> ingredient_store)
     : recipe_{std::move(recipe)}
     , ingredient_store_{std::move(ingredient_store)}
 {

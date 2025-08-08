@@ -10,7 +10,7 @@
 namespace async = boost::asio;
 namespace cm
 {
-using SecondsPerStep = decltype(1. * mp_units::si::second / 1. * units::step);
+using SecondsPerStep = units::quantity<units::si::second / units::step>;
 constexpr std::chrono::microseconds kPulseWidth{10};
 
 Drv8825StepperMotorDriver::Drv8825StepperMotorDriver(Drv8825EnablePin enable_pin,
@@ -67,8 +67,8 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(units::Steps steps,
     auto exec = co_await async::this_coro::executor;
     async::steady_timer timer{exec};
 
-    const auto direction = steps > 0 ? gpiod::line::value::ACTIVE : gpiod::line::value::INACTIVE;
-    if (steps < 0)
+    const auto direction = steps > 0 * units::step ? gpiod::line::value::ACTIVE : gpiod::line::value::INACTIVE;
+    if (steps < 0 * units::step)
     {
         steps *= -1;
     }
@@ -80,8 +80,8 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(units::Steps steps,
     const auto ramp_time = velocity / kAcceleration;
 
     // 2. Compute ramp distance (steps) with: s = 0.5 * a * t^2
-    auto steps_double = (0.5 * kAcceleration * mp_units::pow<2>(ramp_time)).numerical_value_in(units::step);
-    units::Steps ramp_steps = units::Steps{static_cast<std::int32_t>(std::floor(steps_double))};
+    const auto steps_double = (0.5 * kAcceleration * mp_units::pow<2>(ramp_time)).numerical_value_in(units::step);
+    units::Steps ramp_steps = static_cast<std::int32_t>(std::floor(steps_double)) * units::step;
 
     if ((2 * ramp_steps) > steps)
     {
@@ -95,7 +95,7 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(units::Steps steps,
     {
         const SecondsPerStep delay = 1 / mp_units::sqrt(2.0 * kAcceleration * i); // v = √(2a * s)
         co_await step_one(timer,
-                          std::chrono::duration_cast<std::chrono::microseconds>(mp_units::to_chrono_duration(delay)));
+                          std::chrono::duration_cast<std::chrono::microseconds>(units::to_chrono_duration(delay)));
     }
 
     // 4. Cruise phase

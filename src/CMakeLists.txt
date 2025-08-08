@@ -12,7 +12,9 @@ set_target_properties(
 
 target_compile_definitions(
     cocktail-maker-core
-    PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG
+    PUBLIC
+        SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG
+        gsl_FEATURE_GSL_COMPATIBILITY_MODE=1
 )
 
 target_link_libraries(

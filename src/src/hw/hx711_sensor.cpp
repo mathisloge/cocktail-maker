@@ -48,7 +48,7 @@ boost::asio::awaitable<void> Hx711Sensor::calibrate_with_ref_weight(mp_units::qu
     known_mass_ = known_mass;
 }
 
-boost::asio::awaitable<Hx711RawValue> Hx711Sensor::read_raw()
+boost::asio::awaitable<units::quantity_point<hx711_unit>> Hx711Sensor::read_raw()
 {
     // Wait for data line to go LOW (data ready)
     while (dat_line_.get_value(dat_offset_) != gpiod::line::value::INACTIVE)
@@ -73,7 +73,7 @@ boost::asio::awaitable<Hx711RawValue> Hx711Sensor::read_raw()
     {
         value |= 0xFF000000; // fill upper 8 bits
     }
-    co_return Hx711RawValue{static_cast<std::int32_t>(value) * hx711_unit};
+    co_return static_cast<std::int32_t>(value) * hx711_unit;
 }
 
 boost::asio::awaitable<units::Grams> Hx711Sensor::read()

@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #pragma once
-#include <filesystem>
 #include <boost/asio/awaitable.hpp>
 #include <gpiod.hpp>
 #include "cm/units.hpp"
@@ -16,11 +15,12 @@ namespace cm
 using Hx711DatPin = PinSelection<struct Hx711Dat>;
 using Hx711ClkPin = PinSelection<struct Hx711Clk>;
 
-inline static constexpr struct Hx711Unit final : mp_units::named_unit<"hx711_raw", mp_units::one>
+// NOLINTBEGIN(readability-identifier-naming)
+inline static constexpr struct hx711_unit final : units::named_unit<"hx711_raw", units::kind_of<units::isq::mass>>
 {
 } hx711_unit;
-struct Hx711RawValue final : mp_units::quantity<hx711_unit, std::int32_t>
-{};
+using Hx711RawValue = units::quantity<hx711_unit, std::int32_t>;
+// NOLINTEND(readability-identifier-naming)
 
 class Hx711Sensor
 {
@@ -31,7 +31,7 @@ class Hx711Sensor
     [[nodiscard]] boost::asio::awaitable<units::Grams> read();
 
   private:
-    [[nodiscard]] boost::asio::awaitable<Hx711RawValue> read_raw();
+    [[nodiscard]] boost::asio::awaitable<units::quantity_point<hx711_unit>> read_raw();
     void pulse_clock();
 
   private:
@@ -41,8 +41,8 @@ class Hx711Sensor
     gpiod::line_request clk_line_;
     gpiod::line::offset clk_offset_;
 
-    Hx711RawValue offset_{};
-    Hx711RawValue raw_value_{};
+    units::quantity_point<hx711_unit> offset_{};
+    units::quantity_point<hx711_unit> raw_value_{};
     units::Grams known_mass_{};
 };
 } // namespace cm

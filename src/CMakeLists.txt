@@ -46,6 +46,8 @@ target_sources(
                 include/cm/liquid_dispenser_simulated.hpp
                 include/cm/machine_state.hpp
                 include/cm/execution_context.hpp
+                include/cm/glass.hpp
+                include/cm/glass_store.hpp
                 include/cm/recipe.hpp
                 include/cm/recipe_store.hpp
                 include/cm/recipe_executor.hpp
@@ -73,6 +75,7 @@ target_sources(
         src/hw/hx711_sensor.cpp
         src/hw/drv8825_stepper_moter.cpp
         src/execution_context.cpp
+        src/glass_store.cpp
         src/liquid_dispenser_registry.cpp
         src/liquid_dispenser_simulated.cpp
         src/liquid_dispenser_stepper_pump.cpp

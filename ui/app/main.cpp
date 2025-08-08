@@ -8,15 +8,17 @@
 #include <QQmlContext>
 #include <QQmlExtensionPlugin>
 #include <QQuickStyle>
+#include <cm/commands/dispense_liquid_cmd.hpp>
+#include <cm/commands/manual_cmd.hpp>
 #include <cm/execution_context.hpp>
+#include <cm/glass_store.hpp>
 #include <cm/liquid_dispenser_simulated.hpp>
 #include <cm/recipe.hpp>
 #include <cm/recipe_store.hpp>
-#include "ApplicationState.hpp"
-#include "cm/commands/dispense_liquid_cmd.hpp"
-#include "cm/commands/manual_cmd.hpp"
 #include <mp-units/systems/imperial.h>
 #include <mp-units/systems/international.h>
+
+#include "ApplicationState.hpp"
 
 Q_IMPORT_QML_PLUGIN(CocktailMaker_UiPlugin)
 using namespace cm;

@@ -4,9 +4,8 @@
 
 #include "command_event_publisher.hpp"
 
-namespace cm
-{
-CommandEventPublisher::CommandEventPublisher(EventBus &bus, CommandId command_id)
+namespace cm {
+CommandEventPublisher::CommandEventPublisher(EventBus& bus, CommandId command_id)
     : bus_{bus}
     , command_id_{command_id}
 {

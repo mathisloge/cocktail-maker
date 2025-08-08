@@ -7,16 +7,15 @@
 #include "cm/units.hpp"
 #include "command.hpp"
 
-namespace cm
-{
+namespace cm {
 class DispenseLiquidCmd : public Command
 {
   public:
     DispenseLiquidCmd(IngredientId ingredient, units::Litre volume, CommandId id);
-    const IngredientId &ingredient() const;
+    const IngredientId& ingredient() const;
     units::Litre volume() const;
-    boost::asio::awaitable<void> run(ExecutionContext &ctx) const override;
-    void accept(CommandVisitor &visitor) const override;
+    boost::asio::awaitable<void> run(ExecutionContext& ctx) const override;
+    void accept(CommandVisitor& visitor) const override;
 
   private:
     IngredientId ingredient_;

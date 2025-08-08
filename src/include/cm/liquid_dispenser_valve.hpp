@@ -6,8 +6,7 @@
 #include "liquid_dispenser.hpp"
 #include "machine_state.hpp"
 
-namespace cm
-{
+namespace cm {
 class ValveLiquidDispenser : public LiquidDispenser
 {
   public:
@@ -15,7 +14,7 @@ class ValveLiquidDispenser : public LiquidDispenser
                          std::shared_ptr<const MachineState> machine_state,
                          units::GramPerLitre liquid_weight);
     boost::asio::awaitable<void> dispense(mp_units::quantity<mp_units::si::litre> volume) override;
-    const std::string &name() const override;
+    const std::string& name() const override;
 
   private:
     std::string identifier_;

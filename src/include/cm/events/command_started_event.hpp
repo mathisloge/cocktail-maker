@@ -4,8 +4,8 @@
 
 #pragma once
 #include "cm/commands/command_id.hpp"
-namespace cm
-{
+
+namespace cm {
 struct CommandStarted
 {
     CommandId cmd_id;

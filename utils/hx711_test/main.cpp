@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include <thread>
 #include <boost/asio.hpp>
 #include <cm/hw/hx711_sensor.hpp>
 #include <fmt/core.h>
+#include <thread>
 
 using namespace mp_units::si::unit_symbols;
 
@@ -30,8 +30,7 @@ int main()
             co_await timer.async_wait(boost::asio::use_awaitable);
             co_await load_cell.calibrate_with_ref_weight(100 * g);
 
-            while (true)
-            {
+            while (true) {
                 fmt::println("read: {}", co_await load_cell.read());
                 timer.expires_after(std::chrono::milliseconds{500});
                 co_await timer.async_wait(boost::asio::use_awaitable);

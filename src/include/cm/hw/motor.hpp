@@ -4,8 +4,7 @@
 
 #pragma once
 
-namespace cm
-{
+namespace cm {
 class Motor
 {
   public:

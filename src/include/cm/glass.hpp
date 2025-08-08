@@ -2,8 +2,7 @@
 #include <filesystem>
 #include "units.hpp"
 
-namespace cm
-{
+namespace cm {
 struct Glass
 {
     std::string display_name;

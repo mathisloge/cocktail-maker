@@ -5,21 +5,23 @@
 #pragma once
 #include <boost/asio/awaitable.hpp>
 #include <gpiod.hpp>
+#include <mp-units/systems/si.h>
 #include "cm/units.hpp"
 #include "pin_selection.hpp"
-#include <mp-units/systems/si.h>
 
-namespace cm
-{
+namespace cm {
 
 using Hx711DatPin = PinSelection<struct Hx711Dat>;
 using Hx711ClkPin = PinSelection<struct Hx711Clk>;
 
 // NOLINTBEGIN(readability-identifier-naming)
-inline static constexpr struct hx711_unit final : units::named_unit<"hx711_raw", units::kind_of<units::isq::mass>>
+inline static constexpr struct hx711_unit final :
+    units::named_unit<"hx711_raw", units::kind_of<units::isq::mass>>
 {
 } hx711_unit;
+
 using Hx711RawValue = units::quantity<hx711_unit, std::int32_t>;
+
 // NOLINTEND(readability-identifier-naming)
 
 class Hx711Sensor

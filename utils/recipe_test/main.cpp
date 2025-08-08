@@ -19,8 +19,9 @@ int main()
     boost::asio::io_context io;
     std::shared_ptr<cm::MachineState> machine_state = std::make_shared<cm::MachineState>(
         io,
-        std::make_unique<cm::Hx711Sensor>(cm::Hx711DatPin{.chip = "/dev/gpiochip0", .offset = {23}},
-                                          cm::Hx711ClkPin{.chip = "/dev/gpiochip0", .offset = {24}}));
+        std::make_unique<cm::Hx711Sensor>(
+            cm::Hx711DatPin{.chip = "/dev/gpiochip0", .offset = {23}},
+            cm::Hx711ClkPin{.chip = "/dev/gpiochip0", .offset = {24}}));
 
     auto liquid_dispenser = std::make_unique<cm::StepperPumpLiquidDispenser>(
         "test-dispenser",
@@ -32,24 +33,27 @@ int main()
         (1000 * cm::units::step) / (100 * mp_units::si::milli<mp_units::si::litre>),
         52 * mp_units::si::milli<mp_units::si::litre>);
 
-    std::shared_ptr<cm::ExecutionContext> ctx = std::make_shared<cm::ExecutionContext>(io.get_executor());
+    std::shared_ptr<cm::ExecutionContext> ctx =
+        std::make_shared<cm::ExecutionContext>(io.get_executor());
     ctx->liquid_registry().register_dispenser("water", std::move(liquid_dispenser));
 
-    ctx->event_bus().subscribe([logger = cm::LoggingContext::instance().create_logger("Events"), ctx](auto &&event) {
-        SPDLOG_LOGGER_DEBUG(logger, "Received event {}", event);
+    ctx->event_bus().subscribe(
+        [logger = cm::LoggingContext::instance().create_logger("Events"), ctx](auto&& event) {
+            SPDLOG_LOGGER_DEBUG(logger, "Received event {}", event);
 
-        if (std::holds_alternative<cm::RefillIngredientEvent>(event))
-        {
-            SPDLOG_LOGGER_DEBUG(logger, "Resume... {}", event);
-            boost::asio::post([ctx]() { ctx->resume(); });
-        }
-    });
+            if (std::holds_alternative<cm::RefillIngredientEvent>(event)) {
+                SPDLOG_LOGGER_DEBUG(logger, "Resume... {}", event);
+                boost::asio::post([ctx]() { ctx->resume(); });
+            }
+        });
 
     auto recipe = cm::make_recipe()
                       .with_name("Only Water")
                       .with_steps()
                       .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                          "water", 250 * cm::units::si::milli<cm::units::si::litre>, cm::generate_unique_command_id()))
+                          "water",
+                          250 * cm::units::si::milli<cm::units::si::litre>,
+                          cm::generate_unique_command_id()))
                       .add()
                       .create();
     cm::RecipeExecutor recipe_executor{ctx, recipe};
@@ -57,8 +61,7 @@ int main()
 
     std::vector<std::thread> threads;
 
-    for (int i = 0; i < 1; i++)
-    {
+    for (int i = 0; i < 1; i++) {
         threads.emplace_back(std::thread{[&io]() { io.run(); }});
     }
     io.run();

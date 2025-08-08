@@ -8,8 +8,7 @@
 #include "cm/ingredient_store.hpp"
 #include "cm/recipe.hpp"
 
-namespace cm::ui
-{
+namespace cm::ui {
 struct RecipeStepDetail
 {
     Q_GADGET
@@ -31,11 +30,12 @@ class RecipeDetail : public QObject
     Q_PROPERTY(QString imageSource READ image_path CONSTANT)
     Q_PROPERTY(QList<cm::ui::RecipeStepDetail> steps READ steps CONSTANT)
   public:
-    explicit RecipeDetail(std::shared_ptr<Recipe> recipe, std::shared_ptr<const IngredientStore> ingredient_store);
+    explicit RecipeDetail(std::shared_ptr<Recipe> recipe,
+                          std::shared_ptr<const IngredientStore> ingredient_store);
     QString name() const;
     QString description() const;
     QString image_path() const;
-    const QList<cm::ui::RecipeStepDetail> &steps() const;
+    const QList<cm::ui::RecipeStepDetail>& steps() const;
     [[nodiscard]] std::shared_ptr<Recipe> recipe() const;
 
   private:

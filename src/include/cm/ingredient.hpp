@@ -4,11 +4,9 @@
 
 #pragma once
 #include <string>
-
 #include "cm/ingredient_id.hpp"
 
-namespace cm
-{
+namespace cm {
 
 /**
  * @brief Categorizes how an ingredient should respond to a boost adjustment.

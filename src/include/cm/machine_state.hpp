@@ -7,14 +7,13 @@
 #include <boost/asio/io_context.hpp>
 #include "units.hpp"
 
-namespace cm
-{
+namespace cm {
 class Hx711Sensor;
 
 class MachineState
 {
   public:
-    explicit MachineState(boost::asio::io_context &io, std::unique_ptr<Hx711Sensor> load_cell);
+    explicit MachineState(boost::asio::io_context& io, std::unique_ptr<Hx711Sensor> load_cell);
     ~MachineState();
 
     units::OperationalState load_cell_status() const;

@@ -5,8 +5,8 @@
 #pragma once
 #include "cm/commands/command_id.hpp"
 #include "cm/units.hpp"
-namespace cm
-{
+
+namespace cm {
 struct CommandProgress
 {
     CommandId cmd_id;

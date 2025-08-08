@@ -4,13 +4,13 @@
 
 #include "cm/execution_context.hpp"
 
-namespace cm
-{
+namespace cm {
 
 ExecutionContext::ExecutionContext(boost::asio::any_io_executor executor)
     : io_context_{executor}
     , resume_timer_{executor}
-{}
+{
+}
 
 boost::asio::awaitable<void> ExecutionContext::wait_for_resume()
 {
@@ -25,12 +25,12 @@ void ExecutionContext::resume()
     resume_timer_.cancel(); // wakes up `wait_for_resume()`
 }
 
-EventBus &ExecutionContext::event_bus()
+EventBus& ExecutionContext::event_bus()
 {
     return event_bus_;
 }
 
-LiquidDispenserRegistry &ExecutionContext::liquid_registry()
+LiquidDispenserRegistry& ExecutionContext::liquid_registry()
 {
     return liquid_registry_;
 }

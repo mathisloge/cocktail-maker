@@ -7,16 +7,15 @@
 #include "events/event_bus.hpp"
 #include "liquid_dispenser_registry.hpp"
 
-namespace cm
-{
+namespace cm {
 class ExecutionContext
 {
   public:
     explicit ExecutionContext(boost::asio::any_io_executor executor);
     boost::asio::awaitable<void> wait_for_resume();
     void resume();
-    EventBus &event_bus();
-    LiquidDispenserRegistry &liquid_registry();
+    EventBus& event_bus();
+    LiquidDispenserRegistry& liquid_registry();
     boost::asio::any_io_executor async_executor();
 
   private:

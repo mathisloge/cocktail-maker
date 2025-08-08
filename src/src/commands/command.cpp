@@ -4,11 +4,11 @@
 
 #include "cm/commands/command.hpp"
 
-namespace cm
-{
+namespace cm {
 Command::Command(CommandId command_id)
     : command_id_{command_id}
-{}
+{
+}
 
 CommandId Command::id() const
 {

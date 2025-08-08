@@ -8,26 +8,26 @@
 #include "cm/execution_context.hpp"
 #include "command_event_publisher.hpp"
 
-namespace cm
-{
+namespace cm {
 ManualCmd::ManualCmd(std::string instruction, CommandId id)
     : Command{id}
     , instruction_{std::move(instruction)}
-{}
+{
+}
 
-const std::string &ManualCmd::instruction() const
+const std::string& ManualCmd::instruction() const
 {
     return instruction_;
 }
 
-boost::asio::awaitable<void> ManualCmd::run(ExecutionContext &ctx) const
+boost::asio::awaitable<void> ManualCmd::run(ExecutionContext& ctx) const
 {
     CommandEventPublisher publisher{ctx.event_bus(), id()};
     ctx.event_bus().publish(ManualActionEvent{.instruction = instruction_});
     co_await ctx.wait_for_resume();
 }
 
-void ManualCmd::accept(CommandVisitor &visitor) const
+void ManualCmd::accept(CommandVisitor& visitor) const
 {
     visitor.visit(*this);
 }

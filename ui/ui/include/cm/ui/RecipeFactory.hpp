@@ -8,8 +8,8 @@
 #include "RecipeDetail.hpp"
 #include "cm/ingredient_store.hpp"
 #include "cm/recipe_store.hpp"
-namespace cm::ui
-{
+
+namespace cm::ui {
 class RecipeFactory : public QObject
 {
     Q_OBJECT
@@ -19,7 +19,7 @@ class RecipeFactory : public QObject
     explicit RecipeFactory(std::shared_ptr<RecipeStore> recipe_store,
                            std::shared_ptr<const IngredientStore> ingredient_store);
     // Raw-pointer as qml takes ownership
-    Q_INVOKABLE RecipeDetail *create(const QString &recipeName);
+    Q_INVOKABLE RecipeDetail* create(const QString& recipeName);
 
   private:
     std::shared_ptr<RecipeStore> recipe_store_;

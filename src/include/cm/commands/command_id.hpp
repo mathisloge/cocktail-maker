@@ -4,8 +4,8 @@
 
 #pragma once
 #include <cstdint>
-namespace cm
-{
+
+namespace cm {
 using CommandId = std::uint32_t;
 
 CommandId generate_unique_command_id();

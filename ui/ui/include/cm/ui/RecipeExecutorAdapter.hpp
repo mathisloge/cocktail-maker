@@ -11,22 +11,22 @@
 #include "RecipeDetail.hpp"
 #include "cm/ingredient_store.hpp"
 
-namespace cm::ui
-{
+namespace cm::ui {
 class RecipeExecutorAdapter : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
     QML_UNCREATABLE("Provided by ApplicationState")
-    Q_PROPERTY(cm::ui::RecipeCommandStatusModel *commandStatusModel READ command_status_model CONSTANT)
+    Q_PROPERTY(
+        cm::ui::RecipeCommandStatusModel* commandStatusModel READ command_status_model CONSTANT)
   public:
     explicit RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> ctx,
                                    std::shared_ptr<const IngredientStore> ingredient_store);
-    Q_INVOKABLE void make_recipe(RecipeDetail *recipe);
+    Q_INVOKABLE void make_recipe(RecipeDetail* recipe);
     Q_INVOKABLE void continue_mix();
     Q_INVOKABLE void cancel();
 
-    RecipeCommandStatusModel *command_status_model();
+    RecipeCommandStatusModel* command_status_model();
 
   Q_SIGNALS:
     void manualActionRequired(QString instruction);

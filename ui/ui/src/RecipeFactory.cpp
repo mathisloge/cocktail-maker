@@ -5,21 +5,21 @@
 #include "cm/ui/RecipeFactory.hpp"
 #include "cm/ui/RecipeDetail.hpp"
 
-namespace cm::ui
-{
+namespace cm::ui {
 RecipeFactory::RecipeFactory(std::shared_ptr<RecipeStore> recipe_store,
                              std::shared_ptr<const IngredientStore> ingredient_store)
     : recipe_store_{std::move(recipe_store)}
     , ingredient_store_{std::move(ingredient_store)}
-{}
+{
+}
 
-RecipeDetail *RecipeFactory::create(const QString &recipeName)
+RecipeDetail* RecipeFactory::create(const QString& recipeName)
 {
     auto it = recipe_store_->recipes().find(recipeName.toStdString());
-    if (it == recipe_store_->recipes().cend())
-    {
+    if (it == recipe_store_->recipes().cend()) {
         return nullptr;
     }
-    return new RecipeDetail{it->second, ingredient_store_}; // NOLINT(cppcoreguidelines-owning-memory)
+    return new RecipeDetail{it->second,
+                            ingredient_store_}; // NOLINT(cppcoreguidelines-owning-memory)
 }
 } // namespace cm::ui

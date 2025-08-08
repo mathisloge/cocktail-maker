@@ -4,33 +4,34 @@
 
 #pragma once
 #include <filesystem>
+#include <fmt/core.h>
 #include <memory>
 #include <vector>
-#include <fmt/core.h>
 
-namespace cm
-{
+namespace cm {
 class Command;
 class Recipe;
 
 using ProductionStep = std::vector<std::unique_ptr<Command>>;
 using ProductionSteps = std::vector<ProductionStep>;
+
 class RecipeBuilder
 {
   public:
     class StepBuilder
     {
-        RecipeBuilder &parent_;
+        RecipeBuilder& parent_;
         ProductionStep steps_;
 
       public:
-        StepBuilder(RecipeBuilder &parent);
-        StepBuilder &with_step(std::unique_ptr<Command> command);
-        RecipeBuilder &add();
+        StepBuilder(RecipeBuilder& parent);
+        StepBuilder& with_step(std::unique_ptr<Command> command);
+        RecipeBuilder& add();
     };
-    RecipeBuilder &with_name(std::string name);
-    RecipeBuilder &with_description(std::string description);
-    RecipeBuilder &with_image(std::filesystem::path image_path);
+
+    RecipeBuilder& with_name(std::string name);
+    RecipeBuilder& with_description(std::string description);
+    RecipeBuilder& with_image(std::filesystem::path image_path);
     StepBuilder with_steps();
     std::shared_ptr<Recipe> create();
 
@@ -40,18 +41,22 @@ class RecipeBuilder
     std::filesystem::path image_path_;
     ProductionSteps steps_;
 };
+
 RecipeBuilder make_recipe();
 
 class Recipe
 {
   public:
-    Recipe(std::string name, ProductionSteps steps, std::string description, std::filesystem::path image_path);
+    Recipe(std::string name,
+           ProductionSteps steps,
+           std::string description,
+           std::filesystem::path image_path);
     ~Recipe();
 
-    const std::string &name() const;
-    const std::string &description() const;
-    const std::filesystem::path &image_path() const;
-    const ProductionSteps &production_steps() const;
+    const std::string& name() const;
+    const std::string& description() const;
+    const std::filesystem::path& image_path() const;
+    const ProductionSteps& production_steps() const;
 
   private:
     std::string name_;
@@ -66,5 +71,5 @@ class Recipe
 template <>
 struct fmt::formatter<cm::Recipe> : formatter<string_view>
 {
-    auto format(const cm::Recipe &r, format_context &ctx) const -> format_context::iterator;
+    auto format(const cm::Recipe& r, format_context& ctx) const -> format_context::iterator;
 };

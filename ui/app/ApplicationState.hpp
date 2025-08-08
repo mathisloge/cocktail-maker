@@ -10,36 +10,36 @@
 #include <cm/recipe_store.hpp>
 #include <cm/ui/RecipeExecutorAdapter.hpp>
 #include <cm/ui/RecipeFactory.hpp>
-namespace cm::app
-{
+
+namespace cm::app {
 class ApplicationState : public QObject
 {
     Q_OBJECT
     QML_ELEMENT
     QML_SINGLETON
 
-    Q_PROPERTY(cm::RecipeStore *recipeStore READ get_recipe_store CONSTANT);
-    Q_PROPERTY(cm::IngredientStore *ingredientStore READ get_ingredient_store CONSTANT);
-    Q_PROPERTY(cm::ui::RecipeFactory *recipeFactory READ get_recipe_factory CONSTANT)
-    Q_PROPERTY(cm::ui::RecipeExecutorAdapter *recipeExecutor READ get_recipe_executor CONSTANT)
+    Q_PROPERTY(cm::RecipeStore* recipeStore READ get_recipe_store CONSTANT);
+    Q_PROPERTY(cm::IngredientStore* ingredientStore READ get_ingredient_store CONSTANT);
+    Q_PROPERTY(cm::ui::RecipeFactory* recipeFactory READ get_recipe_factory CONSTANT)
+    Q_PROPERTY(cm::ui::RecipeExecutorAdapter* recipeExecutor READ get_recipe_executor CONSTANT)
 
   public:
-    RecipeStore *get_recipe_store()
+    RecipeStore* get_recipe_store()
     {
         return recipe_store.get();
     }
 
-    IngredientStore *get_ingredient_store()
+    IngredientStore* get_ingredient_store()
     {
         return ingredient_store.get();
     }
 
-    ui::RecipeFactory *get_recipe_factory()
+    ui::RecipeFactory* get_recipe_factory()
     {
         return recipe_factory.get();
     }
 
-    ui::RecipeExecutorAdapter *get_recipe_executor() const
+    ui::RecipeExecutorAdapter* get_recipe_executor() const
     {
         return recipe_executor.get();
     }

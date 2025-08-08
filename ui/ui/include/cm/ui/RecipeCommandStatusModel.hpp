@@ -7,8 +7,7 @@
 #include <QtQmlIntegration>
 #include "cm/commands/command_id.hpp"
 
-namespace cm::ui
-{
+namespace cm::ui {
 class RecipeCommandStatusModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -30,8 +29,8 @@ class RecipeCommandStatusModel : public QAbstractListModel
 
     RecipeCommandStatusModel();
     QHash<int, QByteArray> roleNames() const override;
-    int rowCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
+    int rowCount(const QModelIndex& parent) const override;
+    QVariant data(const QModelIndex& index, int role) const override;
 
     void reset();
     void register_command(CommandId id, QString name);
@@ -44,6 +43,7 @@ class RecipeCommandStatusModel : public QAbstractListModel
         QString name;
         CommandStatus status;
     };
+
     std::map<CommandId, Data> commands_;
 };
 } // namespace cm::ui

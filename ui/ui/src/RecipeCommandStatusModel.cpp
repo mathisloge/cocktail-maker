@@ -4,8 +4,7 @@
 
 #include "cm/ui/RecipeCommandStatusModel.hpp"
 
-namespace cm::ui
-{
+namespace cm::ui {
 RecipeCommandStatusModel::RecipeCommandStatusModel() = default;
 
 QHash<int, QByteArray> RecipeCommandStatusModel::roleNames() const
@@ -17,20 +16,18 @@ QHash<int, QByteArray> RecipeCommandStatusModel::roleNames() const
     return roles;
 }
 
-int RecipeCommandStatusModel::rowCount([[maybe_unused]] const QModelIndex &parent) const
+int RecipeCommandStatusModel::rowCount([[maybe_unused]] const QModelIndex& parent) const
 {
     return static_cast<int>(commands_.size());
 }
 
-QVariant RecipeCommandStatusModel::data(const QModelIndex &index, int role) const
+QVariant RecipeCommandStatusModel::data(const QModelIndex& index, int role) const
 {
-    if (index.row() >= commands_.size())
-    {
+    if (index.row() >= commands_.size()) {
         return QVariant{};
     }
-    auto &&cmd = *std::next(commands_.begin(), index.row());
-    switch (Roles{role})
-    {
+    auto&& cmd = *std::next(commands_.begin(), index.row());
+    switch (Roles{role}) {
     case Roles::name:
         return cmd.second.name;
 

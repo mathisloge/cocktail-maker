@@ -5,8 +5,8 @@
 #pragma once
 #include "hw/stepper_motor.hpp"
 #include "liquid_dispenser.hpp"
-namespace cm
-{
+
+namespace cm {
 
 class StepperPumpLiquidDispenser : public LiquidDispenser
 {
@@ -19,7 +19,7 @@ class StepperPumpLiquidDispenser : public LiquidDispenser
     boost::asio::awaitable<void> dispense(units::Litre volume) override;
     void refill(units::Litre volume) override;
     units::Litre remaining_volume() const override;
-    const std::string &name() const override;
+    const std::string& name() const override;
 
   private:
     std::string identifier_;

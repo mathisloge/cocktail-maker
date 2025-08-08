@@ -6,8 +6,7 @@
 #include <filesystem>
 #include <gpiod.hpp>
 
-namespace cm
-{
+namespace cm {
 template <typename T>
 struct PinSelection
 {

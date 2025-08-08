@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #pragma once
-#include <memory>
 #include <boost/asio/awaitable.hpp>
+#include <memory>
 
-namespace cm
-{
+namespace cm {
 class ExecutionContext;
 class Recipe;
+
 class RecipeExecutor
 {
   public:

@@ -9,10 +9,9 @@
 #include <boost/asio/steady_timer.hpp>
 #include "cm/hw/hx711_sensor.hpp"
 
-namespace cm
-{
+namespace cm {
 
-MachineState::MachineState(boost::asio::io_context &io, std::unique_ptr<Hx711Sensor> load_cell)
+MachineState::MachineState(boost::asio::io_context& io, std::unique_ptr<Hx711Sensor> load_cell)
     : load_cell_{std::move(load_cell)}
 {
     boost::asio::co_spawn(
@@ -30,8 +29,7 @@ MachineState::MachineState(boost::asio::io_context &io, std::unique_ptr<Hx711Sen
             co_await timer.async_wait(boost::asio::use_awaitable);
             co_await load_cell_->calibrate_with_ref_weight(100 * mp_units::si::gram);
 
-            while (true)
-            {
+            while (true) {
                 measured_weight_ = co_await load_cell_->read();
                 fmt::println("read: {}", measured_weight_);
                 timer.expires_after(std::chrono::milliseconds{100});

@@ -4,8 +4,8 @@
 
 #pragma once
 #include <string>
-namespace cm
-{
+
+namespace cm {
 struct ManualActionEvent
 {
     std::string instruction;

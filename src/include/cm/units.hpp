@@ -5,9 +5,10 @@
 #pragma once
 #include <mp-units/core.h>
 #include <mp-units/systems/si/units.h>
-namespace cm::units
-{
+
+namespace cm::units {
 using namespace mp_units;
+
 // NOLINTBEGIN(readability-identifier-naming)
 inline constexpr struct percent final : named_unit<"%", mag_ratio<1, 100> * one>
 {

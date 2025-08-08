@@ -2,32 +2,58 @@ IndentWidth: 4
 ---
 Language: Cpp
 BasedOnStyle: Microsoft
+
+# General layout
 AlwaysBreakTemplateDeclarations: Yes
 BinPackArguments: false
 BinPackParameters: false
+ColumnLimit: 100
+MaxEmptyLinesToKeep: 1
+SeparateDefinitionBlocks: Always
+
+# Alignment
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignTrailingComments: true
+PointerAlignment: Left
+ConstructorInitializerIndentWidth: 4
+
+# Braces
 BraceWrapping:
-  SplitEmptyFunction: false
-  SplitEmptyRecord: false
-  SplitEmptyNamespace: false
+  AfterClass: true
+  AfterControlStatement: false
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: false
+  AfterStruct: true
+  BeforeElse: true
+  BeforeCatch: true
+
+# Namespaces
+NamespaceIndentation: None
+FixNamespaceComments: true
+
+# Breaking rules
 BreakBeforeBinaryOperators: None
 BreakConstructorInitializers: BeforeComma
 BreakInheritanceList: AfterColon
 BreakBeforeInheritanceComma: false
-IncludeBlocks: Preserve
+
+# Includes
+IncludeBlocks: Merge
 SortIncludes: true
 IncludeCategories:
-  # Headers in <> without extension.
-  - Regex:           '<([A-Za-z0-9\Q/-_\E])+>'
-    Priority:        1
-  # Headers in <> from specific external libraries.
-  - Regex:           '<(boost)\/'
-    Priority:        2
-  # Headers in <> with extension.
-  - Regex:           '<([A-Za-z0-9.\Q/-_\E])+>'
-    Priority:        3
-  # Headers in "" with extension.
-  - Regex:           '"([A-Za-z0-9.\Q/-_\E])+"'
-    Priority:        4
+  # All angle-bracket includes first
+  - Regex: '<[^"]+>'
+    Priority: 1
+
+  # All quoted includes next
+  - Regex: '".+"'
+    Priority: 2
+
+# Comments
+ReflowComments: true
+
 ---
 Language: Proto
 BasedOnStyle: Google

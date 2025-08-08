@@ -5,8 +5,7 @@
 #include "cm/ui/RecipeListModel.hpp"
 #include <cm/recipe.hpp>
 
-namespace cm::ui
-{
+namespace cm::ui {
 RecipeListModel::RecipeListModel()
 {
     connect(this, &RecipeListModel::recipeStoreChanged, this, [this]() {
@@ -23,29 +22,25 @@ QHash<int, QByteArray> RecipeListModel::roleNames() const
     return roles;
 }
 
-int RecipeListModel::rowCount([[maybe_unused]] const QModelIndex &parent) const
+int RecipeListModel::rowCount([[maybe_unused]] const QModelIndex& parent) const
 {
-    if (recipe_store_ == nullptr)
-    {
+    if (recipe_store_ == nullptr) {
         return 0;
     }
     return static_cast<int>(recipe_store_->recipes().size());
 }
 
-QVariant RecipeListModel::data(const QModelIndex &index, int role) const
+QVariant RecipeListModel::data(const QModelIndex& index, int role) const
 {
-    if (recipe_store_ == nullptr)
-    {
+    if (recipe_store_ == nullptr) {
         return QVariant{};
     }
-    auto &&recipes = recipe_store_->recipes();
-    if (index.row() >= recipes.size())
-    {
+    auto&& recipes = recipe_store_->recipes();
+    if (index.row() >= recipes.size()) {
         return QVariant{};
     }
-    auto &&recipe = *std::next(recipes.begin(), index.row());
-    switch (Roles{role})
-    {
+    auto&& recipe = *std::next(recipes.begin(), index.row());
+    switch (Roles{role}) {
     case Roles::name_role:
         return QString::fromStdString(recipe.second->name());
 

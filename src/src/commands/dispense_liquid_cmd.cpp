@@ -8,45 +8,42 @@
 #include "cm/execution_context.hpp"
 #include "command_event_publisher.hpp"
 
-namespace cm
-{
+namespace cm {
 DispenseLiquidCmd::DispenseLiquidCmd(IngredientId ingredient, units::Litre volume, CommandId id)
     : Command{id}
     , ingredient_{std::move(ingredient)}
     , volume_{volume}
-{}
-
-boost::asio::awaitable<void> DispenseLiquidCmd::run(ExecutionContext &ctx) const
 {
-    auto &&dispenser = ctx.liquid_registry().dispenser(ingredient_);
+}
+
+boost::asio::awaitable<void> DispenseLiquidCmd::run(ExecutionContext& ctx) const
+{
+    auto&& dispenser = ctx.liquid_registry().dispenser(ingredient_);
 
     auto remaining = volume_;
     CommandEventPublisher publisher{ctx.event_bus(), id()};
-    while (remaining > 0 * mp_units::si::litre)
-    {
+    while (remaining > 0 * mp_units::si::litre) {
         auto available = dispenser.remaining_volume();
         auto to_dispense = std::min(available, remaining);
 
-        if (to_dispense > 0 * mp_units::si::litre)
-        {
+        if (to_dispense > 0 * mp_units::si::litre) {
             co_await dispenser.dispense(to_dispense);
             remaining -= to_dispense;
         }
 
-        if (remaining > 0 * mp_units::si::litre)
-        {
+        if (remaining > 0 * mp_units::si::litre) {
             ctx.event_bus().publish(RefillIngredientEvent{.ingredient_id = ingredient_});
             co_await ctx.wait_for_resume();
         }
     }
 }
 
-void DispenseLiquidCmd::accept(CommandVisitor &visitor) const
+void DispenseLiquidCmd::accept(CommandVisitor& visitor) const
 {
     visitor.visit(*this);
 }
 
-const IngredientId &DispenseLiquidCmd::ingredient() const
+const IngredientId& DispenseLiquidCmd::ingredient() const
 {
     return ingredient_;
 }

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Mathis Logemann <mathis@quite.rocks>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 add_library(cocktail-maker-core STATIC)
 add_library(cm::core ALIAS cocktail-maker-core)
 target_compile_features(cocktail-maker-core PUBLIC cxx_std_23)

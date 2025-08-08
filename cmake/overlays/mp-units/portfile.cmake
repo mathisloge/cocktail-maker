@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Mathis Logemann <mathis@quite.rocks>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 if(VCPKG_TARGET_IS_LINUX)
     message("Note: `mp-units` requires Clang16+ or GCC11+")
 endif()

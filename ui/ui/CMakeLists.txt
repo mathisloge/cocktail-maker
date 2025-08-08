@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 Mathis Logemann <mathis@quite.rocks>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 qt_add_qml_module(cocktail-maker-ui
     STATIC
     OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/CocktailMaker/Ui"

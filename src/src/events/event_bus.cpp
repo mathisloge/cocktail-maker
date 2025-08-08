@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 Mathis Logemann <mathis@quite.rocks>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "cm/events/event_bus.hpp"
 #include <spdlog/spdlog.h>
 #include "cm/logging.hpp"

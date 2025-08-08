@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 Mathis Logemann <mathis@quite.rocks>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "cm/recipe_booster.hpp"
 #include "cm/commands/command_visitor.hpp"
 #include "cm/commands/dispense_liquid_cmd.hpp"

@@ -17,8 +17,8 @@ struct CommandUiFormatter final : public CommandVisitor
     {
         auto &&ingredient = ingredient_store.find_ingredient(cmd.ingredient());
         step.name = QString::fromStdString(ingredient.display_name);
-        step.detail =
-            QString::fromStdString(fmt::format("{}", cmd.volume().in(mp_units::si::centi<mp_units::si::litre>)));
+        step.detail = QString::fromStdString(fmt::format(
+            "{}", units::value_cast<std::int32_t>(cmd.volume().in(mp_units::si::milli<mp_units::si::litre>))));
     }
 
     void visit(const ManualCmd &cmd) override

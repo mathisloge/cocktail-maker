@@ -43,6 +43,7 @@ target_sources(
                 include/cm/recipe.hpp
                 include/cm/recipe_store.hpp
                 include/cm/recipe_executor.hpp
+                include/cm/recipe_booster.hpp
                 include/cm/ingredient_store.hpp
                 include/cm/ingredient_id.hpp
                 include/cm/ingredient.hpp
@@ -73,6 +74,7 @@ target_sources(
         src/recipe_executor.cpp
         src/recipe.cpp
         src/recipe_store.cpp
+        src/recipe_booster.cpp
         src/ingredient_store.cpp
         src/events/event_bus.cpp
         src/commands/command.cpp

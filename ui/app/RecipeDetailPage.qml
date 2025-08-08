@@ -8,7 +8,19 @@ Item {
     signal backClicked
     signal mixClicked(RecipeDetail recipe)
     required property RecipeDetail recipe
+    property RecipeDetail __recipe: recipe
     readonly property int sectionWidth: 400
+
+    onRecipeChanged: {
+        root.__recipe = recipe
+    }
+
+    RecipeBoosterAdapter {
+        id: booster
+        ingredientStore: ApplicationState.ingredientStore
+        originalRecipe: root.recipe
+    }
+
     ColumnLayout {
         width: parent.width
         spacing: 20
@@ -24,13 +36,13 @@ Item {
             }
             Label {
                 id: headerText
-                text: root.recipe.name
+                text: root.__recipe.name
                 font.pointSize: 48
                 anchors.horizontalCenter: parent.horizontalCenter
             }
         }
         Label {
-            text: root.recipe.description
+            text: root.__recipe.description
             wrapMode: Text.Wrap
             horizontalAlignment: Text.AlignHCenter
             font.pointSize: 20
@@ -42,6 +54,7 @@ Item {
         Section {
             Layout.alignment: Qt.AlignHCenter
             Layout.preferredWidth: root.sectionWidth
+            visible: booster.isBoostable
 
             ColumnLayout {
                 width: parent.width
@@ -64,11 +77,14 @@ Item {
                     }
                     Slider {
                         id: boostSlider
-                        from: -50
+                        from: -100
                         value: 0
-                        to: 50
+                        to: 100
                         stepSize: 5
                         snapMode: Slider.SnapOnRelease
+                        onValueChanged: {
+                            root.__recipe = booster.boost(boostSlider.value)
+                        }
                     }
                     Label {
                         text: "stark"
@@ -89,7 +105,7 @@ Item {
                 }
 
                 Repeater {
-                    model: root.recipe.steps
+                    model: root.__recipe.steps
 
                     delegate: Section {
                         id: section
@@ -117,7 +133,7 @@ Item {
         Button {
             Layout.alignment: Qt.AlignHCenter
             text: "🍹 mixen!"
-            onClicked: root.mixClicked(root.recipe)
+            onClicked: root.mixClicked(root.__recipe)
         }
     }
 }

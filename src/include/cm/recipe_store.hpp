@@ -7,7 +7,7 @@ namespace cm
 {
 class Recipe;
 using RecipeMap = std::unordered_map<std::string, std::shared_ptr<Recipe>>;
-class RecipeStore
+class RecipeStore : public std::enable_shared_from_this<RecipeStore>
 {
   public:
     void add_recipe(std::shared_ptr<Recipe> recipe);

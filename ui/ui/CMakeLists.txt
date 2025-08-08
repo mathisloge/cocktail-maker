@@ -21,18 +21,21 @@ target_sources(
             TYPE HEADERS
             BASE_DIRS include
             FILES
-                include/cm/ui/RecipeStoreForeign.hpp
-                include/cm/ui/RecipeExecutorAdapter.hpp
-                include/cm/ui/RecipeDetail.hpp
-                include/cm/ui/RecipeListModel.hpp
-                include/cm/ui/RecipeFactory.hpp
+                include/cm/ui/IngredientStoreForeign.hpp
+                include/cm/ui/RecipeBoosterAdapter.hpp
                 include/cm/ui/RecipeCommandStatusModel.hpp
+                include/cm/ui/RecipeDetail.hpp
+                include/cm/ui/RecipeExecutorAdapter.hpp
+                include/cm/ui/RecipeFactory.hpp
+                include/cm/ui/RecipeListModel.hpp
+                include/cm/ui/RecipeStoreForeign.hpp
     PRIVATE
+        src/RecipeBoosterAdapter.cpp
+        src/RecipeCommandStatusModel.cpp
         src/RecipeDetail.cpp
         src/RecipeExecutorAdapter.cpp
         src/RecipeFactory.cpp
         src/RecipeListModel.cpp
-        src/RecipeCommandStatusModel.cpp
 )
 # needed for moc
 target_include_directories(

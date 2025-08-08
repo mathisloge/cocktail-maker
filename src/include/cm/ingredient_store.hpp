@@ -1,9 +1,10 @@
 #pragma once
+#include <memory>
 #include <unordered_map>
 #include "ingredient.hpp"
 namespace cm
 {
-class IngredientStore
+class IngredientStore : public std::enable_shared_from_this<IngredientStore>
 {
   public:
     const Ingredient &add_ingredient(Ingredient ingredient);

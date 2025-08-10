@@ -40,7 +40,7 @@
             "name": "release-build",
             "hidden": true,
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release"
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
             }
         },
         {
@@ -57,12 +57,29 @@
                 "SANITIZE_ADDRESS": true,
                 "SANITIZE_UNDEFINED": true
             }
+        },
+        {
+            "name": "production",
+            "displayName": "Production build",
+            "inherits": [
+                "common",
+                "vcpkg",
+                "release-build"
+            ],
+            "cacheVariables": {
+                "BUILD_TESTING": false,
+                "CMAKE_SKIP_INSTALL_RULES": false
+            }
         }
     ],
     "buildPresets": [
         {
             "name": "developer",
             "configurePreset": "developer"
+        },
+        {
+            "name": "production",
+            "configurePreset": "production"
         }
     ],
     "testPresets": [
@@ -76,6 +93,34 @@
                 "noTestsAction": "ignore",
                 "stopOnFailure": true
             }
+        }
+    ],
+    "packagePresets": [
+        {
+            "name": "production",
+            "configurePreset": "production",
+            "generators": [
+                "DEB"
+            ]
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "production",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "production"
+                },
+                {
+                    "type": "build",
+                    "name": "production"
+                },
+                {
+                    "type": "package",
+                    "name": "production"
+                }
+            ]
         }
     ]
 }

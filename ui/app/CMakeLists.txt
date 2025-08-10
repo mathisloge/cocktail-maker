@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 qt_add_executable(CocktailMakerApp main.cpp)
-
+set_target_properties(CocktailMakerApp PROPERTIES OUTPUT_NAME "cocktail-maker")
 target_link_libraries(
     CocktailMakerApp
     PRIVATE

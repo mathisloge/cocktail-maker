@@ -64,3 +64,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime")
 add_subdirectory(src)
 add_subdirectory(utils)
 add_subdirectory(ui)
+
+set(CPACK_PACKAGE_NAME "cocktail-maker")
+set(CPACK_PACKAGE_CONTACT "Mathis Logemann <mathis@quite.rocks>")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS
+    "libqt6widgets6 (>= 6.8), libqt6quick6 (>= 6.8)"
+)
+include(CPack)

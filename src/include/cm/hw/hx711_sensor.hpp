@@ -8,6 +8,7 @@
 #include <mp-units/systems/si.h>
 #include "cm/units.hpp"
 #include "pin_selection.hpp"
+#include "weight_sensor.hpp"
 
 namespace cm {
 
@@ -23,13 +24,13 @@ using Hx711RawValue = units::quantity<hx711_unit, std::int32_t>;
 
 // NOLINTEND(readability-identifier-naming)
 
-class Hx711Sensor
+class Hx711Sensor : public WeightSensor
 {
   public:
     Hx711Sensor(Hx711DatPin dat_pin, Hx711ClkPin clk_pin);
-    boost::asio::awaitable<void> tare();
-    boost::asio::awaitable<void> calibrate_with_ref_weight(units::Grams known_mass);
-    [[nodiscard]] boost::asio::awaitable<units::Grams> read();
+    boost::asio::awaitable<void> tare() override;
+    boost::asio::awaitable<void> calibrate_with_ref_weight(units::Grams known_mass) override;
+    [[nodiscard]] boost::asio::awaitable<units::Grams> read() override;
 
   private:
     [[nodiscard]] boost::asio::awaitable<units::quantity_point<hx711_unit>> read_raw();

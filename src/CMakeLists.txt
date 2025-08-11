@@ -66,6 +66,7 @@ target_sources(
                 include/cm/events/refill_ingredient_event.hpp
                 include/cm/events/recipe_finished.hpp
                 include/cm/hw/pin_selection.hpp
+                include/cm/hw/weight_sensor.hpp
                 include/cm/hw/hx711_sensor.hpp
                 include/cm/hw/motor.hpp
                 include/cm/hw/stepper_motor.hpp
@@ -93,3 +94,7 @@ target_sources(
         src/commands/command_event_publisher.hpp
         src/commands/command_event_publisher.cpp
 )
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

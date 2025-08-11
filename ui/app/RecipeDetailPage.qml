@@ -13,10 +13,10 @@ Item {
     signal mixClicked(RecipeDetail recipe)
     required property RecipeDetail recipe
     property RecipeDetail __recipe: recipe
-    readonly property int sectionWidth: 400
+    readonly property int sectionWidth: 600
 
     onRecipeChanged: {
-        root.__recipe = recipe
+        root.__recipe = recipe;
     }
 
     RecipeBoosterAdapter {
@@ -87,7 +87,7 @@ Item {
                         stepSize: 5
                         snapMode: Slider.SnapOnRelease
                         onValueChanged: {
-                            root.__recipe = booster.boost(boostSlider.value)
+                            root.__recipe = booster.boost(boostSlider.value);
                         }
                     }
                     Label {

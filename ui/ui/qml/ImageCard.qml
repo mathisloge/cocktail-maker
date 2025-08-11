@@ -60,7 +60,7 @@ AbstractButton {
         text: root.text
         color: "#fff"
         font {
-            pixelSize: 80
+            pixelSize: 70
             weight: 725
         }
     }

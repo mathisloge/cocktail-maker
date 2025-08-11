@@ -24,8 +24,6 @@ Button {
     }
 
     background: Rectangle {
-        implicitWidth: 150
-        implicitHeight: 50
         opacity: enabled ? 1 : 0.3
         radius: 12
         gradient: Gradient {

@@ -61,6 +61,11 @@ set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime")
 
+if(BUILD_TESTING)
+    find_package(Catch2 3 REQUIRED)
+    include(Catch)
+endif()
+
 add_subdirectory(src)
 add_subdirectory(utils)
 add_subdirectory(ui)

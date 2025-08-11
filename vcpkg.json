@@ -11,6 +11,7 @@
         },
         "mp-units",
         "fmt",
-        "spdlog"
+        "spdlog",
+        "catch2"
     ]
 }

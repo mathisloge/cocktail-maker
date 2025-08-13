@@ -11,9 +11,15 @@ import CocktailMaker.Ui
 Item {
     id: root
 
+    property glass detectedGlass
     required property RecipeDetail recipe
     signal backClicked
     signal nextClicked
+
+    GlassListModel {
+        id: model
+        glassStore: ApplicationState.glassStore
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -37,7 +43,7 @@ Item {
                 }
 
                 Label {
-                    text: "Erkannt: " + "250ml"
+                    text: "Erkannt: " + root.detectedGlass.capacity
                     font.pointSize: 28
                     Layout.margins: 20
                     Layout.alignment: Qt.AlignHCenter
@@ -53,33 +59,9 @@ Item {
                     cellWidth: width / 2
                     cellHeight: 120
                     currentIndex: 0 // default active
-
                     clip: true
                     highlight: highlight
-
-                    model: ListModel {
-                        ListElement {
-                            name: "Bill Smith"
-                            capacity: "40 ml"
-                        }
-                        ListElement {
-                            name: "Bill Smith"
-                            capacity: "40 ml"
-                        }
-                        ListElement {
-                            name: "Bill Smith"
-                            capacity: "40 ml"
-                        }
-
-                        ListElement {
-                            name: "Bill Smith"
-                            capacity: "40 ml"
-                        }
-                        ListElement {
-                            name: "Bill Smith"
-                            capacity: "40 ml"
-                        }
-                    }
+                    model: model
                     delegate: Button {
                         width: glassGrid.cellWidth - glassGrid.spacing
                         height: glassGrid.cellHeight - glassGrid.spacing
@@ -125,7 +107,7 @@ Item {
     }
 
     component BounceAnimation: NumberAnimation {
-        duration: 200; easing.type: Easing.InOutQuad
-
+        duration: 200
+        easing.type: Easing.InOutQuad
     }
 }

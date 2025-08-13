@@ -11,6 +11,7 @@ Item {
     id: root
     signal backClicked
     signal mixClicked(RecipeDetail recipe)
+    property glass glass
     required property RecipeDetail recipe
     property RecipeDetail __recipe: recipe
     readonly property int sectionWidth: 600

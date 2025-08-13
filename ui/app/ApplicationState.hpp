@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QQmlEngine>
 #include <QtQmlIntegration>
+#include <cm/glass_store.hpp>
 #include <cm/ingredient_store.hpp>
 #include <cm/recipe_store.hpp>
 #include <cm/ui/RecipeExecutorAdapter.hpp>
@@ -20,8 +21,9 @@ class ApplicationState : public QObject
 
     Q_PROPERTY(cm::RecipeStore* recipeStore READ get_recipe_store CONSTANT);
     Q_PROPERTY(cm::IngredientStore* ingredientStore READ get_ingredient_store CONSTANT);
-    Q_PROPERTY(cm::ui::RecipeFactory* recipeFactory READ get_recipe_factory CONSTANT)
-    Q_PROPERTY(cm::ui::RecipeExecutorAdapter* recipeExecutor READ get_recipe_executor CONSTANT)
+    Q_PROPERTY(cm::GlassStore* glassStore READ get_glass_store CONSTANT);
+    Q_PROPERTY(cm::ui::RecipeFactory* recipeFactory READ get_recipe_factory CONSTANT);
+    Q_PROPERTY(cm::ui::RecipeExecutorAdapter* recipeExecutor READ get_recipe_executor CONSTANT);
 
   public:
     RecipeStore* get_recipe_store()
@@ -32,6 +34,11 @@ class ApplicationState : public QObject
     IngredientStore* get_ingredient_store()
     {
         return ingredient_store.get();
+    }
+
+    GlassStore* get_glass_store()
+    {
+        return glass_store.get();
     }
 
     ui::RecipeFactory* get_recipe_factory()
@@ -47,6 +54,7 @@ class ApplicationState : public QObject
   public:
     std::shared_ptr<RecipeStore> recipe_store;
     std::shared_ptr<IngredientStore> ingredient_store;
+    std::shared_ptr<GlassStore> glass_store;
     std::shared_ptr<ui::RecipeFactory> recipe_factory;
     std::shared_ptr<ui::RecipeExecutorAdapter> recipe_executor;
 };

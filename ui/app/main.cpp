@@ -41,6 +41,7 @@ int main(int argc, char* argv[])
 
     auto ingredient_store = std::make_shared<cm::IngredientStore>();
     auto recipe_store = std::make_shared<cm::RecipeStore>();
+    auto glass_store = std::make_shared<cm::GlassStore>();
     auto recipe_factory = std::make_shared<cm::ui::RecipeFactory>(recipe_store, ingredient_store);
     auto recipe_executor = std::make_shared<cm::ui::RecipeExecutorAdapter>(execution_context, ingredient_store);
 
@@ -133,10 +134,15 @@ int main(int argc, char* argv[])
     recipe_store->add_recipe(std::move(mojito));
     recipe_store->add_recipe(std::move(screwdriver));
 
+    glass_store->add_glass(Glass{.display_name = "Glass1", .capacity = 0.25 * units::si::litre}, 500 * units::si::gram);
+    glass_store->add_glass(Glass{.display_name = "Glass2", .capacity = 0.1 * units::si::litre}, 150 * units::si::gram);
+    glass_store->add_glass(Glass{.display_name = "Glass3", .capacity = 0.4 * units::si::litre}, 600 * units::si::gram);
+
     auto&& app_state = engine.singletonInstance<cm::app::ApplicationState*>("CocktailMaker.App", "ApplicationState");
     Q_ASSERT(app_state != nullptr);
     app_state->recipe_store = recipe_store;
     app_state->ingredient_store = ingredient_store;
+    app_state->glass_store = glass_store;
     app_state->recipe_factory = recipe_factory;
     app_state->recipe_executor = recipe_executor;
     engine.loadFromModule("CocktailMaker.App", "Main");

@@ -27,9 +27,9 @@ int main()
         std::make_unique<cm::Drv8825StepperMotorDriver>(cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {17}},
                                                         cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {27}},
                                                         cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {22}}),
-        1 * mp_units::si::litre,
-        (1000 * cm::units::step) / (100 * mp_units::si::milli<mp_units::si::litre>),
-        52 * mp_units::si::milli<mp_units::si::litre>);
+        1 * cm::units::si::litre,
+        (1000 * cm::units::step) / (100 * cm::units::milli_litre),
+        52 * cm::units::milli_litre);
 
     std::shared_ptr<cm::ExecutionContext> ctx = std::make_shared<cm::ExecutionContext>(io.get_executor());
     ctx->liquid_registry().register_dispenser("water", std::move(liquid_dispenser));
@@ -47,7 +47,7 @@ int main()
                       .with_name("Only Water")
                       .with_steps()
                       .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                          "water", 250 * cm::units::si::milli<cm::units::si::litre>, cm::generate_unique_command_id()))
+                          "water", 250 * cm::units::milli_litre, cm::generate_unique_command_id()))
                       .add()
                       .create();
     cm::RecipeExecutor recipe_executor{ctx, recipe};

@@ -42,7 +42,7 @@ QVariant GlassListModel::data(const QModelIndex& index, int role) const
     case Roles::name:
         return QString::fromStdString(recipe.second.display_name);
     case Roles::capacity:
-        return QString::fromStdString(fmt::format("{}", recipe.second.capacity.in(units::si::milli<units::si::litre>)));
+        return QString::fromStdString(fmt::format("{}", recipe.second.capacity.in(units::milli_litre)));
 
     case Roles::image_source:
         return "qrc:/qt/qml/CocktailMaker/Ui/mojito.png";

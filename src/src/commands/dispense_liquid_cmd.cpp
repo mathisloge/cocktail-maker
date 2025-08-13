@@ -23,8 +23,8 @@ boost::asio::awaitable<void> DispenseLiquidCmd::run(ExecutionContext& ctx) const
     auto remaining = volume_;
     CommandEventPublisher publisher{ctx.event_bus(), id()};
     while (remaining > 0 * mp_units::si::litre) {
-        auto available = dispenser.remaining_volume();
-        auto to_dispense = std::min(available, remaining);
+        const auto available = dispenser.remaining_volume();
+        const auto to_dispense = std::min(available, remaining);
 
         if (to_dispense > 0 * mp_units::si::litre) {
             co_await dispenser.dispense(to_dispense);

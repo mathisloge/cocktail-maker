@@ -80,54 +80,54 @@ int main(int argc, char* argv[])
         std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre, (0.1 * units::si::litre) / (1 * units::si::second)));
 
     // codespell:ignore-begin
-    auto only_water = cm::make_recipe()
-                          .with_name("Wasser")
-                          .with_description("Klassisches Wasser ohne Schickschnack")
-                          .with_steps()
-                          .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                              water.id, 250 * units::si::milli<units::si::litre>, generate_unique_command_id()))
-                          .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                              lime_juice.id, 30 * mp_units::si::milli<mp_units::si::litre>, generate_unique_command_id()))
-                          .add()
-                          .with_steps()
-                          .with_step(std::make_unique<cm::ManualCmd>("2 Eiswürfel", generate_unique_command_id()))
-                          .add()
-                          .create();
+    auto only_water =
+        cm::make_recipe()
+            .with_name("Wasser")
+            .with_description("Klassisches Wasser ohne Schickschnack")
+            .with_steps()
+            .with_step(std::make_unique<cm::DispenseLiquidCmd>(water.id, 250 * units::milli_litre, generate_unique_command_id()))
+            .with_step(std::make_unique<cm::DispenseLiquidCmd>(
+                lime_juice.id, 30 * mp_units::si::milli_litre, generate_unique_command_id()))
+            .add()
+            .with_steps()
+            .with_step(std::make_unique<cm::ManualCmd>("2 Eiswürfel", generate_unique_command_id()))
+            .add()
+            .create();
 
-    auto mojito = cm::make_recipe()
-                      .with_name("Mojito")
-                      .with_description("Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, "
-                                        "Zucker und Soda – perfekt für den Sommer.")
-                      .with_steps()
-                      .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                          bacardi.id, 3 * units::imperial::fluid_ounce, generate_unique_command_id()))
-                      .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                          soda.id, 120 * units::si::milli<units::si::litre>, generate_unique_command_id()))
-                      .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                          lime_juice.id, 30 * mp_units::si::milli<mp_units::si::litre>, generate_unique_command_id()))
-                      .add()
-                      .with_steps()
-                      .with_step(std::make_unique<cm::ManualCmd>("2 Minzblätter", generate_unique_command_id()))
-                      .add()
-                      .with_steps()
-                      .with_step(std::make_unique<cm::ManualCmd>("2 TL Zucker", generate_unique_command_id()))
-                      .add()
-                      .create();
+    auto mojito =
+        cm::make_recipe()
+            .with_name("Mojito")
+            .with_description("Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, "
+                              "Zucker und Soda – perfekt für den Sommer.")
+            .with_steps()
+            .with_step(std::make_unique<cm::DispenseLiquidCmd>(
+                bacardi.id, 3 * units::imperial::fluid_ounce, generate_unique_command_id()))
+            .with_step(std::make_unique<cm::DispenseLiquidCmd>(soda.id, 120 * units::milli_litre, generate_unique_command_id()))
+            .with_step(
+                std::make_unique<cm::DispenseLiquidCmd>(lime_juice.id, 30 * units::milli_litre, generate_unique_command_id()))
+            .add()
+            .with_steps()
+            .with_step(std::make_unique<cm::ManualCmd>("2 Minzblätter", generate_unique_command_id()))
+            .add()
+            .with_steps()
+            .with_step(std::make_unique<cm::ManualCmd>("2 TL Zucker", generate_unique_command_id()))
+            .add()
+            .create();
 
-    auto screwdriver = cm::make_recipe()
-                           .with_name("Screwdriver")
-                           .with_description("Der Screwdriver ist ein erfrischender Cocktail aus Vodka und Orangensaft, der "
-                                             "durch seine einfache Zubereitung und fruchtige Note besticht.")
-                           .with_steps()
-                           .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                               vodka.id, 100 * units::si::milli<units::si::litre>, generate_unique_command_id()))
-                           .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                               orange_juice.id, 150 * mp_units::si::milli<mp_units::si::litre>, generate_unique_command_id()))
-                           .add()
-                           .with_steps()
-                           .with_step(std::make_unique<cm::ManualCmd>("2 Eiswürfel", generate_unique_command_id()))
-                           .add()
-                           .create();
+    auto screwdriver =
+        cm::make_recipe()
+            .with_name("Screwdriver")
+            .with_description("Der Screwdriver ist ein erfrischender Cocktail aus Vodka und Orangensaft, der "
+                              "durch seine einfache Zubereitung und fruchtige Note besticht.")
+            .with_steps()
+            .with_step(std::make_unique<cm::DispenseLiquidCmd>(vodka.id, 100 * units::milli_litre, generate_unique_command_id()))
+            .with_step(
+                std::make_unique<cm::DispenseLiquidCmd>(orange_juice.id, 150 * units::milli_litre, generate_unique_command_id()))
+            .add()
+            .with_steps()
+            .with_step(std::make_unique<cm::ManualCmd>("2 Eiswürfel", generate_unique_command_id()))
+            .add()
+            .create();
     // codespell:ignore-end
 
     recipe_store->add_recipe(std::move(only_water));

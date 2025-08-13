@@ -17,6 +17,7 @@ inline constexpr struct percent final : named_unit<"%", mag_ratio<1, 100> * one>
 using Grams = quantity<si::gram>;
 using Litre = quantity<si::litre>;
 inline constexpr auto gram_per_litre = si::gram / si::litre;
+inline constexpr auto milli_litre = units::si::milli<units::si::litre>;
 using GramPerLitre = quantity<gram_per_litre>;
 
 // vvv Stepper-Motor units

@@ -37,4 +37,9 @@ const Glass& GlassStore::find_glass_by_weight(units::Grams glass_weight)
 
     throw std::runtime_error("No glass found within tolerance"); // TODO: add own exceptions
 }
+
+const GlassStore::WeightGlassMap& GlassStore::glasses() const
+{
+    return glasses_;
+}
 } // namespace cm

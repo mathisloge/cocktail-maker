@@ -25,6 +25,9 @@ target_sources(
             TYPE HEADERS
             BASE_DIRS include
             FILES
+                include/cm/ui/GlassAdapter.hpp
+                include/cm/ui/GlassListModel.hpp
+                include/cm/ui/GlassStoreForeign.hpp
                 include/cm/ui/IngredientStoreForeign.hpp
                 include/cm/ui/RecipeBoosterAdapter.hpp
                 include/cm/ui/RecipeCommandStatusModel.hpp
@@ -34,6 +37,7 @@ target_sources(
                 include/cm/ui/RecipeListModel.hpp
                 include/cm/ui/RecipeStoreForeign.hpp
     PRIVATE
+        src/GlassListModel.cpp
         src/RecipeBoosterAdapter.cpp
         src/RecipeCommandStatusModel.cpp
         src/RecipeDetail.cpp

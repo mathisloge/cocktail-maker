@@ -16,24 +16,46 @@ Item {
     signal nextClicked
 
     ColumnLayout {
-        width: parent.width
+        anchors.fill: parent
         spacing: 20
 
         Section {
-            Layout.alignment: Qt.AlignHCenter
+            Layout.alignment: Qt.AlignTop | Qt.AlignHCenter
             Layout.preferredWidth: 600
+            Layout.fillHeight: true
+
             ColumnLayout {
+                id: mainLayout
                 width: parent.width
+                height: parent.height
+
+                Label {
+                    text: "Glasgöße wählen"
+                    font.pointSize: 48
+                    Layout.margins: 20
+                    Layout.alignment: Qt.AlignHCenter
+                }
+
+                Label {
+                    text: "Erkannt: " + "250ml"
+                    font.pointSize: 28
+                    Layout.margins: 20
+                    Layout.alignment: Qt.AlignHCenter
+                }
 
                 GridView {
                     id: glassGrid
+                    readonly property int spacing: 10
                     Layout.fillWidth: true
-                    Layout.preferredHeight: Math.min((count / 2) * cellHeight, 600)
-                    Layout.alignment: Qt.AlignHCenter
+                    Layout.fillHeight: true
+                    Layout.minimumHeight: cellHeight + (count > 2 ? spacing : 0)
+                    Layout.preferredHeight: (((count + 1) / 2) * cellHeight) - spacing
                     cellWidth: width / 2
                     cellHeight: 120
+                    currentIndex: 0 // default active
 
                     clip: true
+                    highlight: highlight
 
                     model: ListModel {
                         ListElement {
@@ -53,21 +75,57 @@ Item {
                             name: "Bill Smith"
                             capacity: "40 ml"
                         }
+                        ListElement {
+                            name: "Bill Smith"
+                            capacity: "40 ml"
+                        }
                     }
                     delegate: Button {
-                        width: glassGrid.cellWidth - 8
-                        height: glassGrid.cellHeight - 8
+                        width: glassGrid.cellWidth - glassGrid.spacing
+                        height: glassGrid.cellHeight - glassGrid.spacing
                         required property string name
                         required property string capacity
+                        required property int index
+
                         text: name + ": " + capacity
+
+                        onClicked: {
+                            glassGrid.currentIndex = index;
+                        }
                     }
                 }
             }
         }
         Button {
-            Layout.alignment: Qt.AlignHCenter
+            Layout.alignment: Qt.AlignTop | Qt.AlignHCenter
             text: "🍹 mixen!"
             onClicked: root.nextClicked()
         }
+    }
+
+    Component {
+        id: highlight
+        Rectangle {
+            width: glassGrid.cellWidth
+            height: glassGrid.cellHeight
+            color: "transparent"
+            border.color: "#fff"
+            border.width: 8
+            radius: 12
+            x: glassGrid.currentItem.x
+            y: glassGrid.currentItem.y
+            z: 10
+            Behavior on x {
+                BounceAnimation {}
+            }
+            Behavior on y {
+                BounceAnimation {}
+            }
+        }
+    }
+
+    component BounceAnimation: NumberAnimation {
+        duration: 200; easing.type: Easing.InOutQuad
+
     }
 }

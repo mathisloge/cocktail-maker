@@ -70,9 +70,24 @@ ApplicationWindow {
             onBackClicked: stackView.pop()
             onMixClicked: (recipe) => {
                 window.selectedRecipe = recipe
+                stackView.push(glassSelectionPage)
+            }
+        }
+    }
+
+    Component {
+        id: glassSelectionPage
+        GlassSelectionPage {
+            recipe: window.selectedRecipe
+            onNextClicked: {
                 ApplicationState.recipeExecutor.make_recipe(window.selectedRecipe)
                 stackView.push(mixingPage)
             }
+
+            onBackClicked: {
+                stackView.pop()
+            }
+
         }
     }
 

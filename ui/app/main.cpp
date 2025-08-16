@@ -86,8 +86,8 @@ int main(int argc, char* argv[])
             .with_description("Klassisches Wasser ohne Schickschnack")
             .with_steps()
             .with_step(std::make_unique<cm::DispenseLiquidCmd>(water.id, 250 * units::milli_litre, generate_unique_command_id()))
-            .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                lime_juice.id, 30 * mp_units::si::milli_litre, generate_unique_command_id()))
+            .with_step(
+                std::make_unique<cm::DispenseLiquidCmd>(lime_juice.id, 30 * cm::units::milli_litre, generate_unique_command_id()))
             .add()
             .with_steps()
             .with_step(std::make_unique<cm::ManualCmd>("2 Eiswürfel", generate_unique_command_id()))

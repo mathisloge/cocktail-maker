@@ -21,7 +21,7 @@ class RecipeExecutorAdapter : public QObject
   public:
     explicit RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> ctx,
                                    std::shared_ptr<const IngredientStore> ingredient_store);
-    Q_INVOKABLE void make_recipe(RecipeDetail* recipe);
+    Q_INVOKABLE void make_recipe(RecipeDetail* recipe, QString glassId);
     Q_INVOKABLE void continue_mix();
     Q_INVOKABLE void cancel();
 

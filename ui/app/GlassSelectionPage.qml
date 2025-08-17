@@ -15,7 +15,9 @@ Item {
     property glass detectedGlass
     required property RecipeDetail recipe
     signal backClicked
-    signal nextClicked
+    signal glassSelected(id: string)
+
+    property string _selectedGlassId: detectedGlass.id
 
     GlassListModel {
         id: model
@@ -66,6 +68,7 @@ Item {
                     delegate: Button {
                         width: glassGrid.cellWidth - glassGrid.spacing
                         height: glassGrid.cellHeight - glassGrid.spacing
+                        required property string glassId
                         required property string name
                         required property string capacity
                         required property int index
@@ -74,6 +77,7 @@ Item {
 
                         onClicked: {
                             glassGrid.currentIndex = index;
+                            root._selectedGlass = glassId;
                         }
                     }
                 }
@@ -82,7 +86,7 @@ Item {
         Button {
             Layout.alignment: Qt.AlignTop | Qt.AlignHCenter
             text: "🍹 mixen!"
-            onClicked: root.nextClicked()
+            onClicked: root.glassSelected(root._selectedGlassId)
         }
     }
 

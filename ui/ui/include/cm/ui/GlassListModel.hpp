@@ -17,6 +17,7 @@ class GlassListModel : public QAbstractListModel
     enum class Roles
     {
         name = Qt::UserRole + 1,
+        glass_id,
         capacity,
         image_source
     };

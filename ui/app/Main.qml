@@ -79,8 +79,8 @@ ApplicationWindow {
         id: glassSelectionPage
         GlassSelectionPage {
             recipe: window.selectedRecipe
-            onNextClicked: {
-                ApplicationState.recipeExecutor.make_recipe(window.selectedRecipe)
+            onGlassSelected: (glassId) => {
+                ApplicationState.recipeExecutor.make_recipe(window.selectedRecipe, glassId)
                 stackView.push(mixingPage)
             }
 

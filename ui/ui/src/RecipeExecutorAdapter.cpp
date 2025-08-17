@@ -61,7 +61,7 @@ RecipeExecutorAdapter::RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> c
     });
 }
 
-void RecipeExecutorAdapter::make_recipe(RecipeDetail* recipe)
+void RecipeExecutorAdapter::make_recipe(RecipeDetail* recipe, QString glassId)
 {
     command_model_.reset();
     executor_ = std::make_unique<RecipeExecutor>(ctx_, recipe->recipe());

@@ -12,6 +12,7 @@ struct GlassAdapter
 {
     Q_GADGET
     QML_VALUE_TYPE(glass)
+    Q_PROPERTY(QString id READ id CONSTANT)
     Q_PROPERTY(QString displayName READ display_name CONSTANT)
     Q_PROPERTY(QString imagePath READ image_path CONSTANT)
     Q_PROPERTY(QString capacity READ capacity CONSTANT)
@@ -20,6 +21,11 @@ struct GlassAdapter
     GlassAdapter(cm::Glass glass = {})
         : glass{std::move(glass)}
     {
+    }
+
+    QString id() const
+    {
+        return QString::fromStdString(glass.id);
     }
 
     QString display_name() const

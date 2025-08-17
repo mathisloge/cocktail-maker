@@ -18,6 +18,7 @@ class GlassStoreFixture
     {
         store.add_glass(
             Glass{
+                .id = kStandardGlass,
                 .display_name = kStandardGlass,
                 .image_path = "",
                 .capacity = 0.25 * units::si::litre,
@@ -26,6 +27,7 @@ class GlassStoreFixture
 
         store.add_glass(
             Glass{
+                .id = kSmallGlass,
                 .display_name = kSmallGlass,
                 .image_path = "",
                 .capacity = 0.1 * units::si::litre,
@@ -34,6 +36,7 @@ class GlassStoreFixture
 
         store.add_glass(
             Glass{
+                .id = kLargeGlass,
                 .display_name = kLargeGlass,
                 .image_path = "",
                 .capacity = 0.3 * units::si::litre,

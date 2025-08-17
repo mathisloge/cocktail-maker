@@ -7,8 +7,11 @@
 #include "units.hpp"
 
 namespace cm {
+using GlassId = std::string;
+
 struct Glass
 {
+    GlassId id;
     std::string display_name;
     std::filesystem::path image_path;
     units::Litre capacity;

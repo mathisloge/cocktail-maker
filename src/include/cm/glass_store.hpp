@@ -11,13 +11,14 @@ namespace cm {
 class GlassStore : public std::enable_shared_from_this<GlassStore>
 {
   public:
-    using WeightGlassMap = std::map<units::Grams, Glass>;
+    using GlassMap = std::map<GlassId, Glass>;
 
     const Glass& add_glass(Glass glass, units::Grams glass_weight);
     const Glass& find_glass_by_weight(units::Grams glass_weight);
-    const WeightGlassMap& glasses() const;
+    const GlassMap& glasses() const;
 
   private:
-    WeightGlassMap glasses_;
+    GlassMap glasses_;
+    std::map<units::Grams, GlassId> glass_weights_;
 };
 } // namespace cm

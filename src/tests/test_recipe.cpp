@@ -5,10 +5,12 @@
 
 using namespace cm;
 
-static auto L(double litres)
+namespace {
+consteval auto L(double litres) // NOLINT
 {
     return litres * units::si::litre;
 }
+} // namespace
 
 TEST_CASE("scaled_to preserves structure and scales dispense volumes", "[recipe][scaling]")
 {

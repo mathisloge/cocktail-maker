@@ -14,6 +14,7 @@ QHash<int, QByteArray> GlassListModel::roleNames() const
 {
     QHash<int, QByteArray> roles{
         {std::to_underlying(Roles::name), "name"},
+        {std::to_underlying(Roles::glass_id), "glassId"},
         {std::to_underlying(Roles::capacity), "capacity"},
         {std::to_underlying(Roles::image_source), "imageSource"},
     };

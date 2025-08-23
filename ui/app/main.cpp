@@ -134,9 +134,12 @@ int main(int argc, char* argv[])
     recipe_store->add_recipe(std::move(mojito));
     recipe_store->add_recipe(std::move(screwdriver));
 
-    glass_store->add_glass(Glass{.display_name = "Glass1", .capacity = 0.25 * units::si::litre}, 500 * units::si::gram);
-    glass_store->add_glass(Glass{.display_name = "Glass2", .capacity = 0.1 * units::si::litre}, 150 * units::si::gram);
-    glass_store->add_glass(Glass{.display_name = "Glass3", .capacity = 0.4 * units::si::litre}, 600 * units::si::gram);
+    glass_store->add_glass(Glass{.id = "g1", .display_name = "Glass1", .capacity = 0.25 * units::si::litre},
+                           500 * units::si::gram);
+    glass_store->add_glass(Glass{.id = "g2", .display_name = "Glass2", .capacity = 0.1 * units::si::litre},
+                           150 * units::si::gram);
+    glass_store->add_glass(Glass{.id = "g3", .display_name = "Glass3", .capacity = 0.4 * units::si::litre},
+                           600 * units::si::gram);
 
     auto&& app_state = engine.singletonInstance<cm::app::ApplicationState*>("CocktailMaker.App", "ApplicationState");
     Q_ASSERT(app_state != nullptr);

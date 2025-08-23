@@ -2,6 +2,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-add_executable(core_tests test_glass_store.cpp)
+add_executable(core_tests test_glass_store.cpp test_recipe.cpp)
 target_link_libraries(core_tests PRIVATE Catch2::Catch2WithMain cm::core)
 catch_discover_tests(core_tests)

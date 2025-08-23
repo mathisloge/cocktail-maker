@@ -184,7 +184,11 @@ std::shared_ptr<Recipe> RecipeBooster::boost_recipe(const Recipe& original,
         boosted_steps.emplace_back(std::move(boosted_step));
     }
 
-    return std::make_shared<Recipe>(original.name(), std::move(boosted_steps), original.description(), original.image_path());
+    return std::make_shared<Recipe>(original.name(),
+                                    std::move(boosted_steps),
+                                    original.description(),
+                                    original.image_path(),
+                                    original.nominal_serving_volume());
 }
 
 bool RecipeBooster::is_boostable(const Recipe& recipe, const IngredientStore& store)

@@ -12,6 +12,7 @@
         "mp-units",
         "fmt",
         "spdlog",
-        "catch2"
+        "catch2",
+        "libassert"
     ]
 }

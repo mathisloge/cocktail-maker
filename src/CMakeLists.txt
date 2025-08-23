@@ -28,6 +28,7 @@ target_link_libraries(
         mp-units::systems
         mp-units::mp-units
         mp-units::mp-units-contracts
+        libassert::assert
         spdlog::spdlog
         fmt::fmt
 )

@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
     auto recipe_store = std::make_shared<cm::RecipeStore>();
     auto glass_store = std::make_shared<cm::GlassStore>();
     auto recipe_factory = std::make_shared<cm::ui::RecipeFactory>(recipe_store, ingredient_store);
-    auto recipe_executor = std::make_shared<cm::ui::RecipeExecutorAdapter>(execution_context, ingredient_store);
+    auto recipe_executor = std::make_shared<cm::ui::RecipeExecutorAdapter>(execution_context, ingredient_store, glass_store);
 
     auto&& water = ingredient_store->add_ingredient(
         Ingredient{.id = "water", .display_name = "Wasser", .boost_category = BoostCategory::reducible});
@@ -84,6 +84,7 @@ int main(int argc, char* argv[])
         cm::make_recipe()
             .with_name("Wasser")
             .with_description("Klassisches Wasser ohne Schickschnack")
+            .with_nominal_serving_volume(300 * units::milli_litre)
             .with_steps()
             .with_step(std::make_unique<cm::DispenseLiquidCmd>(water.id, 250 * units::milli_litre, generate_unique_command_id()))
             .with_step(
@@ -99,6 +100,7 @@ int main(int argc, char* argv[])
             .with_name("Mojito")
             .with_description("Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, "
                               "Zucker und Soda – perfekt für den Sommer.")
+            .with_nominal_serving_volume(250 * units::milli_litre)
             .with_steps()
             .with_step(std::make_unique<cm::DispenseLiquidCmd>(
                 bacardi.id, 3 * units::imperial::fluid_ounce, generate_unique_command_id()))
@@ -119,6 +121,7 @@ int main(int argc, char* argv[])
             .with_name("Screwdriver")
             .with_description("Der Screwdriver ist ein erfrischender Cocktail aus Vodka und Orangensaft, der "
                               "durch seine einfache Zubereitung und fruchtige Note besticht.")
+            .with_nominal_serving_volume(300 * units::milli_litre)
             .with_steps()
             .with_step(std::make_unique<cm::DispenseLiquidCmd>(vodka.id, 100 * units::milli_litre, generate_unique_command_id()))
             .with_step(

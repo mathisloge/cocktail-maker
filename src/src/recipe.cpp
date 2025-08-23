@@ -4,6 +4,7 @@
 
 #include "cm/recipe.hpp"
 #include <fmt/ranges.h>
+#include <libassert/assert.hpp>
 #include "cm/commands/command.hpp"
 #include "cm/commands/command_visitor.hpp"
 #include "cm/commands/dispense_liquid_cmd.hpp"
@@ -61,6 +62,8 @@ RecipeBuilder::StepBuilder RecipeBuilder::with_steps()
 
 std::shared_ptr<Recipe> RecipeBuilder::create()
 {
+    ASSERT(not name_.empty());
+    ASSERT(nominal_serving_volume_ > 0 * units::si::litre);
     return std::make_shared<Recipe>(
         std::move(name_), std::move(steps_), std::move(description_), std::move(image_path_), nominal_serving_volume_);
 }

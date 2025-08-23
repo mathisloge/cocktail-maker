@@ -34,9 +34,11 @@ struct CommandUiFormatter final : public CommandVisitor
 } // namespace
 
 RecipeExecutorAdapter::RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> ctx,
-                                             std::shared_ptr<const IngredientStore> ingredient_store)
+                                             std::shared_ptr<const IngredientStore> ingredient_store,
+                                             std::shared_ptr<const GlassStore> glass_store)
     : ctx_{std::move(ctx)}
     , ingredient_store_{std::move(ingredient_store)}
+    , glass_store_{std::move(glass_store)}
 {
     ctx_->event_bus().subscribe([self = QPointer{this}](auto&& event) {
         if (self.isNull()) {
@@ -61,18 +63,25 @@ RecipeExecutorAdapter::RecipeExecutorAdapter(std::shared_ptr<ExecutionContext> c
     });
 }
 
-void RecipeExecutorAdapter::make_recipe(RecipeDetail* recipe, QString glassId)
+void RecipeExecutorAdapter::make_recipe(RecipeDetail* original_recipe, QString glassId)
 {
-    command_model_.reset();
-    executor_ = std::make_unique<RecipeExecutor>(ctx_, recipe->recipe());
-    for (auto&& steps : recipe->recipe()->production_steps()) {
-        for (auto&& cmd : steps) {
-            CommandUiFormatter name_formatter{*ingredient_store_};
-            cmd->accept(name_formatter);
-            command_model_.register_command(cmd->id(), name_formatter.name);
+    try {
+        command_model_.reset();
+        auto&& glass = glass_store_->find_glass_by_id(glassId.toStdString());
+        auto recipe = original_recipe->recipe()->scaled_to(glass.capacity);
+        executor_ = std::make_unique<RecipeExecutor>(ctx_, recipe);
+        for (auto&& steps : recipe->production_steps()) {
+            for (auto&& cmd : steps) {
+                CommandUiFormatter name_formatter{*ingredient_store_};
+                cmd->accept(name_formatter);
+                command_model_.register_command(cmd->id(), name_formatter.name);
+            }
         }
+        executor_->run();
     }
-    executor_->run();
+    catch (const std::exception& ex) {
+        Q_EMIT executionAborted();
+    }
 }
 
 void RecipeExecutorAdapter::continue_mix()

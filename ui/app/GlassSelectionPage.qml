@@ -77,7 +77,7 @@ Item {
 
                         onClicked: {
                             glassGrid.currentIndex = index;
-                            root._selectedGlass = glassId;
+                            root._selectedGlassId = glassId;
                         }
                     }
                 }

@@ -12,7 +12,16 @@ const Glass& GlassStore::add_glass(Glass glass, units::Grams glass_weight)
     return it->second;
 }
 
-const Glass& GlassStore::find_glass_by_weight(units::Grams glass_weight)
+const Glass& GlassStore::find_glass_by_id(const GlassId& id) const
+{
+    auto it = glasses_.find(id);
+    if (it == glasses_.end()) {
+        throw std::out_of_range("Could not find glass");
+    }
+    return it->second;
+}
+
+const Glass& GlassStore::find_glass_by_weight(units::Grams glass_weight) const
 {
     static constexpr units::Grams kTolerance = 5 * units::si::gram;
     auto it = glass_weights_.lower_bound(glass_weight);

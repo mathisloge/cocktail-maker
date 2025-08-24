@@ -3,6 +3,7 @@
     "dependencies": [
         "boost-asio",
         "boost-signals2",
+        "boost-process",
         {
             "name": "libgpiod",
             "features":[
@@ -13,6 +14,9 @@
         "fmt",
         "spdlog",
         "catch2",
-        "libassert"
+        "libassert",
+        "quite",
+        "protobuf",
+        "grpc"
     ]
 }

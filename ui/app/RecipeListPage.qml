@@ -55,6 +55,7 @@ Item {
 
             delegate: ImageCard {
                 required property var model
+                objectName: "recipe-" + model.name
                 clip: true
                 Layout.preferredWidth: (cocktailGrid.width - ((cocktailGrid.columns - 1) * cocktailGrid.columnSpacing)) / cocktailGrid.columns
                 Layout.preferredHeight: width

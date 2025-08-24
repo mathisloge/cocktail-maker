@@ -16,7 +16,7 @@ qt_add_qml_module(cocktail-maker-ui
         mojito.png
 )
 add_library(cm::ui ALIAS cocktail-maker-ui)
-target_link_libraries(cocktail-maker-ui PUBLIC cm::core)
+target_link_libraries(cocktail-maker-ui PUBLIC cm::core quite::probe)
 
 target_sources(
     cocktail-maker-ui

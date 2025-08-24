@@ -9,6 +9,7 @@ import CocktailMaker.Ui
 
 Item {
     id: root
+    objectName: "recipeDetailPage"
     signal backClicked
     signal mixClicked(RecipeDetail recipe)
     property glass glass

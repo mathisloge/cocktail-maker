@@ -15,6 +15,7 @@ target_link_libraries(
         Qt6::QuickControls2
         cm::core
         cm::ui
+        quite::probe_qt
 )
 
 qt_add_qml_module(CocktailMakerApp

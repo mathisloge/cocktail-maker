@@ -15,8 +15,6 @@
         "spdlog",
         "catch2",
         "libassert",
-        "quite",
-        "protobuf",
-        "grpc"
+        "quite"
     ]
 }

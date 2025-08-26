@@ -37,11 +37,29 @@ class AppFixture
 
 TEST_CASE_METHOD(AppFixture, "Select a cocktail", "[ui]")
 {
-    auto mojito = probe.find_object(make_query().with_property(kObjectName, std::string{"recipe-Mojito"}));
+    GIVEN("The Mojito recipe is selected")
+    {
+        auto mojito = probe.find_object(make_query().with_property(kObjectName, std::string{"recipe-Mojito"}));
+        mojito.mouse_action();
+        wait_for_stack_animation();
+        REQUIRE_NOTHROW(probe.try_find_object(make_query().with_property(kObjectName, std::string{"recipeDetailPage"}), 1s));
 
-    mojito.mouse_action();
-    wait_for_stack_animation();
+        WHEN("I look at the ingredient list")
+        {
+            THEN("The ingredients are properly listed")
+            {
+                REQUIRE_NOTHROW(probe.find_object(make_query().with_property("text", std::string{"Mojito"})));
+                // list
+                auto repeater = probe.find_object(make_query().with_property(kObjectName, std::string{"ingredientRepeater"}));
+                REQUIRE(std::get<std::int64_t>(repeater.property("count").value()) == 5);
 
-    REQUIRE_NOTHROW(probe.try_find_object(make_query().with_property(kObjectName, std::string{"recipeDetailPage"}), 1s));
-    REQUIRE_NOTHROW(probe.find_object(make_query().with_property("text", std::string{"Mojito"})));
+                const std::array<std::string, 5> expected_ingredients{
+                    "Bacardi", "Soda Wasser", "Limettensaft", "Manuell", "Manuell"}; // codespell:ignore
+                for (int i = 0; i < expected_ingredients.size(); i++) {
+                    auto item = std::get<quite::test::RemoteObject>(repeater.invoke_method("itemAt(int)", {i}));
+                    REQUIRE(std::get<std::string>(item.property("name").value()) == expected_ingredients.at(i));
+                }
+            }
+        }
+    }
 }

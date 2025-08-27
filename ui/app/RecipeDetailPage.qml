@@ -9,6 +9,7 @@ import CocktailMaker.Ui
 
 Item {
     id: root
+    objectName: "recipeDetailPage"
     signal backClicked
     signal mixClicked(RecipeDetail recipe)
     property glass glass
@@ -111,22 +112,24 @@ Item {
 
                 Repeater {
                     model: root.__recipe.steps
+                    objectName: "ingredientRepeater"
 
                     delegate: Section {
                         id: section
-                        required property var model
+                        required property string name
+                        required property string detail
                         Layout.fillWidth: true
                         RowLayout {
                             width: parent.width
                             Label {
                                 Layout.alignment: Qt.AlignLeft
-                                text: section.model.name
+                                text: section.name
                                 font.pointSize: 14
                             }
                             Label {
                                 Layout.alignment: Qt.AlignRight
                                 color: "#b3ffffff"
-                                text: section.model.detail
+                                text: section.detail
                                 font.pointSize: 14
                             }
                         }

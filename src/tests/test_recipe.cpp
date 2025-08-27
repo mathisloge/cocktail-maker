@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 Mathis Logemann <mathis@quite.rocks>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include <catch2/catch_test_macros.hpp>
 #include <cm/recipe.hpp>
 #include "cm/commands/dispense_liquid_cmd.hpp"

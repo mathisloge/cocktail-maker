@@ -64,6 +64,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime")
 
 if(BUILD_TESTING)
     find_package(Catch2 3 REQUIRED)
+    find_package(nlohmann_json CONFIG REQUIRED)
+    find_package(Boost REQUIRED COMPONENTS process)
+    find_package(quite CONFIG REQUIRED)
     include(Catch)
 endif()
 

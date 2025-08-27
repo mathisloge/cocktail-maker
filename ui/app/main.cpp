@@ -17,6 +17,7 @@
 #include <cm/recipe_store.hpp>
 #include <mp-units/systems/imperial.h>
 #include <mp-units/systems/international.h>
+#include <quite/probe_qt/probe_qt.hpp>
 #include "ApplicationState.hpp"
 
 Q_IMPORT_QML_PLUGIN(CocktailMaker_UiPlugin)
@@ -24,6 +25,7 @@ using namespace cm;
 
 int main(int argc, char* argv[])
 {
+    quite::probe::setup_qt_probe(quite::GrpcServer{.server_address = "unix:///tmp/grpc_probe.sock"});
     QApplication app{argc, argv};
     QCoreApplication::setApplicationName(QStringLiteral("CocktailMaker"));
     QCoreApplication::setOrganizationName(QStringLiteral("com.mathisloge.cocktail-maker"));

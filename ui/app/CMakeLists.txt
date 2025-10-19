@@ -26,6 +26,8 @@ qt_add_qml_module(CocktailMakerApp
         RecipeDetailPage.qml
         GlassSelectionPage.qml
         MixPage.qml
+        SettingsPage.qml
+        SettingsWeightSubPage.qml
     DEPENDENCIES
         TARGET cocktail-maker-ui
     SOURCES

@@ -4,9 +4,7 @@
 
 pragma ComponentBehavior: Bound
 import QtQuick
-import QtQuick.Effects
 import QtQuick.Controls
-import QtQuick.Layouts
 import CocktailMaker.Ui
 
 ApplicationWindow {
@@ -59,6 +57,16 @@ ApplicationWindow {
                 window.selectedRecipe = ApplicationState.recipeFactory.create(name);
                 stackView.push(cocktailDetailPage);
             }
+
+            InvisibleLongPressButton {
+                x: 0
+                y: 0
+                width: 100
+                height: 100
+                onActivated: {
+                    stackView.push(settingsPage)
+                }
+            }
         }
     }
 
@@ -100,5 +108,10 @@ ApplicationWindow {
             onFinished: stackView.pop(null)
         }
 
+    }
+
+    Component {
+        id: settingsPage
+        SettingsPage {}
     }
 }

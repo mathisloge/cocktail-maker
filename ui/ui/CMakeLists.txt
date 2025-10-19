@@ -12,6 +12,7 @@ qt_add_qml_module(cocktail-maker-ui
         qml/Button.qml
         qml/Section.qml
         qml/ManualCommandPopup.qml
+        qml/InvisibleLongPressButton.qml
     RESOURCES
         mojito.png
 )

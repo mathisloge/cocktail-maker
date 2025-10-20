@@ -34,9 +34,4 @@ using StepsPerLitre = quantity<steps_per_litre>;
 // ^^^ Stepper-Motor units
 
 // NOLINTEND(readability-identifier-naming)
-enum class OperationalState
-{
-    faulty,
-    ok
-};
 } // namespace cm::units

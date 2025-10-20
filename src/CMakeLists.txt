@@ -45,7 +45,6 @@ target_sources(
                 include/cm/liquid_dispenser_registry.hpp
                 include/cm/liquid_dispenser_stepper_pump.hpp
                 include/cm/liquid_dispenser_simulated.hpp
-                include/cm/machine_state.hpp
                 include/cm/execution_context.hpp
                 include/cm/glass.hpp
                 include/cm/glass_store.hpp
@@ -57,6 +56,7 @@ target_sources(
                 include/cm/ingredient_id.hpp
                 include/cm/ingredient.hpp
                 include/cm/units.hpp
+                include/cm/operation_state.hpp
                 include/cm/commands/command_id.hpp
                 include/cm/commands/command.hpp
                 include/cm/commands/dispense_liquid_cmd.hpp
@@ -76,12 +76,12 @@ target_sources(
         src/logging.cpp
         src/hw/hx711_sensor.cpp
         src/hw/drv8825_stepper_moter.cpp
+        src/hw/weight_sensor.cpp
         src/execution_context.cpp
         src/glass_store.cpp
         src/liquid_dispenser_registry.cpp
         src/liquid_dispenser_simulated.cpp
         src/liquid_dispenser_stepper_pump.cpp
-        src/machine_state.cpp
         src/recipe_executor.cpp
         src/recipe.cpp
         src/recipe_store.cpp

@@ -35,6 +35,10 @@ LiquidDispenserRegistry& ExecutionContext::liquid_registry()
     return liquid_registry_;
 }
 
+WeightSensor& ExecutionContext::weight_sensor()
+{
+}
+
 boost::asio::any_io_executor ExecutionContext::async_executor()
 {
     return io_context_;

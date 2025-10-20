@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "cm/hw/hx711_sensor.hpp"
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/use_awaitable.hpp>
 #include <gpiod.hpp>
 #include <mp-units/systems/si.h>
 #include <mp-units/systems/usc.h>
@@ -11,8 +13,9 @@
 namespace cm {
 constexpr auto kClockDelay = std::chrono::microseconds(1); // ~1us
 
-Hx711Sensor::Hx711Sensor(Hx711DatPin dat_pin, Hx711ClkPin clk_pin)
-    : dat_line_{gpiod::chip{std::move(dat_pin.chip)}
+Hx711Sensor::Hx711Sensor(boost::asio::io_context& io, Hx711DatPin dat_pin, Hx711ClkPin clk_pin)
+    : WeightSensor{"hx711", io}
+    , dat_line_{gpiod::chip{std::move(dat_pin.chip)}
                     .prepare_request()
                     .set_consumer("hx711-dat")
                     .add_line_settings(dat_pin.offset, gpiod::line_settings{}.set_direction(gpiod::line::direction::INPUT))
@@ -25,7 +28,15 @@ Hx711Sensor::Hx711Sensor(Hx711DatPin dat_pin, Hx711ClkPin clk_pin)
                     .do_request()}
     , clk_offset_{clk_pin.offset}
 {
-    boost::asio::post([this]() { pulse_clock(); });
+    boost::asio::post([this]() {
+        pulse_clock();
+        state_ = OperationState::ok;
+    });
+}
+
+OperationState Hx711Sensor::state() const
+{
+    return state_;
 }
 
 void Hx711Sensor::pulse_clock()
@@ -36,13 +47,33 @@ void Hx711Sensor::pulse_clock()
 
 boost::asio::awaitable<void> Hx711Sensor::tare()
 {
-    offset_ = co_await read_raw();
+    constexpr int kSteps = 10;
+    state_ = OperationState::calibrating;
+    boost::asio::steady_timer timer{co_await boost::asio::this_coro::executor};
+    units::quantity<hx711_unit> measure_points{};
+    for (int i = 0; i < kSteps; i++) {
+        co_await timer.async_wait(boost::asio::use_awaitable);
+        timer.expires_after(std::chrono::milliseconds{100});
+        measure_points += (co_await read_raw()).quantity_from_zero();
+    }
+    offset_ = units::quantity_point<hx711_unit>{measure_points / kSteps};
+    state_ = OperationState::ok;
 }
 
-boost::asio::awaitable<void> Hx711Sensor::calibrate_with_ref_weight(mp_units::quantity<mp_units::si::gram> known_mass)
+boost::asio::awaitable<void> Hx711Sensor::calibrate_with_ref_weight(units::Grams known_mass)
 {
-    raw_value_ = co_await read_raw();
+    constexpr int kSteps = 10;
+    state_ = OperationState::calibrating;
+    boost::asio::steady_timer timer{co_await boost::asio::this_coro::executor};
+    units::quantity<hx711_unit> measure_points{};
+    for (int i = 0; i < kSteps; i++) {
+        co_await timer.async_wait(boost::asio::use_awaitable);
+        timer.expires_after(std::chrono::milliseconds{100});
+        measure_points += (co_await read_raw()).quantity_from_zero();
+    }
+    raw_value_ = units::quantity_point<hx711_unit>{measure_points / kSteps};
     known_mass_ = known_mass;
+    state_ = OperationState::ok;
 }
 
 boost::asio::awaitable<units::quantity_point<hx711_unit>> Hx711Sensor::read_raw()
@@ -70,7 +101,7 @@ boost::asio::awaitable<units::quantity_point<hx711_unit>> Hx711Sensor::read_raw(
     co_return static_cast<std::int32_t>(value) * hx711_unit;
 }
 
-boost::asio::awaitable<units::Grams> Hx711Sensor::read()
+boost::asio::awaitable<units::quantity_point<units::si::gram>> Hx711Sensor::read()
 {
     const auto delta = raw_value_ - offset_;
     const auto scale = known_mass_ / delta;

@@ -5,15 +5,14 @@
 #include <boost/asio.hpp>
 #include <cm/hw/hx711_sensor.hpp>
 #include <fmt/core.h>
-#include <thread>
 
 using namespace mp_units::si::unit_symbols;
 
 int main()
 {
     boost::asio::io_context io;
-    cm::Hx711Sensor load_cell{cm::Hx711DatPin{.chip = "/dev/gpiochip0", .offset = {24}},
-                              cm::Hx711ClkPin{.chip = "/dev/gpiochip0", .offset = {23}}};
+    cm::Hx711Sensor load_cell{
+        io, cm::Hx711DatPin{.chip = "/dev/gpiochip0", .offset = {24}}, cm::Hx711ClkPin{.chip = "/dev/gpiochip0", .offset = {23}}};
 
     boost::asio::co_spawn(
         io,
@@ -31,7 +30,7 @@ int main()
             co_await load_cell.calibrate_with_ref_weight(100 * g);
 
             while (true) {
-                fmt::println("read: {}", co_await load_cell.read());
+                fmt::println("read: {}", load_cell.last_measure().weight.quantity_from_zero());
                 timer.expires_after(std::chrono::milliseconds{500});
                 co_await timer.async_wait(boost::asio::use_awaitable);
             }

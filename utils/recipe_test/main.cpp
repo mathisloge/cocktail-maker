@@ -8,7 +8,6 @@
 #include <cm/hw/drv8825_stepper_moter.hpp>
 #include <cm/liquid_dispenser_stepper_pump.hpp>
 #include <cm/logging.hpp>
-#include <cm/machine_state.hpp>
 #include <cm/recipe.hpp>
 #include <cm/recipe_executor.hpp>
 #include <spdlog/spdlog.h>
@@ -17,10 +16,8 @@
 int main()
 {
     boost::asio::io_context io;
-    std::shared_ptr<cm::MachineState> machine_state = std::make_shared<cm::MachineState>(
-        io,
-        std::make_unique<cm::Hx711Sensor>(cm::Hx711DatPin{.chip = "/dev/gpiochip0", .offset = {23}},
-                                          cm::Hx711ClkPin{.chip = "/dev/gpiochip0", .offset = {24}}));
+    auto weight_sensor = std::make_unique<cm::Hx711Sensor>(
+        io, cm::Hx711DatPin{.chip = "/dev/gpiochip0", .offset = {23}}, cm::Hx711ClkPin{.chip = "/dev/gpiochip0", .offset = {24}});
 
     auto liquid_dispenser = std::make_unique<cm::StepperPumpLiquidDispenser>(
         "test-dispenser",

@@ -27,16 +27,19 @@ using Hx711RawValue = units::quantity<hx711_unit, std::int32_t>;
 class Hx711Sensor : public WeightSensor
 {
   public:
-    Hx711Sensor(Hx711DatPin dat_pin, Hx711ClkPin clk_pin);
+    Hx711Sensor(boost::asio::io_context& io, Hx711DatPin dat_pin, Hx711ClkPin clk_pin);
+    OperationState state() const override;
     boost::asio::awaitable<void> tare() override;
     boost::asio::awaitable<void> calibrate_with_ref_weight(units::Grams known_mass) override;
-    [[nodiscard]] boost::asio::awaitable<units::Grams> read() override;
 
   private:
+    [[nodiscard]] boost::asio::awaitable<units::quantity_point<units::si::gram>> read() override;
     [[nodiscard]] boost::asio::awaitable<units::quantity_point<hx711_unit>> read_raw();
     void pulse_clock();
 
   private:
+    OperationState state_{OperationState::initializing};
+
     gpiod::line_request dat_line_;
     gpiod::line::offset dat_offset_;
 

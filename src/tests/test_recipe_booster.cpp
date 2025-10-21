@@ -16,11 +16,12 @@ consteval auto L(double litres) // NOLINT
 
 TEST_CASE("RecipeBooster preserves total variable volume when boosting", "[recipe_booster][volume]")
 {
-    auto builder = make_recipe().with_name("BoosterTest").with_nominal_serving_volume(L(0.25)).with_steps();
-
-    builder.with_step(std::make_unique<DispenseLiquidCmd>("Vodka", L(0.04), generate_unique_command_id()));
-    builder.with_step(std::make_unique<DispenseLiquidCmd>("Cola", L(0.10), generate_unique_command_id()));
-    auto recipe = builder.add().create();
+    auto recipe = make_recipe()
+                      .name("BoosterTest")
+                      .nominal_serving_volume(L(0.25))
+                      .step(std::make_unique<DispenseLiquidCmd>("Vodka", L(0.04), generate_unique_command_id()))
+                      .step(std::make_unique<DispenseLiquidCmd>("Cola", L(0.10), generate_unique_command_id()))
+                      .create();
 
     IngredientStore store;
     store.add_ingredient(Ingredient{IngredientId{"Vodka"}, "Vodka", BoostCategory::boostable});
@@ -53,11 +54,12 @@ TEST_CASE("RecipeBooster preserves total variable volume when boosting", "[recip
 
 TEST_CASE("RecipeBooster increases boostable and reduces reducible on positive boost", "[recipe_booster][boost]")
 {
-    auto builder = make_recipe().with_name("BoosterTest2").with_nominal_serving_volume(L(0.25)).with_steps();
-
-    builder.with_step(std::make_unique<DispenseLiquidCmd>("Vodka", L(0.04), generate_unique_command_id()));
-    builder.with_step(std::make_unique<DispenseLiquidCmd>("Cola", L(0.10), generate_unique_command_id()));
-    auto recipe = builder.add().create();
+    auto recipe = make_recipe()
+                      .name("BoosterTest2")
+                      .nominal_serving_volume(L(0.25))
+                      .step(std::make_unique<DispenseLiquidCmd>("Vodka", L(0.04), generate_unique_command_id()))
+                      .step(std::make_unique<DispenseLiquidCmd>("Cola", L(0.10), generate_unique_command_id()))
+                      .create();
 
     IngredientStore store;
     store.add_ingredient(Ingredient{IngredientId{"Vodka"}, "Vodka", BoostCategory::boostable});
@@ -102,11 +104,13 @@ TEST_CASE("RecipeBooster increases boostable and reduces reducible on positive b
 
 TEST_CASE("RecipeBooster handles negative boost (reduces boostables)", "[recipe_booster][reduce]")
 {
-    auto builder = make_recipe().with_name("BoosterTest3").with_nominal_serving_volume(L(0.25)).with_steps();
 
-    builder.with_step(std::make_unique<DispenseLiquidCmd>("Vodka", L(0.04), generate_unique_command_id()));
-    builder.with_step(std::make_unique<DispenseLiquidCmd>("Cola", L(0.10), generate_unique_command_id()));
-    auto recipe = builder.add().create();
+    auto recipe = make_recipe()
+                      .name("BoosterTest3")
+                      .nominal_serving_volume(L(0.25))
+                      .step(std::make_unique<DispenseLiquidCmd>("Vodka", L(0.04), generate_unique_command_id()))
+                      .step(std::make_unique<DispenseLiquidCmd>("Cola", L(0.10), generate_unique_command_id()))
+                      .create();
 
     IngredientStore store;
     store.add_ingredient(Ingredient{IngredientId{"Vodka"}, "Vodka", BoostCategory::boostable});

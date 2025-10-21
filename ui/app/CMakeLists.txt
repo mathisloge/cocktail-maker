@@ -14,6 +14,7 @@ target_link_libraries(
         Qt6::Widgets
         Qt6::QuickControls2
         cm::core
+        cm::db
         cm::ui
 )
 

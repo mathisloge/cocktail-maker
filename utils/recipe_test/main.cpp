@@ -43,11 +43,9 @@ int main()
     });
 
     auto recipe = cm::make_recipe()
-                      .with_name("Only Water")
-                      .with_steps()
-                      .with_step(std::make_unique<cm::DispenseLiquidCmd>(
+                      .name("Only Water")
+                      .step(std::make_unique<cm::DispenseLiquidCmd>(
                           "water", 250 * cm::units::milli_litre, cm::generate_unique_command_id()))
-                      .add()
                       .create();
     cm::RecipeExecutor recipe_executor{ctx, recipe};
     recipe_executor.run();

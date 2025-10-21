@@ -13,35 +13,53 @@ namespace cm {
 class Command;
 class Recipe;
 
-using ProductionStep = std::vector<std::unique_ptr<Command>>;
-using ProductionSteps = std::vector<ProductionStep>;
+using Step = std::unique_ptr<Command>;
+using Steps = std::vector<Step>;
+using ProductionSteps = std::vector<Steps>;
+
+template <typename Ptr>
+concept StepLike = std::is_convertible_v<std::remove_reference_t<Ptr>, Step>;
 
 class RecipeBuilder
 {
-  public:
     class StepBuilder
     {
         RecipeBuilder& parent_;
-        ProductionStep steps_;
+        Steps steps_;
 
       public:
-        StepBuilder(RecipeBuilder& parent);
-        StepBuilder& with_step(std::unique_ptr<Command> command);
-        RecipeBuilder& add();
+        explicit StepBuilder(RecipeBuilder& parent);
+        ~StepBuilder();
+        StepBuilder& add_step(std::unique_ptr<Command> command);
     };
 
-    RecipeBuilder& with_nominal_serving_volume(units::Litre litre);
-    RecipeBuilder& with_name(std::string name);
-    RecipeBuilder& with_description(std::string description);
-    RecipeBuilder& with_image(std::filesystem::path image_path);
-    StepBuilder with_steps();
+  public:
+    RecipeBuilder() = default;
+    RecipeBuilder(const RecipeBuilder&) = delete;
+    RecipeBuilder(RecipeBuilder&&) noexcept = default;
+    RecipeBuilder& operator=(const RecipeBuilder&) = delete;
+    RecipeBuilder& operator=(RecipeBuilder&&) noexcept = default;
+    ~RecipeBuilder() = default;
+    RecipeBuilder& nominal_serving_volume(units::Litre litre);
+    RecipeBuilder& name(std::string name);
+    RecipeBuilder& description(std::string description);
+    RecipeBuilder& image(std::string image_path);
+    RecipeBuilder& step(Step command);
+
+    RecipeBuilder& parallel_steps(StepLike auto&&... commands)
+    {
+        StepBuilder b{*this};
+        (b.add_step(std::move(commands)), ...);
+        return *this;
+    }
+
     std::shared_ptr<Recipe> create();
 
   private:
     std::string name_;
     std::string description_;
     units::Litre nominal_serving_volume_;
-    std::filesystem::path image_path_;
+    std::string image_path_;
     ProductionSteps steps_;
 };
 

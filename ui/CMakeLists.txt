@@ -2,5 +2,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+add_subdirectory(db)
 add_subdirectory(ui)
 add_subdirectory(app)

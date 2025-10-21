@@ -17,47 +17,49 @@ RecipeBuilder::StepBuilder::StepBuilder::StepBuilder(RecipeBuilder& parent)
 {
 }
 
-Recipe::~Recipe() = default;
-
-RecipeBuilder::StepBuilder& RecipeBuilder::StepBuilder::with_step(std::unique_ptr<Command> command)
+RecipeBuilder::StepBuilder& RecipeBuilder::StepBuilder::add_step(std::unique_ptr<Command> command)
 {
     steps_.emplace_back(std::move(command));
     return *this;
 }
 
-RecipeBuilder& RecipeBuilder::StepBuilder::add()
+RecipeBuilder::StepBuilder::StepBuilder::~StepBuilder()
 {
     parent_.steps_.emplace_back(std::move(steps_));
-    return parent_;
 }
 
-RecipeBuilder& RecipeBuilder::with_name(std::string name)
+Recipe::~Recipe() = default;
+
+RecipeBuilder& RecipeBuilder::name(std::string name)
 {
     name_ = std::move(name);
     return *this;
 }
 
-RecipeBuilder& RecipeBuilder::with_nominal_serving_volume(units::Litre litre)
+RecipeBuilder& RecipeBuilder::nominal_serving_volume(units::Litre litre)
 {
     nominal_serving_volume_ = litre;
     return *this;
 }
 
-RecipeBuilder& RecipeBuilder::with_description(std::string description)
+RecipeBuilder& RecipeBuilder::description(std::string description)
 {
     description_ = std::move(description);
     return *this;
 }
 
-RecipeBuilder& RecipeBuilder::with_image(std::filesystem::path image_path)
+RecipeBuilder& RecipeBuilder::image(std::string image_path)
 {
     image_path_ = std::move(image_path);
     return *this;
 }
 
-RecipeBuilder::StepBuilder RecipeBuilder::with_steps()
+RecipeBuilder& RecipeBuilder::step(std::unique_ptr<Command> command)
 {
-    return RecipeBuilder::StepBuilder{*this};
+    Steps steps;
+    steps.emplace_back(std::move(command));
+    steps_.emplace_back(std::move(steps));
+    return *this;
 }
 
 std::shared_ptr<Recipe> RecipeBuilder::create()
@@ -158,7 +160,7 @@ std::shared_ptr<Recipe> Recipe::scaled_to(const units::Litre target_volume) cons
     new_steps.reserve(steps_.size());
 
     for (const auto& step : steps_) {
-        ProductionStep new_step;
+        Steps new_step;
         new_step.reserve(step.size());
 
         for (const auto& cmd : step) {

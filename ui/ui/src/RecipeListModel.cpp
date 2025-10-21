@@ -43,7 +43,7 @@ QVariant RecipeListModel::data(const QModelIndex& index, int role) const
         return QString::fromStdString(recipe.second->name());
 
     case Roles::image_source_role:
-        return "qrc:/qt/qml/CocktailMaker/Ui/mojito.png";
+        return QString::fromStdString(recipe.second->image_path());
     }
     return QVariant{};
 }

@@ -15,11 +15,12 @@ consteval auto L(double litres) // NOLINT
 TEST_CASE("scaled_to preserves structure and scales dispense volumes", "[recipe][scaling]")
 {
     // build recipe with two dispense commands in one step
-    auto builder = make_recipe().with_name("ScaleTest").with_nominal_serving_volume(L(0.25)).with_steps();
-
-    builder.with_step(std::make_unique<DispenseLiquidCmd>("Vodka", L(0.04), generate_unique_command_id()));
-    builder.with_step(std::make_unique<DispenseLiquidCmd>("Cola", L(0.10), generate_unique_command_id()));
-    auto recipe = builder.add().create();
+    auto recipe = make_recipe()
+                      .name("ScaleTest")
+                      .nominal_serving_volume(L(0.25))
+                      .parallel_steps(std::make_unique<DispenseLiquidCmd>("Vodka", L(0.04), generate_unique_command_id()),
+                                      std::make_unique<DispenseLiquidCmd>("Cola", L(0.10), generate_unique_command_id()))
+                      .create();
 
     REQUIRE(recipe->production_steps().size() == 1);
     REQUIRE(recipe->production_steps()[0].size() == 2);
@@ -55,11 +56,9 @@ TEST_CASE("scaled_to preserves structure and scales dispense volumes", "[recipe]
 TEST_CASE("scaled_to rejects non-positive target volume", "[recipe][scaling]")
 {
     auto recipe = make_recipe()
-                      .with_name("BadScale")
-                      .with_nominal_serving_volume(L(0.25))
-                      .with_steps()
-                      .with_step(std::make_unique<ManualCmd>("noop", generate_unique_command_id()))
-                      .add()
+                      .name("BadScale")
+                      .nominal_serving_volume(L(0.25))
+                      .step(std::make_unique<ManualCmd>("noop", generate_unique_command_id()))
                       .create();
 
     REQUIRE_THROWS_AS(recipe->scaled_to(L(0.0)), std::out_of_range);

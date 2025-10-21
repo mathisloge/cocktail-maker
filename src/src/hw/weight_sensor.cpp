@@ -20,7 +20,7 @@ WeightSensor::WeightSensor(std::string name, const boost::asio::any_io_executor&
                     .weight = co_await read(),
                     .time = std::chrono::system_clock::now(),
                 };
-                SPDLOG_LOGGER_DEBUG(logger_, "Measured weight: {}", measure_.weight.quantity_from_zero());
+                SPDLOG_LOGGER_TRACE(logger_, "Measured weight: {}", measure_.weight.quantity_from_zero());
                 timer.expires_after(std::chrono::milliseconds{100});
                 co_await timer.async_wait(boost::asio::use_awaitable);
             }

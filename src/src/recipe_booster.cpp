@@ -173,7 +173,7 @@ std::shared_ptr<Recipe> RecipeBooster::boost_recipe(const Recipe& original,
     boosted_steps.reserve(original.production_steps().size());
 
     for (const auto& step : original.production_steps()) {
-        ProductionStep boosted_step;
+        Steps boosted_step;
         boosted_step.reserve(step.size());
 
         for (const auto& cmd : step) {

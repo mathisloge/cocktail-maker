@@ -21,6 +21,7 @@
 #include <mp-units/systems/international.h>
 #include <qqmlcomponent.h>
 #include "ApplicationState.hpp"
+#include "cm/db/db.hpp"
 
 Q_IMPORT_QML_PLUGIN(CocktailMaker_UiPlugin)
 using namespace cm;
@@ -50,97 +51,30 @@ int main(int argc, char* argv[])
     auto recipe_factory = std::make_shared<cm::ui::RecipeFactory>(recipe_store, ingredient_store);
     auto recipe_executor = std::make_shared<cm::ui::RecipeExecutorAdapter>(execution_context, ingredient_store, glass_store);
 
-    auto&& water = ingredient_store->add_ingredient(
-        Ingredient{.id = "water", .display_name = "Wasser", .boost_category = BoostCategory::reducible});
-    auto&& bacardi = ingredient_store->add_ingredient(
-        Ingredient{.id = "bacardi", .display_name = "Bacardi", .boost_category = BoostCategory::boostable});
-    auto&& soda = ingredient_store->add_ingredient(
-        Ingredient{.id = "soda", .display_name = "Soda Wasser", .boost_category = BoostCategory::reducible});
-    auto&& lime_juice = ingredient_store->add_ingredient(
-        Ingredient{.id = "lime_juice", .display_name = "Limettensaft", .boost_category = BoostCategory::reducible});
-    auto&& vodka = ingredient_store->add_ingredient(
-        Ingredient{.id = "vodka", .display_name = "Vodka", .boost_category = BoostCategory::boostable});
-    auto&& orange_juice = ingredient_store->add_ingredient(
-        Ingredient{.id = "orange_juice", .display_name = "Orangensaft", .boost_category = BoostCategory::reducible});
+    db::register_ingredients(*ingredient_store);
 
     execution_context->liquid_registry().register_dispenser(
-        water.id,
+        db::water,
         std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre,
                                                        (0.1 * units::si::litre) / (0.5 * units::si::second)));
     execution_context->liquid_registry().register_dispenser(
-        bacardi.id,
+        db::bacardi,
         std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre,
                                                        (0.1 * units::si::litre) / (0.5 * units::si::second)));
     execution_context->liquid_registry().register_dispenser(
-        soda.id,
+        db::soda,
         std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre, (0.1 * units::si::litre) / (2 * units::si::second)));
     execution_context->liquid_registry().register_dispenser(
-        vodka.id,
+        db::vodka,
         std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre, (0.1 * units::si::litre) / (1 * units::si::second)));
     execution_context->liquid_registry().register_dispenser(
-        lime_juice.id,
+        db::lime_juice,
         std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre, (0.1 * units::si::litre) / (1 * units::si::second)));
     execution_context->liquid_registry().register_dispenser(
-        orange_juice.id,
+        db::orange_juice,
         std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre, (0.1 * units::si::litre) / (1 * units::si::second)));
 
-    // codespell:ignore-begin
-    auto only_water =
-        cm::make_recipe()
-            .with_name("Wasser")
-            .with_description("Klassisches Wasser ohne Schickschnack")
-            .with_nominal_serving_volume(300 * units::milli_litre)
-            .with_steps()
-            .with_step(std::make_unique<cm::DispenseLiquidCmd>(water.id, 250 * units::milli_litre, generate_unique_command_id()))
-            .with_step(
-                std::make_unique<cm::DispenseLiquidCmd>(lime_juice.id, 30 * cm::units::milli_litre, generate_unique_command_id()))
-            .add()
-            .with_steps()
-            .with_step(std::make_unique<cm::ManualCmd>("2 Eiswürfel", generate_unique_command_id()))
-            .add()
-            .create();
-
-    auto mojito =
-        cm::make_recipe()
-            .with_name("Mojito")
-            .with_description("Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, "
-                              "Zucker und Soda – perfekt für den Sommer.")
-            .with_nominal_serving_volume(250 * units::milli_litre)
-            .with_steps()
-            .with_step(std::make_unique<cm::DispenseLiquidCmd>(
-                bacardi.id, 3 * units::imperial::fluid_ounce, generate_unique_command_id()))
-            .with_step(std::make_unique<cm::DispenseLiquidCmd>(soda.id, 120 * units::milli_litre, generate_unique_command_id()))
-            .with_step(
-                std::make_unique<cm::DispenseLiquidCmd>(lime_juice.id, 30 * units::milli_litre, generate_unique_command_id()))
-            .add()
-            .with_steps()
-            .with_step(std::make_unique<cm::ManualCmd>("2 Minzblätter", generate_unique_command_id()))
-            .add()
-            .with_steps()
-            .with_step(std::make_unique<cm::ManualCmd>("2 TL Zucker", generate_unique_command_id()))
-            .add()
-            .create();
-
-    auto screwdriver =
-        cm::make_recipe()
-            .with_name("Screwdriver")
-            .with_description("Der Screwdriver ist ein erfrischender Cocktail aus Vodka und Orangensaft, der "
-                              "durch seine einfache Zubereitung und fruchtige Note besticht.")
-            .with_nominal_serving_volume(300 * units::milli_litre)
-            .with_steps()
-            .with_step(std::make_unique<cm::DispenseLiquidCmd>(vodka.id, 100 * units::milli_litre, generate_unique_command_id()))
-            .with_step(
-                std::make_unique<cm::DispenseLiquidCmd>(orange_juice.id, 150 * units::milli_litre, generate_unique_command_id()))
-            .add()
-            .with_steps()
-            .with_step(std::make_unique<cm::ManualCmd>("2 Eiswürfel", generate_unique_command_id()))
-            .add()
-            .create();
-    // codespell:ignore-end
-
-    recipe_store->add_recipe(std::move(only_water));
-    recipe_store->add_recipe(std::move(mojito));
-    recipe_store->add_recipe(std::move(screwdriver));
+    db::register_possible_recipes(*execution_context, *recipe_store);
 
     glass_store->add_glass(Glass{.id = "g1", .display_name = "Glass1", .capacity = 0.25 * units::si::litre},
                            500 * units::si::gram);

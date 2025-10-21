@@ -77,6 +77,7 @@ target_sources(
         src/hw/hx711_sensor.cpp
         src/hw/drv8825_stepper_moter.cpp
         src/hw/weight_sensor.cpp
+        src/hw/weight_sensor_simulated.cpp
         src/execution_context.cpp
         src/glass_store.cpp
         src/liquid_dispenser_registry.cpp

@@ -13,7 +13,7 @@
 namespace cm {
 constexpr auto kClockDelay = std::chrono::microseconds(1); // ~1us
 
-Hx711Sensor::Hx711Sensor(boost::asio::io_context& io, Hx711DatPin dat_pin, Hx711ClkPin clk_pin)
+Hx711Sensor::Hx711Sensor(const boost::asio::any_io_executor& io, Hx711DatPin dat_pin, Hx711ClkPin clk_pin)
     : WeightSensor{"hx711", io}
     , dat_line_{gpiod::chip{std::move(dat_pin.chip)}
                     .prepare_request()
@@ -52,8 +52,8 @@ boost::asio::awaitable<void> Hx711Sensor::tare()
     boost::asio::steady_timer timer{co_await boost::asio::this_coro::executor};
     units::quantity<hx711_unit> measure_points{};
     for (int i = 0; i < kSteps; i++) {
-        co_await timer.async_wait(boost::asio::use_awaitable);
         timer.expires_after(std::chrono::milliseconds{100});
+        co_await timer.async_wait(boost::asio::use_awaitable);
         measure_points += (co_await read_raw()).quantity_from_zero();
     }
     offset_ = units::quantity_point<hx711_unit>{measure_points / kSteps};
@@ -67,8 +67,8 @@ boost::asio::awaitable<void> Hx711Sensor::calibrate_with_ref_weight(units::Grams
     boost::asio::steady_timer timer{co_await boost::asio::this_coro::executor};
     units::quantity<hx711_unit> measure_points{};
     for (int i = 0; i < kSteps; i++) {
-        co_await timer.async_wait(boost::asio::use_awaitable);
         timer.expires_after(std::chrono::milliseconds{100});
+        co_await timer.async_wait(boost::asio::use_awaitable);
         measure_points += (co_await read_raw()).quantity_from_zero();
     }
     raw_value_ = units::quantity_point<hx711_unit>{measure_points / kSteps};

@@ -4,24 +4,27 @@
 
 #pragma once
 #include <boost/asio.hpp>
-#include "events/event_bus.hpp"
-#include "liquid_dispenser_registry.hpp"
+#include "cm/events/event_bus.hpp"
+#include "cm/hw/weight_sensor.hpp"
+#include "cm/liquid_dispenser_registry.hpp"
 
 namespace cm {
 class ExecutionContext
 {
   public:
-    explicit ExecutionContext(boost::asio::any_io_executor executor);
+    explicit ExecutionContext(boost::asio::any_io_executor executor, std::unique_ptr<WeightSensor> weight_sensor);
     boost::asio::awaitable<void> wait_for_resume();
     void resume();
     EventBus& event_bus();
     LiquidDispenserRegistry& liquid_registry();
+    WeightSensor& weight_sensor();
     boost::asio::any_io_executor async_executor();
 
   private:
     boost::asio::any_io_executor io_context_;
     boost::asio::steady_timer resume_timer_;
     EventBus event_bus_;
+    std::unique_ptr<WeightSensor> weight_sensor_;
     LiquidDispenserRegistry liquid_registry_;
 };
 } // namespace cm

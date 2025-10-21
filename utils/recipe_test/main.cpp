@@ -16,8 +16,9 @@
 int main()
 {
     boost::asio::io_context io;
-    auto weight_sensor = std::make_unique<cm::Hx711Sensor>(
-        io, cm::Hx711DatPin{.chip = "/dev/gpiochip0", .offset = {23}}, cm::Hx711ClkPin{.chip = "/dev/gpiochip0", .offset = {24}});
+    auto weight_sensor = std::make_unique<cm::Hx711Sensor>(io.get_executor(),
+                                                           cm::Hx711DatPin{.chip = "/dev/gpiochip0", .offset = {23}},
+                                                           cm::Hx711ClkPin{.chip = "/dev/gpiochip0", .offset = {24}});
 
     auto liquid_dispenser = std::make_unique<cm::StepperPumpLiquidDispenser>(
         "test-dispenser",
@@ -28,7 +29,8 @@ int main()
         (1000 * cm::units::step) / (100 * cm::units::milli_litre),
         52 * cm::units::milli_litre);
 
-    std::shared_ptr<cm::ExecutionContext> ctx = std::make_shared<cm::ExecutionContext>(io.get_executor());
+    std::shared_ptr<cm::ExecutionContext> ctx =
+        std::make_shared<cm::ExecutionContext>(io.get_executor(), std::move(weight_sensor));
     ctx->liquid_registry().register_dispenser("water", std::move(liquid_dispenser));
 
     ctx->event_bus().subscribe([logger = cm::LoggingContext::instance().create_logger("Events"), ctx](auto&& event) {

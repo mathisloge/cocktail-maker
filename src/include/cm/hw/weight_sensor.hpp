@@ -18,7 +18,7 @@ class WeightSensor
         std::chrono::system_clock::time_point time;
     };
 
-    explicit WeightSensor(std::string name, boost::asio::io_context& io);
+    explicit WeightSensor(std::string name, const boost::asio::any_io_executor& io);
     virtual ~WeightSensor();
     WeightSensor(const WeightSensor&) = delete;
     WeightSensor(WeightSensor&&) noexcept = delete;

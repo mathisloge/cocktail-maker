@@ -7,7 +7,7 @@
 #include "cm/logging.hpp"
 
 namespace cm {
-WeightSensor::WeightSensor(std::string name, boost::asio::io_context& io)
+WeightSensor::WeightSensor(std::string name, const boost::asio::any_io_executor& io)
     : logger_{LoggingContext::instance().create_logger(std::move(name))}
 {
     boost::asio::co_spawn(

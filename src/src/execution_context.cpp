@@ -6,9 +6,10 @@
 
 namespace cm {
 
-ExecutionContext::ExecutionContext(boost::asio::any_io_executor executor)
+ExecutionContext::ExecutionContext(boost::asio::any_io_executor executor, std::unique_ptr<WeightSensor> weight_sensor)
     : io_context_{executor}
     , resume_timer_{executor}
+    , weight_sensor_{std::move(weight_sensor)}
 {
 }
 
@@ -37,6 +38,7 @@ LiquidDispenserRegistry& ExecutionContext::liquid_registry()
 
 WeightSensor& ExecutionContext::weight_sensor()
 {
+    return *weight_sensor_;
 }
 
 boost::asio::any_io_executor ExecutionContext::async_executor()

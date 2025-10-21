@@ -8,15 +8,18 @@
 #include <QQmlContext>
 #include <QQmlExtensionPlugin>
 #include <QQuickStyle>
+#include <QQuickWindow>
 #include <cm/commands/dispense_liquid_cmd.hpp>
 #include <cm/commands/manual_cmd.hpp>
 #include <cm/execution_context.hpp>
 #include <cm/glass_store.hpp>
+#include <cm/hw/weight_sensor_simulated.hpp>
 #include <cm/liquid_dispenser_simulated.hpp>
 #include <cm/recipe.hpp>
 #include <cm/recipe_store.hpp>
 #include <mp-units/systems/imperial.h>
 #include <mp-units/systems/international.h>
+#include <qqmlcomponent.h>
 #include "ApplicationState.hpp"
 
 Q_IMPORT_QML_PLUGIN(CocktailMaker_UiPlugin)
@@ -37,7 +40,9 @@ int main(int argc, char* argv[])
     QQmlApplicationEngine engine;
 
     boost::asio::thread_pool thread_pool{3};
-    std::shared_ptr<cm::ExecutionContext> execution_context = std::make_shared<cm::ExecutionContext>(thread_pool.get_executor());
+
+    std::shared_ptr<cm::ExecutionContext> execution_context = std::make_shared<cm::ExecutionContext>(
+        thread_pool.get_executor(), std::make_unique<WeightSensorSimulated>(thread_pool.get_executor()));
 
     auto ingredient_store = std::make_shared<cm::IngredientStore>();
     auto recipe_store = std::make_shared<cm::RecipeStore>();
@@ -153,5 +158,8 @@ int main(int argc, char* argv[])
     app_state->recipe_executor = recipe_executor;
     engine.loadFromModule("CocktailMaker.App", "Main");
 
+#if 0 // NOLINT
+    engine.loadFromModule("CocktailMaker.App", "DebugWindow");
+#endif
     return app.exec();
 }

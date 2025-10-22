@@ -19,6 +19,8 @@
 #include <mp-units/systems/imperial.h>
 #include <mp-units/systems/international.h>
 #include "ApplicationState.hpp"
+#include "cm/hw/drv8825_stepper_moter.hpp"
+#include "cm/liquid_dispenser_stepper_pump.hpp"
 
 Q_IMPORT_QML_PLUGIN(CocktailMaker_UiPlugin)
 using namespace cm;
@@ -60,7 +62,14 @@ int main(int argc, char* argv[])
                                                        (0.1 * units::si::litre) / (0.5 * units::si::second)));
     execution_context->liquid_registry().register_dispenser(
         db::soda,
-        std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre, (0.1 * units::si::litre) / (2 * units::si::second)));
+        std::make_unique<cm::StepperPumpLiquidDispenser>(
+            "pump1",
+            std::make_unique<cm::Drv8825StepperMotorDriver>(cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {24}},
+                                                            cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {23}},
+                                                            cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {23}}),
+            1 * units::si::litre,
+            (200 * cm::units::step) / (1 * units::si::litre),
+            200 * cm::units::milli_litre));
     execution_context->liquid_registry().register_dispenser(
         db::vodka,
         std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre, (0.1 * units::si::litre) / (1 * units::si::second)));

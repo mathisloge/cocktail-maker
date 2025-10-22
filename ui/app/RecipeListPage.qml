@@ -43,7 +43,7 @@ Item {
 
         GridLayout {
             id: cocktailGrid
-            columns: 3
+            columns: 2
             columnSpacing: 20
             rowSpacing: 20
             width: root.width

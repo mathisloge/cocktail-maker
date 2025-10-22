@@ -10,8 +10,8 @@ import CocktailMaker.Ui
 ApplicationWindow {
     id: window
     visible: true
-    width: 800
-    height: 600
+    width: 1280
+    height: 720
     title: "Cocktail Automat"
 
     property RecipeDetail selectedRecipe

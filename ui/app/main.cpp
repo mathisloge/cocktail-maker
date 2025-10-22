@@ -9,8 +9,7 @@
 #include <QQmlExtensionPlugin>
 #include <QQuickStyle>
 #include <QQuickWindow>
-#include <cm/commands/dispense_liquid_cmd.hpp>
-#include <cm/commands/manual_cmd.hpp>
+#include <cm/db/db.hpp>
 #include <cm/execution_context.hpp>
 #include <cm/glass_store.hpp>
 #include <cm/hw/weight_sensor_simulated.hpp>
@@ -19,9 +18,7 @@
 #include <cm/recipe_store.hpp>
 #include <mp-units/systems/imperial.h>
 #include <mp-units/systems/international.h>
-#include <qqmlcomponent.h>
 #include "ApplicationState.hpp"
-#include "cm/db/db.hpp"
 
 Q_IMPORT_QML_PLUGIN(CocktailMaker_UiPlugin)
 using namespace cm;

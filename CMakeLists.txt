@@ -46,9 +46,10 @@ pkg_check_modules(libgpiodcxx REQUIRED IMPORTED_TARGET libgpiodcxx)
 
 find_package(
     Qt6
-    COMPONENTS Core Widgets Gui Qml Quick QuickControls2
+    COMPONENTS Core Widgets Gui Qml Quick QuickControls2 LinguistTools
+    REQUIRED
 )
-qt_standard_project_setup()
+qt_standard_project_setup(I18N_SOURCE_LANGUAGE de I18N_TRANSLATED_LANGUAGES en)
 qt_policy(SET QTP0001 NEW)
 qt_policy(SET QTP0003 NEW)
 qt_policy(SET QTP0004 NEW)
@@ -70,6 +71,8 @@ endif()
 add_subdirectory(src)
 add_subdirectory(utils)
 add_subdirectory(ui)
+
+qt_add_translations(TARGETS cocktail-maker-db cocktail-maker-ui CocktailMakerApp TS_OUTPUT_DIRECTORY i18n)
 
 set(CPACK_PACKAGE_NAME "cocktail-maker")
 set(CPACK_PACKAGE_CONTACT "Mathis Logemann <mathis@quite.rocks>")

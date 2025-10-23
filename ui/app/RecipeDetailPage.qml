@@ -34,7 +34,7 @@ Item {
             Layout.preferredHeight: headerText.height
             Layout.fillWidth: true
             Button {
-                text: "Zurück"
+                text: qsTr("Zurück")
                 onClicked: root.backClicked()
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
@@ -66,7 +66,7 @@ Item {
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     font.pointSize: 18
-                    text: "Getränk boosten"
+                    text: qsTr("Getränk boosten")
                 }
 
                 Label {
@@ -78,7 +78,7 @@ Item {
                 RowLayout {
                     Layout.alignment: Qt.AlignHCenter
                     Label {
-                        text: "mild"
+                        text: qsTr("mild")
                     }
                     Slider {
                         id: boostSlider
@@ -92,7 +92,7 @@ Item {
                         }
                     }
                     Label {
-                        text: "stark"
+                        text: qsTr("stark")
                     }
                 }
             }
@@ -106,7 +106,7 @@ Item {
                 Label {
                     Layout.alignment: Qt.AlignHCenter
                     font.pointSize: 18
-                    text: "Schritte:"
+                    text: qsTr("Schritte:")
                 }
 
                 Repeater {
@@ -138,7 +138,7 @@ Item {
 
         Button {
             Layout.alignment: Qt.AlignHCenter
-            text: "🍹 mixen!"
+            text: qsTr("🍹 mixen!")
             onClicked: root.mixClicked(root.__recipe)
         }
     }

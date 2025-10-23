@@ -12,7 +12,7 @@ ApplicationWindow {
     visible: true
     width: 1280
     height: 720
-    title: "Cocktail Automat"
+    title: qsTr("🍹 Cocktail Automat")
 
     property RecipeDetail selectedRecipe
 

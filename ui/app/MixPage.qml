@@ -18,7 +18,7 @@ Item {
         ColumnLayout {
             anchors.centerIn: parent
             Label {
-                text: root.recipe.name + " wird zubereitet"
+                text: qsTr("%1 wird zubereitet").arg(root.recipe.name)
                 font.pointSize: 48
                 Layout.margins: 20
                 Layout.alignment: Qt.AlignHCenter
@@ -32,7 +32,7 @@ Item {
                     Label {
                         Layout.alignment: Qt.AlignHCenter
                         font.pointSize: 18
-                        text: "Schritte:"
+                        text: qsTr("Schritte:")
                     }
 
                     Repeater {
@@ -101,7 +101,7 @@ Item {
                 Button {
                     colorStart: "#ef4444"
                     colorEnd: "#dc2626"
-                    text: "Abbrechen"
+                    text: qsTr("Abbrechen")
                     onClicked: root.cancelClicked()
                 }
             }
@@ -110,9 +110,9 @@ Item {
     ManualCommandPopup {
         id: manualActionPopup
         anchors.centerIn: parent
-        titleText: "Bitte führe den angezeigten Schritt aus:"
+        titleText: qsTr("Bitte führe den angezeigten Schritt aus:")
         instructionText: "TBD"
-        confirmButtonText: "Fertig ▶"
+        confirmButtonText: qsTr("Fertig ▶")
 
         onConfirmClicked: {
             manualActionPopup.close();
@@ -123,9 +123,9 @@ Item {
     ManualCommandPopup {
         id: refillActionPopup
         anchors.centerIn: parent
-        titleText: "Bitte fülle nach:"
+        titleText: qsTr("Bitte fülle nach:")
         instructionText: "TBD"
-        confirmButtonText: "Aufgefüllt ▶"
+        confirmButtonText: qsTr("Aufgefüllt ▶")
 
         onConfirmClicked: {
             refillActionPopup.close();

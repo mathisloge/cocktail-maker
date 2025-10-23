@@ -39,14 +39,14 @@ Item {
                 height: parent.height
 
                 Label {
-                    text: "Glasgöße wählen"
+                    text: qsTr("Glasgöße wählen")
                     font.pointSize: 48
                     Layout.margins: 20
                     Layout.alignment: Qt.AlignHCenter
                 }
 
                 Label {
-                    text: "Erkannt: " + root.detectedGlass.capacity
+                    text: qsTr("Erkannt: %1").arg(root.detectedGlass.capacity)
                     font.pointSize: 28
                     Layout.margins: 20
                     Layout.alignment: Qt.AlignHCenter

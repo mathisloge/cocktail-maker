@@ -27,7 +27,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         Text {
-            text: "🍹 Cocktail Automat"
+            text: qsTr("🍹 Cocktail Automat")
             font.family: "Helvetica"
             font.pointSize: 48
             color: systemPalette.text

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 Mathis Logemann <mathis@quite.rocks>
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "cm/hw/weight_sensor.hpp"
 #include <boost/asio/bind_cancellation_slot.hpp>
 #include <boost/asio/co_spawn.hpp>

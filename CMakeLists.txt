@@ -41,6 +41,7 @@ find_package(mp-units CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(libassert CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 pkg_check_modules(libgpiod REQUIRED IMPORTED_TARGET libgpiod)
 pkg_check_modules(libgpiodcxx REQUIRED IMPORTED_TARGET libgpiodcxx)
 

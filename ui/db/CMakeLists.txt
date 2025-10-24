@@ -20,5 +20,5 @@ target_sources(
             TYPE HEADERS
             BASE_DIRS include
             FILES include/cm/db/db.hpp
-    PRIVATE src/db.cpp
+    PRIVATE src/db.cpp src/recipes/screwdriver.hpp src/recipes/mojito.hpp
 )

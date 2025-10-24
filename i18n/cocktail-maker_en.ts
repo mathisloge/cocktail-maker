@@ -101,4 +101,72 @@
         <translation type="unfinished"></translation>
     </message>
 </context>
+<context>
+    <name>cm::db</name>
+    <message>
+        <location filename="../ui/db/src/db.cpp" line="15"/>
+        <source>Wasser</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/db/src/db.cpp" line="20"/>
+        <source>Bacardi</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/db/src/db.cpp" line="25"/>
+        <source>Soda Wasser</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/db/src/db.cpp" line="30"/>
+        <source>Limettensaft</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/db/src/db.cpp" line="35"/>
+        <source>Vodka</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/db/src/db.cpp" line="40"/>
+        <source>Orangensaft</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/db/src/recipes/screwdriver.hpp" line="17"/>
+        <source>Screwdriver</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/db/src/recipes/screwdriver.hpp" line="18"/>
+        <source>Der Screwdriver ist ein erfrischender Cocktail aus Vodka und Orangensaft, der durch seine einfache Zubereitung und fruchtige Note besticht.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/db/src/recipes/screwdriver.hpp" line="25"/>
+        <source>2 Eiswürfel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/db/src/recipes/mojito.hpp" line="17"/>
+        <source>Mojito</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/db/src/recipes/mojito.hpp" line="19"/>
+        <source>Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, Zucker und Soda – perfekt für den Sommer.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/db/src/recipes/mojito.hpp" line="26"/>
+        <source>2 Minzblätter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/db/src/recipes/mojito.hpp" line="27"/>
+        <source>2 TL Zucker</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
 </TS>

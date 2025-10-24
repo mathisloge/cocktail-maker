@@ -41,13 +41,13 @@ Item {
             }
             Label {
                 id: headerText
-                text: root.__recipe.name
+                text: qsTr(root.__recipe.name)
                 font.pointSize: 48
                 anchors.horizontalCenter: parent.horizontalCenter
             }
         }
         Label {
-            text: root.__recipe.description
+            text: qsTr(root.__recipe.description)
             wrapMode: Text.Wrap
             horizontalAlignment: Text.AlignHCenter
             font.pointSize: 20
@@ -121,13 +121,13 @@ Item {
                             width: parent.width
                             Label {
                                 Layout.alignment: Qt.AlignLeft
-                                text: section.name
+                                text: qsTr(section.name)
                                 font.pointSize: 14
                             }
                             Label {
                                 Layout.alignment: Qt.AlignRight
                                 color: "#b3ffffff"
-                                text: section.detail
+                                text: qsTr(section.detail)
                                 font.pointSize: 14
                             }
                         }

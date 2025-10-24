@@ -48,7 +48,7 @@ Item {
                                 width: parent.width
                                 Label {
                                     Layout.alignment: Qt.AlignLeft
-                                    text: section.name
+                                    text: qsTr(section.name)
                                     font.pointSize: 14
                                 }
                                 BusyIndicator {
@@ -140,12 +140,12 @@ Item {
         }
 
         function onManualActionRequired(instruction) {
-            manualActionPopup.instructionText = instruction;
+            manualActionPopup.instructionText = qsTr(instruction);
             manualActionPopup.open();
         }
 
         function onRefillActionRequired(ingredient) {
-            refillActionPopup.instructionText = ingredient;
+            refillActionPopup.instructionText = qsTr(ingredient);
             refillActionPopup.open();
         }
     }

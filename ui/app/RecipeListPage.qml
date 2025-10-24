@@ -58,7 +58,7 @@ Item {
                 clip: true
                 Layout.preferredWidth: (cocktailGrid.width - ((cocktailGrid.columns - 1) * cocktailGrid.columnSpacing)) / cocktailGrid.columns
                 Layout.preferredHeight: width
-                text: model.name
+                text: qsTr(model.name)
                 iconSrc: model.imageSource
 
                 parent: cocktailGrid

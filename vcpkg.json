@@ -13,6 +13,7 @@
         "fmt",
         "spdlog",
         "catch2",
-        "libassert"
+        "libassert",
+        "nlohmann-json"
     ]
 }

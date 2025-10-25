@@ -71,8 +71,7 @@ endif()
 add_subdirectory(src)
 add_subdirectory(utils)
 add_subdirectory(ui)
-
-qt_add_translations(TARGETS cocktail-maker-db cocktail-maker-ui CocktailMakerApp TS_OUTPUT_DIRECTORY i18n)
+add_subdirectory(i18n)
 
 set(CPACK_PACKAGE_NAME "cocktail-maker")
 set(CPACK_PACKAGE_CONTACT "Mathis Logemann <mathis@quite.rocks>")

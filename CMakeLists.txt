@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.31)
 file(READ "${CMAKE_SOURCE_DIR}/package.json" PACKAGE_JSON)
 string(JSON PACKAGE_JSON_PROJECT_VERSION GET "${PACKAGE_JSON}" version)
 string(
@@ -14,7 +14,7 @@ string(
 )
 
 project(cocktail-maker VERSION ${BASE_VERSION} LANGUAGES CXX)
-#cmake_policy(SET CMP0167 NEW)
+cmake_policy(SET CMP0167 NEW)
 message(STATUS "Project version: ${PROJECT_VERSION}")
 
 list(
@@ -36,7 +36,7 @@ message(STATUS "git_sha: ${git_sha}")
 message(STATUS "git_branch: ${git_branch}")
 
 find_package(Sanitizers REQUIRED)
-find_package(Boost REQUIRED COMPONENTS asio signals2)
+find_package(Boost CONFIG REQUIRED COMPONENTS asio signals2)
 find_package(mp-units CONFIG REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)

@@ -61,23 +61,32 @@ int main(int argc, char* argv[])
         std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre,
                                                        (0.1 * units::si::litre) / (0.5 * units::si::second)));
     execution_context->liquid_registry().register_dispenser(
-        db::soda,
+        db::orange_juice,
         std::make_unique<cm::StepperPumpLiquidDispenser>(
             "pump1",
-            std::make_unique<cm::Drv8825StepperMotorDriver>(cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {24}},
-                                                            cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {23}},
-                                                            cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {23}}),
+            std::make_unique<cm::Drv8825StepperMotorDriver>(cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {22}},
+                                                            cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {27}},
+                                                            cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {17}}),
             1 * units::si::litre,
-            (200 * cm::units::step) / (1 * units::si::litre),
+            (500 * cm::units::step) / (100 * units::milli_litre),
             200 * cm::units::milli_litre));
+
     execution_context->liquid_registry().register_dispenser(
         db::vodka,
-        std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre, (0.1 * units::si::litre) / (1 * units::si::second)));
+        std::make_unique<cm::StepperPumpLiquidDispenser>(
+            "pump2",
+            std::make_unique<cm::Drv8825StepperMotorDriver>(cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {22}},
+                                                            cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {24}},
+                                                            cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {25}}),
+            1 * units::si::litre,
+            (500 * cm::units::step) / (100 * units::milli_litre),
+            200 * cm::units::milli_litre));
+
     execution_context->liquid_registry().register_dispenser(
         db::lime_juice,
         std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre, (0.1 * units::si::litre) / (1 * units::si::second)));
     execution_context->liquid_registry().register_dispenser(
-        db::orange_juice,
+        db::soda,
         std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre, (0.1 * units::si::litre) / (1 * units::si::second)));
 
     db::register_possible_recipes(*execution_context, *recipe_store);

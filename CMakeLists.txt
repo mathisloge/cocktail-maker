@@ -17,6 +17,9 @@ project(cocktail-maker VERSION ${BASE_VERSION} LANGUAGES CXX)
 cmake_policy(SET CMP0167 NEW)
 message(STATUS "Project version: ${PROJECT_VERSION}")
 
+option(CM_BUILD_TESTING "Decides if the tests should be build" ON)
+set(BUILD_TESTING ${CM_BUILD_TESTING})
+
 list(
     APPEND
     CMAKE_MODULE_PATH
@@ -65,6 +68,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime")
 
 if(BUILD_TESTING)
+    find_package(quite CONFIG REQUIRED)
     find_package(Catch2 3 REQUIRED)
     include(Catch)
 endif()

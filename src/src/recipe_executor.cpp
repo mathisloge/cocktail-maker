@@ -44,17 +44,14 @@ RecipeExecutor::RecipeExecutor(std::shared_ptr<ExecutionContext> ctx, std::share
 {
 }
 
-RecipeExecutor::~RecipeExecutor()
-{
-    cancel_signal_.emit(boost::asio::cancellation_type::all);
-};
+RecipeExecutor::~RecipeExecutor() = default;
 
 void RecipeExecutor::continue_execution()
 {
     ctx_->resume();
 }
 
-void RecipeExecutor::run()
+void RecipeExecutor::run(boost::asio::cancellation_slot stoken)
 {
     boost::asio::co_spawn(
         ctx_->async_executor(),
@@ -69,7 +66,7 @@ void RecipeExecutor::run()
                         co_await cmd->run(*ctx);
                     }
                     catch (const std::exception& ex) {
-                        SPDLOG_LOGGER_DEBUG(logger, "command failed with {}", ex.what());
+                        SPDLOG_LOGGER_ERROR(logger, "command failed with {}", ex.what());
                     }
                     SPDLOG_LOGGER_DEBUG(logger, "command finished");
                 }
@@ -77,6 +74,6 @@ void RecipeExecutor::run()
             SPDLOG_LOGGER_DEBUG(logger, "Finished producing {}", *recipe);
             ctx->event_bus().publish(RecipeFinishedEvent{});
         },
-        boost::asio::bind_cancellation_slot(cancel_signal_.slot(), boost::asio::detached));
+        boost::asio::bind_cancellation_slot(std::move(stoken), boost::asio::detached));
 }
 } // namespace cm

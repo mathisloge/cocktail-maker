@@ -316,11 +316,13 @@ constexpr std::uint8_t effect_id(WledSerial::State state)
 } // namespace
 
 WledSerial::WledSerial(boost::asio::any_io_executor executor,
+                       boost::asio::cancellation_slot cancel_slot,
                        const std::string& device,
                        std::initializer_list<SegmentRange> segments)
-    : logger_{LoggingContext::instance().create_logger(fmt::format("WledSerial@{}", device))}
+    : cancel_slot_{std::move(cancel_slot)}
+    , logger_{LoggingContext::instance().create_logger(fmt::format("WledSerial@{}", device))}
     , strand_(boost::asio::make_strand(executor))
-    , channel_{strand_, 1}
+    , channel_{executor, 1}
     , port_{strand_, device}
 
 {
@@ -339,27 +341,25 @@ WledSerial::WledSerial(boost::asio::any_io_executor executor,
 WledSerial::~WledSerial() = default;
 
 std::shared_ptr<WledSerial> WledSerial::create(boost::asio::any_io_executor executor,
+                                               boost::asio::cancellation_slot cancel_slot,
                                                const std::string& device,
                                                std::initializer_list<SegmentRange> segments)
 {
     struct Enabler : public WledSerial
     {
       public:
-        Enabler(boost::asio::any_io_executor executor, const std::string& device, std::initializer_list<SegmentRange> segments)
-            : WledSerial{std::move(executor), device, segments}
+        Enabler(boost::asio::any_io_executor executor,
+                boost::asio::cancellation_slot cancel_slot,
+                const std::string& device,
+                std::initializer_list<SegmentRange> segments)
+            : WledSerial{std::move(executor), std::move(cancel_slot), device, segments}
         {
         }
     };
 
-    auto instance = std::make_shared<Enabler>(std::move(executor), device, segments);
+    auto instance = std::make_shared<Enabler>(executor, std::move(cancel_slot), device, segments);
     instance->start_write_loop();
     return instance;
-}
-
-void WledSerial::shutdown()
-{
-    SPDLOG_LOGGER_INFO(logger_, "Requesting shutdown...");
-    cancel_signal_.emit(boost::asio::cancellation_type::all);
 }
 
 void WledSerial::start_write_loop()
@@ -367,7 +367,7 @@ void WledSerial::start_write_loop()
     boost::asio::co_spawn(
         strand_,
         [self = shared_from_this()] -> async<void> { co_await self->write_loop(); },
-        boost::asio::bind_cancellation_slot(cancel_signal_.slot(), boost::asio::detached));
+        boost::asio::bind_cancellation_slot(cancel_slot_, boost::asio::detached));
 
     reset();
 }
@@ -403,6 +403,7 @@ async<void> WledSerial::write_loop()
                                e.what(),
                                e.code().value(),
                                e.code().category().name());
+        co_return; // Clean cancellation
     }
     catch (const std::exception& ex) {
         SPDLOG_LOGGER_CRITICAL(logger_, "Write loop terminated with unexpected exception: {}", ex.what());
@@ -414,7 +415,7 @@ async<void> WledSerial::write_loop()
 
 void WledSerial::set_state(std::uint8_t segment, State state)
 {
-    boost::asio::post(strand_, [this, segment, state]() { set_state_impl(segment, state); });
+    boost::asio::post(strand_, [self = shared_from_this(), segment, state]() { self->set_state_impl(segment, state); });
 }
 
 // Should only be executed in strand.
@@ -431,9 +432,9 @@ void WledSerial::set_state_impl(std::uint8_t segment, State state)
 
 void WledSerial::reset()
 {
-    boost::asio::post(strand_, [this]() {
-        for (auto&& s : segments_) {
-            set_state_impl(s.first, State::inactive);
+    boost::asio::post(strand_, [self = shared_from_this()]() {
+        for (auto&& s : self->segments_) {
+            self->set_state_impl(s.first, State::inactive);
         }
     });
 }
@@ -455,14 +456,20 @@ async<void> WledSerial::write_state()
     });
 }
 
-async<void> WledSerial::turn_on()
+void WledSerial::turn_on()
 {
-    co_await this->write(json(PowerCommand{.on = true}));
+    boost::asio::co_spawn(
+        strand_,
+        [self = shared_from_this()]() -> async<void> { co_await self->write(json(PowerCommand{.on = true})); },
+        boost::asio::detached);
 }
 
-async<void> WledSerial::turn_off()
+void WledSerial::turn_off()
 {
-    co_await this->write(json(PowerCommand{.on = false}));
+    boost::asio::co_spawn(
+        strand_,
+        [self = shared_from_this()]() -> async<void> { co_await self->write(json(PowerCommand{.on = false})); },
+        boost::asio::detached);
 }
 
 async<void> WledSerial::show_progress(units::quantity<units::percent> progress)
@@ -509,7 +516,7 @@ async<void> WledSerial::request_state()
     boost::asio::streambuf buffer;
 
     const size_t n = co_await boost::asio::async_read_until(
-        port_, buffer, '\n', boost::asio::bind_cancellation_slot(cancel_signal_.slot(), boost::asio::use_awaitable));
+        port_, buffer, '\n', boost::asio::bind_cancellation_slot(cancel_slot_, boost::asio::use_awaitable));
     SPDLOG_LOGGER_DEBUG(logger_, "Received: {}", n);
     const std::string json_str(boost::asio::buffers_begin(buffer.data()), boost::asio::buffers_end(buffer.data()));
     try {

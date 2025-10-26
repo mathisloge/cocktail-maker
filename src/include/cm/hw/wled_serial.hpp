@@ -35,14 +35,15 @@ class WledSerial : public std::enable_shared_from_this<WledSerial>
     };
 
     static std::shared_ptr<WledSerial> create(boost::asio::any_io_executor executor,
+                                              boost::asio::cancellation_slot cancel_slot,
                                               const std::string& device,
                                               std::initializer_list<SegmentRange> segments);
     ~WledSerial();
 
     void shutdown();
 
-    async<void> turn_on();
-    async<void> turn_off();
+    void turn_on();
+    void turn_off();
     async<void> request_state();
     void reset();
     void set_state(std::uint8_t segment, State state);
@@ -54,6 +55,7 @@ class WledSerial : public std::enable_shared_from_this<WledSerial>
 
   private:
     explicit WledSerial(boost::asio::any_io_executor executor,
+                        boost::asio::cancellation_slot cancel_slot,
                         const std::string& device,
                         std::initializer_list<SegmentRange> segments);
     void start_write_loop();
@@ -63,11 +65,11 @@ class WledSerial : public std::enable_shared_from_this<WledSerial>
     void set_state_impl(std::uint8_t segment, State state);
 
   private:
+    boost::asio::cancellation_slot cancel_slot_;
     std::unordered_map<std::uint8_t, LedSegment> segments_;
     std::shared_ptr<spdlog::logger> logger_;
     boost::asio::strand<boost::asio::any_io_executor> strand_;
     boost::asio::experimental::channel<void(boost::system::error_code)> channel_;
     boost::asio::serial_port port_;
-    boost::asio::cancellation_signal cancel_signal_;
 };
 } // namespace cm

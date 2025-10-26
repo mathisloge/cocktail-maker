@@ -4,6 +4,7 @@
 
 #include "cm/ui/RecipeExecutorAdapter.hpp"
 #include <cm/overloads.hpp>
+#include <libassert/assert.hpp>
 #include "cm/commands/command.hpp"
 #include "cm/commands/command_visitor.hpp"
 #include "cm/commands/dispense_liquid_cmd.hpp"
@@ -77,7 +78,7 @@ void RecipeExecutorAdapter::make_recipe(RecipeDetail* original_recipe, QString g
                 command_model_.register_command(cmd->id(), name_formatter.name);
             }
         }
-        executor_->run();
+        executor_->run(recipe_cancellation_.slot());
     }
     catch (const std::exception& ex) {
         Q_EMIT executionAborted();
@@ -86,12 +87,14 @@ void RecipeExecutorAdapter::make_recipe(RecipeDetail* original_recipe, QString g
 
 void RecipeExecutorAdapter::continue_mix()
 {
+    ASSERT(executor_ != nullptr);
     executor_->continue_execution();
 }
 
 void RecipeExecutorAdapter::cancel()
 {
-    executor_ = nullptr;
+#undef emit
+    recipe_cancellation_.emit(boost::asio::cancellation_type::all);
 }
 
 RecipeCommandStatusModel* RecipeExecutorAdapter::command_status_model()

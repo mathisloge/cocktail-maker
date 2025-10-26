@@ -16,8 +16,7 @@
 int main()
 {
     boost::asio::io_context io;
-    auto weight_sensor = std::make_unique<cm::Hx711Sensor>(io.get_executor(),
-                                                           cm::Hx711DatPin{.chip = "/dev/gpiochip0", .offset = {23}},
+    auto weight_sensor = std::make_shared<cm::Hx711Sensor>(cm::Hx711DatPin{.chip = "/dev/gpiochip0", .offset = {23}},
                                                            cm::Hx711ClkPin{.chip = "/dev/gpiochip0", .offset = {24}});
 
     auto liquid_dispenser = std::make_unique<cm::StepperPumpLiquidDispenser>(
@@ -29,8 +28,7 @@ int main()
         (1000 * cm::units::step) / (100 * cm::units::milli_litre),
         52 * cm::units::milli_litre);
 
-    std::shared_ptr<cm::ExecutionContext> ctx =
-        std::make_shared<cm::ExecutionContext>(io.get_executor(), std::move(weight_sensor));
+    std::shared_ptr<cm::ExecutionContext> ctx = std::make_shared<cm::ExecutionContext>(io.get_executor());
     ctx->liquid_registry().register_dispenser("water", std::move(liquid_dispenser));
 
     ctx->event_bus().subscribe([logger = cm::LoggingContext::instance().create_logger("Events"), ctx](auto&& event) {
@@ -41,6 +39,7 @@ int main()
             boost::asio::post([ctx]() { ctx->resume(); });
         }
     });
+    boost::asio::cancellation_signal cancellation;
 
     auto recipe = cm::make_recipe()
                       .name("Only Water")
@@ -48,7 +47,7 @@ int main()
                           "water", 250 * cm::units::milli_litre, cm::generate_unique_command_id()))
                       .create();
     cm::RecipeExecutor recipe_executor{ctx, recipe};
-    recipe_executor.run();
+    recipe_executor.run(cancellation.slot());
 
     std::vector<std::thread> threads;
 

@@ -9,7 +9,7 @@ namespace cm {
 class WeightSensorSimulated : public WeightSensor
 {
   public:
-    explicit WeightSensorSimulated(const boost::asio::any_io_executor& io);
+    explicit WeightSensorSimulated();
     [[nodiscard]] OperationState state() const override;
     [[nodiscard]] boost::asio::awaitable<void> tare() override;
     [[nodiscard]] boost::asio::awaitable<void> calibrate_with_ref_weight(units::Grams known_mass) override;

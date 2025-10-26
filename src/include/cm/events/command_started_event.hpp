@@ -3,11 +3,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #pragma once
+#include <optional>
 #include "cm/commands/command_id.hpp"
+#include "cm/ingredient_id.hpp"
 
 namespace cm {
 struct CommandStarted
 {
-    CommandId cmd_id;
+    CommandId cmd_id{};
+    std::optional<IngredientId> ingredient_id;
 };
 } // namespace cm

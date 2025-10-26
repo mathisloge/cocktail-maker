@@ -44,6 +44,7 @@ class WledSerial : public std::enable_shared_from_this<WledSerial>
     async<void> turn_on();
     async<void> turn_off();
     async<void> request_state();
+    void reset();
     void set_state(std::uint8_t segment, State state);
 
   private:
@@ -59,6 +60,7 @@ class WledSerial : public std::enable_shared_from_this<WledSerial>
     async<void> write_loop();
     async<void> write_state();
     async<void> write(nlohmann::json json);
+    void set_state_impl(std::uint8_t segment, State state);
 
   private:
     std::unordered_map<std::uint8_t, LedSegment> segments_;

@@ -368,6 +368,8 @@ void WledSerial::start_write_loop()
         strand_,
         [self = shared_from_this()] -> async<void> { co_await self->write_loop(); },
         boost::asio::bind_cancellation_slot(cancel_signal_.slot(), boost::asio::detached));
+
+    reset();
 }
 
 async<void> WledSerial::write_loop()
@@ -412,14 +414,26 @@ async<void> WledSerial::write_loop()
 
 void WledSerial::set_state(std::uint8_t segment, State state)
 {
-    boost::asio::post(strand_, [this, segment, state]() {
-        // now everything is thread safe since we are in the context of the strand.
-        auto it = segments_.find(segment);
-        ASSERT(it != segments_.end());
-        const bool changed = it->second.state != state;
-        it->second.state = state;
-        if (changed) {
-            channel_.try_send(boost::system::error_code{});
+    boost::asio::post(strand_, [this, segment, state]() { set_state_impl(segment, state); });
+}
+
+// Should only be executed in strand.
+void WledSerial::set_state_impl(std::uint8_t segment, State state)
+{
+    auto it = segments_.find(segment);
+    ASSERT(it != segments_.end());
+    const bool changed = it->second.state != state;
+    it->second.state = state;
+    if (changed) {
+        channel_.try_send(boost::system::error_code{});
+    }
+}
+
+void WledSerial::reset()
+{
+    boost::asio::post(strand_, [this]() {
+        for (auto&& s : segments_) {
+            set_state_impl(s.first, State::inactive);
         }
     });
 }

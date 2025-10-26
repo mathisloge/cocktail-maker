@@ -13,6 +13,8 @@
 #include <cm/execution_context.hpp>
 #include <cm/glass_store.hpp>
 #include <cm/hw/weight_sensor_simulated.hpp>
+#include <cm/hw/wled_serial.hpp>
+#include <cm/led_state_manager.hpp>
 #include <cm/liquid_dispenser_simulated.hpp>
 #include <cm/recipe.hpp>
 #include <cm/recipe_store.hpp>
@@ -42,11 +44,15 @@ int main(int argc, char* argv[])
     std::shared_ptr<cm::ExecutionContext> execution_context = std::make_shared<cm::ExecutionContext>(
         thread_pool.get_executor(), std::make_unique<WeightSensorSimulated>(thread_pool.get_executor()));
 
+    auto leds = WledSerial::create(thread_pool.get_executor(), "/dev/ttyUSB0", {{0, 24}});
     auto ingredient_store = std::make_shared<cm::IngredientStore>();
     auto recipe_store = std::make_shared<cm::RecipeStore>();
     auto glass_store = std::make_shared<cm::GlassStore>();
     auto recipe_factory = std::make_shared<cm::ui::RecipeFactory>(recipe_store, ingredient_store);
     auto recipe_executor = std::make_shared<cm::ui::RecipeExecutorAdapter>(execution_context, ingredient_store, glass_store);
+    auto led_manager = std::make_shared<cm::LedStateManager>(execution_context, leds);
+
+    led_manager->connect_led_segment_with_ingredient(0, db::vodka);
 
     db::register_ingredients(*ingredient_store);
 

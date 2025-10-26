@@ -9,7 +9,7 @@
 namespace cm {
 struct CommandProgress
 {
-    CommandId cmd_id;
-    units::quantity<units::percent> progress;
+    CommandId cmd_id{};
+    units::quantity<units::percent> progress{};
 };
 } // namespace cm

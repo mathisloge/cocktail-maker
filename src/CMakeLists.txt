@@ -48,6 +48,7 @@ target_sources(
                 include/cm/liquid_dispenser_registry.hpp
                 include/cm/liquid_dispenser_stepper_pump.hpp
                 include/cm/liquid_dispenser_simulated.hpp
+                include/cm/led_state_manager.hpp
                 include/cm/execution_context.hpp
                 include/cm/glass.hpp
                 include/cm/glass_store.hpp
@@ -84,6 +85,7 @@ target_sources(
         src/hw/weight_sensor_simulated.cpp
         src/hw/wled_serial.cpp
         src/execution_context.cpp
+        src/led_state_manager.cpp
         src/glass_store.cpp
         src/liquid_dispenser_registry.cpp
         src/liquid_dispenser_simulated.cpp

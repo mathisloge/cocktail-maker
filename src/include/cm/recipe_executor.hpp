@@ -17,7 +17,7 @@ class RecipeExecutor
     ~RecipeExecutor();
 
     void continue_execution();
-    void run();
+    void run(boost::asio::cancellation_slot stoken);
 
   private:
     std::shared_ptr<ExecutionContext> ctx_;

@@ -28,6 +28,7 @@ target_link_libraries(
         mp-units::systems
         mp-units::mp-units
         mp-units::mp-units-contracts
+        nlohmann_json::nlohmann_json
         libassert::assert
         spdlog::spdlog
         fmt::fmt
@@ -40,11 +41,14 @@ target_sources(
             TYPE HEADERS
             BASE_DIRS include
             FILES
+                include/cm/async.hpp
                 include/cm/overloads.hpp
                 include/cm/logging.hpp
+                include/cm/scoped_action.hpp
                 include/cm/liquid_dispenser_registry.hpp
                 include/cm/liquid_dispenser_stepper_pump.hpp
                 include/cm/liquid_dispenser_simulated.hpp
+                include/cm/led_state_manager.hpp
                 include/cm/execution_context.hpp
                 include/cm/glass.hpp
                 include/cm/glass_store.hpp
@@ -72,13 +76,16 @@ target_sources(
                 include/cm/hw/motor.hpp
                 include/cm/hw/stepper_motor.hpp
                 include/cm/hw/drv8825_stepper_moter.hpp
+                include/cm/hw/wled_serial.hpp
     PRIVATE
         src/logging.cpp
         src/hw/hx711_sensor.cpp
         src/hw/drv8825_stepper_moter.cpp
         src/hw/weight_sensor.cpp
         src/hw/weight_sensor_simulated.cpp
+        src/hw/wled_serial.cpp
         src/execution_context.cpp
+        src/led_state_manager.cpp
         src/glass_store.cpp
         src/liquid_dispenser_registry.cpp
         src/liquid_dispenser_simulated.cpp

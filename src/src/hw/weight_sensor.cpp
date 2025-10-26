@@ -11,17 +11,23 @@
 #include "cm/logging.hpp"
 
 namespace cm {
-WeightSensor::WeightSensor(std::string name, const boost::asio::any_io_executor& io)
+WeightSensor::WeightSensor(std::string name)
     : logger_{LoggingContext::instance().create_logger(std::move(name))}
+{
+}
+
+WeightSensor::~WeightSensor() = default;
+
+void WeightSensor::start_measure_loop(const boost::asio::any_io_executor& io, boost::asio::cancellation_slot stoken)
 {
     boost::asio::co_spawn(
         io,
-        [this] -> boost::asio::awaitable<void> {
+        [self = shared_from_this()] -> boost::asio::awaitable<void> {
             boost::asio::steady_timer timer{co_await boost::asio::this_coro::executor};
-            SPDLOG_LOGGER_DEBUG(logger_, "Starting load cell measure loop...");
+            SPDLOG_LOGGER_DEBUG(self->logger_, "Starting load cell measure loop...");
             while (true) {
-                measure_ = MeasurePoint{
-                    .weight = co_await read(),
+                self->measure_ = MeasurePoint{
+                    .weight = co_await self->read(),
                     .time = std::chrono::system_clock::now(),
                 };
                 SPDLOG_LOGGER_TRACE(logger_, "Measured weight: {}", measure_.weight.quantity_from_zero());
@@ -30,12 +36,7 @@ WeightSensor::WeightSensor(std::string name, const boost::asio::any_io_executor&
             }
             co_return;
         },
-        boost::asio::bind_cancellation_slot(cancel_signal_.slot(), boost::asio::detached));
-}
-
-WeightSensor::~WeightSensor()
-{
-    cancel_signal_.emit(boost::asio::cancellation_type::all);
+        boost::asio::bind_cancellation_slot(std::move(stoken), boost::asio::detached));
 }
 
 WeightSensor::MeasurePoint WeightSensor::last_measure() const

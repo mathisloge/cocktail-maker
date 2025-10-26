@@ -104,7 +104,10 @@ ApplicationWindow {
 
         MixPage {
             recipe: window.selectedRecipe
-            onCancelClicked: stackView.pop()
+            onCancelClicked: {
+                stackView.pop()
+                ApplicationState.recipeExecutor.cancel()
+            }
             onFinished: stackView.pop(null)
         }
 

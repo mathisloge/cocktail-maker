@@ -9,7 +9,7 @@
 #include "cm/units.hpp"
 
 namespace cm {
-class WeightSensor
+class WeightSensor : public std::enable_shared_from_this<WeightSensor>
 {
   public:
     struct MeasurePoint
@@ -18,13 +18,14 @@ class WeightSensor
         std::chrono::system_clock::time_point time;
     };
 
-    explicit WeightSensor(std::string name, const boost::asio::any_io_executor& io);
+    explicit WeightSensor(std::string name);
     virtual ~WeightSensor();
     WeightSensor(const WeightSensor&) = delete;
     WeightSensor(WeightSensor&&) noexcept = delete;
     WeightSensor& operator=(const WeightSensor&) = delete;
     WeightSensor& operator=(WeightSensor&&) = delete;
 
+    void start_measure_loop(const boost::asio::any_io_executor& io, boost::asio::cancellation_slot stoken);
     [[nodiscard]] MeasurePoint last_measure() const;
     [[nodiscard]] virtual OperationState state() const = 0;
     [[nodiscard]] virtual boost::asio::awaitable<void> tare() = 0;
@@ -35,7 +36,6 @@ class WeightSensor
 
   private:
     std::shared_ptr<spdlog::logger> logger_;
-    boost::asio::cancellation_signal cancel_signal_;
     MeasurePoint measure_;
 };
 } // namespace cm

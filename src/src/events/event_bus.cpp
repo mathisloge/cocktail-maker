@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "cm/events/event_bus.hpp"
+#include <fmt/std.h>
 #include <spdlog/spdlog.h>
 #include "cm/logging.hpp"
 
@@ -54,7 +55,7 @@ auto fmt::formatter<cm::RecipeFinishedEvent>::format(const cm::RecipeFinishedEve
 auto fmt::formatter<cm::CommandStarted>::format(const cm::CommandStarted& e, format_context& ctx) const
     -> format_context::iterator
 {
-    return fmt::format_to(ctx.out(), "CommandStarted({})", e.cmd_id);
+    return fmt::format_to(ctx.out(), "CommandStarted(id:{}, ingredient:{})", e.cmd_id, e.ingredient_id);
 }
 
 auto fmt::formatter<cm::CommandProgress>::format(const cm::CommandProgress& e, format_context& ctx) const

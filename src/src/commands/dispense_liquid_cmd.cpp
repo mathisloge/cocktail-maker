@@ -21,7 +21,7 @@ boost::asio::awaitable<void> DispenseLiquidCmd::run(ExecutionContext& ctx) const
     auto&& dispenser = ctx.liquid_registry().dispenser(ingredient_);
 
     auto remaining = volume_;
-    CommandEventPublisher publisher{ctx.event_bus(), id()};
+    CommandEventPublisher publisher{ctx.event_bus(), id(), ingredient_};
     while (remaining > 0 * mp_units::si::litre) {
         const auto available = dispenser.remaining_volume();
         const auto to_dispense = std::min(available, remaining);

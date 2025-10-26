@@ -36,6 +36,7 @@ class RecipeExecutorAdapter : public QObject
     void finished();
 
   private:
+    boost::asio::cancellation_signal recipe_cancellation_;
     std::shared_ptr<ExecutionContext> ctx_;
     std::shared_ptr<const IngredientStore> ingredient_store_;
     std::shared_ptr<const GlassStore> glass_store_;

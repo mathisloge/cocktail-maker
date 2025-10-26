@@ -27,7 +27,7 @@ using Hx711RawValue = units::quantity<hx711_unit, std::int32_t>;
 class Hx711Sensor : public WeightSensor
 {
   public:
-    Hx711Sensor(const boost::asio::any_io_executor& io, Hx711DatPin dat_pin, Hx711ClkPin clk_pin);
+    Hx711Sensor(Hx711DatPin dat_pin, Hx711ClkPin clk_pin);
     OperationState state() const override;
     boost::asio::awaitable<void> tare() override;
     boost::asio::awaitable<void> calibrate_with_ref_weight(units::Grams known_mass) override;

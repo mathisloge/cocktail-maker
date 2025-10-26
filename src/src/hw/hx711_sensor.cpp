@@ -13,8 +13,8 @@
 namespace cm {
 constexpr auto kClockDelay = std::chrono::microseconds(1); // ~1us
 
-Hx711Sensor::Hx711Sensor(const boost::asio::any_io_executor& io, Hx711DatPin dat_pin, Hx711ClkPin clk_pin)
-    : WeightSensor{"hx711", io}
+Hx711Sensor::Hx711Sensor(Hx711DatPin dat_pin, Hx711ClkPin clk_pin)
+    : WeightSensor{"hx711"}
     , dat_line_{gpiod::chip{std::move(dat_pin.chip)}
                     .prepare_request()
                     .set_consumer("hx711-dat")

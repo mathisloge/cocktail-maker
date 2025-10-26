@@ -7,8 +7,8 @@
 #include <boost/asio/use_awaitable.hpp>
 
 namespace cm {
-WeightSensorSimulated::WeightSensorSimulated(const boost::asio::any_io_executor& io)
-    : WeightSensor("SimulatedWeightSensor", io)
+WeightSensorSimulated::WeightSensorSimulated()
+    : WeightSensor{"SimulatedWeightSensor"}
 {
     state_ = OperationState::ok; // NOLINT
 }

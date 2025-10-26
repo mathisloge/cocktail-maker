@@ -13,6 +13,8 @@
 #include <cm/execution_context.hpp>
 #include <cm/glass_store.hpp>
 #include <cm/hw/weight_sensor_simulated.hpp>
+#include <cm/hw/wled_serial.hpp>
+#include <cm/led_state_manager.hpp>
 #include <cm/liquid_dispenser_simulated.hpp>
 #include <cm/recipe.hpp>
 #include <cm/recipe_store.hpp>
@@ -25,6 +27,10 @@ using namespace cm;
 
 int main(int argc, char* argv[])
 {
+
+    boost::asio::thread_pool thread_pool{3};
+    boost::asio::cancellation_signal cancel_signal;
+
     QApplication app{argc, argv};
     QCoreApplication::setApplicationName(QStringLiteral("CocktailMaker"));
     QCoreApplication::setOrganizationName(QStringLiteral("com.mathisloge.cocktail-maker"));
@@ -37,16 +43,18 @@ int main(int argc, char* argv[])
 
     QQmlApplicationEngine engine;
 
-    boost::asio::thread_pool thread_pool{3};
-
-    std::shared_ptr<cm::ExecutionContext> execution_context = std::make_shared<cm::ExecutionContext>(
-        thread_pool.get_executor(), std::make_unique<WeightSensorSimulated>(thread_pool.get_executor()));
-
+    std::shared_ptr<cm::ExecutionContext> execution_context = std::make_shared<cm::ExecutionContext>(thread_pool.get_executor());
+    auto weight_sensor = std::make_shared<WeightSensorSimulated>();
+    weight_sensor->start_measure_loop(thread_pool.get_executor(), cancel_signal.slot());
     auto ingredient_store = std::make_shared<cm::IngredientStore>();
     auto recipe_store = std::make_shared<cm::RecipeStore>();
     auto glass_store = std::make_shared<cm::GlassStore>();
     auto recipe_factory = std::make_shared<cm::ui::RecipeFactory>(recipe_store, ingredient_store);
     auto recipe_executor = std::make_shared<cm::ui::RecipeExecutorAdapter>(execution_context, ingredient_store, glass_store);
+    auto leds = WledSerial::create(thread_pool.get_executor(), cancel_signal.slot(), "/dev/ttyUSB0", {{0, 24}});
+    auto led_manager = std::make_shared<cm::LedStateManager>(leds);
+    led_manager->subscribe_to_events(execution_context->event_bus());
+    led_manager->connect_led_segment_with_ingredient(0, db::vodka);
 
     db::register_ingredients(*ingredient_store);
 
@@ -92,5 +100,11 @@ int main(int argc, char* argv[])
 #if 0 // NOLINT
     engine.loadFromModule("CocktailMaker.App", "DebugWindow");
 #endif
-    return app.exec();
+    const auto res = app.exec();
+
+    // shutdown section
+#undef emit
+    leds->turn_off();
+    boost::asio::post(thread_pool, [&cancel_signal]() { cancel_signal.emit(boost::asio::cancellation_type::all); });
+    return res;
 }

@@ -9,12 +9,17 @@ namespace cm {
 class CommandEventPublisher final
 {
   public:
-    CommandEventPublisher(EventBus& bus, CommandId command_id);
+    CommandEventPublisher(EventBus& bus, CommandId command_id, std::optional<IngredientId> ingredient_id = std::nullopt);
     ~CommandEventPublisher();
+    CommandEventPublisher(CommandEventPublisher&&) noexcept = delete;
+    CommandEventPublisher(const CommandEventPublisher&) = delete;
+    CommandEventPublisher& operator=(CommandEventPublisher&&) noexcept = delete;
+    CommandEventPublisher& operator=(const CommandEventPublisher&) = delete;
     void progress(units::quantity<units::percent> percentage);
 
   private:
     EventBus& bus_;
     CommandId command_id_;
+    std::optional<IngredientId> ingredient_id_;
 };
 } // namespace cm

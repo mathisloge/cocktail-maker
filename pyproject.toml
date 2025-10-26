@@ -1,0 +1,25 @@
+[project]
+name = "cocktail-maker"
+version = "1.0.0"
+description = ""
+authors = [
+    {name = "Mathis Logemann",email = "mathis@quite.rocks"}
+]
+license = {text = "GPL-3.0-or-later"}
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pytest-bdd (>=8.1.0,<9.0.0)",
+    "quite @ git+https://github.com/mathisloge/quite.git@v1.4.1-dev.1"
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = "-ra -q"
+testpaths = ["tests_e2e"]

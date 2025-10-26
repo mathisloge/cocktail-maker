@@ -1,0 +1,28 @@
+{
+  "name": "quite",
+  "version": "1.4.1-dev.1",
+  "description": "A ui test library",
+  "homepage": "https://quite.rocks",
+  "license": "MIT",
+  "dependencies": [
+    "boost-asio",
+    "boost-process",
+    "stb",
+    "asio-grpc",
+    "stdexec",
+    "quill",
+    "fmt",
+    "cli11",
+    "nlohmann-json",
+    "qtbase",
+    "entt",
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    }
+  ]
+}

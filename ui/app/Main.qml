@@ -45,6 +45,7 @@ ApplicationWindow {
 
         StackView {
             id: stackView
+            objectName: "stackView"
             anchors.fill: parent
             initialItem: cocktailSelectionPage
         }

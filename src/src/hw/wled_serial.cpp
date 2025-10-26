@@ -323,19 +323,24 @@ WledSerial::WledSerial(boost::asio::any_io_executor executor,
     , logger_{LoggingContext::instance().create_logger(fmt::format("WledSerial@{}", device))}
     , strand_(boost::asio::make_strand(executor))
     , channel_{executor, 1}
-    , port_{strand_, device}
-
+    , port_{strand_}
 {
     std::uint8_t id{0};
     for (auto&& s : segments) {
         segments_.emplace(id, LedSegment{.id = id, .start = s.start, .end = s.end, .state = State{}});
         ++id;
     }
-    port_.set_option(boost::asio::serial_port_base::baud_rate{115200});
-    port_.set_option(boost::asio::serial_port_base::character_size{8});
-    port_.set_option(boost::asio::serial_port_base::parity{boost::asio::serial_port_base::parity::none});
-    port_.set_option(boost::asio::serial_port_base::stop_bits{boost::asio::serial_port_base::stop_bits::one});
-    port_.set_option(boost::asio::serial_port_base::flow_control{boost::asio::serial_port_base::flow_control::none});
+    try {
+        port_.open(device);
+        port_.set_option(boost::asio::serial_port_base::baud_rate{115200});
+        port_.set_option(boost::asio::serial_port_base::character_size{8});
+        port_.set_option(boost::asio::serial_port_base::parity{boost::asio::serial_port_base::parity::none});
+        port_.set_option(boost::asio::serial_port_base::stop_bits{boost::asio::serial_port_base::stop_bits::one});
+        port_.set_option(boost::asio::serial_port_base::flow_control{boost::asio::serial_port_base::flow_control::none});
+    }
+    catch (const std::exception& ex) {
+        SPDLOG_LOGGER_ERROR(logger_, "Could not open device '{}'. Error: ", device, ex.what());
+    }
 }
 
 WledSerial::~WledSerial() = default;
@@ -379,8 +384,6 @@ async<void> WledSerial::write_loop()
         while (true) {
             // Wait for write request
             co_await channel_.async_receive(boost::asio::use_awaitable);
-
-            SPDLOG_LOGGER_DEBUG(logger_, "TEST");
 
             // Debounce
             co_await boost::asio::steady_timer{co_await boost::asio::this_coro::executor, std::chrono::milliseconds{100}}

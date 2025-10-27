@@ -1,9 +1,7 @@
-pragma ComponentBehavior: Bound
-
 // SPDX-FileCopyrightText: 2025 Mathis Logemann <mathis@quite.rocks>
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
-
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -12,8 +10,9 @@ import CocktailMaker.Ui
 Item {
     id: root
 
-    property glass detectedGlass
     required property RecipeDetail recipe
+    property glass detectedGlass: glassDetector.detectedGlass
+
     signal backClicked
     signal glassSelected(id: string)
 
@@ -21,6 +20,11 @@ Item {
 
     GlassListModel {
         id: model
+        glassStore: ApplicationState.glassStore
+    }
+
+    GlassDetector {
+        id: glassDetector
         glassStore: ApplicationState.glassStore
     }
 
@@ -46,7 +50,7 @@ Item {
                 }
 
                 Label {
-                    text: qsTr("Erkannt: %1").arg(root.detectedGlass.capacity)
+                    text: qsTr("Erkannt: %1").arg(qsTr(root.detectedGlass.displayName))
                     font.pointSize: 28
                     Layout.margins: 20
                     Layout.alignment: Qt.AlignHCenter

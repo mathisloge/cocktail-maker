@@ -8,6 +8,9 @@
 #include <cm/glass_store.hpp>
 
 namespace cm::ui {
+/**
+ * @todo Replace GlassStoreForeign with a QObject based GlassStoreAdpater
+ */
 struct GlassStoreForeign
 {
     Q_GADGET

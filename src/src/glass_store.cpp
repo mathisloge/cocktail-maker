@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "cm/glass_store.hpp"
+#include <libassert/assert.hpp>
 
 namespace cm {
 const Glass& GlassStore::add_glass(Glass glass, units::Grams glass_weight)

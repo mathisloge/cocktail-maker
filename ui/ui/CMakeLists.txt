@@ -27,6 +27,7 @@ target_sources(
             BASE_DIRS include
             FILES
                 include/cm/ui/GlassAdapter.hpp
+                include/cm/ui/GlassDetector.hpp
                 include/cm/ui/GlassListModel.hpp
                 include/cm/ui/GlassStoreForeign.hpp
                 include/cm/ui/IngredientStoreForeign.hpp
@@ -39,6 +40,7 @@ target_sources(
                 include/cm/ui/RecipeStoreForeign.hpp
     PRIVATE
         src/GlassListModel.cpp
+        src/GlassDetector.cpp
         src/RecipeBoosterAdapter.cpp
         src/RecipeCommandStatusModel.cpp
         src/RecipeDetail.cpp

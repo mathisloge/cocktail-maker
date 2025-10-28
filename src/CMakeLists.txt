@@ -34,6 +34,12 @@ target_link_libraries(
         fmt::fmt
 )
 
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/config.hpp.in
+    ${CMAKE_CURRENT_BINARY_DIR}/cm/config.hpp
+    @ONLY
+)
+
 target_sources(
     cocktail-maker-core
     PUBLIC
@@ -77,6 +83,10 @@ target_sources(
                 include/cm/hw/stepper_motor.hpp
                 include/cm/hw/drv8825_stepper_moter.hpp
                 include/cm/hw/wled_serial.hpp
+        FILE_SET export_config
+            TYPE HEADERS
+            BASE_DIRS ${CMAKE_CURRENT_BINARY_DIR}
+            FILES ${CMAKE_CURRENT_BINARY_DIR}/cm/config.hpp
     PRIVATE
         src/logging.cpp
         src/hw/hx711_sensor.cpp
@@ -104,6 +114,6 @@ target_sources(
         src/commands/command_event_publisher.cpp
 )
 
-if(BUILD_TESTING)
+if(CM_BUILD_TESTING)
     add_subdirectory(tests)
 endif()

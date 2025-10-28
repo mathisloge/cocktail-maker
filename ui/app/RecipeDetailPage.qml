@@ -16,6 +16,7 @@ Item {
     property RecipeDetail __recipe: recipe
     readonly property int sectionWidth: 600
 
+    objectName: "recipeDetailPage"
     onRecipeChanged: {
         root.__recipe = recipe;
     }
@@ -138,6 +139,7 @@ Item {
 
         Button {
             Layout.alignment: Qt.AlignHCenter
+            objectName: "mixButton"
             text: qsTr("🍹 mixen!")
             onClicked: root.mixClicked(root.__recipe)
         }

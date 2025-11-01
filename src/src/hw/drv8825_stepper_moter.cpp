@@ -5,73 +5,98 @@
 #include "cm/hw/drv8825_stepper_moter.hpp"
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/use_awaitable.hpp>
+#include <libassert/assert.hpp>
 #include <mp-units/math.h>
+#include <spdlog/spdlog.h>
+#include "cm/logging.hpp"
 
-namespace async = boost::asio;
+namespace asio = boost::asio;
 
 namespace cm {
 using SecondsPerStep = units::quantity<units::si::second / units::step>;
 constexpr std::chrono::microseconds kPulseWidth{10};
 
+namespace {
+template <typename T>
+auto create_line(const std::string& name, PinSelection<T> pin, spdlog::logger& logger) -> std::optional<gpiod::line_request>
+{
+    try {
+        return gpiod::chip{std::move(pin.chip)}
+            .prepare_request()
+            .set_consumer(name)
+            .add_line_settings(pin.offset, gpiod::line_settings{}.set_direction(gpiod::line::direction::OUTPUT))
+            .do_request();
+    }
+    catch (const std::exception& ex) {
+        SPDLOG_LOGGER_CRITICAL(&logger, "Could not initialize stepper motor! Error: {}", ex.what());
+    }
+    return std::nullopt;
+}
+} // namespace
+
 Drv8825StepperMotorDriver::Drv8825StepperMotorDriver(Drv8825EnablePin enable_pin,
                                                      Drv8825StepPin step_pin,
                                                      Drv8825DirectionPin direction_pin)
-    : enable_line_{gpiod::chip{std::move(enable_pin.chip)}
-                       .prepare_request()
-                       .set_consumer("drv8825-enable")
-                       .add_line_settings(enable_pin.offset, gpiod::line_settings{}.set_direction(gpiod::line::direction::OUTPUT))
-                       .do_request()}
+    : logger_{LoggingContext::instance().create_logger(fmt::format("stepper@e{}d{}s{}",
+                                                                   static_cast<int>(enable_pin.offset),
+                                                                   static_cast<int>(step_pin.offset),
+                                                                   static_cast<int>(direction_pin.offset)))}
+    , enable_line_{create_line("drv8825-enable", enable_pin, *logger_)}
     , enable_offset_{enable_pin.offset}
-    , step_line_{gpiod::chip{std::move(step_pin.chip)}
-                     .prepare_request()
-                     .set_consumer("drv8825-step")
-                     .add_line_settings(step_pin.offset, gpiod::line_settings{}.set_direction(gpiod::line::direction::OUTPUT))
-                     .do_request()}
-    , step_offset_{step_pin.offset}
-    , direction_line_{gpiod::chip{std::move(direction_pin.chip)}
-                          .prepare_request()
-                          .set_consumer("drv8825-direction")
-                          .add_line_settings(direction_pin.offset,
-                                             gpiod::line_settings{}.set_direction(gpiod::line::direction::OUTPUT))
-                          .do_request()}
+    , direction_line_{create_line("drv8825-direction", direction_pin, *logger_)}
     , direction_offset_{direction_pin.offset}
+    , step_line_{create_line("drv8825-step", step_pin, *logger_)}
+    , step_offset_{step_pin.offset}
 {
-    // disable at start
-    enable_line_.set_value(enable_offset_, gpiod::line::value::ACTIVE);
+    if (enable_line_.has_value()) {
+        try {
+            // disable at start
+            enable_line_->set_value(enable_offset_, gpiod::line::value::ACTIVE);
+        }
+        catch (const std::exception& ex) {
+            SPDLOG_LOGGER_ERROR(logger_, "Could not disable stepper motor! Error: {}", ex.what());
+        }
+    }
+    else {
+        SPDLOG_LOGGER_DEBUG(logger_, "enable line wasn't initialized. Cannot disable line.");
+    }
 }
 
 boost::asio::awaitable<void> Drv8825StepperMotorDriver::enable()
 {
-    auto exec = co_await async::this_coro::executor;
-    enable_line_.set_value(enable_offset_, gpiod::line::value::INACTIVE);
+    ASSERT(enable_line_.has_value());
+    auto exec = co_await asio::this_coro::executor;
+    enable_line_->set_value(enable_offset_, gpiod::line::value::INACTIVE);
 
-    async::steady_timer timer{exec};
+    asio::steady_timer timer{exec};
     timer.expires_after(std::chrono::milliseconds{10});
-    co_await timer.async_wait(async::use_awaitable);
+    co_await timer.async_wait(asio::use_awaitable);
 }
 
 boost::asio::awaitable<void> Drv8825StepperMotorDriver::disable()
 {
-    auto exec = co_await async::this_coro::executor;
-    enable_line_.set_value(enable_offset_, gpiod::line::value::ACTIVE);
+    ASSERT(enable_line_.has_value());
+    auto exec = co_await asio::this_coro::executor;
+    enable_line_->set_value(enable_offset_, gpiod::line::value::ACTIVE);
 
-    async::steady_timer timer{exec};
+    asio::steady_timer timer{exec};
     timer.expires_after(std::chrono::milliseconds{10});
-    co_await timer.async_wait(async::use_awaitable);
+    co_await timer.async_wait(asio::use_awaitable);
 }
 
 boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(units::Steps steps, units::StepsPerSecond velocity)
 {
-    auto exec = co_await async::this_coro::executor;
-    async::steady_timer timer{exec};
+    ASSERT(direction_line_.has_value());
+    auto exec = co_await asio::this_coro::executor;
+    asio::steady_timer timer{exec};
 
     const auto direction = steps > 0 * units::step ? gpiod::line::value::ACTIVE : gpiod::line::value::INACTIVE;
     if (steps < 0 * units::step) {
         steps *= -1;
     }
-    direction_line_.set_value(direction_offset_, direction);
+    direction_line_->set_value(direction_offset_, direction);
     timer.expires_after(kPulseWidth);
-    co_await timer.async_wait(async::use_awaitable);
+    co_await timer.async_wait(asio::use_awaitable);
 
     // 1. Compute ramp time
     const auto ramp_time = velocity / kAcceleration;
@@ -89,33 +114,36 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(units::Steps steps,
     // 3. Acceleration phase
     for (units::Steps i = 1 * units::step; i <= ramp_steps; i += 1 * units::step) {
         const SecondsPerStep delay = 1 / mp_units::sqrt(2.0 * kAcceleration * i); // v = √(2a * s)
-        co_await step_one(timer, std::chrono::duration_cast<std::chrono::microseconds>(units::to_chrono_duration(delay)));
+        co_await step_one(std::chrono::duration_cast<std::chrono::microseconds>(units::to_chrono_duration(delay)));
     }
 
     // 4. Cruise phase
     const SecondsPerStep cruise_delay = 1.0 / velocity; // delay = 1/velocity gives seconds per step
     for (units::Steps i = 0 * units::step; i < cruise_steps; i += 1 * units::step) {
-        co_await step_one(timer,
-                          std::chrono::duration_cast<std::chrono::microseconds>(mp_units::to_chrono_duration(cruise_delay)));
+        co_await step_one(std::chrono::duration_cast<std::chrono::microseconds>(mp_units::to_chrono_duration(cruise_delay)));
     }
 
     // 5. Deceleration phase
     for (units::Steps i = ramp_steps; i >= 1 * units::step; i -= 1 * units::step) {
         const SecondsPerStep delay = 1 / mp_units::sqrt(2.0 * kAcceleration * i); // v = √(2a * s)
-        co_await step_one(timer, std::chrono::duration_cast<std::chrono::microseconds>(mp_units::to_chrono_duration(delay)));
+        co_await step_one(std::chrono::duration_cast<std::chrono::microseconds>(mp_units::to_chrono_duration(delay)));
     }
 }
 
-boost::asio::awaitable<void> Drv8825StepperMotorDriver::step_one(boost::asio::steady_timer& timer,
-                                                                 std::chrono::microseconds wait_after)
+async<void> Drv8825StepperMotorDriver::step_one(std::chrono::microseconds wait_after)
 {
-    step_line_.set_value(step_offset_, gpiod::line::value::ACTIVE);
+    ASSERT(step_line_.has_value());
+
+    auto exec = co_await asio::this_coro::executor;
+    asio::steady_timer timer{exec};
+
+    step_line_->set_value(step_offset_, gpiod::line::value::ACTIVE);
     timer.expires_after(kPulseWidth);
-    co_await timer.async_wait(async::use_awaitable);
-    step_line_.set_value(step_offset_, gpiod::line::value::INACTIVE);
+    co_await timer.async_wait(asio::use_awaitable);
+    step_line_->set_value(step_offset_, gpiod::line::value::INACTIVE);
 
     timer.expires_after(wait_after);
-    co_await timer.async_wait(async::use_awaitable);
+    co_await timer.async_wait(asio::use_awaitable);
 }
 
 } // namespace cm

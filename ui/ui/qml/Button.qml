@@ -8,7 +8,8 @@ import QtQuick.Controls.Basic
 Button {
     id: control
     text: "Button"
-    font.pointSize: 18
+    font.pointSize: 16
+    padding: 10
 
     property color colorStart: "#10b981"
     property color colorEnd: "#3b82f6"

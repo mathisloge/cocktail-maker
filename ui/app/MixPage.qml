@@ -30,7 +30,6 @@ Item {
                 ColumnLayout {
                     width: parent.width
                     Label {
-                        Layout.alignment: Qt.AlignHCenter
                         font.pointSize: 18
                         text: qsTr("Schritte:")
                     }
@@ -90,12 +89,6 @@ Item {
                 }
             }
 
-            ProgressBar {
-                Layout.margins: 20
-                Layout.fillWidth: true
-                indeterminate: true
-            }
-
             RowLayout {
                 Layout.alignment: Qt.AlignHCenter
                 Button {
@@ -111,7 +104,7 @@ Item {
         id: manualActionPopup
         anchors.centerIn: parent
         titleText: qsTr("Bitte führe den angezeigten Schritt aus:")
-        instructionText: "TBD"
+        instructionText: "..."
         confirmButtonText: qsTr("Fertig ▶")
 
         onConfirmClicked: {

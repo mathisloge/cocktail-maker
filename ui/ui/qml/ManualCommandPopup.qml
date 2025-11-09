@@ -19,11 +19,12 @@ Popup {
     popupType: Popup.Item
 
     background: Rectangle {
-        color: "#000000"
-        border.color: "#0dffffff"
-        border.width: 1
+        color: "#212121"
+        border.color: '#7e7e7e'
+        border.width: 2
         radius: 16
     }
+    padding: 25
 
     Overlay.modal: Rectangle {
         color: "#1affffff"
@@ -47,6 +48,7 @@ Popup {
     }
 
     contentItem: ColumnLayout {
+
         Label {
             text: root.titleText
             wrapMode: Text.Wrap
@@ -68,6 +70,7 @@ Popup {
         Button {
             text: root.confirmButtonText
             Layout.alignment: Qt.AlignHCenter
+            Layout.fillWidth: true
             onClicked: {
                 root.confirmClicked();
             }

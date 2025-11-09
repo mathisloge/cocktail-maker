@@ -14,4 +14,5 @@ Frame {
         border.width: 1
         radius: 16
     }
+    padding: 20
 }

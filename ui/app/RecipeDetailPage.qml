@@ -104,9 +104,8 @@ Item {
             ColumnLayout {
                 width: parent.width
                 Label {
-                    Layout.alignment: Qt.AlignHCenter
                     font.pointSize: 18
-                    text: qsTr("Schritte:")
+                    text: qsTr("Was drin ist") // codespell:ignore
                 }
 
                 Repeater {

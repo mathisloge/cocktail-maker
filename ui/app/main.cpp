@@ -10,6 +10,7 @@
 #include <QQmlExtensionPlugin>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <cm/config.hpp>
 #include <cm/db/db.hpp>
 #include <cm/execution_context.hpp>
 #include <cm/glass_store.hpp>
@@ -28,7 +29,7 @@ using namespace cm;
 
 int main(int argc, char* argv[])
 {
-    CLI::App cli{"CocktailMaker"};
+    CLI::App cli{std::string{kGitRef}, "CocktailMaker"};
     argv = cli.ensure_utf8(argv);
 
     bool fullscreen{false};
@@ -36,6 +37,8 @@ int main(int argc, char* argv[])
 
     cli.add_option("--threads", threads, "Number of threads to use");
     cli.add_flag("--fullscreen", fullscreen, "Set if the app should start in fullscreen mode.");
+    cli.set_version_flag("--version", std::string{kVersion});
+
     CLI11_PARSE(cli, argc, argv);
 
     boost::asio::thread_pool thread_pool{threads};
@@ -44,7 +47,7 @@ int main(int argc, char* argv[])
     QApplication app{argc, argv};
     QCoreApplication::setApplicationName(QStringLiteral("CocktailMaker"));
     QCoreApplication::setOrganizationName(QStringLiteral("com.mathisloge.cocktail-maker"));
-    QCoreApplication::setApplicationVersion(QStringLiteral(QT_VERSION_STR));
+    QCoreApplication::setApplicationVersion(QString::fromLocal8Bit(kVersion));
 
     QPalette palette;
     palette.setColor(QPalette::WindowText, Qt::white);

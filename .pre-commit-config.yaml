@@ -23,11 +23,6 @@ repos:
     hooks:
       - id: gersemi
         name: CMake linting
-
-  - repo: https://github.com/psf/black
-    rev: 25.9.0
-    hooks:
-      - id: black
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v21.1.2
     hooks:
@@ -59,4 +54,4 @@ repos:
         types_or: [c++, qml, proto, cmake, python, pyi]
         pass_filenames: true
         language: python
-        stages: [ manual ]
+        stages: [manual]

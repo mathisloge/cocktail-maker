@@ -9,6 +9,7 @@ import CocktailMaker.Ui
 
 Item {
     id: root
+    objectName: "glassSelectionPage"
 
     required property RecipeDetail recipe
     property glass detectedGlass: glassDetector.detectedGlass
@@ -70,14 +71,15 @@ Item {
                     highlight: highlight
                     model: model
                     delegate: Button {
-                        width: glassGrid.cellWidth - glassGrid.spacing
-                        height: glassGrid.cellHeight - glassGrid.spacing
                         required property string glassId
                         required property string name
                         required property string capacity
                         required property int index
 
-                        text: name + ": " + capacity
+                        objectName: "glass_" + name
+                        width: glassGrid.cellWidth - glassGrid.spacing
+                        height: glassGrid.cellHeight - glassGrid.spacing
+                        text: qsTr(name) + ": " + capacity
 
                         onClicked: {
                             glassGrid.currentIndex = index;
@@ -89,6 +91,7 @@ Item {
         }
         Button {
             Layout.alignment: Qt.AlignTop | Qt.AlignHCenter
+            objectName: "mixButton"
             text: "🍹 mixen!"
             onClicked: root.glassSelected(root._selectedGlassId)
         }

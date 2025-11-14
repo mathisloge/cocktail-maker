@@ -15,6 +15,7 @@
         "catch2",
         "libassert",
         "nlohmann-json",
+        "quite",
         "ftxui"
     ]
 }

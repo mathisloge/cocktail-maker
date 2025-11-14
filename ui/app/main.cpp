@@ -9,6 +9,7 @@
 #include <QQmlExtensionPlugin>
 #include <QQuickStyle>
 #include <QQuickWindow>
+#include <cm/config.hpp>
 #include <cm/db/db.hpp>
 #include <cm/execution_context.hpp>
 #include <cm/glass_store.hpp>
@@ -21,12 +22,18 @@
 #include <mp-units/systems/imperial.h>
 #include <mp-units/systems/international.h>
 #include "ApplicationState.hpp"
+#if CM_BUILD_TESTING == 1
+#include <quite/probe_qt/probe_qt.hpp>
+#endif
 
 Q_IMPORT_QML_PLUGIN(CocktailMaker_UiPlugin)
 using namespace cm;
 
 int main(int argc, char* argv[])
 {
+#if CM_BUILD_TESTING == 1
+    quite::probe::setup_qt_probe();
+#endif
 
     boost::asio::thread_pool thread_pool{3};
     boost::asio::cancellation_signal cancel_signal;

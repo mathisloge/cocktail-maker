@@ -16,6 +16,7 @@ target_link_libraries(
         cm::core
         cm::db
         cm::ui
+        $<$<BOOL:${CM_BUILD_TESTING}>:quite::probe_qt>
 )
 
 qt_add_qml_module(CocktailMakerApp

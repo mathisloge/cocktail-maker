@@ -77,7 +77,7 @@ add_subdirectory(i18n)
 
 install(
     FILES cmake/cocktail-maker.service
-    DESTINATION lib/systemd/user
+    DESTINATION lib/systemd/system
     RENAME cocktail-maker.service
 )
 

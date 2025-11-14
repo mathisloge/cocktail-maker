@@ -1,15 +1,17 @@
 [Unit]
 Description=Cocktail maker
-After=default.target
+After=graphical.target
 
 [Service]
 Type=simple
+User=cocktail
 StandardOutput=journal
 ExecStart=cocktail-maker --fullscreen
 Restart=on-failure
 RestartSec=2
 Environment=QT_QPA_PLATFORM=wayland
-WorkingDirectory=%h/cocktail
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+WorkingDirectory=/home/cocktail
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical.target

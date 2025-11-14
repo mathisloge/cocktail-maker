@@ -1,0 +1,15 @@
+[Unit]
+Description=Cocktail maker
+After=graphical-session.target
+
+[Service]
+Type=simple
+StandardOutput=journal
+ExecStart=cocktail-maker --fullscreen
+Restart=on-failure
+RestartSec=2
+Environment=QT_QPA_PLATFORM=wayland
+WorkingDirectory=%h/cocktail
+
+[Install]
+WantedBy=graphical-session.target

@@ -42,6 +42,7 @@ find_package(fmt CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(libassert CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(CLI11 CONFIG REQUIRED)
 pkg_check_modules(libgpiod REQUIRED IMPORTED_TARGET libgpiod)
 pkg_check_modules(libgpiodcxx REQUIRED IMPORTED_TARGET libgpiodcxx)
 
@@ -73,6 +74,12 @@ add_subdirectory(src)
 add_subdirectory(utils)
 add_subdirectory(ui)
 add_subdirectory(i18n)
+
+install(
+    FILES cmake/cocktail-maker.service
+    DESTINATION lib/systemd/user
+    RENAME cocktail-maker.service
+)
 
 set(CPACK_PACKAGE_NAME "cocktail-maker")
 set(CPACK_PACKAGE_CONTACT "Mathis Logemann <mathis@quite.rocks>")

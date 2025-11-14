@@ -56,6 +56,9 @@ int main(int argc, char* argv[])
 
     QQmlApplicationEngine engine;
 
+    if (fullscreen) {
+        app.setOverrideCursor(Qt::BlankCursor);
+    }
     engine.setInitialProperties(
         QVariantMap{{"visibility", fullscreen ? QWindow::Visibility::FullScreen : QWindow::Visibility::Windowed}});
 

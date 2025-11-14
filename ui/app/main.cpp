@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include <CLI/App.hpp>
 #include <QApplication>
 #include <QPalette>
 #include <QQmlApplicationEngine>
@@ -27,8 +28,17 @@ using namespace cm;
 
 int main(int argc, char* argv[])
 {
+    CLI::App cli{"CocktailMaker"};
+    argv = cli.ensure_utf8(argv);
 
-    boost::asio::thread_pool thread_pool{3};
+    bool fullscreen{false};
+    size_t threads{3};
+
+    cli.add_option("--threads", threads, "Number of threads to use");
+    cli.add_flag("--fullscreen", fullscreen, "Set if the app should start in fullscreen mode.");
+    CLI11_PARSE(cli, argc, argv);
+
+    boost::asio::thread_pool thread_pool{threads};
     boost::asio::cancellation_signal cancel_signal;
 
     QApplication app{argc, argv};
@@ -42,6 +52,9 @@ int main(int argc, char* argv[])
     app.setPalette(palette);
 
     QQmlApplicationEngine engine;
+
+    engine.setInitialProperties(
+        QVariantMap{{"visibility", fullscreen ? QWindow::Visibility::FullScreen : QWindow::Visibility::Windowed}});
 
     std::shared_ptr<cm::ExecutionContext> execution_context = std::make_shared<cm::ExecutionContext>(thread_pool.get_executor());
     auto weight_sensor = std::make_shared<WeightSensorSimulated>();
@@ -95,11 +108,13 @@ int main(int argc, char* argv[])
     app_state->glass_store = glass_store;
     app_state->recipe_factory = recipe_factory;
     app_state->recipe_executor = recipe_executor;
+
     engine.loadFromModule("CocktailMaker.App", "Main");
 
 #if 0 // NOLINT
     engine.loadFromModule("CocktailMaker.App", "DebugWindow");
 #endif
+
     const auto res = app.exec();
 
     // shutdown section

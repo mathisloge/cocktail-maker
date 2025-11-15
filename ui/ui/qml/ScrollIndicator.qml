@@ -37,41 +37,10 @@ Rectangle {
         }
     }
 
-    // Down arrow
     Text {
         anchors.centerIn: parent
         text: scrollIndicator.down ? "▼" : "▲"
         font.pixelSize: 24
         color: "white"
-    }
-
-    SequentialAnimation on anchors.bottomMargin {
-        running: scrollIndicator.down && scrollIndicator.visible
-        loops: Animation.Infinite
-        NumberAnimation {
-            to: 20
-            duration: 1000
-            easing.type: Easing.InOutQuad
-        }
-        NumberAnimation {
-            to: 10
-            duration: 1000
-            easing.type: Easing.InOutQuad
-        }
-    }
-
-    SequentialAnimation on anchors.topMargin {
-        running: !scrollIndicator.down && scrollIndicator.visible
-        loops: Animation.Infinite
-        NumberAnimation {
-            to: 20
-            duration: 1000
-            easing.type: Easing.InOutQuad
-        }
-        NumberAnimation {
-            to: 10
-            duration: 1000
-            easing.type: Easing.InOutQuad
-        }
     }
 }

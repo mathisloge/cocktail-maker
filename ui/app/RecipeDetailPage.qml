@@ -7,7 +7,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import CocktailMaker.Ui
 
-Item {
+Page {
     id: root
     signal backClicked
     signal mixClicked(RecipeDetail recipe)
@@ -26,119 +26,123 @@ Item {
         originalRecipe: root.recipe
     }
 
-    ColumnLayout {
-        width: parent.width
-        spacing: 20
+    header: RowLayout {
+        id: headerLayout
 
-        Item {
-            Layout.preferredHeight: headerText.height
-            Layout.fillWidth: true
-            Button {
-                text: qsTr("Zurück")
-                onClicked: root.backClicked()
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            Label {
-                id: headerText
-                text: qsTr(root.__recipe.name)
-                font.pointSize: 48
-                anchors.horizontalCenter: parent.horizontalCenter
-            }
+        Button {
+            Layout.alignment: Qt.AlignLeft
+            text: qsTr("Zurück")
+            onClicked: root.backClicked()
         }
+
         Label {
-            text: qsTr(root.__recipe.description)
-            wrapMode: Text.Wrap
-            horizontalAlignment: Text.AlignHCenter
-            font.pointSize: 20
-            color: "#b3ffffff"
+            id: headerText
+            text: qsTr(root.__recipe.name)
+            font.pointSize: 48
             Layout.alignment: Qt.AlignHCenter
-            Layout.maximumWidth: root.width
-        }
-
-        Section {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: root.sectionWidth
-            visible: booster.isBoostable
-
-            ColumnLayout {
-                width: parent.width
-                Label {
-                    Layout.alignment: Qt.AlignHCenter
-                    font.pointSize: 18
-                    text: qsTr("Getränk boosten")
-                }
-
-                Label {
-                    Layout.alignment: Qt.AlignHCenter
-                    font.pointSize: 18
-                    text: boostSlider.value.toFixed(0) + "%"
-                }
-
-                RowLayout {
-                    Layout.alignment: Qt.AlignHCenter
-                    Label {
-                        text: qsTr("mild")
-                    }
-                    Slider {
-                        id: boostSlider
-                        from: -100
-                        value: 0
-                        to: 100
-                        stepSize: 5
-                        snapMode: Slider.SnapOnRelease
-                        onValueChanged: {
-                            root.__recipe = booster.boost(boostSlider.value);
-                        }
-                    }
-                    Label {
-                        text: qsTr("stark")
-                    }
-                }
-            }
-        }
-
-        Section {
-            Layout.alignment: Qt.AlignHCenter
-            Layout.preferredWidth: root.sectionWidth
-            ColumnLayout {
-                width: parent.width
-                Label {
-                    font.pointSize: 18
-                    text: qsTr("Was drin ist") // codespell:ignore
-                }
-
-                Repeater {
-                    model: root.__recipe.steps
-
-                    delegate: Section {
-                        id: section
-                        required property string name
-                        required property string detail
-                        Layout.fillWidth: true
-                        RowLayout {
-                            width: parent.width
-                            Label {
-                                Layout.alignment: Qt.AlignLeft
-                                text: qsTr(section.name)
-                                font.pointSize: 14
-                            }
-                            Label {
-                                Layout.alignment: Qt.AlignRight
-                                color: "#b3ffffff"
-                                text: qsTr(section.detail)
-                                font.pointSize: 14
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         Button {
-            Layout.alignment: Qt.AlignHCenter
-            text: qsTr("🍹 mixen!")
+            Layout.alignment: Qt.AlignRight
+            text: qsTr("🍹 Weiter!")
             onClicked: root.mixClicked(root.__recipe)
+        }
+    }
+
+    ScrollView {
+        anchors.fill: parent
+        ColumnLayout {
+            width: parent.width
+            spacing: 20
+
+            Label {
+                text: qsTr(root.__recipe.description)
+                wrapMode: Text.Wrap
+                horizontalAlignment: Text.AlignHCenter
+                font.pointSize: 20
+                color: "#b3ffffff"
+                Layout.alignment: Qt.AlignHCenter
+                Layout.maximumWidth: root.width
+            }
+
+            Section {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: root.sectionWidth
+                visible: booster.isBoostable
+
+                ColumnLayout {
+                    width: parent.width
+                    Label {
+                        Layout.alignment: Qt.AlignHCenter
+                        font.pointSize: 18
+                        text: qsTr("Getränk boosten")
+                    }
+
+                    Label {
+                        Layout.alignment: Qt.AlignHCenter
+                        font.pointSize: 18
+                        text: boostSlider.value.toFixed(0) + "%"
+                    }
+
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        Label {
+                            text: qsTr("mild")
+                        }
+                        Slider {
+                            id: boostSlider
+                            from: -100
+                            value: 0
+                            to: 100
+                            stepSize: 5
+                            snapMode: Slider.SnapOnRelease
+                            onValueChanged: {
+                                root.__recipe = booster.boost(boostSlider.value);
+                            }
+                        }
+                        Label {
+                            text: qsTr("stark")
+                        }
+                    }
+                }
+            }
+
+            Section {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: root.sectionWidth
+                ColumnLayout {
+                    width: parent.width
+                    Label {
+                        font.pointSize: 18
+                        text: qsTr("Was drin ist") // codespell:ignore
+                    }
+
+                    Repeater {
+                        model: root.__recipe.steps
+
+                        delegate: Section {
+                            id: section
+                            required property string name
+                            required property string detail
+                            Layout.fillWidth: true
+                            RowLayout {
+                                width: parent.width
+                                Label {
+                                    Layout.alignment: Qt.AlignLeft
+                                    text: qsTr(section.name)
+                                    font.pointSize: 14
+                                }
+                                Label {
+                                    Layout.alignment: Qt.AlignRight
+                                    color: "#b3ffffff"
+                                    text: qsTr(section.detail)
+                                    font.pointSize: 14
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

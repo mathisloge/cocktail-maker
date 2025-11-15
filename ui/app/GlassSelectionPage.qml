@@ -7,7 +7,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import CocktailMaker.Ui
 
-Item {
+Page {
     id: root
 
     required property RecipeDetail recipe
@@ -28,69 +28,47 @@ Item {
         glassStore: ApplicationState.glassStore
     }
 
-    ColumnLayout {
-        anchors.fill: parent
-        spacing: 20
-
-        Section {
-            Layout.alignment: Qt.AlignTop | Qt.AlignHCenter
-            Layout.preferredWidth: 600
-            Layout.fillHeight: true
-
-            ColumnLayout {
-                id: mainLayout
-                width: parent.width
-                height: parent.height
-
-                Label {
-                    text: qsTr("Glasgöße wählen")
-                    font.pointSize: 48
-                    Layout.margins: 20
-                    Layout.alignment: Qt.AlignHCenter
-                }
-
-                Label {
-                    text: qsTr("Erkannt: %1").arg(qsTr(root.detectedGlass.displayName))
-                    font.pointSize: 28
-                    Layout.margins: 20
-                    Layout.alignment: Qt.AlignHCenter
-                }
-
-                GridView {
-                    id: glassGrid
-                    readonly property int spacing: 10
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    Layout.minimumHeight: cellHeight + (count > 2 ? spacing : 0)
-                    Layout.preferredHeight: (((count + 1) / 2) * cellHeight) - spacing
-                    cellWidth: width / 2
-                    cellHeight: 120
-                    currentIndex: 0 // default active
-                    clip: true
-                    highlight: highlight
-                    model: model
-                    delegate: Button {
-                        width: glassGrid.cellWidth - glassGrid.spacing
-                        height: glassGrid.cellHeight - glassGrid.spacing
-                        required property string glassId
-                        required property string name
-                        required property string capacity
-                        required property int index
-
-                        text: name + ": " + capacity
-
-                        onClicked: {
-                            glassGrid.currentIndex = index;
-                            root._selectedGlassId = glassId;
-                        }
-                    }
-                }
-            }
-        }
+    header: Item {
+        implicitHeight: childrenRect.height
         Button {
-            Layout.alignment: Qt.AlignTop | Qt.AlignHCenter
-            text: "🍹 mixen!"
-            onClicked: root.glassSelected(root._selectedGlassId)
+            anchors.left: parent.left
+            text: qsTr("Zurück")
+            onClicked: root.backClicked()
+        }
+
+        Label {
+            anchors.horizontalCenter: parent.horizontalCenter
+            text: qsTr("Glas wählen")
+            font.pointSize: 48
+        }
+    }
+
+    GridView {
+        id: glassGrid
+        readonly property int spacing: 10
+        anchors.fill: parent
+        anchors.margins: 50
+        cellWidth: width / 2
+        cellHeight: 120
+        currentIndex: 0 // default active
+        clip: true
+        //highlight: highlight
+        model: model
+        delegate: Button {
+            width: glassGrid.cellWidth - glassGrid.spacing
+            height: glassGrid.cellHeight - glassGrid.spacing
+            required property string glassId
+            required property string name
+            required property string capacity
+            required property int index
+
+            text: name + ": " + capacity
+
+            onClicked: {
+                glassGrid.currentIndex = index;
+                root._selectedGlassId = glassId;
+                root.glassSelected(root._selectedGlassId);
+            }
         }
     }
 

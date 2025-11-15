@@ -8,7 +8,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import CocktailMaker.Ui
 
-Item {
+Page {
     id: root
 
     signal recipeSelected(string name)
@@ -21,25 +21,17 @@ Item {
         id: systemPalette
     }
 
-    RowLayout {
-        id: headerLayout
-        anchors.top: parent.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        Text {
+    header: Item {
+        implicitHeight: childrenRect.height
+        Label {
             text: qsTr("🍹 Cocktail Automat")
-            font.family: "Helvetica"
             font.pointSize: 48
-            color: systemPalette.text
-
-            Layout.alignment: Qt.AlignHCenter
+            anchors.horizontalCenter: parent.horizontalCenter
         }
     }
+
     ScrollView {
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: headerLayout.bottom
+        anchors.fill: parent
 
         GridLayout {
             id: cocktailGrid
@@ -63,7 +55,7 @@ Item {
 
                 parent: cocktailGrid
                 onClicked: {
-                    root.recipeSelected(model.name)
+                    root.recipeSelected(model.name);
                 }
             }
         }

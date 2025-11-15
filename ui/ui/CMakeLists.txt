@@ -16,6 +16,7 @@ qt_add_qml_module(cocktail-maker-ui
         qml/Page.qml
         qml/Label.qml
         qml/ScrollIndicator.qml
+        qml/BusyIndicator.qml
     RESOURCES
         mojito.png
 )

@@ -26,24 +26,36 @@ Page {
         originalRecipe: root.recipe
     }
 
-    header: RowLayout {
-        id: headerLayout
+    header: Item {
+        implicitHeight: headerLabel.height
 
         Button {
-            Layout.alignment: Qt.AlignLeft
+            anchors {
+                verticalCenter: parent.verticalCenter
+                left: parent.left
+            }
+            width: 150
             text: qsTr("Zurück")
             onClicked: root.backClicked()
         }
 
         Label {
-            id: headerText
+            id: headerLabel
+            anchors {
+                verticalCenter: parent.verticalCenter
+                horizontalCenter: parent.horizontalCenter
+            }
             text: qsTr(root.__recipe.name)
             font.pointSize: 48
             Layout.alignment: Qt.AlignHCenter
         }
 
         Button {
-            Layout.alignment: Qt.AlignRight
+            anchors {
+                verticalCenter: parent.verticalCenter
+                right: parent.right
+            }
+            width: 150
             text: qsTr("🍹 Weiter!")
             onClicked: root.mixClicked(root.__recipe)
         }

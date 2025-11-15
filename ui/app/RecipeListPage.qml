@@ -17,13 +17,10 @@ Page {
         recipeStore: ApplicationState.recipeStore
     }
 
-    SystemPalette {
-        id: systemPalette
-    }
-
     header: Item {
-        implicitHeight: childrenRect.height
+        implicitHeight: headerLabel.height
         Label {
+            id: headerLabel
             text: qsTr("🍹 Cocktail Automat")
             font.pointSize: 48
             anchors.horizontalCenter: parent.horizontalCenter

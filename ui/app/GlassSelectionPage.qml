@@ -29,14 +29,17 @@ Page {
     }
 
     header: Item {
-        implicitHeight: childrenRect.height
+        implicitHeight: headerLabel.height
         Button {
             anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            width: 150
             text: qsTr("Zurück")
             onClicked: root.backClicked()
         }
 
         Label {
+            id: headerLabel
             anchors.horizontalCenter: parent.horizontalCenter
             text: qsTr("Glas wählen")
             font.pointSize: 48

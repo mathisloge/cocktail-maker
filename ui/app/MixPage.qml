@@ -14,8 +14,20 @@ Page {
     required property RecipeDetail recipe
 
     header: Item {
-        implicitHeight: childrenRect.height
+        implicitHeight: headerLabel.height
+
+        Button {
+            width: 150
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            colorStart: "#ef4444"
+            colorEnd: "#dc2626"
+            text: qsTr("Abbrechen")
+            onClicked: root.cancelClicked()
+        }
+
         Label {
+            id: headerLabel
             text: qsTr("%1 wird zubereitet").arg(root.recipe.name)
             wrapMode: Text.Wrap
             font.pointSize: 48
@@ -24,6 +36,7 @@ Page {
         }
 
         Button {
+            width: 150
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             colorStart: "#ef4444"

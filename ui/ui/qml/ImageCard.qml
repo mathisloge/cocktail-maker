@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import QtQuick
-import QtQuick.Controls.Basic
+import QtQuick.Controls
 import QtQuick.Effects
 
 AbstractButton {
@@ -64,6 +64,7 @@ AbstractButton {
         id: text
         anchors.centerIn: parent
         text: root.text
+        color: "white"
         font {
             pixelSize: 70
             weight: 725

@@ -15,6 +15,8 @@ inline constexpr IngredientId vodka = "vodka";
 inline constexpr IngredientId bacardi = "bacardi";
 inline constexpr IngredientId lime_juice = "lime_juice";
 inline constexpr IngredientId orange_juice = "orange_juice";
+inline constexpr IngredientId white_tequila = "white_tequila";
+inline constexpr IngredientId grenadine = "grenadine";
 
 // NOLINTEND(readability-identifier-naming)
 

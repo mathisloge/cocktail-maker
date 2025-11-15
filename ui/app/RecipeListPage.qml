@@ -27,34 +27,47 @@ Page {
         }
     }
 
-    ScrollView {
+    GridView {
+        id: gridView
+        clip: true
+        model: recipeListModel
         anchors.fill: parent
+        cellWidth: gridView.width / 2
+        cellHeight: cellWidth
 
-        GridLayout {
-            id: cocktailGrid
-            columns: 2
-            columnSpacing: 20
-            rowSpacing: 20
-            width: root.width
-        }
-
-        Instantiator {
-            id: cocktailInstantiator
-            model: recipeListModel
-
-            delegate: ImageCard {
-                required property var model
+        delegate: Item {
+            required property string name
+            required property string imageSource
+            width: gridView.cellWidth
+            height: gridView.cellHeight
+            ImageCard {
+                anchors.margins: 10
+                anchors.fill: parent
                 clip: true
-                Layout.preferredWidth: (cocktailGrid.width - ((cocktailGrid.columns - 1) * cocktailGrid.columnSpacing)) / cocktailGrid.columns
-                Layout.preferredHeight: width
-                text: qsTr(model.name)
-                iconSrc: model.imageSource
-
-                parent: cocktailGrid
+                text: qsTr(parent.name)
+                iconSrc: parent.imageSource
                 onClicked: {
-                    root.recipeSelected(model.name);
+                    root.recipeSelected(parent.name);
                 }
             }
+        }
+
+        ScrollIndicator {
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.topMargin: 20
+            down: false
+            atEnd: gridView.atYBeginning
+            movingVertically: gridView.movingVertically
+        }
+
+        ScrollIndicator {
+            anchors.bottom: parent.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottomMargin: 20
+            down: true
+            atEnd: gridView.atYEnd
+            movingVertically: gridView.movingVertically
         }
     }
 }

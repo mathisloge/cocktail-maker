@@ -13,12 +13,9 @@ ApplicationWindow {
     width: 1280
     height: 720
     title: qsTr("🍹 Cocktail Automat")
+    flags: Qt.FramelessWindowHint
 
     property RecipeDetail selectedRecipe
-
-    SystemPalette {
-        id: systemPalette
-    }
 
     Frame {
         anchors.fill: parent

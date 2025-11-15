@@ -40,9 +40,15 @@ AbstractButton {
             radius: 24
             layer.enabled: true
             layer.smooth: true
-            opacity: 0.7
+            opacity: 0
             color: "#313131"
-            visible: false
+            visible: opacity > 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 150
+                }
+            }
         }
     }
 
@@ -54,11 +60,10 @@ AbstractButton {
         color: "#71313131"
     }
 
-    Text {
+    Label {
         id: text
         anchors.centerIn: parent
         text: root.text
-        color: "#fff"
         font {
             pixelSize: 70
             weight: 725
@@ -71,7 +76,7 @@ AbstractButton {
             when: root.pressed
 
             PropertyChanges {
-                mask.visible: true
+                mask.opacity: 0.7
             }
         }
     ]

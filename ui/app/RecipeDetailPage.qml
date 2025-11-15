@@ -61,9 +61,13 @@ Page {
         }
     }
 
-    ScrollView {
+    Flickable {
         anchors.fill: parent
+        contentHeight: listLayout.height
+        clip: true
+
         ColumnLayout {
+            id: listLayout
             width: parent.width
             spacing: 20
 

@@ -28,7 +28,7 @@ Page {
 
         Label {
             id: headerLabel
-            text: qsTr("%1 wird zubereitet").arg(root.recipe.name)
+            text: qsTr("Wird zubereitet...")
             wrapMode: Text.Wrap
             font.pointSize: 48
             anchors.horizontalCenter: parent.horizontalCenter
@@ -51,6 +51,13 @@ Page {
         width: parent.width / 2
         ColumnLayout {
             width: parent.width
+
+            Label {
+                font.pointSize: 24
+                text: qsTr(root.recipe.name)
+                Layout.alignment: Qt.AlignCenter
+            }
+
             Label {
                 font.pointSize: 18
                 text: qsTr("Schritte:")

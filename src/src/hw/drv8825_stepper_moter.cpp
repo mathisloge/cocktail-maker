@@ -14,7 +14,7 @@ namespace asio = boost::asio;
 
 namespace cm {
 using SecondsPerStep = units::quantity<units::si::second / units::step>;
-constexpr std::chrono::microseconds kPulseWidth{10};
+constexpr std::chrono::microseconds kPulseWidth{20};
 
 namespace {
 template <typename T>
@@ -95,8 +95,6 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(units::Steps steps,
         steps *= -1;
     }
     direction_line_->set_value(direction_offset_, direction);
-    timer.expires_after(kPulseWidth);
-    co_await timer.async_wait(asio::use_awaitable);
 
     // 1. Compute ramp time
     const auto ramp_time = velocity / kAcceleration;

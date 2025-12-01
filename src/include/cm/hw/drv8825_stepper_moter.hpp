@@ -39,6 +39,6 @@ class Drv8825StepperMotorDriver : public StepperMotor
     std::optional<gpiod::line_request> direction_line_;
     gpiod::line::offset direction_offset_;
 
-    static constexpr units::StepsPerSecondSq kAcceleration = 500 * (units::step / units::pow<2>(units::si::second));
+    static constexpr units::StepsPerSecondSq kAcceleration = 900 * (units::step / units::pow<2>(units::si::second));
 };
 } // namespace cm

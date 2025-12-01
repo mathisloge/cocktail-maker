@@ -20,9 +20,9 @@ StepperPumpLiquidDispenser::StepperPumpLiquidDispenser(std::string identifier,
 {
     fmt::println("StepperPumpLiquidDispenser \"{}\" initialized with {}, {} source volume and {} "
                  "tube volume",
-                 identifier,
+                 identifier_,
                  steps_per_litre_,
-                 source_volume,
+                 source_volume_,
                  tube_volume_);
 }
 

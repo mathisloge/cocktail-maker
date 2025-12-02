@@ -17,7 +17,7 @@ class LiquidDispenserRegistry
     auto get_dispensers()
     {
         return std::ranges::ref_view(dispensers_) | std::views::values |
-               std::views::transform([](auto& ptr) -> LiquidDispenser& { return *ptr; });
+               std::views::transform([](auto& ptr) -> LiquidDispenser* { return ptr.get(); });
     }
 
   private:

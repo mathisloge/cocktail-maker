@@ -49,8 +49,7 @@ void LiquidDispenserListModel::init_model()
     dispenser_names_.clear();
     if (execution_context_adapter_ != nullptr) {
         auto&& registry = execution_context_adapter_->context().liquid_registry();
-        auto vec = registry.get_dispensers() | std::views::transform([](LiquidDispenser& d) { return &d; }) |
-                   std::ranges::to<std::vector>();
+        auto vec = registry.get_dispensers() | std::ranges::to<std::vector>();
         std::ranges::sort(vec, {}, [](auto& d) { return d->name(); });
         dispenser_names_.reserve(vec.size());
         std::ranges::for_each(vec, [this](LiquidDispenser* dispenser) {

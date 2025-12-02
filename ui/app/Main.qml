@@ -43,7 +43,14 @@ ApplicationWindow {
         StackView {
             id: stackView
             anchors.fill: parent
-            initialItem: cocktailSelectionPage
+            initialItem: dispenserSettingsPage
+        }
+    }
+
+    Component {
+        id: dispenserSettingsPage
+        DispenserSettingsPage {
+            onBackClicked: stackView.pop()
         }
     }
 

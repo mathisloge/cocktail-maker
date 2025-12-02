@@ -46,9 +46,10 @@ Page {
                 delegate: Section {
                     id: stepperRoot
                     property bool needsRun: true
-                    property bool running: false
+                    property int steps
 
                     required property string name
+                    readonly property LiquidDispenserModel dispenser: ApplicationState.executionContextAdapter.create_dispenser_model(name)
 
                     width: ListView.view.width
                     height: 100
@@ -56,6 +57,7 @@ Page {
                     RowLayout {
                         id: layout
                         width: parent.width
+                        visible: stepperRoot.dispenser
 
                         Label {
                             Layout.alignment: Qt.AlignVCenter
@@ -72,17 +74,22 @@ Page {
                                 bottom: 500
                                 top: 10000
                             }
+
+                            onTextChanged: {
+                                if (text !== "") {
+                                    stepperRoot.steps = parseInt(text);
+                                }
+                            }
                         }
 
                         Button {
                             Layout.alignment: Qt.AlignVCenter
                             Layout.preferredWidth: 150
                             text: "Run"
-                            visible: !stepperRoot.running
+                            visible: !stepperRoot.dispenser.running
 
                             onClicked: {
-                                stepperRoot.running = true;
-                                stepperRoot.needsRun = false;
+                                stepperRoot.dispenser.run(stepperRoot.steps);
                             }
                         }
 
@@ -92,33 +99,39 @@ Page {
                             colorStart: "#ef4444"
                             colorEnd: "#dc2626"
                             text: qsTr("Abbrechen")
-                            visible: stepperRoot.running
+                            visible: stepperRoot.dispenser.running
                             onClicked: {
-                                stepperRoot.running = false;
+                                stepperRoot.dispenser.stop();
                             }
                         }
 
                         TextField {
                             Layout.fillHeight: true
                             Layout.minimumWidth: 150
-                            enabled: !stepperRoot.needsRun
+                            enabled: !stepperRoot.dispenser.running
                             font.pointSize: 14
                             placeholderText: "Measured ml"
                             validator: IntValidator {
                                 bottom: 1
                                 top: 1000
                             }
+
+                            onTextChanged: {
+                                if (text !== "") {
+                                    stepperRoot.dispenser.update_pumped(parseInt(text));
+                                }
+                            }
                         }
 
                         BusyIndicator {
-                            visible: stepperRoot.running
+                            visible: stepperRoot.dispenser.running
                         }
 
                         Label {
                             Layout.alignment: Qt.AlignVCenter
                             font.pointSize: 24
-                            text: qsTr("%1 steps / litre").arg(12400)
-                            visible: !stepperRoot.running
+                            text: stepperRoot.dispenser?.steps_per_litre
+                            visible: !stepperRoot.dispenser.running
                         }
                     }
                 }

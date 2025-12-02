@@ -37,6 +37,7 @@ target_sources(
                 include/cm/ui/GlassStoreForeign.hpp
                 include/cm/ui/IngredientStoreForeign.hpp
                 include/cm/ui/LiquidDispenserListModel.hpp
+                include/cm/ui/LiquidDispenserModel.hpp
                 include/cm/ui/RecipeBoosterAdapter.hpp
                 include/cm/ui/RecipeCommandStatusModel.hpp
                 include/cm/ui/RecipeDetail.hpp
@@ -49,6 +50,7 @@ target_sources(
         src/GlassDetector.cpp
         src/GlassListModel.cpp
         src/LiquidDispenserListModel.cpp
+        src/LiquidDispenserModel.cpp
         src/RecipeBoosterAdapter.cpp
         src/RecipeCommandStatusModel.cpp
         src/RecipeDetail.cpp

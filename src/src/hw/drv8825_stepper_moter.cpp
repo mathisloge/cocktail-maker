@@ -28,24 +28,23 @@ auto create_line(const std::string& name, PinSelection<T> pin, spdlog::logger& l
             .do_request();
     }
     catch (const std::exception& ex) {
-        SPDLOG_LOGGER_CRITICAL(&logger, "Could not initialize stepper motor! Error: {}", ex.what());
+        SPDLOG_LOGGER_CRITICAL(
+            &logger, "Could not initialize stepper motor line {}! Error: {}", static_cast<int>(pin.offset), ex.what());
     }
     return std::nullopt;
 }
 } // namespace
 
-Drv8825StepperMotorDriver::Drv8825StepperMotorDriver(Drv8825EnablePin enable_pin,
+Drv8825StepperMotorDriver::Drv8825StepperMotorDriver(std::string name,
+                                                     Drv8825EnablePin enable_pin,
                                                      Drv8825StepPin step_pin,
                                                      Drv8825DirectionPin direction_pin)
-    : logger_{LoggingContext::instance().create_logger(fmt::format("stepper@e{}d{}s{}",
-                                                                   static_cast<int>(enable_pin.offset),
-                                                                   static_cast<int>(step_pin.offset),
-                                                                   static_cast<int>(direction_pin.offset)))}
-    , enable_line_{create_line("drv8825-enable", enable_pin, *logger_)}
+    : logger_{LoggingContext::instance().create_logger(name)}
+    , enable_line_{create_line(fmt::format("{}-enable", name), enable_pin, *logger_)}
     , enable_offset_{enable_pin.offset}
-    , direction_line_{create_line("drv8825-direction", direction_pin, *logger_)}
+    , direction_line_{create_line(fmt::format("{}-direction", name), direction_pin, *logger_)}
     , direction_offset_{direction_pin.offset}
-    , step_line_{create_line("drv8825-step", step_pin, *logger_)}
+    , step_line_{create_line(fmt::format("{}-step", name), step_pin, *logger_)}
     , step_offset_{step_pin.offset}
 {
     if (enable_line_.has_value()) {

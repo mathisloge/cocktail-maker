@@ -18,7 +18,8 @@ int main()
 
     boost::asio::thread_pool thread_pool{3};
     boost::asio::cancellation_signal cancel_signal;
-    cm::Drv8825StepperMotorDriver stepper1{cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {22}},
+    cm::Drv8825StepperMotorDriver stepper1{"stepper",
+                                           cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {22}},
                                            cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {27}},
                                            cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {17}}};
     const std::vector<std::string> enabled_entries = {

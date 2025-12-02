@@ -20,7 +20,10 @@ using Drv8825DirectionPin = PinSelection<struct Drv8825DirectionPinSel>;
 class Drv8825StepperMotorDriver : public StepperMotor
 {
   public:
-    Drv8825StepperMotorDriver(Drv8825EnablePin enable_pin, Drv8825StepPin step_pin, Drv8825DirectionPin direction_pin);
+    Drv8825StepperMotorDriver(std::string name,
+                              Drv8825EnablePin enable_pin,
+                              Drv8825StepPin step_pin,
+                              Drv8825DirectionPin direction_pin);
     async<void> step(units::Steps steps, units::StepsPerSecond velocity) override;
     async<void> enable() override;
     async<void> disable() override;

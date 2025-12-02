@@ -21,7 +21,8 @@ int main()
 
     auto liquid_dispenser = std::make_unique<cm::StepperPumpLiquidDispenser>(
         "test-dispenser",
-        std::make_unique<cm::Drv8825StepperMotorDriver>(cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {17}},
+        std::make_unique<cm::Drv8825StepperMotorDriver>("test",
+                                                        cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {17}},
                                                         cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {27}},
                                                         cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {22}}),
         1 * cm::units::si::litre,

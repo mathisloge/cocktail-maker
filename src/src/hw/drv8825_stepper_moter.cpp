@@ -61,9 +61,10 @@ Drv8825StepperMotorDriver::Drv8825StepperMotorDriver(std::string name,
     }
 }
 
-boost::asio::awaitable<void> Drv8825StepperMotorDriver::enable()
+async<void> Drv8825StepperMotorDriver::enable()
 {
     ASSERT(enable_line_.has_value());
+    SPDLOG_LOGGER_DEBUG(logger_, "Enable driver");
     auto exec = co_await asio::this_coro::executor;
     enable_line_->set_value(enable_offset_, gpiod::line::value::INACTIVE);
 
@@ -75,6 +76,7 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::enable()
 boost::asio::awaitable<void> Drv8825StepperMotorDriver::disable()
 {
     ASSERT(enable_line_.has_value());
+    SPDLOG_LOGGER_DEBUG(logger_, "Disable driver");
     auto exec = co_await asio::this_coro::executor;
     enable_line_->set_value(enable_offset_, gpiod::line::value::ACTIVE);
 
@@ -107,6 +109,8 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(units::Steps steps,
     }
 
     const units::Steps cruise_steps = steps - (2 * ramp_steps);
+
+    SPDLOG_LOGGER_DEBUG(logger_, "Step {} with {}. Ramp: {} {}. Cruise: ", steps, velocity, ramp_time, ramp_steps, cruise_steps);
 
     // 3. Acceleration phase
     for (units::Steps i = 1 * units::step; i <= ramp_steps; i += 1 * units::step) {

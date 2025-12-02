@@ -18,6 +18,12 @@ class StepperPumpLiquidDispenser : public LiquidDispenser
                                units::StepsPerLitre steps_per_litre,
                                units::Litre tube_volume);
     async<void> dispense(units::Litre volume) override;
+    /**
+     * @brief
+     * @attention Does not decrement the remaining_volume as it is only intended for calibration purposes.
+     * @param steps
+     * @return async<void>
+     */
     async<void> dispense(units::Steps steps);
     void refill(units::Litre volume) override;
     units::Litre remaining_volume() const override;

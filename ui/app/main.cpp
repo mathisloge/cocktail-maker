@@ -72,6 +72,7 @@ int main(int argc, char* argv[])
     auto glass_store = std::make_shared<cm::GlassStore>();
     auto recipe_factory = std::make_shared<cm::ui::RecipeFactory>(recipe_store, ingredient_store);
     auto recipe_executor = std::make_shared<cm::ui::RecipeExecutorAdapter>(execution_context, ingredient_store, glass_store);
+    auto execution_context_adapter = std::make_shared<cm::ui::ExecutionContextAdapter>(execution_context);
     auto leds = WledSerial::create(thread_pool.get_executor(), cancel_signal.slot(), "/dev/ttyUSB0", {{0, 24}});
     auto led_manager = std::make_shared<cm::LedStateManager>(leds);
     led_manager->subscribe_to_events(execution_context->event_bus());
@@ -153,6 +154,7 @@ int main(int argc, char* argv[])
     app_state->glass_store = glass_store;
     app_state->recipe_factory = recipe_factory;
     app_state->recipe_executor = recipe_executor;
+    app_state->execution_context_adapter = execution_context_adapter;
 
     engine.loadFromModule("CocktailMaker.App", "Main");
 

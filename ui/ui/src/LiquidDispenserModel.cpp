@@ -26,6 +26,7 @@ void LiquidDispenserModel::run(int steps)
 
             running_ = false;
             Q_EMIT running_changed();
+            co_return;
         },
         boost::asio::bind_cancellation_slot(recipe_cancellation_.slot(), boost::asio::detached));
 
@@ -58,10 +59,9 @@ void LiquidDispenserModel::stop()
 QString LiquidDispenserModel::calculate_steps_per_litre() const
 {
     if (units::abs(pumped_) < std::numeric_limits<units::Litre>::epsilon()) {
-
         return QString::fromStdString(fmt::format("{}", (units::step / units::si::litre)));
     }
-    units::StepsPerLitre steps_per_litre = (steps_taken_ / pumped_) * 1000;
+    units::StepsPerLitre steps_per_litre = (steps_taken_ / pumped_);
 
     return QString::fromStdString(fmt::format("{}", steps_per_litre));
 }

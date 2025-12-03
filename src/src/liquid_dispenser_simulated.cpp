@@ -9,7 +9,8 @@
 namespace cm {
 SimulatedLiquidDispenser::SimulatedLiquidDispenser(units::Litre capacity,
                                                    mp_units::quantity<mp_units::si::litre / mp_units::si::second> flow_rate)
-    : remaining_capacity_{capacity}
+    : capacity_{capacity}
+    , remaining_capacity_{capacity}
     , flow_rate_{flow_rate}
 {
 }
@@ -26,6 +27,11 @@ boost::asio::awaitable<void> SimulatedLiquidDispenser::dispense(units::Litre vol
 units::Litre SimulatedLiquidDispenser::remaining_volume() const
 {
     return remaining_capacity_;
+}
+
+units::Litre SimulatedLiquidDispenser::volume() const
+{
+    return capacity_;
 }
 
 void SimulatedLiquidDispenser::refill(units::Litre volume)

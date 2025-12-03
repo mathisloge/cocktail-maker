@@ -34,6 +34,7 @@ StepperPumpLiquidDispenser::StepperPumpLiquidDispenser(std::string identifier,
 
 void StepperPumpLiquidDispenser::refill(units::Litre volume)
 {
+    SPDLOG_LOGGER_DEBUG(logger_, "Refilled {}", volume);
     source_remaining_volume_ = volume;
     tube_filled_ = false;
 }
@@ -46,7 +47,7 @@ async<void> StepperPumpLiquidDispenser::dispense(mp_units::quantity<mp_units::si
     if (not tube_filled_) {
         const auto fill_steps = mp_units::value_cast<std::int32_t>(tube_volume_ * steps_per_litre_);
         co_await motor_->step(fill_steps, kVelocity);
-        tube_filled_ = true;
+        // tube_filled_ = true; DISABLE for now, as the liquid always flows back into the container
     }
 
     source_remaining_volume_ -= volume;
@@ -67,6 +68,11 @@ async<void> StepperPumpLiquidDispenser::dispense(units::Steps steps)
 mp_units::quantity<mp_units::si::litre> StepperPumpLiquidDispenser::remaining_volume() const
 {
     return source_remaining_volume_;
+}
+
+units::Litre StepperPumpLiquidDispenser::volume() const
+{
+    return source_volume_;
 }
 
 const std::string& StepperPumpLiquidDispenser::name() const

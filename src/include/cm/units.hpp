@@ -21,7 +21,7 @@ inline constexpr auto milli_litre = units::si::milli<units::si::litre>;
 using GramPerLitre = quantity<gram_per_litre>;
 
 // vvv Stepper-Motor units
-inline constexpr struct step final : mp_units::named_unit<"steps", one>
+inline constexpr struct step final : named_unit<"steps", one>
 {
 } step;
 

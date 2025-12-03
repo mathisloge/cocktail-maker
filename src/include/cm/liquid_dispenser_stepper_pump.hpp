@@ -27,6 +27,7 @@ class StepperPumpLiquidDispenser : public LiquidDispenser
     async<void> dispense(units::Steps steps);
     void refill(units::Litre volume) override;
     units::Litre remaining_volume() const override;
+    units::Litre volume() const override;
     const std::string& name() const override;
     void update_steps_per_litre(units::StepsPerLitre steps_per_litre);
 

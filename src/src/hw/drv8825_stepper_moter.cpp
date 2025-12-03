@@ -113,7 +113,8 @@ async<void> Drv8825StepperMotorDriver::step(units::Steps steps, units::StepsPerS
 
     const units::Steps cruise_steps = steps - (2 * ramp_steps);
 
-    SPDLOG_LOGGER_DEBUG(logger_, "Step {} with {}. Ramp: {} {}. Cruise: ", steps, velocity, ramp_time, ramp_steps, cruise_steps);
+    SPDLOG_LOGGER_DEBUG(
+        logger_, "Step {} with {}. Ramp: {} {}. Cruise: {}", steps, velocity, ramp_time, ramp_steps, cruise_steps);
 
     // 3. Acceleration phase
     for (units::Steps i = 1 * units::step; i <= ramp_steps; i += 1 * units::step) {

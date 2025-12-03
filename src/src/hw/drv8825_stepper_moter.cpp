@@ -73,7 +73,7 @@ async<void> Drv8825StepperMotorDriver::enable()
     co_await timer.async_wait(asio::use_awaitable);
 }
 
-boost::asio::awaitable<void> Drv8825StepperMotorDriver::disable()
+async<void> Drv8825StepperMotorDriver::disable()
 {
     ASSERT(enable_line_.has_value());
     SPDLOG_LOGGER_DEBUG(logger_, "Disable driver");
@@ -85,7 +85,7 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::disable()
     co_await timer.async_wait(asio::use_awaitable);
 }
 
-boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(units::Steps steps, units::StepsPerSecond velocity)
+async<void> Drv8825StepperMotorDriver::step(units::Steps steps, units::StepsPerSecond velocity)
 {
     ASSERT(direction_line_.has_value());
     auto exec = co_await asio::this_coro::executor;
@@ -96,6 +96,9 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(units::Steps steps,
         steps *= -1;
     }
     direction_line_->set_value(direction_offset_, direction);
+
+    timer.expires_after(std::chrono::milliseconds{10});
+    co_await timer.async_wait(asio::use_awaitable);
 
     // 1. Compute ramp time
     const auto ramp_time = velocity / kAcceleration;

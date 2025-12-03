@@ -29,7 +29,7 @@ class Drv8825StepperMotorDriver : public StepperMotor
     async<void> disable() override;
 
   private:
-    boost::asio::awaitable<void> step_one(std::chrono::microseconds wait_after);
+    async<void> step_one(std::chrono::microseconds wait_after);
 
   private:
     std::shared_ptr<spdlog::logger> logger_;

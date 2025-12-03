@@ -32,7 +32,7 @@ Page {
         ColumnLayout {
             anchors.fill: parent
             Label {
-                text: "Dispenser calibration" + view.count
+                text: "Dispenser calibration"
                 font.pointSize: 24
             }
 

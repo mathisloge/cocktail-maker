@@ -63,7 +63,9 @@ AbstractButton {
     Label {
         id: text
         anchors.centerIn: parent
+        width:  Math.min(parent.width - 20, implicitWidth)
         text: root.text
+        fontSizeMode: Text.Fit
         color: "white"
         font {
             pixelSize: 70

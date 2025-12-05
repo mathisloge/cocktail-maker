@@ -212,7 +212,7 @@ int main(int argc, char* argv[])
 
     db::register_possible_recipes(*execution_context, *recipe_store);
 
-    glass_store->add_glass(Glass{.id = "Williglas", .display_name = "Williglas", .capacity = 0.25 * units::si::litre},
+    glass_store->add_glass(Glass{.id = "Willibecher", .display_name = "Willibecher", .capacity = 0.25 * units::si::litre},
                            500 * units::si::gram);
 
     auto&& app_state = engine.singletonInstance<cm::app::ApplicationState*>("CocktailMaker.App", "ApplicationState");

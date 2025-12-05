@@ -29,28 +29,28 @@
 Q_IMPORT_QML_PLUGIN(CocktailMaker_UiPlugin)
 using namespace cm;
 
-// Port A (GPA0-GPA7)
-constexpr auto kPA0 = gpiod::line::offset{0};
-constexpr auto kPA1 = gpiod::line::offset{1};
-constexpr auto kPA2 = gpiod::line::offset{2};
-constexpr auto kPA3 = gpiod::line::offset{3};
-constexpr auto kPA4 = gpiod::line::offset{4};
-constexpr auto kPA5 = gpiod::line::offset{5};
-constexpr auto kPA6 = gpiod::line::offset{6};
-constexpr auto kPA7 = gpiod::line::offset{7};
-
-// Port B (GPB0-GPB7)
-constexpr auto kPB0 = gpiod::line::offset{8};
-constexpr auto kPB1 = gpiod::line::offset{9};
-constexpr auto kPB2 = gpiod::line::offset{10};
-constexpr auto kPB3 = gpiod::line::offset{11};
-constexpr auto kPB4 = gpiod::line::offset{12};
-constexpr auto kPB5 = gpiod::line::offset{13};
-constexpr auto kPB6 = gpiod::line::offset{14};
-constexpr auto kPB7 = gpiod::line::offset{15};
-
 int main(int argc, char* argv[])
 {
+    // Port A (GPA0-GPA7)
+    const auto kPA0 = gpiod::line::offset{0};
+    const auto kPA1 = gpiod::line::offset{1};
+    const auto kPA2 = gpiod::line::offset{2};
+    const auto kPA3 = gpiod::line::offset{3};
+    const auto kPA4 = gpiod::line::offset{4};
+    const auto kPA5 = gpiod::line::offset{5};
+    const auto kPA6 = gpiod::line::offset{6};
+    const auto kPA7 = gpiod::line::offset{7};
+
+    // Port B (GPB0-GPB7)
+    const auto kPB0 = gpiod::line::offset{8};
+    const auto kPB1 = gpiod::line::offset{9};
+    const auto kPB2 = gpiod::line::offset{10};
+    const auto kPB3 = gpiod::line::offset{11};
+    const auto kPB4 = gpiod::line::offset{12};
+    const auto kPB5 = gpiod::line::offset{13};
+    const auto kPB6 = gpiod::line::offset{14};
+    const auto kPB7 = gpiod::line::offset{15};
+
     CLI::App cli{std::string{kGitRef}, "CocktailMaker"};
     argv = cli.ensure_utf8(argv);
 
@@ -107,8 +107,8 @@ int main(int argc, char* argv[])
                                                     cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {27}},
                                                     cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {22}}),
         1 * units::si::litre,
-        (5000 * cm::units::step) / cm::units::si::litre,
-        500 * units::milli_litre);
+        (208333 * cm::units::step) / cm::units::si::litre,
+        24 * units::milli_litre);
 
     auto pump2 = std::make_unique<StepperPumpLiquidDispenser>(
         "pump2",
@@ -117,8 +117,8 @@ int main(int argc, char* argv[])
                                                     cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {9}},
                                                     cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {10}}),
         1 * units::si::litre,
-        (5000 * cm::units::step) / cm::units::si::litre,
-        500 * units::milli_litre);
+        (208333 * cm::units::step) / cm::units::si::litre,
+        24 * units::milli_litre);
     auto pump3 = std::make_unique<StepperPumpLiquidDispenser>(
         "pump3",
         std::make_unique<Drv8825StepperMotorDriver>("pump3",
@@ -126,8 +126,8 @@ int main(int argc, char* argv[])
                                                     cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {6}},
                                                     cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {5}}),
         1 * units::si::litre,
-        (161290 * cm::units::step) / cm::units::si::litre,
-        500 * units::milli_litre);
+        (208333 * cm::units::step) / cm::units::si::litre,
+        24 * units::milli_litre);
 
     auto pump4 = std::make_unique<StepperPumpLiquidDispenser>(
         "pump4",
@@ -136,8 +136,8 @@ int main(int argc, char* argv[])
                                                     cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {20}},
                                                     cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {16}}),
         1 * units::si::litre,
-        (5000 * cm::units::step) / cm::units::si::litre,
-        500 * units::milli_litre);
+        (208333 * cm::units::step) / cm::units::si::litre,
+        24 * units::milli_litre);
 
     auto pump5 = std::make_unique<StepperPumpLiquidDispenser>(
         "pump5",
@@ -146,8 +146,8 @@ int main(int argc, char* argv[])
                                                     cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {8}},
                                                     cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {7}}),
         1 * units::si::litre,
-        (5000 * cm::units::step) / cm::units::si::litre,
-        500 * units::milli_litre);
+        (208333 * cm::units::step) / cm::units::si::litre,
+        24 * units::milli_litre);
 
     auto pump6 = std::make_unique<StepperPumpLiquidDispenser>(
         "pump6",
@@ -156,8 +156,8 @@ int main(int argc, char* argv[])
                                                     cm::Drv8825StepPin{.chip = "/dev/gpiochip14", .offset = kPB3},
                                                     cm::Drv8825DirectionPin{.chip = "/dev/gpiochip14", .offset = kPB4}),
         1 * units::si::litre,
-        (5000 * cm::units::step) / cm::units::si::litre,
-        500 * units::milli_litre);
+        (119050 * cm::units::step) / cm::units::si::litre,
+        24 * units::milli_litre);
 
     auto pump7 = std::make_unique<StepperPumpLiquidDispenser>(
         "pump7",
@@ -166,8 +166,8 @@ int main(int argc, char* argv[])
                                                     cm::Drv8825StepPin{.chip = "/dev/gpiochip14", .offset = kPB0},
                                                     cm::Drv8825DirectionPin{.chip = "/dev/gpiochip14", .offset = kPB1}),
         1 * units::si::litre,
-        (5000 * cm::units::step) / cm::units::si::litre,
-        500 * units::milli_litre);
+        (119050 * cm::units::step) / cm::units::si::litre,
+        24 * units::milli_litre);
 
     auto pump8 = std::make_unique<StepperPumpLiquidDispenser>(
         "pump8",
@@ -176,8 +176,8 @@ int main(int argc, char* argv[])
                                                     cm::Drv8825StepPin{.chip = "/dev/gpiochip14", .offset = kPB6},
                                                     cm::Drv8825DirectionPin{.chip = "/dev/gpiochip14", .offset = kPB5}),
         1 * units::si::litre,
-        (5000 * cm::units::step) / cm::units::si::litre,
-        500 * units::milli_litre);
+        (119050 * cm::units::step) / cm::units::si::litre,
+        24 * units::milli_litre);
 
     auto pump9 = std::make_unique<StepperPumpLiquidDispenser>(
         "pump9",
@@ -186,8 +186,8 @@ int main(int argc, char* argv[])
                                                     cm::Drv8825StepPin{.chip = "/dev/gpiochip14", .offset = kPA4},
                                                     cm::Drv8825DirectionPin{.chip = "/dev/gpiochip14", .offset = kPA5}),
         1 * units::si::litre,
-        (5000 * cm::units::step) / cm::units::si::litre,
-        500 * units::milli_litre);
+        (119050 * cm::units::step) / cm::units::si::litre,
+        24 * units::milli_litre);
 
     auto pump10 = std::make_unique<StepperPumpLiquidDispenser>(
         "pump10",
@@ -196,17 +196,19 @@ int main(int argc, char* argv[])
                                                     cm::Drv8825StepPin{.chip = "/dev/gpiochip14", .offset = kPA1},
                                                     cm::Drv8825DirectionPin{.chip = "/dev/gpiochip14", .offset = kPA2}),
         1 * units::si::litre,
-        (5000 * cm::units::step) / cm::units::si::litre,
-        500 * units::milli_litre);
+        (119050 * cm::units::step) / cm::units::si::litre,
+        24 * units::milli_litre);
 
-    execution_context->liquid_registry().register_dispenser(db::water, std::move(pump1));
-    execution_context->liquid_registry().register_dispenser(db::bacardi, std::move(pump2));
-    execution_context->liquid_registry().register_dispenser(db::soda, std::move(pump3));
+    // execution_context->liquid_registry().register_dispenser(db::placeholder, std::move(pump1));
+    execution_context->liquid_registry().register_dispenser(db::maracuja_juice, std::move(pump2));
+    execution_context->liquid_registry().register_dispenser(db::lime_juice, std::move(pump3));
     execution_context->liquid_registry().register_dispenser(db::vodka, std::move(pump4));
-    execution_context->liquid_registry().register_dispenser(db::lime_juice, std::move(pump5));
-    execution_context->liquid_registry().register_dispenser(
-        db::orange_juice,
-        std::make_unique<cm::SimulatedLiquidDispenser>(1 * units::si::litre, (0.1 * units::si::litre) / (1 * units::si::second)));
+    execution_context->liquid_registry().register_dispenser(db::white_tequila, std::move(pump5));
+    execution_context->liquid_registry().register_dispenser(db::grenadine, std::move(pump6));
+    execution_context->liquid_registry().register_dispenser(db::soda, std::move(pump7));
+    execution_context->liquid_registry().register_dispenser(db::bacardi, std::move(pump8));
+    execution_context->liquid_registry().register_dispenser(db::orange_juice, std::move(pump9));
+    execution_context->liquid_registry().register_dispenser(db::ginger_beer, std::move(pump10));
 
     db::register_possible_recipes(*execution_context, *recipe_store);
 

@@ -5,17 +5,15 @@
 #include "cm/db/db.hpp"
 #include <qttranslation.h>
 #include "recipes/mojito.hpp"
+#include "recipes/moscow_mule.hpp"
+#include "recipes/passion_rum_cooler.hpp"
 #include "recipes/screwdriver.hpp"
 #include "recipes/tequila_sunrise.hpp"
+#include "recipes/virgin_sunrise.hpp"
 
 namespace cm::db {
 void register_ingredients(IngredientStore& ingredient_store)
 {
-    ingredient_store.add_ingredient(Ingredient{
-        .id = water,
-        .display_name = QT_TR_NOOP("Wasser"),
-        .boost_category = BoostCategory::reducible,
-    });
     ingredient_store.add_ingredient(Ingredient{
         .id = bacardi,
         .display_name = QT_TR_NOOP("Bacardi"),
@@ -23,7 +21,7 @@ void register_ingredients(IngredientStore& ingredient_store)
     });
     ingredient_store.add_ingredient(Ingredient{
         .id = soda,
-        .display_name = QT_TR_NOOP("Soda Wasser"),
+        .display_name = QT_TR_NOOP("Sodawasser"),
         .boost_category = BoostCategory::reducible,
     });
     ingredient_store.add_ingredient(Ingredient{
@@ -51,6 +49,16 @@ void register_ingredients(IngredientStore& ingredient_store)
         .display_name = QT_TR_NOOP("Grenadine"),
         .boost_category = BoostCategory::reducible,
     });
+    ingredient_store.add_ingredient(Ingredient{
+        .id = ginger_beer,
+        .display_name = QT_TR_NOOP("Ginger Beer"),
+        .boost_category = BoostCategory::reducible,
+    });
+    ingredient_store.add_ingredient(Ingredient{
+        .id = maracuja_juice,
+        .display_name = QT_TR_NOOP("Maracujasaft"),
+        .boost_category = BoostCategory::reducible,
+    });
 }
 
 void register_possible_recipes(const ExecutionContext& context, RecipeStore& recipe_store)
@@ -58,5 +66,8 @@ void register_possible_recipes(const ExecutionContext& context, RecipeStore& rec
     recipe_store.add_recipe(mojito());
     recipe_store.add_recipe(screwdriver());
     recipe_store.add_recipe(tequila_sunrise());
+    recipe_store.add_recipe(moscow_mule());
+    recipe_store.add_recipe(passion_rum_cooler());
+    recipe_store.add_recipe(virgin_sunrise());
 }
 } // namespace cm::db

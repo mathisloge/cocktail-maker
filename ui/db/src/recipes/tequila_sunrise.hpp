@@ -21,8 +21,8 @@ inline auto tequila_sunrise()
         .nominal_serving_volume(250 * units::milli_litre)
         .parallel_steps(
             std::make_unique<cm::DispenseLiquidCmd>(white_tequila, 40 * units::milli_litre, generate_unique_command_id()),
-            std::make_unique<cm::DispenseLiquidCmd>(orange_juice, 150 * units::milli_litre, generate_unique_command_id()),
-            std::make_unique<cm::DispenseLiquidCmd>(grenadine, 10 * units::milli_litre, generate_unique_command_id()))
+            std::make_unique<cm::DispenseLiquidCmd>(orange_juice, 150 * units::milli_litre, generate_unique_command_id()))
+        .step(std::make_unique<cm::DispenseLiquidCmd>(grenadine, 10 * units::milli_litre, generate_unique_command_id()))
         .step(std::make_unique<cm::ManualCmd>(QT_TR_NOOP("2 Eiswürfel"), generate_unique_command_id()))
         .create();
     // codespell:ignore-end

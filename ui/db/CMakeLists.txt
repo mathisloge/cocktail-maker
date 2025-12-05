@@ -10,6 +10,9 @@ qt_add_qml_module(cocktail-maker-db
         assets/mojito.png
         assets/screwdriver.png
         assets/tequila-sunrise.png
+        assets/moscow_mule.png
+        assets/virgin_sunrise.png
+        assets/passion_rum_cooler.png
 )
 add_library(cm::db ALIAS cocktail-maker-db)
 target_link_libraries(cocktail-maker-db PUBLIC cm::core)
@@ -23,7 +26,10 @@ target_sources(
             FILES include/cm/db/db.hpp
     PRIVATE
         src/db.cpp
-        src/recipes/screwdriver.hpp
         src/recipes/mojito.hpp
+        src/recipes/moscow_mule.hpp
+        src/recipes/passion_rum_cooler.hpp
+        src/recipes/screwdriver.hpp
         src/recipes/tequila_sunrise.hpp
+        src/recipes/virgin_sunrise.hpp
 )

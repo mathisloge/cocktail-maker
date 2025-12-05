@@ -44,8 +44,8 @@ async<void> StepperPumpLiquidDispenser::dispense(mp_units::quantity<mp_units::si
     SPDLOG_LOGGER_DEBUG(logger_, "Going to dispense {}.", volume);
     co_await motor_->enable();
 
+    const auto fill_steps = mp_units::value_cast<std::int32_t>(tube_volume_ * steps_per_litre_);
     if (not tube_filled_) {
-        const auto fill_steps = mp_units::value_cast<std::int32_t>(tube_volume_ * steps_per_litre_);
         co_await motor_->step(fill_steps, kVelocity);
         // tube_filled_ = true; DISABLE for now, as the liquid always flows back into the container
     }
@@ -53,6 +53,9 @@ async<void> StepperPumpLiquidDispenser::dispense(mp_units::quantity<mp_units::si
     source_remaining_volume_ -= volume;
     const auto steps = mp_units::value_cast<std::int32_t>(volume * steps_per_litre_);
     co_await motor_->step(steps, kVelocity);
+
+    // pump back a bit
+    co_await motor_->step(fill_steps / 2, -1 * kVelocity);
 
     co_await motor_->disable();
     SPDLOG_LOGGER_DEBUG(logger_, "Finished dispensing {}.", volume);

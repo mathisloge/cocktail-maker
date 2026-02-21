@@ -9,6 +9,7 @@
 #include <cm/glass_store.hpp>
 #include <cm/ingredient_store.hpp>
 #include <cm/recipe_store.hpp>
+#include <cm/ui/ExecutionContextAdapter.hpp>
 #include <cm/ui/RecipeExecutorAdapter.hpp>
 #include <cm/ui/RecipeFactory.hpp>
 
@@ -24,6 +25,7 @@ class ApplicationState : public QObject
     Q_PROPERTY(cm::GlassStore* glassStore READ get_glass_store CONSTANT);
     Q_PROPERTY(cm::ui::RecipeFactory* recipeFactory READ get_recipe_factory CONSTANT);
     Q_PROPERTY(cm::ui::RecipeExecutorAdapter* recipeExecutor READ get_recipe_executor CONSTANT);
+    Q_PROPERTY(cm::ui::ExecutionContextAdapter* executionContextAdapter READ get_execution_context_adapter CONSTANT);
 
   public:
     RecipeStore* get_recipe_store()
@@ -51,11 +53,17 @@ class ApplicationState : public QObject
         return recipe_executor.get();
     }
 
+    ui::ExecutionContextAdapter* get_execution_context_adapter() const
+    {
+        return execution_context_adapter.get();
+    }
+
   public:
     std::shared_ptr<RecipeStore> recipe_store;
     std::shared_ptr<IngredientStore> ingredient_store;
     std::shared_ptr<GlassStore> glass_store;
     std::shared_ptr<ui::RecipeFactory> recipe_factory;
     std::shared_ptr<ui::RecipeExecutorAdapter> recipe_executor;
+    std::shared_ptr<ui::ExecutionContextAdapter> execution_context_adapter;
 };
 } // namespace cm::app

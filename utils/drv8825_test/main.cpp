@@ -12,15 +12,18 @@ using namespace mp_units::si::unit_symbols;
 int main()
 {
     boost::asio::thread_pool thread_pool{1};
-    cm::Drv8825StepperMotorDriver stepper1{cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {22}},
+    cm::Drv8825StepperMotorDriver stepper1{"stepper1",
+                                           cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {22}},
                                            cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {27}},
                                            cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {17}}};
 
-    cm::Drv8825StepperMotorDriver stepper2{cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {25}},
+    cm::Drv8825StepperMotorDriver stepper2{"stepper2",
+                                           cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {25}},
                                            cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {24}},
                                            cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {23}}};
 
-    cm::Drv8825StepperMotorDriver stepper3{cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {16}},
+    cm::Drv8825StepperMotorDriver stepper3{"stepper3",
+                                           cm::Drv8825EnablePin{.chip = "/dev/gpiochip0", .offset = {16}},
                                            cm::Drv8825StepPin{.chip = "/dev/gpiochip0", .offset = {20}},
                                            cm::Drv8825DirectionPin{.chip = "/dev/gpiochip0", .offset = {21}}};
     boost::asio::co_spawn(

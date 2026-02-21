@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #pragma once
+#include <spdlog/fwd.h>
 #include "hw/stepper_motor.hpp"
 #include "liquid_dispenser.hpp"
 
@@ -14,12 +15,21 @@ class StepperPumpLiquidDispenser : public LiquidDispenser
     StepperPumpLiquidDispenser(std::string identifier,
                                std::unique_ptr<StepperMotor> motor,
                                units::Litre source_volume,
-                               units::StepsPerLitre calibration,
+                               units::StepsPerLitre steps_per_litre,
                                units::Litre tube_volume);
-    boost::asio::awaitable<void> dispense(units::Litre volume) override;
+    async<void> dispense(units::Litre volume) override;
+    /**
+     * @brief
+     * @attention Does not decrement the remaining_volume as it is only intended for calibration purposes.
+     * @param steps
+     * @return async<void>
+     */
+    async<void> dispense(units::Steps steps);
     void refill(units::Litre volume) override;
     units::Litre remaining_volume() const override;
+    units::Litre volume() const override;
     const std::string& name() const override;
+    void update_steps_per_litre(units::StepsPerLitre steps_per_litre);
 
   private:
     std::string identifier_;
@@ -29,5 +39,6 @@ class StepperPumpLiquidDispenser : public LiquidDispenser
     units::Litre source_remaining_volume_{};
     units::Litre tube_volume_{1000 * mp_units::si::litre};
     bool tube_filled_{false};
+    std::shared_ptr<spdlog::logger> logger_;
 };
 } // namespace cm

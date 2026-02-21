@@ -30,11 +30,14 @@ target_sources(
             TYPE HEADERS
             BASE_DIRS include
             FILES
+                include/cm/ui/ExecutionContextAdapter.hpp
                 include/cm/ui/GlassAdapter.hpp
                 include/cm/ui/GlassDetector.hpp
                 include/cm/ui/GlassListModel.hpp
                 include/cm/ui/GlassStoreForeign.hpp
                 include/cm/ui/IngredientStoreForeign.hpp
+                include/cm/ui/LiquidDispenserListModel.hpp
+                include/cm/ui/LiquidDispenserModel.hpp
                 include/cm/ui/RecipeBoosterAdapter.hpp
                 include/cm/ui/RecipeCommandStatusModel.hpp
                 include/cm/ui/RecipeDetail.hpp
@@ -43,8 +46,11 @@ target_sources(
                 include/cm/ui/RecipeListModel.hpp
                 include/cm/ui/RecipeStoreForeign.hpp
     PRIVATE
-        src/GlassListModel.cpp
+        src/ExecutionContextAdapter.cpp
         src/GlassDetector.cpp
+        src/GlassListModel.cpp
+        src/LiquidDispenserListModel.cpp
+        src/LiquidDispenserModel.cpp
         src/RecipeBoosterAdapter.cpp
         src/RecipeCommandStatusModel.cpp
         src/RecipeDetail.cpp

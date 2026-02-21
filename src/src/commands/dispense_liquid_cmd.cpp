@@ -33,6 +33,7 @@ boost::asio::awaitable<void> DispenseLiquidCmd::run(ExecutionContext& ctx) const
 
         if (remaining > 0 * mp_units::si::litre) {
             ctx.event_bus().publish(RefillIngredientEvent{.ingredient_id = ingredient_});
+            dispenser.refill(dispenser.volume());
             co_await ctx.wait_for_resume();
         }
     }

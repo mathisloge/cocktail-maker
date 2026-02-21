@@ -20,13 +20,16 @@ using Drv8825DirectionPin = PinSelection<struct Drv8825DirectionPinSel>;
 class Drv8825StepperMotorDriver : public StepperMotor
 {
   public:
-    Drv8825StepperMotorDriver(Drv8825EnablePin enable_pin, Drv8825StepPin step_pin, Drv8825DirectionPin direction_pin);
+    Drv8825StepperMotorDriver(std::string name,
+                              Drv8825EnablePin enable_pin,
+                              Drv8825StepPin step_pin,
+                              Drv8825DirectionPin direction_pin);
     async<void> step(units::Steps steps, units::StepsPerSecond velocity) override;
     async<void> enable() override;
     async<void> disable() override;
 
   private:
-    boost::asio::awaitable<void> step_one(std::chrono::microseconds wait_after);
+    async<void> step_one(std::chrono::microseconds wait_after);
 
   private:
     std::shared_ptr<spdlog::logger> logger_;
@@ -39,6 +42,6 @@ class Drv8825StepperMotorDriver : public StepperMotor
     std::optional<gpiod::line_request> direction_line_;
     gpiod::line::offset direction_offset_;
 
-    static constexpr units::StepsPerSecondSq kAcceleration = 500 * (units::step / units::pow<2>(units::si::second));
+    static constexpr units::StepsPerSecondSq kAcceleration = 900 * (units::step / units::pow<2>(units::si::second));
 };
 } // namespace cm

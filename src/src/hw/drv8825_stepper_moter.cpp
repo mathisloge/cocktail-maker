@@ -14,7 +14,7 @@ namespace asio = boost::asio;
 
 namespace cm {
 using SecondsPerStep = units::quantity<units::si::second / units::step>;
-constexpr std::chrono::microseconds kPulseWidth{10};
+constexpr std::chrono::microseconds kPulseWidth{20};
 
 namespace {
 template <typename T>
@@ -28,24 +28,23 @@ auto create_line(const std::string& name, PinSelection<T> pin, spdlog::logger& l
             .do_request();
     }
     catch (const std::exception& ex) {
-        SPDLOG_LOGGER_CRITICAL(&logger, "Could not initialize stepper motor! Error: {}", ex.what());
+        SPDLOG_LOGGER_CRITICAL(
+            &logger, "Could not initialize stepper motor line {}! Error: {}", static_cast<int>(pin.offset), ex.what());
     }
     return std::nullopt;
 }
 } // namespace
 
-Drv8825StepperMotorDriver::Drv8825StepperMotorDriver(Drv8825EnablePin enable_pin,
+Drv8825StepperMotorDriver::Drv8825StepperMotorDriver(std::string name,
+                                                     Drv8825EnablePin enable_pin,
                                                      Drv8825StepPin step_pin,
                                                      Drv8825DirectionPin direction_pin)
-    : logger_{LoggingContext::instance().create_logger(fmt::format("stepper@e{}d{}s{}",
-                                                                   static_cast<int>(enable_pin.offset),
-                                                                   static_cast<int>(step_pin.offset),
-                                                                   static_cast<int>(direction_pin.offset)))}
-    , enable_line_{create_line("drv8825-enable", enable_pin, *logger_)}
+    : logger_{LoggingContext::instance().create_logger(name)}
+    , enable_line_{create_line(fmt::format("{}-enable", name), enable_pin, *logger_)}
     , enable_offset_{enable_pin.offset}
-    , direction_line_{create_line("drv8825-direction", direction_pin, *logger_)}
+    , direction_line_{create_line(fmt::format("{}-direction", name), direction_pin, *logger_)}
     , direction_offset_{direction_pin.offset}
-    , step_line_{create_line("drv8825-step", step_pin, *logger_)}
+    , step_line_{create_line(fmt::format("{}-step", name), step_pin, *logger_)}
     , step_offset_{step_pin.offset}
 {
     if (enable_line_.has_value()) {
@@ -62,9 +61,10 @@ Drv8825StepperMotorDriver::Drv8825StepperMotorDriver(Drv8825EnablePin enable_pin
     }
 }
 
-boost::asio::awaitable<void> Drv8825StepperMotorDriver::enable()
+async<void> Drv8825StepperMotorDriver::enable()
 {
     ASSERT(enable_line_.has_value());
+    SPDLOG_LOGGER_DEBUG(logger_, "Enable driver");
     auto exec = co_await asio::this_coro::executor;
     enable_line_->set_value(enable_offset_, gpiod::line::value::INACTIVE);
 
@@ -73,9 +73,10 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::enable()
     co_await timer.async_wait(asio::use_awaitable);
 }
 
-boost::asio::awaitable<void> Drv8825StepperMotorDriver::disable()
+async<void> Drv8825StepperMotorDriver::disable()
 {
     ASSERT(enable_line_.has_value());
+    SPDLOG_LOGGER_DEBUG(logger_, "Disable driver");
     auto exec = co_await asio::this_coro::executor;
     enable_line_->set_value(enable_offset_, gpiod::line::value::ACTIVE);
 
@@ -84,7 +85,7 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::disable()
     co_await timer.async_wait(asio::use_awaitable);
 }
 
-boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(units::Steps steps, units::StepsPerSecond velocity)
+async<void> Drv8825StepperMotorDriver::step(units::Steps steps, units::StepsPerSecond velocity)
 {
     ASSERT(direction_line_.has_value());
     auto exec = co_await asio::this_coro::executor;
@@ -95,7 +96,8 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(units::Steps steps,
         steps *= -1;
     }
     direction_line_->set_value(direction_offset_, direction);
-    timer.expires_after(kPulseWidth);
+
+    timer.expires_after(std::chrono::milliseconds{10});
     co_await timer.async_wait(asio::use_awaitable);
 
     // 1. Compute ramp time
@@ -110,6 +112,9 @@ boost::asio::awaitable<void> Drv8825StepperMotorDriver::step(units::Steps steps,
     }
 
     const units::Steps cruise_steps = steps - (2 * ramp_steps);
+
+    SPDLOG_LOGGER_DEBUG(
+        logger_, "Step {} with {}. Ramp: {} {}. Cruise: {}", steps, velocity, ramp_time, ramp_steps, cruise_steps);
 
     // 3. Acceleration phase
     for (units::Steps i = 1 * units::step; i <= ramp_steps; i += 1 * units::step) {

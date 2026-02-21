@@ -31,6 +31,7 @@ qt_add_qml_module(CocktailMakerApp
         SettingsPage.qml
         SettingsWeightSubPage.qml
         DebugWindow.qml
+        DispenserSettingsPage.qml
     DEPENDENCIES
         TARGET cocktail-maker-ui
     SOURCES

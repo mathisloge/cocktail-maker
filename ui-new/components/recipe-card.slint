@@ -1,0 +1,61 @@
+
+import { Palette } from "../palette.slint";
+import { Recipe } from "../data.slint";
+import { VerticalBox } from "std-widgets.slint";
+export component RecipeCard inherits Rectangle {
+    in property <Recipe> recipe;
+    callback clicked();
+    border-color: Palette.border;
+    border-width: 2px;
+    background: Palette.background-card;
+    animate background { duration: 200ms; }
+
+    width: 250px;
+    height: 250px;
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    Image {
+        source: @image-url("../mojito.png");
+        width: parent.width;
+        height: parent.height;
+    }
+
+    Rectangle {
+        border-color: Palette.border;
+        border-width: 2px;
+        background: Palette.background-elevated;
+        height: parent.height / 4;
+        width: parent.width;
+        y: parent.height - self.height;
+
+        VerticalBox {
+            width: parent.width;
+            height: parent.height;
+            padding: 20px;
+            Text {
+                text: "Mojito";
+                color: Palette.text-primary;
+                font-size: 14pt;
+            }
+
+            Text {
+                text: "CLASSIC";
+                color: Palette.text-secondary;
+                font-size: 7pt;
+            }
+        }
+    }
+
+    states [
+        inactive when !ta.has-hover: {}
+        active-hover when ta.has-hover: {
+            root.background: @radial-gradient(circle, Palette.accent 0%, Palette.background-card 90%);
+        }
+    ]
+}

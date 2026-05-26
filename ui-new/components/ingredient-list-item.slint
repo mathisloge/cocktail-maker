@@ -1,0 +1,26 @@
+import { Palette } from "../palette.slint";
+
+export component IngredientListItem {
+    VerticalLayout {
+        spacing: 10px;
+        HorizontalLayout {
+            alignment: LayoutAlignment.space-between;
+            Text {
+                font-size: 10pt;
+                text: "White Rum";
+                color: Palette.text-primary;
+            }
+
+            Text {
+                font-size: 10pt;
+                text: "50 ml";
+                color: Palette.text-secondary;
+            }
+        }
+
+        Rectangle {
+            height: 1px;
+            background: Palette.border-subtle;
+        }
+    }
+}

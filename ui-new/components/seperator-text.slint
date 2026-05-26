@@ -1,0 +1,20 @@
+import { Palette } from "../palette.slint";
+export component SeperatorText {
+    in property <string> text;
+    HorizontalLayout {
+        spacing: 20px;
+        align-items: center;
+
+        Text {
+            text: root.text;
+            font-size: 6pt;
+            color: Palette.text-secondary;
+            letter-spacing: 2pt;
+        }
+
+        Rectangle {
+            height: 1px;
+            background: Palette.border;
+        }
+    }
+}

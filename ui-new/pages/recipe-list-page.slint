@@ -1,0 +1,29 @@
+import { ScrollView } from "std-widgets.slint";
+import { Recipe } from "../data.slint";
+import { RecipeCard } from "../components.slint";
+export component RecipeListPage inherits Rectangle {
+    callback recipe-selected(Recipe);
+
+    in property <Recipe> cocktail: {
+        name: "Mojito",
+        tag_line: "CLASSIC",
+        image: "--",
+        description: "Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, Zucker und Soda – perfekt für den Sommer.",
+    };
+
+    ScrollView {
+        horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+
+        GridLayout {
+            padding: 10px;
+            spacing: 5px;
+
+            RecipeCard {
+                recipe: root.cocktail;
+                clicked => {
+                    root.recipe-selected(root.cocktail)
+                }
+            }
+        }
+    }
+}

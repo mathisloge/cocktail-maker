@@ -1,0 +1,125 @@
+import { ScrollView, HorizontalBox, Slider } from "std-widgets.slint";
+import { Recipe } from "../data.slint";
+import { Palette } from "../palette.slint";
+import { IngredientListItem, Button, SeperatorText } from "../components.slint";
+
+export component RecipeDetailPage inherits Rectangle {
+    in-out property <Recipe> recipe;
+    callback process-recipe();
+
+    background: Palette.background-elevated;
+    GridLayout {
+        VerticalLayout {
+            width: 33%;
+            padding: 20px;
+            padding-bottom: 60px;
+            rowspan: 1;
+            spacing: 60px;
+            align-items: center;
+            alignment: end;
+            Image {
+                source: @image-url("../mojito.png");
+            }
+
+            Rectangle {
+                width: 90%;
+                background: Palette.border;
+                height: 1px;
+            }
+
+            VerticalLayout {
+                spacing: 10px;
+                align-items: center;
+                alignment: center;
+                Text {
+                    text: recipe.name;
+                    color: Palette.text-primary;
+                    font-size: 40pt;
+                    font-weight: FontWeight.bold;
+                }
+
+                Text {
+                    text: recipe.tag-line;
+                    color: Palette.text-secondary;
+                }
+            }
+        }
+
+        Rectangle {
+            width: 1px;
+            height: 100%;
+            background: Palette.border;
+        }
+
+        content := VerticalLayout {
+            padding: 20px;
+            padding-top: 40px;
+            padding-bottom: 60px;
+            spacing: 15px;
+            alignment: LayoutAlignment.space-between;
+            rowspan: 2;
+
+            VerticalLayout {
+                spacing: content.spacing;
+                Text {
+                    text: recipe.description;
+                    color: Palette.text-muted;
+                    font-size: 12pt;
+                }
+
+                Rectangle { }
+
+                SeperatorText {
+                    text: "INGREDIENTS:";
+                }
+
+                GridLayout {
+                    spacing: 10px;
+                    IngredientListItem { }
+
+                    IngredientListItem { }
+
+                    IngredientListItem {
+                        row: 2;
+                    }
+                }
+
+                SeperatorText {
+                    text: "ALCOHOL BOOST:";
+                }
+
+                Text {
+                    text: "💪 Strength Adjustment";
+                    color: Palette.text-primary;
+                    font-size: 20pt;
+                }
+
+                HorizontalBox {
+                    align-items: LayoutAlignItems.center;
+                    Text {
+                        text: "mild";
+                        color: Palette.boost-negative-text;
+                    }
+
+                    Slider {
+                        minimum: 0;
+                        maximum: 100;
+                        value: 50;
+                    }
+
+                    Text {
+                        text: "strong";
+                        color: Palette.boost-positive-text;
+                    }
+                }
+            }
+
+            Button {
+                text: "Prepare Cocktail →";
+                clicked => {
+                    root.process-recipe();
+                }
+            }
+        }
+    }
+}

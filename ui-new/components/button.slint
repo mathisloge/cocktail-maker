@@ -1,0 +1,97 @@
+// Copyright © SixtyFPS GmbH <info@slint.dev>
+// SPDX-License-Identifier: GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint-Software-3.0
+
+import { Palette } from "../palette.slint";
+
+export component Button {
+    in property <string> text;
+    in property <bool> secondary;
+    in property <bool> enabled <=> i-touch-area.enabled;
+    out property <bool> pressed: self.enabled && i-touch-area.pressed;
+
+    callback clicked;
+
+    private property <brush> text-color: self.secondary ? Palette.text-secondary : #000;
+
+    min-width: max(32px, i-layout.min-width);
+    min-height: max(32px, i-layout.min-height);
+    horizontal-stretch: 0;
+    vertical-stretch: 0;
+    forward-focus: i-focus-scope;
+
+    accessible-role: button;
+    accessible-enabled: root.enabled;
+    accessible-label: root.text;
+    accessible-action-default => { i-touch-area.clicked(); }
+
+    states [
+        disabled when !root.enabled : {
+            i-background.background: root.secondary ? Palette.background : Palette.accent-dim;
+            i-border.border-color: Palette.border-subtle;
+            root.text-color: Palette.text-muted;
+        }
+        pressed when root.pressed : {
+            i-background.background: Palette.accent;
+            i-border.border-color: Palette.border-strong;
+            root.text-color: #000;
+        }
+        hover when i-touch-area.has-hover : {
+            i-background.background: Palette.accent-light;
+            root.text-color: #000;
+        }
+    ]
+
+    i-background := Rectangle {
+        border-radius: 0px;
+        background: root.secondary ? Palette.background : Palette.accent;
+
+        animate background, border-color { duration: 150ms; }
+
+        i-border := Rectangle {
+            border-radius: parent.border-radius;
+            border-width: 1px;
+            border-color: Palette.border;
+        }
+
+        i-layout := HorizontalLayout {
+            padding-left: 12px;
+            padding-right: 12px;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            spacing: 4px;
+            alignment: center;
+
+            if (root.text != ""): Text {
+                font-size: 12pt;
+                font-weight: FontWeight.normal;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+                text: root.text;
+                color: root.text-color;
+                animate color { duration: 150ms; }
+                accessible-role: none;
+            }
+        }
+    }
+
+    i-touch-area := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    i-focus-scope := FocusScope {
+        x: 0;
+        width: 0; // Do not react on clicks
+        enabled <=> root.enabled;
+
+        key-pressed(event) => {
+            if (event.text == " " || event.text == "\n") {
+                i-touch-area.clicked();
+                 return accept;
+            }
+
+            return reject;
+        }
+    }
+}

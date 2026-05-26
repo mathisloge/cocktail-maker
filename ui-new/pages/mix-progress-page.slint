@@ -1,0 +1,137 @@
+
+import { Palette } from "../palette.slint";
+import { Recipe } from "../data.slint";
+import { ProgressIndicator, Spinner } from "std-widgets.slint";
+import { SeperatorText } from "../components.slint";
+
+enum ProcessStatus {
+    not_started, in_progress, finished,
+}
+component IngredientItem inherits Rectangle {
+    in property <ProcessStatus> status;
+    background: Palette.background-card;
+    animate background { duration: 200ms; }
+    border-color: Palette.border;
+    border-width: 1px;
+
+    HorizontalLayout {
+        alignment: LayoutAlignment.space-between;
+        align-items: center;
+        padding: 10px;
+        Text {
+            text: "50 ml - White Rum";
+            font-size: 12pt;
+            color: Palette.text-primary;
+        }
+
+        if root.status == ProcessStatus.not-started: Text {
+            font-size: 12pt;
+            text: "not started";
+            color: Palette.text-secondary;
+        }
+
+        if root.status == ProcessStatus.in-progress: Spinner {
+            height: 12pt;
+            indeterminate: true;
+        }
+
+        if root.status == ProcessStatus.finished: Text {
+            font-size: 12pt;
+            text: "✓";
+            color: Palette.text-secondary;
+        }
+    }
+
+    states [
+        not-started when root.status == ProcessStatus.not-started: {}
+        in-progress when root.status == ProcessStatus.in-progress: {
+            root.background: Palette.background-elevated;
+        }
+        finished when root.status == ProcessStatus.finished: {}
+    ]
+}
+
+export component MixProgressPage inherits Rectangle {
+    in property <Recipe> recipe;
+
+    background: Palette.background-elevated;
+    GridLayout {
+        VerticalLayout {
+            width: 33%;
+            alignment: start;
+            align-items: center;
+            padding: 20px;
+            padding-top: 40px;
+            spacing: 60px;
+            rowspan: 1;
+
+            VerticalLayout {
+                alignment: start;
+                align-items: center;
+                spacing: 10px;
+                Text {
+                    text: "NOW CRAFTING";
+                    letter-spacing: 2pt;
+                    color: Palette.text-secondary;
+                    font-size: 12pt;
+                }
+
+                Text {
+                    text: recipe.name;
+                    color: Palette.text-primary;
+                    font-size: 40pt;
+                    font-weight: FontWeight.bold;
+                }
+            }
+
+            VerticalLayout {
+                spacing: 10px;
+                ProgressIndicator {
+                    indeterminate: true;
+                    height: 2px;
+                    width: 90%;
+                }
+
+                Text {
+                    text: "analyzing recipe...";
+                    letter-spacing: 2pt;
+                    color: Palette.text-muted;
+                    font-size: 8pt;
+                }
+            }
+        }
+
+        Rectangle {
+            width: 1px;
+            height: 100%;
+            background: Palette.border;
+        }
+
+        VerticalLayout {
+            padding: 40px;
+            spacing: 15px;
+            alignment: LayoutAlignment.start;
+            rowspan: 2;
+
+            SeperatorText {
+                text: "INGREDIENT QUEUE:";
+            }
+
+            VerticalLayout {
+                spacing: 10px;
+
+                IngredientItem {
+                    status: ProcessStatus.not-started;
+                }
+
+                IngredientItem {
+                    status: ProcessStatus.in-progress;
+                }
+
+                IngredientItem {
+                    status: ProcessStatus.finished;
+                }
+            }
+        }
+    }
+}

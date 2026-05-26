@@ -1,0 +1,74 @@
+import {
+    VerticalBox,
+    ScrollView,
+    HorizontalBox,
+    Slider,
+} from "std-widgets.slint";
+
+import { Palette } from "palette.slint";
+import { Page, Recipe } from "data.slint";
+import { Button } from "components.slint";
+import { RecipeDetailPage, RecipeListPage, MixProgressPage } from "pages.slint";
+
+export component AppWindow inherits Window {
+    in-out property <Page> current_page: Page.cocktail_list_page;
+    in-out property <Recipe> selected_recipe;
+    callback operation_canceled();
+
+    operation_canceled => {
+        current_page = Page.cocktail-list-page;
+    }
+
+    preferred-width: 1280px;
+    preferred-height: 720px;
+    background: Palette.background;
+
+    VerticalLayout {
+        Rectangle {
+            height: 50px;
+            Button {
+                secondary: true;
+                text: "← Back";
+                x: 20px;
+                visible: current_page != Page.cocktail-list-page && current_page != Page.finished-page;
+                clicked => {
+                    operation_canceled();
+                }
+            }
+
+            Text {
+                text: "Sir Mix-A-Lot";
+                font-size: 20pt;
+                font-weight: FontWeight.extra-bold;
+                letter-spacing: 0.38rem;
+                color: Palette.text-secondary;
+
+                horizontal-alignment: TextHorizontalAlignment.center;
+                vertical-alignment: TextVerticalAlignment.center;
+            }
+        }
+
+        Rectangle {
+            height: 1px;
+            background: Palette.border;
+        }
+
+        if current_page == Page.cocktail-list-page: RecipeListPage {
+            recipe-selected(cocktail) => {
+                root.selected_recipe = cocktail;
+                root.current_page = Page.cocktail-detail-page;
+            }
+        }
+
+        if current_page == Page.cocktail-detail-page: RecipeDetailPage {
+            recipe <=> root.selected_recipe;
+            process-recipe => {
+                root.current_page = Page.mix-page;
+            }
+        }
+
+        if current_page == Page.mix-page: MixProgressPage {
+            recipe: root.selected_recipe;
+        }
+    }
+}

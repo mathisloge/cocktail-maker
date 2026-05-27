@@ -1,0 +1,7 @@
+{
+    "$schema": "../ingredient-schema.json",
+    "id": "grenadine",
+    "display_name": "Grenadine",
+    "type": "syrup",
+    "boost": "reducible"
+}

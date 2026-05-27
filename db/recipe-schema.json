@@ -31,11 +31,11 @@
         },
         "steps": {
             "type": "array",
-            "description": "An ordered list of steps — ingredient, manual, or a group of parallel ingredient steps",
+            "description": "An ordered list of steps — dispense, manual, or a group of parallel dispense steps",
             "items": {
                 "oneOf": [
                     {
-                        "$ref": "#/$defs/ingredientStep"
+                        "$ref": "#/$defs/dispenseStep"
                     },
                     {
                         "$ref": "#/$defs/parallelSteps"
@@ -48,23 +48,28 @@
         }
     },
     "$defs": {
-        "ingredientStep": {
-            "title": "IngredientStep",
+        "dispenseStep": {
+            "title": "DispenseStep",
             "type": "object",
             "description": "A single step that dispenses one ingredient",
             "required": [
+                "kind",
                 "ingredient",
                 "volume"
             ],
             "additionalProperties": false,
             "properties": {
+                "kind": {
+                    "type": "string",
+                    "const": "dispense"
+                },
                 "ingredient": {
                     "type": "string",
-                    "description": "The identifier of the ingredient to use"
+                    "description": "The identifier of the ingredient to dispense"
                 },
                 "volume": {
                     "type": "number",
-                    "description": "The volume of the ingredient to dispense in milliliters",
+                    "description": "The volume to dispense in milliliters",
                     "minimum": 1
                 }
             }
@@ -72,7 +77,7 @@
         "parallelSteps": {
             "title": "ParallelSteps",
             "type": "object",
-            "description": "A group of ingredient steps to be executed in parallel (manual steps are not allowed here)",
+            "description": "A group of dispense steps to be executed in parallel (manual steps are not allowed here)",
             "required": [
                 "parallel-steps"
             ],
@@ -80,10 +85,10 @@
             "properties": {
                 "parallel-steps": {
                     "type": "array",
-                    "description": "Two or more ingredient steps to run simultaneously",
+                    "description": "Two or more dispense steps to run simultaneously",
                     "minItems": 2,
                     "items": {
-                        "$ref": "#/$defs/ingredientStep"
+                        "$ref": "#/$defs/dispenseStep"
                     }
                 }
             }
@@ -100,8 +105,7 @@
             "properties": {
                 "kind": {
                     "type": "string",
-                    "const": "manual",
-                    "description": "Discriminator field identifying this as a manual step"
+                    "const": "manual"
                 },
                 "text": {
                     "type": "string",

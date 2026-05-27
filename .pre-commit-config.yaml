@@ -4,7 +4,7 @@ default_install_hook_types:
 
 repos:
   - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.3.0
+    rev: v4.4.0
     hooks:
       - id: conventional-pre-commit
         stages: [commit-msg]
@@ -18,24 +18,24 @@ repos:
         exclude: ^(mkdocs|.clang-format)
       - id: check-added-large-files
 
-  - repo: https://github.com/BlankSpruce/gersemi
-    rev: 0.22.3
+  - repo: https://github.com/BlankSpruce/gersemi-pre-commit
+    rev: 0.27.6
     hooks:
       - id: gersemi
         name: CMake linting
 
   - repo: https://github.com/psf/black
-    rev: 25.9.0
+    rev: 26.5.1
     hooks:
       - id: black
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v21.1.2
+    rev: v22.1.5
     hooks:
       - id: clang-format
         types_or: [c++, c, proto]
   # Check linting and style issues
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.14.2"
+    rev: "v0.15.14"
     hooks:
       # Run the linter.
       - id: ruff-check
@@ -45,10 +45,10 @@ repos:
         exclude: ^(docs)
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: v2.4.2
     hooks:
       - id: codespell
-        exclude: ^(pyproject.toml|i18n)
+        exclude: ^(i18n|v2.md)
 
   - repo: local
     hooks:

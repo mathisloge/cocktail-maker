@@ -1,0 +1,113 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Recipe",
+    "type": "object",
+    "required": [
+        "name",
+        "steps"
+    ],
+    "properties": {
+        "$schema": {
+            "type": "string"
+        },
+        "name": {
+            "type": "string",
+            "description": "The name of the recipe"
+        },
+        "tags": {
+            "type": "array",
+            "description": "A list of tags categorizing the recipe",
+            "items": {
+                "type": "string"
+            }
+        },
+        "description": {
+            "type": "string",
+            "description": "A short description of the recipe"
+        },
+        "nominal_serving_volume": {
+            "type": "number",
+            "description": "The expected total serving volume in milliliters"
+        },
+        "steps": {
+            "type": "array",
+            "description": "An ordered list of steps — ingredient, manual, or a group of parallel ingredient steps",
+            "items": {
+                "oneOf": [
+                    {
+                        "$ref": "#/$defs/ingredientStep"
+                    },
+                    {
+                        "$ref": "#/$defs/parallelSteps"
+                    },
+                    {
+                        "$ref": "#/$defs/manualStep"
+                    }
+                ]
+            }
+        }
+    },
+    "$defs": {
+        "ingredientStep": {
+            "title": "IngredientStep",
+            "type": "object",
+            "description": "A single step that dispenses one ingredient",
+            "required": [
+                "ingredient",
+                "volume"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "ingredient": {
+                    "type": "string",
+                    "description": "The identifier of the ingredient to use"
+                },
+                "volume": {
+                    "type": "number",
+                    "description": "The volume of the ingredient to dispense in milliliters",
+                    "minimum": 1
+                }
+            }
+        },
+        "parallelSteps": {
+            "title": "ParallelSteps",
+            "type": "object",
+            "description": "A group of ingredient steps to be executed in parallel (manual steps are not allowed here)",
+            "required": [
+                "parallel-steps"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "parallel-steps": {
+                    "type": "array",
+                    "description": "Two or more ingredient steps to run simultaneously",
+                    "minItems": 2,
+                    "items": {
+                        "$ref": "#/$defs/ingredientStep"
+                    }
+                }
+            }
+        },
+        "manualStep": {
+            "title": "ManualStep",
+            "type": "object",
+            "description": "A manual instruction for the user (cannot appear inside parallel-steps)",
+            "required": [
+                "kind",
+                "text"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "kind": {
+                    "type": "string",
+                    "const": "manual",
+                    "description": "Discriminator field identifying this as a manual step"
+                },
+                "text": {
+                    "type": "string",
+                    "description": "The instruction text shown to the user"
+                }
+            }
+        }
+    }
+}

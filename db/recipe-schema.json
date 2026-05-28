@@ -77,15 +77,18 @@
         "parallelSteps": {
             "title": "ParallelSteps",
             "type": "object",
-            "description": "A group of dispense steps to be executed in parallel (manual steps are not allowed here)",
             "required": [
-                "parallel-steps"
+                "kind",
+                "steps"
             ],
             "additionalProperties": false,
             "properties": {
-                "parallel-steps": {
+                "kind": {
+                    "type": "string",
+                    "const": "parallel"
+                },
+                "steps": {
                     "type": "array",
-                    "description": "Two or more dispense steps to run simultaneously",
                     "minItems": 2,
                     "items": {
                         "$ref": "#/$defs/dispenseStep"

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-cmake_minimum_required(VERSION 4.0)
+cmake_minimum_required(VERSION 4.3)
 file(READ "${CMAKE_SOURCE_DIR}/package.json" PACKAGE_JSON)
 string(JSON PACKAGE_JSON_PROJECT_VERSION GET "${PACKAGE_JSON}" version)
 string(
@@ -11,6 +11,9 @@ string(
     BASE_VERSION
     "${PACKAGE_JSON_PROJECT_VERSION}"
 )
+
+set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
+set(CMAKE_CXX_MODULE_STD ON)
 
 project(cocktail-maker VERSION ${BASE_VERSION} LANGUAGES CXX)
 cmake_policy(SET CMP0167 NEW)
@@ -31,7 +34,7 @@ include(GetGitRevisionDescription)
 include(CPM)
 
 set(CMAKE_CXX_STANDARD 26)
-set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime")
 
 get_git_head_revision(git_branch git_sha)
@@ -54,10 +57,13 @@ cpmaddpackage(
     "BOOST_INCLUDE_LIBRARIES ${BOOST_INCLUDE_LIBRARIES}"
 )
 cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite )
-cpmaddpackage("gh:fmtlib/fmt#12.1.0")
-cpmaddpackage("gh:gabime/spdlog@1.17.0")
+cpmaddpackage(URI "gh:fmtlib/fmt#12.1.0" OPTIONS "FMT_MODULE ON")
+cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_FMT_EXTERNAL ON")
+target_link_libraries(spdlog PUBLIC fmt::fmt)
 cpmaddpackage(URI "gh:CLIUtils/CLI11@2.6.2" OPTIONS "CLI11_PRECOMPILED ON")
-cpmaddpackage(URI "gh:mpusz/mp-units@2.5.0" SOURCE_SUBDIR src)
+cpmaddpackage(URI "gh:mpusz/mp-units@2.5.0" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON")
+# enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
+cpmaddpackage(URI "gh:simdjson/simdjson@4.6.0" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF")
 cpmaddpackage(
   NAME Slint
   GIT_REPOSITORY https://github.com/slint-ui/slint.git
@@ -70,6 +76,7 @@ if(BUILD_TESTING)
     #include(Catch)
 endif()
 
+add_subdirectory(cocktail-maker)
 add_subdirectory(gui)
 
 #add_subdirectory(src)

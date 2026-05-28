@@ -31,11 +31,25 @@
             }
         },
         {
+            "name": "homebrew-macos-opt",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "/opt/homebrew/opt/llvm/bin/clang",
+                "CMAKE_CXX_COMPILER": "/opt/homebrew/opt/llvm/bin/clang++",
+                "CMAKE_CXX_STDLIB_MODULES_JSON": "/opt/homebrew/opt/llvm/lib/c++/libc++.modules.json",
+                "CMAKE_CXX_FLAGS": "-stdlib=libc++ -nostdinc++ -I/opt/homebrew/opt/llvm/include/c++/v1",
+                "CMAKE_EXE_LINKER_FLAGS": "-L/opt/homebrew/opt/llvm/lib -Wl,-rpath,/opt/homebrew/opt/llvm/lib",
+                "CMAKE_SHARED_LINKER_FLAGS": "-L/opt/homebrew/opt/llvm/lib -Wl,-rpath,/opt/homebrew/opt/llvm/lib",
+                "CMAKE_OSX_SYSROOT": "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk"
+            }
+        },
+        {
             "name": "developer",
             "displayName": "Developer",
             "inherits": [
                 "common",
-                "debug-build"
+                "debug-build",
+                "homebrew-macos-opt"
             ],
             "cacheVariables": {
                 "BUILD_TESTING": true,

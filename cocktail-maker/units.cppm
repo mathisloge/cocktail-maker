@@ -29,4 +29,4 @@ using StepsPerLitre = quantity<steps_per_litre>;
 // ^^^ Stepper-Motor units
 
 // NOLINTEND(readability-identifier-naming)
-} // namespace game
+} // namespace cm::units

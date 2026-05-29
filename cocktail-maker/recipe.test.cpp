@@ -4,7 +4,8 @@ import fmt;
 
 using namespace cm;
 
-TEST_CASE( "Recipe can be formatted.", "[recipe]" ) {
+TEST_CASE("Recipe can be formatted.", "[recipe]")
+{
     Recipe recipe;
 
     const auto formatted_str = fmt::format("Test={}", recipe);

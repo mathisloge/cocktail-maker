@@ -58,6 +58,9 @@ cpmaddpackage(
 )
 cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite )
 cpmaddpackage(URI "gh:fmtlib/fmt#12.1.0" OPTIONS "FMT_MODULE ON")
+# Prevent linking errors while not using spdlog as module
+target_compile_definitions(fmt PUBLIC FMT_ATTACH_TO_GLOBAL_MODULE)
+
 cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_FMT_EXTERNAL ON")
 target_link_libraries(spdlog PUBLIC fmt::fmt)
 cpmaddpackage(URI "gh:CLIUtils/CLI11@2.6.2" OPTIONS "CLI11_PRECOMPILED ON")

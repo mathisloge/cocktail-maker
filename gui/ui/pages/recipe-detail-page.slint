@@ -1,10 +1,10 @@
 import { ScrollView, HorizontalBox, Slider } from "std-widgets.slint";
-import { Recipe } from "../data.slint";
+import { RecipeView } from "../data.slint";
 import { Palette } from "../palette.slint";
 import { IngredientListItem, Button, SeperatorText } from "../components.slint";
 
 export component RecipeDetailPage inherits Rectangle {
-    in-out property <Recipe> recipe;
+    in property <RecipeView> recipe;
     callback process-recipe();
 
     background: Palette.background-elevated;
@@ -18,7 +18,7 @@ export component RecipeDetailPage inherits Rectangle {
             align-items: center;
             alignment: end;
             Image {
-                source: @image-url("../mojito.png");
+                source: recipe.image;
             }
 
             Rectangle {
@@ -39,7 +39,7 @@ export component RecipeDetailPage inherits Rectangle {
                 }
 
                 Text {
-                    text: recipe.tag-line;
+                    text: recipe.tag-line[0];
                     color: Palette.text-secondary;
                 }
             }

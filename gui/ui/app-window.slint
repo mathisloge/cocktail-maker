@@ -6,13 +6,14 @@ import {
 } from "std-widgets.slint";
 
 import { Palette } from "palette.slint";
-import { Page, Recipe } from "data.slint";
+import { Page, RecipeView } from "data.slint";
 import { Button } from "components.slint";
 import { RecipeDetailPage, RecipeListPage, MixProgressPage } from "pages.slint";
 
 export component AppWindow inherits Window {
     in-out property <Page> current_page: Page.cocktail_list_page;
-    in-out property <Recipe> selected_recipe;
+    in property <[RecipeView]> recipes;
+    in-out property <RecipeView> selected_recipe;
     callback operation_canceled();
 
     operation_canceled => {
@@ -54,6 +55,7 @@ export component AppWindow inherits Window {
         }
 
         if current_page == Page.cocktail-list-page: RecipeListPage {
+            recipes: recipes;
             recipe-selected(cocktail) => {
                 root.selected_recipe = cocktail;
                 root.current_page = Page.cocktail-detail-page;

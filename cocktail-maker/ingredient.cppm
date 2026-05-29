@@ -111,4 +111,25 @@ struct Ingredient
     IngredientType type;
     BoostCategory boost_category{};
 };
+
+class IngredientStore
+{
+  public:
+    virtual ~IngredientStore() = default;
+
+    virtual bool add(Ingredient ingredient)
+    {
+        const auto [_, emplaced] = ingredients_.emplace(ingredient.id, std::move(ingredient));
+        return emplaced;
+    }
+
+    std::optional<Ingredient> find_by_id(IngredientId ingredient_id)
+    {
+        const auto it = ingredients_.find(ingredient_id);
+        return (it != ingredients_.end()) ? std::optional{it->second} : std::nullopt;
+    }
+
+  private:
+    std::unordered_map<IngredientId, Ingredient> ingredients_;
+};
 } // namespace cm

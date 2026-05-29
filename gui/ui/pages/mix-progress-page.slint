@@ -1,6 +1,6 @@
 
 import { Palette } from "../palette.slint";
-import { Recipe } from "../data.slint";
+import { RecipeView } from "../data.slint";
 import { ProgressIndicator, Spinner } from "std-widgets.slint";
 import { SeperatorText } from "../components.slint";
 
@@ -52,7 +52,7 @@ component IngredientItem inherits Rectangle {
 }
 
 export component MixProgressPage inherits Rectangle {
-    in property <Recipe> recipe;
+    in property <RecipeView> recipe;
 
     background: Palette.background-elevated;
     GridLayout {

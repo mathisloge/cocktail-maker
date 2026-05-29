@@ -76,7 +76,9 @@ cpmaddpackage(
 
 if(BUILD_TESTING)
     cpmaddpackage("gh:catchorg/Catch2@3.15.0")
-    #include(Catch)
+    list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
+    include(CTest)
+    include(Catch)
 endif()
 
 add_subdirectory(cocktail-maker)

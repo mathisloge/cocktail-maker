@@ -192,7 +192,7 @@ CM_LOG_STRUCT(debug, spdlog::level::debug);
 CM_LOG_STRUCT(info, spdlog::level::info);
 CM_LOG_STRUCT(warn, spdlog::level::warn);
 CM_LOG_STRUCT(error, spdlog::level::err);
-CM_LOG_STRUCT(critical, spdlog::level::critical); // was incorrectly level::err
+CM_LOG_STRUCT(critical, spdlog::level::critical);
 
 #undef CM_LOG_STRUCT
 

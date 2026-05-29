@@ -13,3 +13,11 @@ target_sources(cocktail-maker-lib
       ingredient.cppm
       recipe.cppm
 )
+
+if(BUILD_TESTING)
+  add_executable(cocktail-maker-lib-tests)
+  target_link_libraries(cocktail-maker-lib-tests PRIVATE Catch2::Catch2WithMain cm::lib)
+  catch_discover_tests(cocktail-maker-lib-tests)
+
+  target_sources(cocktail-maker-lib-tests PRIVATE recipe.test.cpp ingredient.test.cpp)
+endif()

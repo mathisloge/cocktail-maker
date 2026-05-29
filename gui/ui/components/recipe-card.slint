@@ -1,9 +1,9 @@
 
 import { Palette } from "../palette.slint";
-import { Recipe } from "../data.slint";
+import { RecipeView } from "../data.slint";
 import { VerticalBox } from "std-widgets.slint";
 export component RecipeCard inherits Rectangle {
-    in property <Recipe> recipe;
+    in property <RecipeView> recipe;
     callback clicked();
     border-color: Palette.border;
     border-width: 2px;
@@ -21,7 +21,7 @@ export component RecipeCard inherits Rectangle {
     }
 
     Image {
-        source: @image-url("../mojito.png");
+        source: recipe.image;
         width: parent.width;
         height: parent.height;
     }
@@ -39,13 +39,13 @@ export component RecipeCard inherits Rectangle {
             height: parent.height;
             padding: 20px;
             Text {
-                text: "Mojito";
+                text: recipe.name;
                 color: Palette.text-primary;
                 font-size: 14pt;
             }
 
             Text {
-                text: "CLASSIC";
+                text: recipe.tag-line[0];
                 color: Palette.text-secondary;
                 font-size: 7pt;
             }

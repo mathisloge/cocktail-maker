@@ -4,13 +4,47 @@ module;
 
 export module cm.gui:recipe_adapter;
 import std;
+import fmt;
+import mp_units;
 import cm;
 
 namespace cm::gui {
+template <class... Ts>
+struct overloaded : Ts...
+{
+    using Ts::operator()...;
+};
+
+std::shared_ptr<slint::Model<Command>> transform(const cm::Commands& commands, const cm::IngredientStore& ingredient_store)
+{
+    auto model = std::make_shared<slint::VectorModel<Command>>();
+    for (auto&& c : commands) {
+
+        std::visit(overloaded{[](const cm::ManualCommand& manual_command) -> std::optional<Command> {
+                                  return std::optional{Command{.status = CommandStatus::NotStarted,
+                                                               .text = slint::SharedString{manual_command.instruction.c_str()}}};
+                              },
+                              [&ingredient_store](const cm::DispenseCommand& dispense_command) -> std::optional<Command> {
+                                  auto volume_str = fmt::format(
+                                      "{}", units::value_cast<std::int32_t>(dispense_command.volume.in(units::milli_litre)));
+                                  auto&& ingredient = ingredient_store.find_by_id(dispense_command.ingredient);
+                                  if (not ingredient.has_value()) {
+                                      return std::nullopt;
+                                  }
+                                  return std::optional{Command{.status = CommandStatus::NotStarted,
+                                                               .text = slint::SharedString{ingredient->display_name.c_str()},
+                                                               .value = slint::SharedString{volume_str.c_str()}}};
+                              },
+                              []([[maybe_unused]] auto&& others) -> std::optional<Command> { return std::nullopt; }},
+                   c);
+    }
+    return model;
+}
+
 export class RecipeModel : public slint::Model<RecipeView>
 {
   public:
-    explicit RecipeModel(std::vector<Recipe> recipes)
+    explicit RecipeModel(std::vector<Recipe> recipes, const cm::IngredientStore& ingredient_store)
     {
         for (auto&& r : recipes) {
             recipes_.emplace_back(RecipeView{
@@ -22,6 +56,7 @@ export class RecipeModel : public slint::Model<RecipeView>
                                                  }))),
                 .description = slint::SharedString{r.description.c_str()},
                 .image = slint::Image::load_from_path(r.image_path.c_str()),
+                .commands = transform(r.commands, ingredient_store),
             });
         }
     }

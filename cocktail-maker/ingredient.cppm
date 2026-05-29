@@ -123,7 +123,7 @@ class IngredientStore
         return emplaced;
     }
 
-    std::optional<Ingredient> find_by_id(IngredientId ingredient_id)
+    std::optional<Ingredient> find_by_id(const IngredientId& ingredient_id) const
     {
         const auto it = ingredients_.find(ingredient_id);
         return (it != ingredients_.end()) ? std::optional{it->second} : std::nullopt;

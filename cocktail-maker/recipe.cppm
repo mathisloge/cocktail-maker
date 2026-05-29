@@ -18,8 +18,8 @@ export struct ManualCommand
     std::string instruction;
 };
 
-using ProductionStep = std::variant<std::monostate, ManualCommand, DispenseCommand>;
-using ProductionSteps = std::vector<ProductionStep>;
+export using Command = std::variant<std::monostate, ManualCommand, DispenseCommand>;
+export using Commands = std::vector<Command>;
 
 export struct Recipe
 {
@@ -27,13 +27,13 @@ export struct Recipe
     std::string description;
     std::vector<std::string> tags;
     std::filesystem::path image_path;
-    ProductionSteps steps;
+    Commands commands;
 
     friend struct fmt::formatter<Recipe>;
 };
 
 // TODO: implement simdjson loading with reflection
-std::vector<Recipe> load_from_disk(const std::filesystem::path& path);
+std::vector<Recipe> load_from_disk(const std::filesystem::path& path, const IngredientStore& ingredient_store);
 
 } // namespace cm
 

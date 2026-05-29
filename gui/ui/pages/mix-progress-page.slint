@@ -1,55 +1,9 @@
 
 import { Palette } from "../palette.slint";
-import { RecipeView } from "../data.slint";
+import { RecipeView, CommandStatus } from "../data.slint";
 import { ProgressIndicator, Spinner } from "std-widgets.slint";
-import { SeperatorText } from "../components.slint";
+import { SeperatorText, CommandItem } from "../components.slint";
 
-enum ProcessStatus {
-    not_started, in_progress, finished,
-}
-component IngredientItem inherits Rectangle {
-    in property <ProcessStatus> status;
-    background: Palette.background-card;
-    animate background { duration: 200ms; }
-    border-color: Palette.border;
-    border-width: 1px;
-
-    HorizontalLayout {
-        alignment: LayoutAlignment.space-between;
-        align-items: center;
-        padding: 10px;
-        Text {
-            text: "50 ml - White Rum";
-            font-size: 12pt;
-            color: Palette.text-primary;
-        }
-
-        if root.status == ProcessStatus.not-started: Text {
-            font-size: 12pt;
-            text: "not started";
-            color: Palette.text-secondary;
-        }
-
-        if root.status == ProcessStatus.in-progress: Spinner {
-            height: 12pt;
-            indeterminate: true;
-        }
-
-        if root.status == ProcessStatus.finished: Text {
-            font-size: 12pt;
-            text: "✓";
-            color: Palette.text-secondary;
-        }
-    }
-
-    states [
-        not-started when root.status == ProcessStatus.not-started: {}
-        in-progress when root.status == ProcessStatus.in-progress: {
-            root.background: Palette.background-elevated;
-        }
-        finished when root.status == ProcessStatus.finished: {}
-    ]
-}
 
 export component MixProgressPage inherits Rectangle {
     in property <RecipeView> recipe;
@@ -120,16 +74,8 @@ export component MixProgressPage inherits Rectangle {
             VerticalLayout {
                 spacing: 10px;
 
-                IngredientItem {
-                    status: ProcessStatus.not-started;
-                }
-
-                IngredientItem {
-                    status: ProcessStatus.in-progress;
-                }
-
-                IngredientItem {
-                    status: ProcessStatus.finished;
+                for command in recipe.commands: CommandItem {
+                    command: command;
                 }
             }
         }

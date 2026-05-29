@@ -1,19 +1,21 @@
 import { Palette } from "../palette.slint";
+import { Command } from "../data.slint";
 
-export component IngredientListItem {
+export component CommandListItem {
+    in property <Command> command;
     VerticalLayout {
         spacing: 10px;
         HorizontalLayout {
             alignment: LayoutAlignment.space-between;
             Text {
                 font-size: 10pt;
-                text: "White Rum";
+                text: command.text;
                 color: Palette.text-primary;
             }
 
             Text {
                 font-size: 10pt;
-                text: "50 ml";
+                text: command.value;
                 color: Palette.text-secondary;
             }
         }

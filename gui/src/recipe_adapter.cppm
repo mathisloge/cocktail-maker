@@ -20,6 +20,7 @@ export class RecipeModel : public slint::Model<RecipeView>
                                                      std::ranges::transform(tag, tag.begin(), ::toupper);
                                                      return slint::SharedString{tag.c_str()};
                                                  }))),
+                .description = slint::SharedString{r.description.c_str()},
                 .image = slint::Image::load_from_path(r.image_path.c_str()),
             });
         }

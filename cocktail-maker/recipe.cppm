@@ -24,6 +24,7 @@ using ProductionSteps = std::vector<ProductionStep>;
 export struct Recipe
 {
     std::string display_name;
+    std::string description;
     std::vector<std::string> tags;
     std::filesystem::path image_path;
     ProductionSteps steps;

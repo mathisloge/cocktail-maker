@@ -1,0 +1,47 @@
+import { Palette } from "../palette.slint";
+import { Command, CommandStatus } from "../data.slint";
+import { Spinner } from "std-widgets.slint";
+
+export component CommandItem inherits Rectangle {
+    in property <Command> command;
+    background: Palette.background-card;
+    animate background { duration: 200ms; }
+    border-color: Palette.border;
+    border-width: 1px;
+
+    HorizontalLayout {
+        alignment: LayoutAlignment.space-between;
+        align-items: center;
+        padding: 10px;
+        Text {
+            text: command.text + " - " + command.value;
+            font-size: 12pt;
+            color: Palette.text-primary;
+        }
+
+        if command.status == CommandStatus.not-started: Text {
+            font-size: 12pt;
+            text: "not started";
+            color: Palette.text-secondary;
+        }
+
+        if command.status == CommandStatus.in-progress: Spinner {
+            height: 12pt;
+            indeterminate: true;
+        }
+
+        if command.status == CommandStatus.finished: Text {
+            font-size: 12pt;
+            text: "✓";
+            color: Palette.text-secondary;
+        }
+    }
+
+    states [
+        not-started when command.status == CommandStatus.not-started: {}
+        in-progress when command.status == CommandStatus.in-progress: {
+            root.background: Palette.background-elevated;
+        }
+        finished when command.status == CommandStatus.finished: {}
+    ]
+}

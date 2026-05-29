@@ -1,10 +1,10 @@
 import { ScrollView, HorizontalBox, Slider } from "std-widgets.slint";
 import { RecipeView } from "../data.slint";
 import { Palette } from "../palette.slint";
-import { IngredientListItem, Button, SeperatorText } from "../components.slint";
+import { CommandListItem, Button, SeperatorText } from "../components.slint";
 
 export component RecipeDetailPage inherits Rectangle {
-    in property <RecipeView> recipe;
+    in-out property <RecipeView> recipe;
     callback process-recipe();
 
     background: Palette.background-elevated;
@@ -75,12 +75,8 @@ export component RecipeDetailPage inherits Rectangle {
 
                 GridLayout {
                     spacing: 10px;
-                    IngredientListItem { }
-
-                    IngredientListItem { }
-
-                    IngredientListItem {
-                        row: 2;
+                    for command in recipe.commands: CommandListItem {
+                        command: command;
                     }
                 }
 

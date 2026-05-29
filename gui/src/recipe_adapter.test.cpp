@@ -10,10 +10,14 @@ using namespace cm::gui;
 
 namespace {
 
-cm::Recipe make_recipe(std::string name, std::vector<std::string> tags)
+cm::Recipe make_recipe(std::string name, std::vector<std::string> tags, std::string description = "")
 {
+    if (description.empty()) {
+        description = "desc_" + name;
+    }
     return cm::Recipe{
         .display_name = std::move(name),
+        .description = std::move(description),
         .tags = std::move(tags),
         .image_path = "",
     };
@@ -60,6 +64,15 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
         CHECK(std::string(row->name.data()) == "Margherita Pizza");
+    }
+
+    SECTION("description is preserved as SharedString")
+    {
+        RecipeModel model({make_recipe("Margherita Pizza", {}, "Just a basic pizza.")});
+
+        auto row = model.row_data(0);
+        REQUIRE(row.has_value());
+        CHECK(std::string(row->description.data()) == "Just a basic pizza.");
     }
 
     SECTION("out-of-bounds row_data returns nullopt")

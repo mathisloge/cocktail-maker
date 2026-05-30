@@ -15,6 +15,7 @@ export component AppWindow inherits Window {
     in property <[RecipeView]> recipes;
     in-out property <RecipeView> selected_recipe;
     callback operation_canceled();
+    callback create_recipe(RecipeView, int);
 
     operation_canceled => {
         current_page = Page.cocktail-list-page;
@@ -64,7 +65,8 @@ export component AppWindow inherits Window {
 
         if current_page == Page.cocktail-detail-page: RecipeDetailPage {
             recipe <=> root.selected_recipe;
-            process-recipe => {
+            create-recipe (boost)=> {
+                create_recipe(root.selected_recipe, boost);
                 root.current_page = Page.mix-page;
             }
         }

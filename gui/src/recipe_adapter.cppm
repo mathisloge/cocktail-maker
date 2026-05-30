@@ -8,6 +8,8 @@ import mp_units;
 import cm;
 
 namespace cm::gui {
+
+namespace {
 template <class... Ts>
 struct overloaded : Ts...
 {
@@ -60,38 +62,42 @@ std::shared_ptr<slint::Model<Command>> transform(const cm::Commands& commands, c
     return model;
 }
 
+RecipeView transform(Recipe r, const cm::IngredientStore& ingredient_store)
+{
+    return RecipeView{
+        .name = slint::SharedString{r.display_name.c_str()},
+        .tag_line = std::make_shared<slint::VectorModel<slint::SharedString>>(
+            std::ranges::to<std::vector>(std::move(r.tags) | std::views::transform([](std::string tag) {
+                                             std::ranges::transform(tag, tag.begin(), ::toupper);
+                                             return slint::SharedString{tag.c_str()};
+                                         }))),
+        .description = slint::SharedString{r.description.c_str()},
+        .image = slint::Image::load_from_path(r.image_path.c_str()),
+        .commands = transform(r.commands, ingredient_store),
+    };
+}
+
+} // namespace
+
 export class RecipeModel : public slint::Model<RecipeView>
 {
   public:
-    explicit RecipeModel(std::vector<Recipe> recipes, const cm::IngredientStore& ingredient_store)
+    explicit RecipeModel(const cm::RecipeStore& recipe_store, const cm::IngredientStore& ingredient_store)
+        : recipe_store_{recipe_store}
+        , ingredient_store_{ingredient_store}
     {
-        for (auto&& r : recipes) {
-            recipes_.emplace_back(RecipeView{
-                .name = slint::SharedString{r.display_name.c_str()},
-                .tag_line = std::make_shared<slint::VectorModel<slint::SharedString>>(
-                    std::ranges::to<std::vector>(std::move(r.tags) | std::views::transform([](std::string tag) {
-                                                     std::ranges::transform(tag, tag.begin(), ::toupper);
-                                                     return slint::SharedString{tag.c_str()};
-                                                 }))),
-                .description = slint::SharedString{r.description.c_str()},
-                .image = slint::Image::load_from_path(r.image_path.c_str()),
-                .commands = transform(r.commands, ingredient_store),
-            });
-        }
     }
 
     size_t row_count() const override
     {
-        return recipes_.size();
+        return recipe_store_.recipe_count();
     }
 
     std::optional<RecipeView> row_data(size_t row) const override
     {
-        if (row >= recipes_.size()) {
-            return std::nullopt;
-        }
-        const auto& p = recipes_[row];
-        return p;
+        return recipe_store_
+            .find_by_index(row) //
+            .transform([this](auto&& r) { return transform(r, ingredient_store_); });
     }
 
     // Aufruf wenn sich etwas im Repository ändert:
@@ -111,6 +117,7 @@ export class RecipeModel : public slint::Model<RecipeView>
     }
 
   private:
-    std::vector<RecipeView> recipes_;
+    const cm::RecipeStore& recipe_store_;
+    const cm::IngredientStore& ingredient_store_;
 };
 } // namespace cm::gui

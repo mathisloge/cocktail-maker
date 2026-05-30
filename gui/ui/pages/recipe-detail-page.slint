@@ -5,7 +5,7 @@ import { CommandListItem, Button, SeperatorText } from "../components.slint";
 
 export component RecipeDetailPage inherits Rectangle {
     in-out property <RecipeView> recipe;
-    callback process-recipe();
+    callback create-recipe(int);
 
     background: Palette.background-elevated;
     GridLayout {
@@ -97,7 +97,7 @@ export component RecipeDetailPage inherits Rectangle {
                         color: Palette.boost-negative-text;
                     }
 
-                    Slider {
+                    booster:= Slider {
                         minimum: 0;
                         maximum: 100;
                         value: 50;
@@ -113,7 +113,7 @@ export component RecipeDetailPage inherits Rectangle {
             Button {
                 text: "Prepare Cocktail →";
                 clicked => {
-                    root.process-recipe();
+                    root.create-recipe(booster.value);
                 }
             }
         }

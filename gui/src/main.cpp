@@ -19,20 +19,24 @@ int main(int argc, char** argv)
                                         .type = cm::IngredientType::other,
                                         .boost_category = cm::BoostCategory::boostable});
 
-    auto recipe_model = std::make_shared<cm::gui::RecipeModel>(
-        std::vector<cm::Recipe>{
-            cm::Recipe{.display_name = "Mojito",
-                       .description =
-                           "Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, Zucker und Soda – perfekt für "
-                           "den Sommer.",
-                       .tags = {std::string{"classic"}},
-                       .image_path = recipe_db_path / "mojito.png",
-                       .commands = {cm::DispenseCommand{.ingredient = "test", .volume = (89 * cm::units::milli_litre)}}},
-        },
-        ingredient_store);
+    cm::RecipeStore recipe_store{{
+        cm::Recipe{.display_name = "Mojito",
+                   .description =
+                       "Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, Zucker und Soda – perfekt für "
+                       "den Sommer.",
+                   .tags = {std::string{"classic"}},
+                   .image_path = recipe_db_path / "mojito.png",
+                   .commands = {cm::DispenseCommand{.ingredient = "test", .volume = (89 * cm::units::milli_litre)}}},
+    }};
+
+    auto recipe_model = std::make_shared<cm::gui::RecipeModel>(recipe_store, ingredient_store);
     auto ui = cm::gui::AppWindow::create();
 
     ui->set_recipes(std::move(recipe_model));
+    ui->on_create_recipe([](const cm::gui::RecipeView& recipe_to_create, int boost) {
+        auto logger = cm::log::create_or_get("ui");
+        cm::log::debug(logger, "create recipe '{}' with boost factor '{}'", recipe_to_create.name.begin(), boost);
+    });
 
     ui->run();
     return 0;

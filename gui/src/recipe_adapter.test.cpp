@@ -46,25 +46,26 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
     cm::IngredientStore ingredient_store;
     SECTION("empty input produces empty model")
     {
-        RecipeModel model({}, ingredient_store);
+        cm::RecipeStore recipe_store{{}};
+        RecipeModel model(recipe_store, ingredient_store);
         CHECK(model.row_count() == 0);
     }
 
     SECTION("row_count matches number of recipes")
     {
-        RecipeModel model(
-            {
-                make_recipe("A", {}),
-                make_recipe("B", {}),
-                make_recipe("C", {}),
-            },
-            ingredient_store);
+        cm::RecipeStore recipe_store{{
+            make_recipe("A", {}),
+            make_recipe("B", {}),
+            make_recipe("C", {}),
+        }};
+        RecipeModel model(recipe_store, ingredient_store);
         CHECK(model.row_count() == 3);
     }
 
     SECTION("display_name is preserved as SharedString")
     {
-        RecipeModel model({make_recipe("Margherita Pizza", {})}, ingredient_store);
+        cm::RecipeStore recipe_store{{make_recipe("Margherita Pizza", {})}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -73,7 +74,8 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
 
     SECTION("description is preserved as SharedString")
     {
-        RecipeModel model({make_recipe("Margherita Pizza", {}, "Just a basic pizza.")}, ingredient_store);
+        cm::RecipeStore recipe_store{{make_recipe("Margherita Pizza", {}, "Just a basic pizza.")}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -82,26 +84,27 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
 
     SECTION("out-of-bounds row_data returns nullopt")
     {
-        RecipeModel model({make_recipe("Solo", {})}, ingredient_store);
+        cm::RecipeStore recipe_store{{make_recipe("Solo", {})}};
+        RecipeModel model(recipe_store, ingredient_store);
         CHECK_FALSE(model.row_data(1).has_value());
         CHECK_FALSE(model.row_data(99).has_value());
     }
 
     SECTION("row_data(0) on empty model returns nullopt")
     {
-        RecipeModel model({}, ingredient_store);
+        cm::RecipeStore recipe_store{{}};
+        RecipeModel model(recipe_store, ingredient_store);
         CHECK_FALSE(model.row_data(0).has_value());
     }
 
     SECTION("each recipe maps to its own row in order")
     {
-        RecipeModel model(
-            {
-                make_recipe("First", {"a"}),
-                make_recipe("Second", {"b"}),
-                make_recipe("Third", {"c"}),
-            },
-            ingredient_store);
+        cm::RecipeStore recipe_store{{
+            make_recipe("First", {"a"}),
+            make_recipe("Second", {"b"}),
+            make_recipe("Third", {"c"}),
+        }};
+        RecipeModel model(recipe_store, ingredient_store);
 
         CHECK(std::string(model.row_data(0)->name.data()) == "First");
         CHECK(std::string(model.row_data(1)->name.data()) == "Second");
@@ -110,7 +113,8 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
 
     SECTION("tag_line row_count matches original tags size")
     {
-        RecipeModel model({make_recipe("Taggy", {"x", "y", "z"})}, ingredient_store);
+        cm::RecipeStore recipe_store{{make_recipe("Taggy", {"x", "y", "z"})}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -119,12 +123,11 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
 
     SECTION("recipes with identical names are stored as distinct rows")
     {
-        RecipeModel model(
-            {
-                make_recipe("Clone", {"original"}),
-                make_recipe("Clone", {"copy"}),
-            },
-            ingredient_store);
+        cm::RecipeStore recipe_store{{
+            make_recipe("Clone", {"original"}),
+            make_recipe("Clone", {"copy"}),
+        }};
+        RecipeModel model(recipe_store, ingredient_store);
 
         REQUIRE(model.row_count() == 2);
         CHECK(get_tags(*model.row_data(0))[0] == "ORIGINAL");
@@ -136,7 +139,8 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
         cm::Recipe r = make_recipe("Mojito", {});
         r.image_path = std::filesystem::path{TEST_IMAGE_DIR} / "mojito.png";
 
-        RecipeModel model({std::move(r)}, ingredient_store);
+        cm::RecipeStore recipe_store{{std::move(r)}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -148,7 +152,8 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
 
     SECTION("empty image_path produces a null/empty image")
     {
-        RecipeModel model({make_recipe("No Image", {})}, ingredient_store);
+        cm::RecipeStore recipe_store{{make_recipe("No Image", {})}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -164,7 +169,8 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
     cm::IngredientStore ingredient_store;
     SECTION("lowercase tags are uppercased")
     {
-        RecipeModel model({make_recipe("Pasta", {"vegan", "quick"})}, ingredient_store);
+        cm::RecipeStore recipe_store{{make_recipe("Pasta", {"vegan", "quick"})}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -177,7 +183,8 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
 
     SECTION("already-uppercase tags are unchanged")
     {
-        RecipeModel model({make_recipe("Steak", {"MEAT", "GRILL"})}, ingredient_store);
+        cm::RecipeStore recipe_store{{make_recipe("Steak", {"MEAT", "GRILL"})}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto tags = get_tags(*model.row_data(0));
         CHECK(tags[0] == "MEAT");
@@ -186,7 +193,8 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
 
     SECTION("mixed-case tags are fully uppercased")
     {
-        RecipeModel model({make_recipe("Soup", {"GluTen-Free", "SpIcY"})}, ingredient_store);
+        cm::RecipeStore recipe_store{{make_recipe("Soup", {"GluTen-Free", "SpIcY"})}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto tags = get_tags(*model.row_data(0));
         CHECK(tags[0] == "GLUTEN-FREE");
@@ -195,7 +203,8 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
 
     SECTION("empty tag string remains empty")
     {
-        RecipeModel model({make_recipe("Mystery", {""})}, ingredient_store);
+        cm::RecipeStore recipe_store{{make_recipe("Mystery", {""})}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto tags = get_tags(*model.row_data(0));
         REQUIRE(tags.size() == 1);
@@ -204,7 +213,8 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
 
     SECTION("recipe with no tags has empty tag_line model")
     {
-        RecipeModel model({make_recipe("Plain", {})}, ingredient_store);
+        cm::RecipeStore recipe_store{{make_recipe("Plain", {})}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -213,12 +223,11 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
 
     SECTION("tags are uppercased independently per recipe")
     {
-        RecipeModel model(
-            {
-                make_recipe("A", {"vegan"}),
-                make_recipe("B", {"meat"}),
-            },
-            ingredient_store);
+        cm::RecipeStore recipe_store{{
+            make_recipe("A", {"vegan"}),
+            make_recipe("B", {"meat"}),
+        }};
+        RecipeModel model(recipe_store, ingredient_store);
 
         CHECK(get_tags(*model.row_data(0))[0] == "VEGAN");
         CHECK(get_tags(*model.row_data(1))[0] == "MEAT");
@@ -226,7 +235,8 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
 
     SECTION("numeric and symbol characters in tags are preserved")
     {
-        RecipeModel model({make_recipe("Weird", {"top-5", "30min"})}, ingredient_store);
+        cm::RecipeStore recipe_store{{make_recipe("Weird", {"top-5", "30min"})}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto tags = get_tags(*model.row_data(0));
         CHECK(tags[0] == "TOP-5");
@@ -242,8 +252,9 @@ TEST_CASE("transform_command: ManualCommand", "[recipe_adapter][commands]")
     {
         cm::Recipe r = make_recipe("Test", {});
         r.commands = {cm::ManualCommand{.instruction = "Stir vigorously for 30 seconds"}};
+        cm::RecipeStore recipe_store{{std::move(r)}};
 
-        RecipeModel model({std::move(r)}, ingredient_store);
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -260,7 +271,8 @@ TEST_CASE("transform_command: ManualCommand", "[recipe_adapter][commands]")
         cm::Recipe r = make_recipe("Test", {});
         r.commands = {cm::ManualCommand{.instruction = ""}};
 
-        RecipeModel model({std::move(r)}, ingredient_store);
+        cm::RecipeStore recipe_store{{std::move(r)}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto cmd = model.row_data(0)->commands->row_data(0);
         REQUIRE(cmd.has_value());
@@ -276,7 +288,8 @@ TEST_CASE("transform_command: ManualCommand", "[recipe_adapter][commands]")
             cm::ManualCommand{.instruction = "Third"},
         };
 
-        RecipeModel model({std::move(r)}, ingredient_store);
+        cm::RecipeStore recipe_store{{std::move(r)}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto commands = model.row_data(0)->commands;
         REQUIRE(commands->row_count() == 3);
@@ -290,7 +303,8 @@ TEST_CASE("transform_command: ManualCommand", "[recipe_adapter][commands]")
         cm::Recipe r = make_recipe("Test", {});
         r.commands = {cm::ManualCommand{.instruction = "Do something"}};
 
-        RecipeModel model({std::move(r)}, ingredient_store);
+        cm::RecipeStore recipe_store{{std::move(r)}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto cmd = model.row_data(0)->commands->row_data(0);
         REQUIRE(cmd.has_value());
@@ -311,7 +325,8 @@ TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
             .volume = 50 * units::milli_litre,
         }};
 
-        RecipeModel model({std::move(r)}, ingredient_store);
+        cm::RecipeStore recipe_store{{std::move(r)}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto cmd = model.row_data(0)->commands->row_data(0);
         REQUIRE(cmd.has_value());
@@ -329,7 +344,8 @@ TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
             .volume = 50 * units::milli_litre,
         }};
 
-        RecipeModel model({std::move(r)}, ingredient_store);
+        cm::RecipeStore recipe_store{{std::move(r)}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto cmd = model.row_data(0)->commands->row_data(0);
         REQUIRE(cmd.has_value());
@@ -345,8 +361,9 @@ TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
             .ingredient = cm::IngredientId{99},
             .volume = 30 * units::milli_litre,
         }};
+        cm::RecipeStore recipe_store{{std::move(r)}};
 
-        RecipeModel model({std::move(r)}, ingredient_store);
+        RecipeModel model(recipe_store, ingredient_store);
 
         // Unknown ingredient must be dropped, not crash or produce a null entry
         CHECK(model.row_data(0)->commands->row_count() == 0);
@@ -363,7 +380,8 @@ TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
             .volume = 25 * units::milli_litre,
         }};
 
-        RecipeModel model({std::move(r)}, ingredient_store);
+        cm::RecipeStore recipe_store{{std::move(r)}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto cmd = model.row_data(0)->commands->row_data(0);
         REQUIRE(cmd.has_value());
@@ -381,7 +399,8 @@ TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
             .volume = 40 * units::milli_litre,
         }};
 
-        RecipeModel model({std::move(r)}, ingredient_store);
+        cm::RecipeStore recipe_store{{std::move(r)}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto cmd = model.row_data(0)->commands->row_data(0);
         REQUIRE(cmd.has_value());
@@ -405,7 +424,8 @@ TEST_CASE("transform: ParallelCommand flattening", "[recipe_adapter][commands]")
             },
         };
 
-        RecipeModel model({std::move(r)}, ingredient_store);
+        cm::RecipeStore recipe_store{{std::move(r)}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto commands = model.row_data(0)->commands;
         REQUIRE(commands->row_count() == 2);
@@ -426,7 +446,8 @@ TEST_CASE("transform: ParallelCommand flattening", "[recipe_adapter][commands]")
             },
         };
 
-        RecipeModel model({std::move(r)}, ingredient_store);
+        cm::RecipeStore recipe_store{{std::move(r)}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto commands = model.row_data(0)->commands;
         REQUIRE(commands->row_count() == 1);
@@ -449,7 +470,8 @@ TEST_CASE("transform: ParallelCommand flattening", "[recipe_adapter][commands]")
             cm::ManualCommand{.instruction = "Stir and serve"},
         };
 
-        RecipeModel model({std::move(r)}, ingredient_store);
+        cm::RecipeStore recipe_store{{std::move(r)}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto commands = model.row_data(0)->commands;
         REQUIRE(commands->row_count() == 4);
@@ -466,7 +488,8 @@ TEST_CASE("transform: recipe with no commands", "[recipe_adapter][commands]")
 
     SECTION("empty command list produces empty command model")
     {
-        RecipeModel model({make_recipe("Empty", {})}, ingredient_store);
+        cm::RecipeStore recipe_store{{make_recipe("Empty", {})}};
+        RecipeModel model(recipe_store, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());

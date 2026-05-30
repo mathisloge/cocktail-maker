@@ -8,10 +8,6 @@ export namespace cm::units {
 using namespace mp_units;
 
 // NOLINTBEGIN(readability-identifier-naming)
-inline constexpr struct percent final : named_unit<"%", mag_ratio<1, 100> * one>
-{
-} percent;
-
 using Grams = quantity<si::gram>;
 using Litre = quantity<si::litre>;
 inline constexpr auto gram_per_litre = si::gram / si::litre;

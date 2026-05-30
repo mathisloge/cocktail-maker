@@ -11,7 +11,13 @@ target_sources(
     cocktail-maker-lib
     PUBLIC
         FILE_SET CXX_MODULES
-            FILES lib.cppm logging.cppm units.cppm ingredient.cppm recipe.cppm
+            FILES
+                lib.cppm
+                logging.cppm
+                units.cppm
+                ingredient.cppm
+                recipe.cppm
+                recipe_boost.cppm
 )
 
 if(BUILD_TESTING)
@@ -24,6 +30,6 @@ if(BUILD_TESTING)
 
     target_sources(
         cocktail-maker-lib-tests
-        PRIVATE recipe.test.cpp ingredient.test.cpp
+        PRIVATE recipe.test.cpp ingredient.test.cpp recipe_boost.test.cpp
     )
 endif()

@@ -2,7 +2,6 @@ module;
 
 export module cm:recipe;
 import std;
-import fmt;
 import :ingredient;
 import :units;
 
@@ -29,7 +28,7 @@ export struct Recipe
     std::filesystem::path image_path;
     Commands commands;
 
-    friend struct fmt::formatter<Recipe>;
+    friend struct std::formatter<Recipe>;
 };
 
 // TODO: implement simdjson loading with reflection
@@ -38,10 +37,10 @@ std::vector<Recipe> load_from_disk(const std::filesystem::path& path, const Ingr
 } // namespace cm
 
 export template <>
-struct fmt::formatter<cm::Recipe> : formatter<string_view>
+struct std::formatter<cm::Recipe> : formatter<string_view>
 {
     auto format(const cm::Recipe& r, format_context& ctx) const -> format_context::iterator
     {
-        return formatter<string_view>::format(fmt::format("Recipe(name={})", r.display_name), ctx);
+        return formatter<string_view>::format(std::format("Recipe(name={})", r.display_name), ctx);
     }
 };

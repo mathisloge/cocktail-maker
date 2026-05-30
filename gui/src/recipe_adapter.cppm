@@ -4,7 +4,6 @@ module;
 
 export module cm.gui:recipe_adapter;
 import std;
-import fmt;
 import mp_units;
 import cm;
 
@@ -25,7 +24,7 @@ std::shared_ptr<slint::Model<Command>> transform(const cm::Commands& commands, c
                                                                .text = slint::SharedString{manual_command.instruction.c_str()}}};
                               },
                               [&ingredient_store](const cm::DispenseCommand& dispense_command) -> std::optional<Command> {
-                                  auto volume_str = fmt::format(
+                                  auto volume_str = std::format(
                                       "{}", units::value_cast<std::int32_t>(dispense_command.volume.in(units::milli_litre)));
                                   auto&& ingredient = ingredient_store.find_by_id(dispense_command.ingredient);
                                   if (not ingredient.has_value()) {

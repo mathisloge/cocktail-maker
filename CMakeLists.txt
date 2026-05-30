@@ -57,12 +57,7 @@ cpmaddpackage(
     "BOOST_INCLUDE_LIBRARIES ${BOOST_INCLUDE_LIBRARIES}"
 )
 cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite )
-cpmaddpackage(URI "gh:fmtlib/fmt#12.1.0" OPTIONS "FMT_MODULE ON")
-# Prevent linking errors while not using spdlog as module
-target_compile_definitions(fmt PUBLIC FMT_ATTACH_TO_GLOBAL_MODULE)
-
-cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_FMT_EXTERNAL ON")
-target_link_libraries(spdlog PUBLIC fmt::fmt)
+cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_USE_STD_FORMAT ON")
 cpmaddpackage(URI "gh:CLIUtils/CLI11@2.6.2" OPTIONS "CLI11_PRECOMPILED ON")
 cpmaddpackage(URI "gh:mpusz/mp-units@2.5.0" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON")
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON

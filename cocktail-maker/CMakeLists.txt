@@ -4,7 +4,7 @@ target_compile_features(cocktail-maker-lib PUBLIC cxx_std_26)
 
 target_link_libraries(
     cocktail-maker-lib
-    PUBLIC fmt::fmt mp-units::mp-units spdlog::spdlog simdjson::simdjson
+    PUBLIC mp-units::mp-units spdlog::spdlog simdjson::simdjson
 )
 
 target_sources(

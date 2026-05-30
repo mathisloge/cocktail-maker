@@ -41,25 +41,28 @@ std::vector<std::string> get_tags(const RecipeView& view)
 
 TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_adapter][conversion]")
 {
+    cm::IngredientStore ingredient_store;
     SECTION("empty input produces empty model")
     {
-        RecipeModel model({});
+        RecipeModel model({}, ingredient_store);
         CHECK(model.row_count() == 0);
     }
 
     SECTION("row_count matches number of recipes")
     {
-        RecipeModel model({
-            make_recipe("A", {}),
-            make_recipe("B", {}),
-            make_recipe("C", {}),
-        });
+        RecipeModel model(
+            {
+                make_recipe("A", {}),
+                make_recipe("B", {}),
+                make_recipe("C", {}),
+            },
+            ingredient_store);
         CHECK(model.row_count() == 3);
     }
 
     SECTION("display_name is preserved as SharedString")
     {
-        RecipeModel model({make_recipe("Margherita Pizza", {})});
+        RecipeModel model({make_recipe("Margherita Pizza", {})}, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -68,7 +71,7 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
 
     SECTION("description is preserved as SharedString")
     {
-        RecipeModel model({make_recipe("Margherita Pizza", {}, "Just a basic pizza.")});
+        RecipeModel model({make_recipe("Margherita Pizza", {}, "Just a basic pizza.")}, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -77,24 +80,26 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
 
     SECTION("out-of-bounds row_data returns nullopt")
     {
-        RecipeModel model({make_recipe("Solo", {})});
+        RecipeModel model({make_recipe("Solo", {})}, ingredient_store);
         CHECK_FALSE(model.row_data(1).has_value());
         CHECK_FALSE(model.row_data(99).has_value());
     }
 
     SECTION("row_data(0) on empty model returns nullopt")
     {
-        RecipeModel model({});
+        RecipeModel model({}, ingredient_store);
         CHECK_FALSE(model.row_data(0).has_value());
     }
 
     SECTION("each recipe maps to its own row in order")
     {
-        RecipeModel model({
-            make_recipe("First", {"a"}),
-            make_recipe("Second", {"b"}),
-            make_recipe("Third", {"c"}),
-        });
+        RecipeModel model(
+            {
+                make_recipe("First", {"a"}),
+                make_recipe("Second", {"b"}),
+                make_recipe("Third", {"c"}),
+            },
+            ingredient_store);
 
         CHECK(std::string(model.row_data(0)->name.data()) == "First");
         CHECK(std::string(model.row_data(1)->name.data()) == "Second");
@@ -103,7 +108,7 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
 
     SECTION("tag_line row_count matches original tags size")
     {
-        RecipeModel model({make_recipe("Taggy", {"x", "y", "z"})});
+        RecipeModel model({make_recipe("Taggy", {"x", "y", "z"})}, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -112,10 +117,12 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
 
     SECTION("recipes with identical names are stored as distinct rows")
     {
-        RecipeModel model({
-            make_recipe("Clone", {"original"}),
-            make_recipe("Clone", {"copy"}),
-        });
+        RecipeModel model(
+            {
+                make_recipe("Clone", {"original"}),
+                make_recipe("Clone", {"copy"}),
+            },
+            ingredient_store);
 
         REQUIRE(model.row_count() == 2);
         CHECK(get_tags(*model.row_data(0))[0] == "ORIGINAL");
@@ -127,7 +134,7 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
         cm::Recipe r = make_recipe("Mojito", {});
         r.image_path = std::filesystem::path{TEST_IMAGE_DIR} / "mojito.png";
 
-        RecipeModel model({std::move(r)});
+        RecipeModel model({std::move(r)}, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -139,7 +146,7 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
 
     SECTION("empty image_path produces a null/empty image")
     {
-        RecipeModel model({make_recipe("No Image", {})});
+        RecipeModel model({make_recipe("No Image", {})}, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -152,9 +159,10 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
 
 TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
 {
+    cm::IngredientStore ingredient_store;
     SECTION("lowercase tags are uppercased")
     {
-        RecipeModel model({make_recipe("Pasta", {"vegan", "quick"})});
+        RecipeModel model({make_recipe("Pasta", {"vegan", "quick"})}, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -167,7 +175,7 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
 
     SECTION("already-uppercase tags are unchanged")
     {
-        RecipeModel model({make_recipe("Steak", {"MEAT", "GRILL"})});
+        RecipeModel model({make_recipe("Steak", {"MEAT", "GRILL"})}, ingredient_store);
 
         auto tags = get_tags(*model.row_data(0));
         CHECK(tags[0] == "MEAT");
@@ -176,7 +184,7 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
 
     SECTION("mixed-case tags are fully uppercased")
     {
-        RecipeModel model({make_recipe("Soup", {"GluTen-Free", "SpIcY"})});
+        RecipeModel model({make_recipe("Soup", {"GluTen-Free", "SpIcY"})}, ingredient_store);
 
         auto tags = get_tags(*model.row_data(0));
         CHECK(tags[0] == "GLUTEN-FREE");
@@ -185,7 +193,7 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
 
     SECTION("empty tag string remains empty")
     {
-        RecipeModel model({make_recipe("Mystery", {""})});
+        RecipeModel model({make_recipe("Mystery", {""})}, ingredient_store);
 
         auto tags = get_tags(*model.row_data(0));
         REQUIRE(tags.size() == 1);
@@ -194,7 +202,7 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
 
     SECTION("recipe with no tags has empty tag_line model")
     {
-        RecipeModel model({make_recipe("Plain", {})});
+        RecipeModel model({make_recipe("Plain", {})}, ingredient_store);
 
         auto row = model.row_data(0);
         REQUIRE(row.has_value());
@@ -203,10 +211,12 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
 
     SECTION("tags are uppercased independently per recipe")
     {
-        RecipeModel model({
-            make_recipe("A", {"vegan"}),
-            make_recipe("B", {"meat"}),
-        });
+        RecipeModel model(
+            {
+                make_recipe("A", {"vegan"}),
+                make_recipe("B", {"meat"}),
+            },
+            ingredient_store);
 
         CHECK(get_tags(*model.row_data(0))[0] == "VEGAN");
         CHECK(get_tags(*model.row_data(1))[0] == "MEAT");
@@ -214,7 +224,7 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
 
     SECTION("numeric and symbol characters in tags are preserved")
     {
-        RecipeModel model({make_recipe("Weird", {"top-5", "30min"})});
+        RecipeModel model({make_recipe("Weird", {"top-5", "30min"})}, ingredient_store);
 
         auto tags = get_tags(*model.row_data(0));
         CHECK(tags[0] == "TOP-5");

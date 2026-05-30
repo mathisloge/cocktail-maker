@@ -46,8 +46,9 @@ auto manual(std::string instruction) -> Command
 auto find_volume(const Commands& commands, const IngredientId& id) -> std::optional<units::Litre>
 {
     const auto check_cmd = [&](const Command& cmd) -> std::optional<units::Litre> {
-        if (const auto* dc = std::get_if<DispenseCommand>(&cmd); dc && dc->ingredient == id)
+        if (const auto* dc = std::get_if<DispenseCommand>(&cmd); dc && dc->ingredient == id) {
             return dc->volume;
+        }
         return std::nullopt;
     };
 
@@ -55,17 +56,21 @@ auto find_volume(const Commands& commands, const IngredientId& id) -> std::optio
         if (auto found = std::visit(
                 [&](const auto& v) -> std::optional<units::Litre> {
                     using V = std::decay_t<decltype(v)>;
-                    if constexpr (std::is_same_v<V, Command>)
+                    if constexpr (std::is_same_v<V, Command>) {
                         return check_cmd(v);
+                    }
                     else {
-                        for (const auto& cmd : v)
-                            if (auto vol = check_cmd(cmd))
+                        for (const auto& cmd : v) {
+                            if (auto vol = check_cmd(cmd)) {
                                 return vol;
+                            }
+                        }
                         return std::nullopt;
                     }
                 },
-                item))
+                item)) {
             return found;
+        }
     }
     return std::nullopt;
 }
@@ -83,10 +88,12 @@ auto total_volume(const Commands& commands) -> units::Litre
         std::visit(
             [&](const auto& v) {
                 using V = std::decay_t<decltype(v)>;
-                if constexpr (std::is_same_v<V, Command>)
+                if constexpr (std::is_same_v<V, Command>) {
                     add_cmd(v);
-                else
+                }
+                else {
                     std::ranges::for_each(v, add_cmd);
+                }
             },
             item);
     }
@@ -274,7 +281,7 @@ TEST_CASE("boost: ManualCommand content passes through unchanged", "[boost]")
     const auto result = boost_recipe(commands, 50.0 * units::percent, store);
 
     REQUIRE(result.size() == 3);
-    const auto* cmd = std::get_if<Command>(&result[0]);
+    const auto* cmd = std::get_if<Command>(result.data());
     REQUIRE(cmd != nullptr);
     const auto* mc = std::get_if<ManualCommand>(cmd);
     REQUIRE(mc != nullptr);

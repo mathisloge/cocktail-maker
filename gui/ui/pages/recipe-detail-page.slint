@@ -4,8 +4,9 @@ import { Palette } from "../palette.slint";
 import { CommandListItem, Button, SeperatorText } from "../components.slint";
 
 export component RecipeDetailPage inherits Rectangle {
-    in-out property <RecipeView> recipe;
+    in property <RecipeView> recipe;
     callback create-recipe(int);
+    callback boost-recipe(int);
 
     background: Palette.background-elevated;
     GridLayout {
@@ -97,10 +98,14 @@ export component RecipeDetailPage inherits Rectangle {
                         color: Palette.boost-negative-text;
                     }
 
-                    booster:= Slider {
-                        minimum: 0;
-                        maximum: 100;
-                        value: 50;
+                    booster := Slider {
+                        minimum: -50;
+                        maximum: 50;
+                        value: 0;
+
+                        changed(value) => {
+                            boost-recipe(value);
+                        }
                     }
 
                     Text {

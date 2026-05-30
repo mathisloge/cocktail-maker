@@ -62,6 +62,22 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
         CHECK(model.row_count() == 3);
     }
 
+    SECTION("id is preserved")
+    {
+        cm::RecipeStore recipe_store{{
+            make_recipe("Margherita Pizza", {}),
+            make_recipe("Fungi Pizza", {}),
+        }};
+        RecipeModel model(recipe_store, ingredient_store);
+
+        auto maga_row = model.row_data(0);
+        auto fungi_row = model.row_data(1);
+        REQUIRE(maga_row.has_value());
+        REQUIRE(fungi_row.has_value());
+        CHECK(maga_row->id == 0);
+        CHECK(fungi_row->id == 1);
+    }
+
     SECTION("display_name is preserved as SharedString")
     {
         cm::RecipeStore recipe_store{{make_recipe("Margherita Pizza", {})}};

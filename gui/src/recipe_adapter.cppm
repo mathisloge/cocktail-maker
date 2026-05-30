@@ -61,10 +61,12 @@ std::shared_ptr<slint::Model<Command>> transform(const cm::Commands& commands, c
 
     return model;
 }
+} // namespace
 
-RecipeView transform(Recipe r, const cm::IngredientStore& ingredient_store)
+export RecipeView transform(Recipe r, const cm::IngredientStore& ingredient_store)
 {
     return RecipeView{
+        .id = r.id,
         .name = slint::SharedString{r.display_name.c_str()},
         .tag_line = std::make_shared<slint::VectorModel<slint::SharedString>>(
             std::ranges::to<std::vector>(std::move(r.tags) | std::views::transform([](std::string tag) {
@@ -76,8 +78,6 @@ RecipeView transform(Recipe r, const cm::IngredientStore& ingredient_store)
         .commands = transform(r.commands, ingredient_store),
     };
 }
-
-} // namespace
 
 export class RecipeModel : public slint::Model<RecipeView>
 {

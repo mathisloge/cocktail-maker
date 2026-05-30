@@ -6,6 +6,11 @@ import mp_units;
 import cm;
 import cm.gui;
 
+boost::cobalt::detached my_task(cm::Recipe r)
+{
+    co_await cm::process_commands(std::move(r.commands));
+}
+
 int main(int argc, char** argv)
 {
     const auto recipe_db_path = std::filesystem::path{"/Users/neleschoenrock/Desktop/MathisCode/cocktail-maker/db/recipes"};
@@ -25,26 +30,35 @@ int main(int argc, char** argv)
                                         .boost_category = cm::BoostCategory::reducible});
 
     cm::RecipeStore recipe_store{{
-        cm::Recipe{.display_name = "Mojito",
-                   .description =
-                       "Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, Zucker und Soda – perfekt für "
-                       "den Sommer.",
-                   .tags = {std::string{"classic"}},
-                   .image_path = recipe_db_path / "mojito.png",
-                   .commands =
-                       {
-                           cm::DispenseCommand{.ingredient = "test", .volume = (89 * cm::units::milli_litre)},
-                           cm::DispenseCommand{.ingredient = "test2", .volume = (101 * cm::units::milli_litre)},
-                       }},
+        cm::Recipe{
+            .display_name = "Mojito",
+            .description = "Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, Zucker und Soda – perfekt für "
+                           "den Sommer.",
+            .tags = {std::string{"classic"}},
+            .image_path = recipe_db_path / "mojito.png",
+            .commands =
+                {
+                    cm::DispenseCommand{.ingredient = "test", .volume = (89 * cm::units::milli_litre)},
+                    cm::DispenseCommand{.ingredient = "test2", .volume = (101 * cm::units::milli_litre)},
+                    cm::ParallelCommand{
+                        cm::DispenseCommand{.ingredient = "test", .volume = (101 * cm::units::milli_litre)},
+                        cm::DispenseCommand{.ingredient = "test2", .volume = (101 * cm::units::milli_litre)},
+                    },
+                },
+        },
     }};
 
     auto recipe_model = std::make_shared<cm::gui::RecipeModel>(recipe_store, ingredient_store);
     auto ui = cm::gui::AppWindow::create();
+    boost::asio::io_context ctx;
 
     ui->set_recipes(std::move(recipe_model));
-    ui->on_create_recipe([](const cm::gui::RecipeView& recipe_to_create, int boost) {
+    ui->on_create_recipe([&ctx, &recipe_store](const cm::gui::RecipeView& recipe_to_create, int boost) {
         auto logger = cm::log::create_or_get("ui");
         cm::log::debug(logger, "create recipe '{}' with boost factor '{}'", recipe_to_create.name.begin(), boost);
+
+        auto r = recipe_store.find_by_id(recipe_to_create.id).value();
+        boost::asio::post(ctx, [recipe = std::move(r)]() { my_task(std::move(recipe)); });
     });
 
     ui->on_boost_recipe([&](const int boost_percentage) {
@@ -62,11 +76,13 @@ int main(int argc, char** argv)
         ui->set_selected_recipe(cm::gui::transform(recipe, ingredient_store));
     });
 
-    boost::asio::io_context ctx;
-    std::thread cobalt_thread([&ctx]() {
+    auto work_guard = boost::asio::make_work_guard(ctx);
+    std::thread cobalt_thread([&ctx, recipe = recipe_store.find_by_id(0)]() {
+        auto logger = cm::log::create_or_get("cobalt_main");
         boost::cobalt::this_thread::set_executor(ctx.get_executor());
-
         ctx.run();
+
+        cm::log::info(logger, "Async context finished.");
     });
 
     cm::log::info(*logger, "Run application...");

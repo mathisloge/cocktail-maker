@@ -56,6 +56,7 @@ cpmaddpackage(
     "BOOST_ENABLE_CMAKE ON"
     "BOOST_INCLUDE_LIBRARIES ${BOOST_INCLUDE_LIBRARIES}"
 )
+
 cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite )
 cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_USE_STD_FORMAT ON")
 cpmaddpackage(URI "gh:CLIUtils/CLI11@2.6.2" OPTIONS "CLI11_PRECOMPILED ON")

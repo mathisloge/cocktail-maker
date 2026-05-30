@@ -18,6 +18,7 @@ target_sources(
                 ingredient.cppm
                 recipe.cppm
                 recipe_boost.cppm
+                execute_recipe.cppm
 )
 
 if(BUILD_TESTING)

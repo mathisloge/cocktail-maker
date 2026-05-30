@@ -1,3 +1,4 @@
+#include <boost/cobalt.hpp>
 #include "app-window.h"
 
 import std;
@@ -61,8 +62,18 @@ int main(int argc, char** argv)
         ui->set_selected_recipe(cm::gui::transform(recipe, ingredient_store));
     });
 
+    boost::asio::io_context ctx;
+    std::thread cobalt_thread([&ctx]() {
+        boost::cobalt::this_thread::set_executor(ctx.get_executor());
+
+        ctx.run();
+    });
+
     cm::log::info(*logger, "Run application...");
     ui->run();
-    cm::log::info(*logger, "Application quit. Shutdown.");
+    cm::log::info(*logger, "Application quit. Stopping async context...");
+    ctx.stop();
+    cobalt_thread.join();
+    cm::log::info(*logger, "Async context joined. Finished.");
     return 0;
 }

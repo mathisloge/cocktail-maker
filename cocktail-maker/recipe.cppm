@@ -18,7 +18,8 @@ export struct ManualCommand
 };
 
 export using Command = std::variant<std::monostate, ManualCommand, DispenseCommand>;
-export using Commands = std::vector<Command>;
+export using ParallelCommand = std::vector<Command>;
+export using Commands = std::vector<std::variant<Command, ParallelCommand>>;
 
 export struct Recipe
 {

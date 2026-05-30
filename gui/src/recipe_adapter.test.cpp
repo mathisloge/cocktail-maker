@@ -3,10 +3,12 @@
 #include "app-window.h"
 
 import std;
+import mp_units;
 import cm;
 import cm.gui;
 
 using namespace cm::gui;
+namespace units = cm::units;
 
 namespace {
 
@@ -229,5 +231,245 @@ TEST_CASE("RecipeModel tag uppercasing", "[recipe_adapter][tags]")
         auto tags = get_tags(*model.row_data(0));
         CHECK(tags[0] == "TOP-5");
         CHECK(tags[1] == "30MIN");
+    }
+}
+
+TEST_CASE("transform_command: ManualCommand", "[recipe_adapter][commands]")
+{
+    cm::IngredientStore ingredient_store;
+
+    SECTION("manual command text is preserved")
+    {
+        cm::Recipe r = make_recipe("Test", {});
+        r.commands = {cm::ManualCommand{.instruction = "Stir vigorously for 30 seconds"}};
+
+        RecipeModel model({std::move(r)}, ingredient_store);
+
+        auto row = model.row_data(0);
+        REQUIRE(row.has_value());
+        REQUIRE(row->commands->row_count() == 1);
+
+        auto cmd = row->commands->row_data(0);
+        REQUIRE(cmd.has_value());
+        CHECK(std::string(cmd->text.data()) == "Stir vigorously for 30 seconds");
+        CHECK(cmd->status == CommandStatus::NotStarted);
+    }
+
+    SECTION("manual command with empty instruction is preserved")
+    {
+        cm::Recipe r = make_recipe("Test", {});
+        r.commands = {cm::ManualCommand{.instruction = ""}};
+
+        RecipeModel model({std::move(r)}, ingredient_store);
+
+        auto cmd = model.row_data(0)->commands->row_data(0);
+        REQUIRE(cmd.has_value());
+        CHECK(std::string(cmd->text.data()) == "");
+    }
+
+    SECTION("multiple manual commands appear in order")
+    {
+        cm::Recipe r = make_recipe("Test", {});
+        r.commands = {
+            cm::ManualCommand{.instruction = "First"},
+            cm::ManualCommand{.instruction = "Second"},
+            cm::ManualCommand{.instruction = "Third"},
+        };
+
+        RecipeModel model({std::move(r)}, ingredient_store);
+
+        auto commands = model.row_data(0)->commands;
+        REQUIRE(commands->row_count() == 3);
+        CHECK(std::string(commands->row_data(0)->text.data()) == "First");
+        CHECK(std::string(commands->row_data(1)->text.data()) == "Second");
+        CHECK(std::string(commands->row_data(2)->text.data()) == "Third");
+    }
+
+    SECTION("initial status is NotStarted")
+    {
+        cm::Recipe r = make_recipe("Test", {});
+        r.commands = {cm::ManualCommand{.instruction = "Do something"}};
+
+        RecipeModel model({std::move(r)}, ingredient_store);
+
+        auto cmd = model.row_data(0)->commands->row_data(0);
+        REQUIRE(cmd.has_value());
+        CHECK(cmd->status == CommandStatus::NotStarted);
+    }
+}
+
+TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
+{
+    SECTION("dispense command uses ingredient display name as text")
+    {
+        cm::IngredientStore ingredient_store;
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Rum"});
+
+        cm::Recipe r = make_recipe("Mojito", {});
+        r.commands = {cm::DispenseCommand{
+            .ingredient = cm::IngredientId{1},
+            .volume = 50 * units::milli_litre,
+        }};
+
+        RecipeModel model({std::move(r)}, ingredient_store);
+
+        auto cmd = model.row_data(0)->commands->row_data(0);
+        REQUIRE(cmd.has_value());
+        CHECK(std::string(cmd->text.data()) == "Rum");
+    }
+
+    SECTION("dispense command value contains volume in millilitres")
+    {
+        cm::IngredientStore ingredient_store;
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Gin"});
+
+        cm::Recipe r = make_recipe("G&T", {});
+        r.commands = {cm::DispenseCommand{
+            .ingredient = cm::IngredientId{1},
+            .volume = 50 * units::milli_litre,
+        }};
+
+        RecipeModel model({std::move(r)}, ingredient_store);
+
+        auto cmd = model.row_data(0)->commands->row_data(0);
+        REQUIRE(cmd.has_value());
+        CHECK(std::string(cmd->value.data()) == "50 mL");
+    }
+
+    SECTION("dispense command for unknown ingredient is skipped")
+    {
+        cm::IngredientStore ingredient_store; // empty — no ingredients registered
+
+        cm::Recipe r = make_recipe("Ghost", {});
+        r.commands = {cm::DispenseCommand{
+            .ingredient = cm::IngredientId{99},
+            .volume = 30 * units::milli_litre,
+        }};
+
+        RecipeModel model({std::move(r)}, ingredient_store);
+
+        // Unknown ingredient must be dropped, not crash or produce a null entry
+        CHECK(model.row_data(0)->commands->row_count() == 0);
+    }
+
+    SECTION("dispense command volume is truncated to integer millilitres")
+    {
+        cm::IngredientStore ingredient_store;
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Syrup"});
+
+        cm::Recipe r = make_recipe("Fancy", {});
+        r.commands = {cm::DispenseCommand{
+            .ingredient = cm::IngredientId{1},
+            .volume = 25 * units::milli_litre,
+        }};
+
+        RecipeModel model({std::move(r)}, ingredient_store);
+
+        auto cmd = model.row_data(0)->commands->row_data(0);
+        REQUIRE(cmd.has_value());
+        CHECK(std::string(cmd->value.data()) == "25 mL");
+    }
+
+    SECTION("dispense command status is NotStarted")
+    {
+        cm::IngredientStore ingredient_store;
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Vodka"});
+
+        cm::Recipe r = make_recipe("Test", {});
+        r.commands = {cm::DispenseCommand{
+            .ingredient = cm::IngredientId{1},
+            .volume = 40 * units::milli_litre,
+        }};
+
+        RecipeModel model({std::move(r)}, ingredient_store);
+
+        auto cmd = model.row_data(0)->commands->row_data(0);
+        REQUIRE(cmd.has_value());
+        CHECK(cmd->status == CommandStatus::NotStarted);
+    }
+}
+
+TEST_CASE("transform: ParallelCommand flattening", "[recipe_adapter][commands]")
+{
+    SECTION("parallel commands are flattened into sequential entries")
+    {
+        cm::IngredientStore ingredient_store;
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Lemon Juice"});
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{2}, .display_name = "Sugar Syrup"});
+
+        cm::Recipe r = make_recipe("Lemonade", {});
+        r.commands = {
+            cm::ParallelCommand{
+                cm::DispenseCommand{.ingredient = cm::IngredientId{1}, .volume = 30 * units::milli_litre},
+                cm::DispenseCommand{.ingredient = cm::IngredientId{2}, .volume = 20 * units::milli_litre},
+            },
+        };
+
+        RecipeModel model({std::move(r)}, ingredient_store);
+
+        auto commands = model.row_data(0)->commands;
+        REQUIRE(commands->row_count() == 2);
+        CHECK(std::string(commands->row_data(0)->text.data()) == "Lemon Juice");
+        CHECK(std::string(commands->row_data(1)->text.data()) == "Sugar Syrup");
+    }
+
+    SECTION("unknown ingredient inside parallel command is skipped, others remain")
+    {
+        cm::IngredientStore ingredient_store;
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Mint"});
+
+        cm::Recipe r = make_recipe("Mojito", {});
+        r.commands = {
+            cm::ParallelCommand{
+                cm::DispenseCommand{.ingredient = cm::IngredientId{99}, .volume = 10 * units::milli_litre}, // unknown
+                cm::DispenseCommand{.ingredient = cm::IngredientId{1}, .volume = 40 * units::milli_litre},
+            },
+        };
+
+        RecipeModel model({std::move(r)}, ingredient_store);
+
+        auto commands = model.row_data(0)->commands;
+        REQUIRE(commands->row_count() == 1);
+        CHECK(std::string(commands->row_data(0)->text.data()) == "Mint");
+    }
+
+    SECTION("mix of flat and parallel commands preserves overall order")
+    {
+        cm::IngredientStore ingredient_store;
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Tequila"});
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{2}, .display_name = "Triple Sec"});
+
+        cm::Recipe r = make_recipe("Margarita", {});
+        r.commands = {
+            cm::ManualCommand{.instruction = "Prepare glass"},
+            cm::ParallelCommand{
+                cm::DispenseCommand{.ingredient = cm::IngredientId{1}, .volume = 50 * units::milli_litre},
+                cm::DispenseCommand{.ingredient = cm::IngredientId{2}, .volume = 25 * units::milli_litre},
+            },
+            cm::ManualCommand{.instruction = "Stir and serve"},
+        };
+
+        RecipeModel model({std::move(r)}, ingredient_store);
+
+        auto commands = model.row_data(0)->commands;
+        REQUIRE(commands->row_count() == 4);
+        CHECK(std::string(commands->row_data(0)->text.data()) == "Prepare glass");
+        CHECK(std::string(commands->row_data(1)->text.data()) == "Tequila");
+        CHECK(std::string(commands->row_data(2)->text.data()) == "Triple Sec");
+        CHECK(std::string(commands->row_data(3)->text.data()) == "Stir and serve");
+    }
+}
+
+TEST_CASE("transform: recipe with no commands", "[recipe_adapter][commands]")
+{
+    cm::IngredientStore ingredient_store;
+
+    SECTION("empty command list produces empty command model")
+    {
+        RecipeModel model({make_recipe("Empty", {})}, ingredient_store);
+
+        auto row = model.row_data(0);
+        REQUIRE(row.has_value());
+        CHECK(row->commands->row_count() == 0);
     }
 }

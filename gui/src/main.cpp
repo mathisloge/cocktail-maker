@@ -1,6 +1,7 @@
 #include "app-window.h"
 
 import std;
+import mp_units;
 import cm;
 import cm.gui;
 
@@ -13,15 +14,20 @@ int main(int argc, char** argv)
 
     cm::IngredientStore ingredient_store;
 
+    ingredient_store.add(cm::Ingredient{.id = "test",
+                                        .display_name = "Test Ingredient",
+                                        .type = cm::IngredientType::other,
+                                        .boost_category = cm::BoostCategory::boostable});
+
     auto recipe_model = std::make_shared<cm::gui::RecipeModel>(
         std::vector<cm::Recipe>{
-            cm::Recipe{
-                .display_name = "Mojito",
-                .description = "Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, Zucker und Soda – perfekt für "
-                               "den Sommer.",
-                .tags = {std::string{"classic"}},
-                .image_path = recipe_db_path / "mojito.png",
-            },
+            cm::Recipe{.display_name = "Mojito",
+                       .description =
+                           "Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, Zucker und Soda – perfekt für "
+                           "den Sommer.",
+                       .tags = {std::string{"classic"}},
+                       .image_path = recipe_db_path / "mojito.png",
+                       .commands = {cm::DispenseCommand{.ingredient = "test", .volume = (89 * cm::units::milli_litre)}}},
         },
         ingredient_store);
     auto ui = cm::gui::AppWindow::create();

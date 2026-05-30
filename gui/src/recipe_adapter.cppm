@@ -14,29 +14,49 @@ struct overloaded : Ts...
     using Ts::operator()...;
 };
 
+std::optional<Command> transform_command(const cm::Command& command, const cm::IngredientStore& ingredient_store)
+{
+    return std::visit(overloaded{[](const cm::ManualCommand& manual_command) -> std::optional<Command> {
+                                     return Command{.status = CommandStatus::NotStarted,
+                                                    .text = slint::SharedString{manual_command.instruction.c_str()}};
+                                 },
+                                 [&ingredient_store](const cm::DispenseCommand& dispense_command) -> std::optional<Command> {
+                                     auto ingredient = ingredient_store.find_by_id(dispense_command.ingredient);
+                                     if (!ingredient) {
+                                         return std::nullopt;
+                                     }
+
+                                     auto volume_str = std::format(
+                                         "{}", units::value_cast<std::int32_t>(dispense_command.volume.in(units::milli_litre)));
+
+                                     return Command{.status = CommandStatus::NotStarted,
+                                                    .text = slint::SharedString{ingredient->display_name.c_str()},
+                                                    .value = slint::SharedString{volume_str.c_str()}};
+                                 },
+                                 [](auto&&) -> std::optional<Command> { return std::nullopt; }},
+                      command);
+}
+
 std::shared_ptr<slint::Model<Command>> transform(const cm::Commands& commands, const cm::IngredientStore& ingredient_store)
 {
     auto model = std::make_shared<slint::VectorModel<Command>>();
-    for (auto&& c : commands) {
 
-        std::visit(overloaded{[](const cm::ManualCommand& manual_command) -> std::optional<Command> {
-                                  return std::optional{Command{.status = CommandStatus::NotStarted,
-                                                               .text = slint::SharedString{manual_command.instruction.c_str()}}};
-                              },
-                              [&ingredient_store](const cm::DispenseCommand& dispense_command) -> std::optional<Command> {
-                                  auto volume_str = std::format(
-                                      "{}", units::value_cast<std::int32_t>(dispense_command.volume.in(units::milli_litre)));
-                                  auto&& ingredient = ingredient_store.find_by_id(dispense_command.ingredient);
-                                  if (not ingredient.has_value()) {
-                                      return std::nullopt;
+    const auto push_if_valid = [&](const cm::Command& c) {
+        if (auto transformed = transform_command(c, ingredient_store)) {
+            model->push_back(*transformed);
+        }
+    };
+
+    for (auto&& c : commands) {
+        std::visit(overloaded{[&](const cm::Command& command) { push_if_valid(command); },
+                              [&](const cm::ParallelCommand& commands) {
+                                  for (auto&& c : commands) {
+                                      push_if_valid(c);
                                   }
-                                  return std::optional{Command{.status = CommandStatus::NotStarted,
-                                                               .text = slint::SharedString{ingredient->display_name.c_str()},
-                                                               .value = slint::SharedString{volume_str.c_str()}}};
-                              },
-                              []([[maybe_unused]] auto&& others) -> std::optional<Command> { return std::nullopt; }},
+                              }},
                    c);
     }
+
     return model;
 }
 

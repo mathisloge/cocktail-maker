@@ -6,14 +6,19 @@ import :ingredient;
 import :units;
 
 namespace cm {
+
+export using CommandId = int;
+
 export struct DispenseCommand
 {
+    CommandId id;
     IngredientId ingredient;
     units::Litre volume;
 };
 
 export struct ManualCommand
 {
+    CommandId id;
     std::string instruction;
 };
 
@@ -36,6 +41,44 @@ export struct Recipe
 // TODO: implement simdjson loading with reflection
 std::vector<Recipe> load_from_disk(const std::filesystem::path& path, const IngredientStore& ingredient_store);
 
+namespace {
+template <typename T>
+struct is_variant : std::false_type
+{
+};
+
+template <typename... Ts>
+struct is_variant<std::variant<Ts...>> : std::true_type
+{
+};
+
+template <typename T>
+inline constexpr bool is_variant_v = is_variant<std::remove_cvref_t<T>>::value;
+
+constexpr void assign_unique_command_ids(Recipe& recipe)
+{
+    int next_id = 1;
+    auto visitor = [&next_id](this auto const& self, auto& node) -> void {
+        // Does this node have a command_id? Assign Id.
+        if constexpr (requires { node.id; }) {
+            node.id = next_id++;
+        }
+        // Matches Command and the top-level variants in Commands.
+        else if constexpr (is_variant_v<decltype(node)>) {
+            std::visit(self, node);
+        }
+        // Matches Commands and ParallelCommand (which are std::vector under the hood).
+        else if constexpr (std::ranges::range<decltype(node)>) {
+            for (auto& child : node) {
+                self(child); // Recursively process children
+            }
+        }
+    };
+    visitor(recipe.commands);
+}
+
+} // namespace
+
 export class RecipeStore
 {
   public:
@@ -44,6 +87,7 @@ export class RecipeStore
         int id{0};
         for (auto&& r : recipes) {
             r.id = id++;
+            assign_unique_command_ids(r);
             recipes_.emplace_back(std::move(r));
         }
     }

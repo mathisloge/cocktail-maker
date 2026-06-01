@@ -4,9 +4,13 @@ import std;
 using namespace cm;
 
 namespace {
-Recipe make_recipe(std::string name, std::string description = "")
+Recipe make_recipe(std::string name, std::string description = "", int n_commands = 0)
 {
-    return Recipe{.display_name = std::move(name), .description = std::move(description)};
+    Commands commands;
+    for (int i = 0; i < n_commands; i++) {
+        commands.emplace_back(Command{ManualCommand{.id = 99, .instruction = std::format("N={}", i)}});
+    }
+    return Recipe{.display_name = std::move(name), .description = std::move(description), .commands = std::move(commands)};
 }
 
 std::vector<Recipe> three_recipes()
@@ -53,6 +57,21 @@ TEST_CASE("RecipeStore construction", "[RecipeStore]")
             auto recipe = store.find_by_id(static_cast<int>(i));
             REQUIRE(recipe.has_value());
             CHECK(recipe->id == static_cast<int>(i));
+        }
+    }
+
+    SECTION("command ids are assigned sequentially starting from 0")
+    {
+        RecipeStore store{{make_recipe("Quattro Frommagi", "4 Käse", 4)}};
+        auto recipe = store.find_by_id(0);
+        REQUIRE(recipe.has_value());
+        REQUIRE(recipe->commands.size() == 4);
+        for (int i = 1; i <= recipe->commands.size(); ++i) {
+            auto* common_cmd = std::get_if<Command>(&recipe->commands[i - 1]);
+            REQUIRE(common_cmd != nullptr);
+            auto* cmd = std::get_if<ManualCommand>(common_cmd);
+            REQUIRE(cmd != nullptr);
+            CHECK(cmd->id == i);
         }
     }
 

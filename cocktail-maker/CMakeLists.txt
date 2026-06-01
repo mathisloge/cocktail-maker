@@ -31,6 +31,10 @@ if(BUILD_TESTING)
 
     target_sources(
         cocktail-maker-lib-tests
-        PRIVATE recipe.test.cpp ingredient.test.cpp recipe_boost.test.cpp
+        PRIVATE
+            recipe.test.cpp
+            ingredient.test.cpp
+            recipe_boost.test.cpp
+            execute_recipe.test.cpp
     )
 endif()

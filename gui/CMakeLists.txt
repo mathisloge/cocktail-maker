@@ -7,7 +7,13 @@ slint_target_sources(cocktail-maker-gui
 )
 target_sources(
     cocktail-maker-gui
-    PUBLIC FILE_SET CXX_MODULES FILES src/lib.cppm src/recipe_adapter.cppm
+    PUBLIC
+        FILE_SET CXX_MODULES
+            FILES
+                src/lib.cppm
+                src/recipe_adapter.cppm
+                src/async_ui.cppm
+                src/maschine_adapter.cppm
 )
 
 if(BUILD_TESTING)
@@ -22,7 +28,10 @@ if(BUILD_TESTING)
         PRIVATE TEST_IMAGE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test_assets"
     )
 
-    target_sources(cocktail-maker-gui-tests PRIVATE src/recipe_adapter.test.cpp)
+    target_sources(
+        cocktail-maker-gui-tests
+        PRIVATE src/recipe_adapter.test.cpp src/async_ui.test.cpp
+    )
 endif()
 
 add_executable(cocktail-maker src/main.cpp)

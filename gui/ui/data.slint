@@ -5,6 +5,7 @@ export enum CommandStatus {
     not_started, in_progress, finished,
 }
 export struct Command {
+    id: int,
     status: CommandStatus,
     text: string,
     value: string,

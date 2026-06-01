@@ -6,7 +6,7 @@ import {
 } from "std-widgets.slint";
 
 import { Palette } from "palette.slint";
-import { Page, RecipeView } from "data.slint";
+import { Page, RecipeView, Command, CommandStatus } from "data.slint";
 import { Button } from "components.slint";
 import { RecipeDetailPage, RecipeListPage, MixProgressPage } from "pages.slint";
 import { ManualCommandPopup } from "popups.slint";
@@ -15,9 +15,19 @@ export component AppWindow inherits Window {
     in-out property <Page> current_page: Page.cocktail_list_page;
     in property <[RecipeView]> recipes;
     in-out property <RecipeView> selected_recipe;
+    private property <Command> popup_command;
+
     callback operation_canceled();
     callback boost-recipe(int);
     callback create_recipe(RecipeView, int);
+    callback manual-command-confirmed();
+    public function open-manual-command-popup(command: Command) {
+        root.popup_command = command;
+        popup.show();
+    }
+    public function close-manual-command-popup() {
+        popup.close();
+    }
 
     operation_canceled => {
         current_page = Page.cocktail-list-page;
@@ -26,7 +36,9 @@ export component AppWindow inherits Window {
     popup := ManualCommandPopup {
         width: root.width;
         height: root.height;
+        command: root.popup_command;
         confirmed => {
+            root.manual-command-confirmed();
         }
     }
 

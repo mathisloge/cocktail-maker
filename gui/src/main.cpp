@@ -6,9 +6,9 @@ import mp_units;
 import cm;
 import cm.gui;
 
-boost::cobalt::detached my_task(cm::Recipe r)
+boost::cobalt::detached my_task(cm::Recipe r, std::shared_ptr<cm::BasicMachineAdapter> machine_adapter)
 {
-    co_await cm::process_commands(std::move(r.commands));
+    co_await cm::process_commands(std::move(r.commands), std::move(machine_adapter));
 }
 
 int main(int argc, char** argv)
@@ -40,7 +40,7 @@ int main(int argc, char** argv)
             .commands =
                 {
                     cm::DispenseCommand{.ingredient = "test", .volume = (89 * cm::units::milli_litre)},
-                    cm::DispenseCommand{.ingredient = "test2", .volume = (101 * cm::units::milli_litre)},
+                    cm::ManualCommand{.instruction = "Help me"},
                     cm::ParallelCommand{
                         cm::DispenseCommand{.ingredient = "test", .volume = (101 * cm::units::milli_litre)},
                         cm::DispenseCommand{.ingredient = "test2", .volume = (101 * cm::units::milli_litre)},
@@ -53,13 +53,15 @@ int main(int argc, char** argv)
     auto ui = cm::gui::AppWindow::create();
     boost::asio::io_context ctx;
 
+    auto machine_adapter = std::make_shared<cm::gui::MachineAdapter>(ui, ingredient_store);
+
     ui->set_recipes(std::move(recipe_model));
-    ui->on_create_recipe([&ctx, &recipe_store](const cm::gui::RecipeView& recipe_to_create, int boost) {
+    ui->on_create_recipe([&ctx, &recipe_store, machine_adapter](const cm::gui::RecipeView& recipe_to_create, int boost) {
         auto logger = cm::log::create_or_get("ui");
         cm::log::debug(logger, "create recipe '{}' with boost factor '{}'", recipe_to_create.name.begin(), boost);
 
         auto r = recipe_store.find_by_id(recipe_to_create.id).value();
-        boost::asio::post(ctx, [recipe = std::move(r)]() { my_task(std::move(recipe)); });
+        boost::asio::post(ctx, [recipe = std::move(r), machine_adapter]() { my_task(std::move(recipe), machine_adapter); });
     });
 
     ui->on_boost_recipe([&](const int boost_percentage) {

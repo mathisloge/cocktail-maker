@@ -326,6 +326,23 @@ TEST_CASE("transform_command: ManualCommand", "[recipe_adapter][commands]")
         REQUIRE(cmd.has_value());
         CHECK(cmd->status == CommandStatus::NotStarted);
     }
+
+    SECTION("command ids are copied")
+    {
+        cm::Recipe r = make_recipe("Test", {});
+        r.commands = {cm::ManualCommand{.instruction = "Do something"}, cm::ManualCommand{.instruction = "Do nothing"}};
+
+        cm::RecipeStore recipe_store{{std::move(r)}};
+        RecipeModel model(recipe_store, ingredient_store);
+
+        auto cmd0 = model.row_data(0)->commands->row_data(0);
+        REQUIRE(cmd0.has_value());
+        CHECK(cmd0->id == 1);
+
+        auto cmd1 = model.row_data(0)->commands->row_data(1);
+        REQUIRE(cmd1.has_value());
+        CHECK(cmd1->id == 2);
+    }
 }
 
 TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
@@ -421,6 +438,35 @@ TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
         auto cmd = model.row_data(0)->commands->row_data(0);
         REQUIRE(cmd.has_value());
         CHECK(cmd->status == CommandStatus::NotStarted);
+    }
+
+    SECTION("dispense command id is copied")
+    {
+        cm::IngredientStore ingredient_store;
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Vodka"});
+
+        cm::Recipe r = make_recipe("Test", {});
+        r.commands = {cm::DispenseCommand{
+                          .ingredient = cm::IngredientId{1},
+                          .volume = 40 * units::milli_litre,
+                      },
+                      cm::DispenseCommand{
+                          .ingredient = cm::IngredientId{1},
+                          .volume = 50 * units::milli_litre,
+                      }};
+
+        cm::RecipeStore recipe_store{{std::move(r)}};
+        RecipeModel model(recipe_store, ingredient_store);
+
+        REQUIRE(model.row_data(0)->commands->row_count() == 2);
+
+        auto cmd0 = model.row_data(0)->commands->row_data(0);
+        REQUIRE(cmd0.has_value());
+        CHECK(cmd0->id == 1);
+
+        auto cmd1 = model.row_data(0)->commands->row_data(1);
+        REQUIRE(cmd1.has_value());
+        CHECK(cmd1->id == 2);
     }
 }
 

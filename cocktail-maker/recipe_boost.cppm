@@ -108,9 +108,9 @@ template <typename T, typename Fn>
                     .transform([&](const Ingredient& ing) -> Command {
                         switch (ing.boost_category) {
                         case BoostCategory::boostable:
-                            return DispenseCommand{c.ingredient, c.volume * scales.boostable};
+                            return DispenseCommand{c.id, c.ingredient, c.volume * scales.boostable};
                         case BoostCategory::reducible:
-                            return DispenseCommand{c.ingredient, c.volume * scales.reducible};
+                            return DispenseCommand{c.id, c.ingredient, c.volume * scales.reducible};
                         case BoostCategory::fixed:
                             return cmd;
                         }

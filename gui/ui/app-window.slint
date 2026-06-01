@@ -9,6 +9,7 @@ import { Palette } from "palette.slint";
 import { Page, RecipeView } from "data.slint";
 import { Button } from "components.slint";
 import { RecipeDetailPage, RecipeListPage, MixProgressPage } from "pages.slint";
+import { ManualCommandPopup } from "popups.slint";
 
 export component AppWindow inherits Window {
     in-out property <Page> current_page: Page.cocktail_list_page;
@@ -20,6 +21,13 @@ export component AppWindow inherits Window {
 
     operation_canceled => {
         current_page = Page.cocktail-list-page;
+    }
+
+    popup := ManualCommandPopup {
+        width: root.width;
+        height: root.height;
+        confirmed => {
+        }
     }
 
     preferred-width: 1280px;

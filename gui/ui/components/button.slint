@@ -1,6 +1,3 @@
-// Copyright © SixtyFPS GmbH <info@slint.dev>
-// SPDX-License-Identifier: GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR LicenseRef-Slint-Software-3.0
-
 import { Palette } from "../palette.slint";
 
 export component Button {
@@ -28,7 +25,7 @@ export component Button {
         disabled when !root.enabled : {
             i-background.background: root.secondary ? Palette.background : Palette.accent-dim;
             i-border.border-color: Palette.border-subtle;
-            root.text-color: Palette.text-muted;
+            root.text-color: Palette.text-on-accent;
         }
         pressed when root.pressed : {
             i-background.background: Palette.accent;

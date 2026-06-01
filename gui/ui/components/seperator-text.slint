@@ -1,15 +1,14 @@
 import { Palette } from "../palette.slint";
+import { SmallText } from "./small-text.slint";
 export component SeperatorText {
     in property <string> text;
     HorizontalLayout {
         spacing: 20px;
         align-items: center;
 
-        Text {
+        SmallText {
             text: root.text;
-            font-size: 6pt;
             color: Palette.text-secondary;
-            letter-spacing: 2pt;
         }
 
         Rectangle {

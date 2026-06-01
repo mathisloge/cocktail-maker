@@ -2,7 +2,13 @@
 import { Palette } from "../palette.slint";
 import { RecipeView, CommandStatus } from "../data.slint";
 import { ProgressIndicator, Spinner } from "std-widgets.slint";
-import { SeperatorText, CommandItem } from "../components.slint";
+import {
+    SeperatorText,
+    CommandItem,
+    SmallText,
+    LargeText,
+} from "../components.slint";
+import { MediumText } from "../components/medium-text.slint";
 
 
 export component MixProgressPage inherits Rectangle {
@@ -23,18 +29,15 @@ export component MixProgressPage inherits Rectangle {
                 alignment: start;
                 align-items: center;
                 spacing: 10px;
-                Text {
+                SmallText {
                     text: "NOW CRAFTING";
                     letter-spacing: 2pt;
-                    color: Palette.text-secondary;
-                    font-size: 12pt;
+                    highlight: true;
                 }
 
-                Text {
+                LargeText {
                     text: recipe.name;
-                    color: Palette.text-primary;
-                    font-size: 40pt;
-                    font-weight: FontWeight.bold;
+                    primary: true;
                 }
             }
 
@@ -46,11 +49,9 @@ export component MixProgressPage inherits Rectangle {
                     width: 90%;
                 }
 
-                Text {
+                SmallText {
                     text: "analyzing recipe...";
-                    letter-spacing: 2pt;
                     color: Palette.text-muted;
-                    font-size: 8pt;
                 }
             }
         }

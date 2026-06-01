@@ -1,7 +1,14 @@
 import { ScrollView, HorizontalBox, Slider } from "std-widgets.slint";
 import { RecipeView } from "../data.slint";
 import { Palette } from "../palette.slint";
-import { CommandListItem, Button, SeperatorText } from "../components.slint";
+import {
+    CommandListItem,
+    Button,
+    SeperatorText,
+    LargeText,
+    SmallText,
+} from "../components.slint";
+import { MediumText } from "../components/medium-text.slint";
 
 export component RecipeDetailPage inherits Rectangle {
     in property <RecipeView> recipe;
@@ -9,117 +16,119 @@ export component RecipeDetailPage inherits Rectangle {
     callback boost-recipe(int);
 
     background: Palette.background-elevated;
-    GridLayout {
-        VerticalLayout {
-            width: 33%;
-            padding: 20px;
-            padding-bottom: 60px;
-            rowspan: 1;
-            spacing: 60px;
-            align-items: center;
-            alignment: end;
-            Image {
-                source: recipe.image;
-            }
 
-            Rectangle {
-                width: 90%;
-                background: Palette.border;
-                height: 1px;
-            }
-
-            VerticalLayout {
-                spacing: 10px;
-                align-items: center;
-                alignment: center;
-                Text {
-                    text: recipe.name;
-                    color: Palette.text-primary;
-                    font-size: 40pt;
-                    font-weight: FontWeight.bold;
-                }
-
-                Text {
-                    text: recipe.tag-line[0];
-                    color: Palette.text-secondary;
-                }
-            }
+    sidebar := VerticalLayout {
+        x: 0;
+        y: 0;
+        width: 33%;
+        padding: 20px;
+        padding-bottom: 60px;
+        spacing: 60px;
+        align-items: center;
+        alignment: end;
+        Image {
+            source: recipe.image;
         }
 
         Rectangle {
-            width: 1px;
-            height: 100%;
+            width: 90%;
             background: Palette.border;
+            height: 1px;
         }
 
-        content := VerticalLayout {
-            padding: 20px;
-            padding-top: 40px;
-            padding-bottom: 60px;
-            spacing: 15px;
-            alignment: LayoutAlignment.space-between;
-            rowspan: 2;
+        VerticalLayout {
+            spacing: 10px;
+            align-items: center;
+            alignment: center;
+            LargeText {
+                text: recipe.name;
+                primary: true;
+            }
 
-            VerticalLayout {
-                spacing: content.spacing;
-                Text {
-                    text: recipe.description;
-                    color: Palette.text-muted;
-                    font-size: 12pt;
-                }
+            SmallText {
+                text: recipe.tag-line[0];
+                highlight: true;
+            }
+        }
+    }
 
-                Rectangle { }
+    split := Rectangle {
+        width: 1px;
+        height: 100%;
+        x: sidebar.width;
+        y: 0;
+        background: Palette.border;
+    }
 
-                SeperatorText {
-                    text: "INGREDIENTS:";
-                }
+    content := VerticalLayout {
+        x: split.x + split.width;
+        y: 0;
+        width: root.width - sidebar.width - split.width;
+        padding: 20px;
+        padding-top: 40px;
+        padding-bottom: 60px;
+        spacing: 15px;
+        alignment: LayoutAlignment.space-between;
 
-                GridLayout {
-                    spacing: 10px;
-                    for command in recipe.commands: CommandListItem {
-                        command: command;
-                    }
-                }
+        VerticalLayout {
+            spacing: content.spacing;
+            MediumText {
+                text: recipe.description;
+                color: Palette.text-muted;
+            }
 
-                SeperatorText {
-                    text: "ALCOHOL BOOST:";
-                }
+            Rectangle { }
 
-                Text {
-                    text: "💪 Strength Adjustment";
-                    color: Palette.text-primary;
-                    font-size: 20pt;
-                }
+            SeperatorText {
+                text: "INGREDIENTS:";
+            }
 
-                HorizontalBox {
-                    align-items: LayoutAlignItems.center;
-                    Text {
-                        text: "mild";
-                        color: Palette.boost-negative-text;
-                    }
-
-                    booster := Slider {
-                        minimum: -50;
-                        maximum: 50;
-                        value: 0;
-
-                        changed(value) => {
-                            boost-recipe(value);
-                        }
-                    }
-
-                    Text {
-                        text: "strong";
-                        color: Palette.boost-positive-text;
-                    }
+            GridLayout {
+                spacing: 10px;
+                for command[index] in recipe.commands: CommandListItem {
+                    row: index / 2;
+                    col: Math.mod(index, 2);
+                    command: command;
                 }
             }
 
-            Button {
-                text: "Prepare Cocktail →";
-                clicked => {
-                    root.create-recipe(booster.value);
+            SeperatorText {
+                text: "ALCOHOL BOOST:";
+            }
+
+            MediumText {
+                text: "💪 Strength Adjustment";
+                primary: true;
+            }
+
+            HorizontalBox {
+                align-items: LayoutAlignItems.center;
+                SmallText {
+                    text: "mild";
+                    color: Palette.boost-negative-text;
                 }
+
+                booster := Slider {
+                    minimum: -50;
+                    maximum: 50;
+                    value: 0;
+
+                    changed(value) => {
+                        boost-recipe(value);
+                    }
+                }
+
+                SmallText {
+                    text: "strong";
+                    color: Palette.boost-positive-text;
+                }
+            }
+        }
+
+        Button {
+            text: "Prepare Cocktail →";
+            clicked => {
+                root.create-recipe(booster.value);
             }
         }
     }

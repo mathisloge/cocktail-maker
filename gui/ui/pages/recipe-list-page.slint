@@ -12,7 +12,9 @@ export component RecipeListPage inherits Rectangle {
         GridLayout {
             padding: 10px;
             spacing: 5px;
-            for recipe in recipes: RecipeCard {
+            for recipe[index] in recipes: RecipeCard {
+                row: index / 3;
+                col: Math.mod(index, 3);
                 recipe: recipe;
                 clicked => {
                     root.recipe-selected(recipe)

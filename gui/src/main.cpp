@@ -29,8 +29,9 @@ int main(int argc, char** argv)
                                         .type = cm::IngredientType::other,
                                         .boost_category = cm::BoostCategory::reducible});
 
-    cm::RecipeStore recipe_store{{
-        cm::Recipe{
+    std::vector<cm::Recipe> recipes;
+    for (int i = 0; i < 10; i++) {
+        recipes.emplace_back(cm::Recipe{
             .display_name = "Mojito",
             .description = "Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, Zucker und Soda – perfekt für "
                            "den Sommer.",
@@ -45,9 +46,9 @@ int main(int argc, char** argv)
                         cm::DispenseCommand{.ingredient = "test2", .volume = (101 * cm::units::milli_litre)},
                     },
                 },
-        },
-    }};
-
+        });
+    }
+    cm::RecipeStore recipe_store{std::move(recipes)};
     auto recipe_model = std::make_shared<cm::gui::RecipeModel>(recipe_store, ingredient_store);
     auto ui = cm::gui::AppWindow::create();
     boost::asio::io_context ctx;

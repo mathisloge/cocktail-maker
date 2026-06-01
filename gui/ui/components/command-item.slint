@@ -1,6 +1,7 @@
 import { Palette } from "../palette.slint";
 import { Command, CommandStatus } from "../data.slint";
 import { Spinner } from "std-widgets.slint";
+import { MediumText } from "medium-text.slint";
 
 export component CommandItem inherits Rectangle {
     in property <Command> command;
@@ -13,16 +14,13 @@ export component CommandItem inherits Rectangle {
         alignment: LayoutAlignment.space-between;
         align-items: center;
         padding: 10px;
-        Text {
+        MediumText {
             text: command.text + " - " + command.value;
-            font-size: 12pt;
-            color: Palette.text-primary;
+            primary: true;
         }
 
-        if command.status == CommandStatus.not-started: Text {
-            font-size: 12pt;
+        if command.status == CommandStatus.not-started: MediumText {
             text: "not started";
-            color: Palette.text-secondary;
         }
 
         if command.status == CommandStatus.in-progress: Spinner {
@@ -30,10 +28,8 @@ export component CommandItem inherits Rectangle {
             indeterminate: true;
         }
 
-        if command.status == CommandStatus.finished: Text {
-            font-size: 12pt;
+        if command.status == CommandStatus.finished: MediumText {
             text: "✓";
-            color: Palette.text-secondary;
         }
     }
 

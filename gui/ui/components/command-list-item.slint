@@ -1,5 +1,6 @@
 import { Palette } from "../palette.slint";
 import { Command } from "../data.slint";
+import { MediumText } from "medium-text.slint";
 
 export component CommandListItem {
     in property <Command> command;
@@ -7,16 +8,13 @@ export component CommandListItem {
         spacing: 10px;
         HorizontalLayout {
             alignment: LayoutAlignment.space-between;
-            Text {
-                font-size: 10pt;
+            MediumText {
                 text: command.text;
-                color: Palette.text-primary;
+                primary: true;
             }
 
-            Text {
-                font-size: 10pt;
+            MediumText {
                 text: command.value;
-                color: Palette.text-secondary;
             }
         }
 

@@ -2,8 +2,9 @@ import { Palette } from "../palette.slint";
 
 export component LargeText inherits Text {
     in property <bool> primary;
-    color: primary ? Palette.text-primary : Palette.text-muted;
+    color: primary ? Palette.text-primary : Palette.text-secondary;
     letter-spacing: 1.5pt;
-    font-size: 32pt;
+    font-size: 42pt;
+    font-weight: FontWeight.bold;
     horizontal-alignment: center;
 }

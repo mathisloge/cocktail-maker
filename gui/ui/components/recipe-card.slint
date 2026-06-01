@@ -16,8 +16,8 @@ export component RecipeCard inherits Rectangle {
     background: Palette.background-card;
     animate background { duration: 200ms; }
 
-    width: 250px;
-    height: 250px;
+    preferred-width: 250px;
+    height: self.width;
 
     ta := TouchArea {
         mouse-cursor: pointer;
@@ -36,24 +36,25 @@ export component RecipeCard inherits Rectangle {
         border-color: Palette.border;
         border-width: 2px;
         background: Palette.background-elevated;
-        height: parent.height / 4;
-        width: parent.width;
-        y: parent.height - self.height;
+        height: name-text.height + tags-text.height + 30px;
+        width: 100%;
+        y: root.height - self.height;
+        name-text := MediumText {
+            x: 20px;
+            y: 10px;
+            font-weight: FontWeight.bold;
+            font-size: 28pt;
+            text: recipe.name;
+            primary: true;
+            font-italic: true;
+        }
 
-        VerticalBox {
-            width: parent.width;
-            height: parent.height;
-            padding: 20px;
-            MediumText {
-                text: recipe.name;
-                primary: true;
-            }
-
-            SmallText {
-                text: recipe.tag-line[0];
-                highlight: true;
-                horizontal-alignment: left;
-            }
+        tags-text := SmallText {
+            x: 20px;
+            y: name-text.y + name-text.height + 10px;
+            text: recipe.tag-line[0];
+            highlight: true;
+            horizontal-alignment: left;
         }
     }
 

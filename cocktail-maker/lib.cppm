@@ -6,3 +6,4 @@ export import :ingredient;
 export import :recipe;
 export import :recipe_boost;
 export import :execute_recipe;
+export import :machine_protocol;

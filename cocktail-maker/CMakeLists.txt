@@ -5,6 +5,7 @@ target_compile_features(cocktail-maker-lib PUBLIC cxx_std_26)
 target_link_libraries(
     cocktail-maker-lib
     PUBLIC mp-units::mp-units spdlog::spdlog simdjson::simdjson Boost::cobalt
+    PRIVATE proto
 )
 
 target_sources(
@@ -12,13 +13,14 @@ target_sources(
     PUBLIC
         FILE_SET CXX_MODULES
             FILES
+                execute_recipe.cppm
+                ingredient.cppm
                 lib.cppm
                 logging.cppm
-                units.cppm
-                ingredient.cppm
-                recipe.cppm
+                machine_protocol.cppm
                 recipe_boost.cppm
-                execute_recipe.cppm
+                recipe.cppm
+                units.cppm
 )
 
 if(BUILD_TESTING)
@@ -32,9 +34,10 @@ if(BUILD_TESTING)
     target_sources(
         cocktail-maker-lib-tests
         PRIVATE
-            recipe.test.cpp
-            ingredient.test.cpp
-            recipe_boost.test.cpp
             execute_recipe.test.cpp
+            ingredient.test.cpp
+            machine_protocol.test.cpp
+            recipe_boost.test.cpp
+            recipe.test.cpp
     )
 endif()

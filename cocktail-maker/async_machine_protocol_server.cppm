@@ -12,7 +12,7 @@ module;
 #include <proto/input/ServerInputMessages.h>
 #include <proto/options/ServerDefaultOptions.h>
 
-export module cm:machine_protocol;
+export module cm:async_machine_protocol_server;
 
 import std;
 import :logging;

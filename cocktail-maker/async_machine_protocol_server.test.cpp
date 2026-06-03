@@ -13,6 +13,8 @@ using TestInMsg2 = cm::InMsg1;
 using TestClientOutFrame = cm::OutFrame;
 using TestClientOutMsg2 = cm::Msg2;
 
+constexpr cm::TransactionId::ValueType kTestTransaction = 212;
+
 struct AsyncServerTestFixture
 {
     boost::asio::io_context ioc;
@@ -82,6 +84,8 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Sends Mes
 
         REQUIRE(!ec);
         CHECK(bytes_read > 0);
+
+        CHECK(static_cast<int>(buffer[6]) == 1);
     });
 }
 
@@ -94,6 +98,8 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Successfu
         TestInMsg2 out_msg;
         TestClientOutFrame frame;
 
+        out_msg.transportField_transactionId().setValue(kTestTransaction);
+
         std::vector<uint8_t> buffer(frame.length(out_msg));
         auto* iter = buffer.data();
         auto write_es = frame.write(out_msg, iter, buffer.size());
@@ -101,7 +107,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Successfu
 
         // 1. Invoke async_receive first. This synchronously registers the channel in dispatch_map_
         //    before suspending. We hold onto the returned promise/task.
-        auto recv_task = server.async_receive<TestInMsg2>(std::chrono::milliseconds(500));
+        auto recv_task = server.async_receive<TestInMsg2>(kTestTransaction, std::chrono::milliseconds(500));
 
         // 2. Safely blast the data over the socket.
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer), boost::cobalt::use_op);
@@ -124,6 +130,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive F
 
     run_test(server, [&]() -> boost::cobalt::task<void> {
         TestInMsg2 out_msg;
+        out_msg.transportField_transactionId().setValue(kTestTransaction);
         TestClientOutFrame frame;
         std::vector<uint8_t> buffer(frame.length(out_msg));
         auto* iter = buffer.data();
@@ -132,7 +139,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive F
         REQUIRE(buffer.size() > 1);
         size_t half = buffer.size() / 2;
 
-        auto recv_task = server.async_receive<TestInMsg2>(std::chrono::milliseconds(500));
+        auto recv_task = server.async_receive<TestInMsg2>(kTestTransaction, std::chrono::milliseconds(500));
 
         // Write first half (simulating TCP fragmentation)
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer.data(), half), boost::cobalt::use_op);
@@ -172,12 +179,13 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive I
 
     run_test(server, [&]() -> boost::cobalt::task<void> {
         TestInMsg2 out_msg;
+        out_msg.transportField_transactionId().setValue(kTestTransaction);
         TestClientOutFrame frame;
         std::vector<uint8_t> buffer(frame.length(out_msg));
         auto* iter = buffer.data();
         frame.write(out_msg, iter, buffer.size());
 
-        auto recv_task = server.async_receive<TestInMsgFake>(std::chrono::milliseconds(500));
+        auto recv_task = server.async_receive<TestInMsgFake>(kTestTransaction, std::chrono::milliseconds(500));
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer), boost::cobalt::use_op);
         auto res = co_await recv_task;
 
@@ -195,25 +203,23 @@ TEST_CASE_METHOD(AsyncServerTestFixture,
 
     run_test(server, [&]() -> boost::cobalt::task<void> {
         TestInMsg2 out_msg;
+        out_msg.transportField_transactionId().setValue(kTestTransaction);
         TestClientOutFrame frame;
         std::vector<uint8_t> buffer(frame.length(out_msg));
         auto* iter = buffer.data();
         frame.write(out_msg, iter, buffer.size());
 
-        auto recv_task = server.async_receive<TestInMsg2>(std::chrono::milliseconds(500));
+        auto recv_task1 = server.async_receive<TestInMsg2>(100, std::chrono::milliseconds(500));
+        auto recv_task2 = server.async_receive<TestInMsg2>(kTestTransaction, std::chrono::milliseconds(500));
 
         // Blast identical messages over the socket
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer), boost::cobalt::use_op);
-        co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer), boost::cobalt::use_op);
 
-        auto res1 = co_await recv_task;
-        REQUIRE(res1.has_value());
-
-        // Second duplicate message is orphaned and safely dropped in background.
-        // A new receive requests TransactionId 1. It will time out because we aren't sending one.
-        auto res2 = co_await server.async_receive<TestInMsg2>(std::chrono::milliseconds(50));
-        REQUIRE_FALSE(res2.has_value());
-        CHECK(res2.error() == comms::ErrorStatus::ProtocolError);
+        auto res1 = co_await recv_task1;
+        auto res2 = co_await recv_task2;
+        REQUIRE_FALSE(res1.has_value());
+        REQUIRE(res2.has_value());
+        CHECK(res1.error() == comms::ErrorStatus::ProtocolError);
     });
 }
 
@@ -223,7 +229,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive T
     boost::cobalt::spawn(ioc, server.run(), boost::asio::detached);
 
     run_test(server, [&]() -> boost::cobalt::task<void> {
-        auto res = co_await server.async_receive<TestInMsg2>(std::chrono::milliseconds(10));
+        auto res = co_await server.async_receive<TestInMsg2>(kTestTransaction, std::chrono::milliseconds(10));
         REQUIRE_FALSE(res.has_value());
         CHECK(res.error() == comms::ErrorStatus::ProtocolError);
     });

@@ -145,9 +145,8 @@ class AsyncMachineProtocolServer
     }
 
     template <typename ExpectedMsg>
-    cobalt::promise<std::expected<ExpectedMsg, comms::ErrorStatus>> async_receive(std::chrono::milliseconds timeout)
+    cobalt::promise<std::expected<ExpectedMsg, comms::ErrorStatus>> async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
     {
-        const auto transaction_id = transaction_id_counter_++;
         auto chan = get_or_create_channel(transaction_id);
 
         // Garbage Collection: Ensures stale/timed-out keys are erased from the map
@@ -211,10 +210,14 @@ class AsyncMachineProtocolServer
         co_return {};
     }
 
-    cobalt::promise<std::expected<void, comms::ErrorStatus>> async_send(auto msg)
+    cobalt::promise<std::expected<TransactionId::ValueType, comms::ErrorStatus>> async_send(auto msg)
     {
         OutFrame frame;
         std::vector<std::uint8_t> output;
+
+        // Add unique transaction id to frame.
+        const auto transaction_id = ++transaction_id_counter_;
+        msg.transportField_transactionId().setValue(transaction_id);
 
         // Use polymorphic serialization length calculation to create
         // buffer of the requires size
@@ -233,7 +236,7 @@ class AsyncMachineProtocolServer
 
         try {
             co_await write_queue_.write(std::move(output));
-            co_return {};
+            co_return transaction_id;
         }
         catch (...) {
             // Reached only if shutdown_channels() closes the queue

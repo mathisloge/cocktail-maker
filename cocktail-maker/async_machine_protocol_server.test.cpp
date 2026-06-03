@@ -228,3 +228,40 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive T
         CHECK(res.error() == comms::ErrorStatus::ProtocolError);
     });
 }
+
+TEST_CASE_METHOD(AsyncServerTestFixture,
+                 "AsyncMachineProtocolServer - Receive Multiple Events via Generator",
+                 "[receive_events][success]")
+{
+    Server server(std::move(server_socket));
+    boost::cobalt::spawn(ioc, server.run(), boost::asio::detached);
+
+    run_test(server, [&]() -> boost::cobalt::task<void> {
+        TestInMsg2 out_msg;
+        TestClientOutFrame frame;
+        std::vector<uint8_t> buffer;
+
+        // Construct a buffer containing 3 consecutive messages
+      for (int i = 0; i < 3; ++i) {
+            size_t start = buffer.size();
+            buffer.resize(start + frame.length(out_msg));
+            auto* iter = buffer.data() + start; 
+            REQUIRE(frame.write(out_msg, iter, buffer.size() - start) == comms::ErrorStatus::Success);
+        }
+
+
+        // Create the event subscriber (Generator)
+        auto events = server.async_receive_events<TestInMsg2>();
+
+        // Blast all 3 messages over the socket
+        co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer), boost::cobalt::use_op);
+
+        // Await them in a loop
+        for (int i = 0; i < 3; ++i) {
+            auto ev = co_await events;
+            REQUIRE(std::holds_alternative<TestInMsg2>(ev));
+        }
+
+        CHECK(true);
+    });
+}

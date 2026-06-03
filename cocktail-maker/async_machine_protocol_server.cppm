@@ -52,8 +52,9 @@ class AsyncMachineProtocolServer
     AsyncStream stream_;
     cobalt::channel<std::vector<uint8_t>> write_queue_;
     using ChannelPtr = std::shared_ptr<cobalt::channel<InFrame::MsgPtr>>;
-    std::unordered_map<uint32_t, ChannelPtr> dispatch_map_;
-    proto::FrameInterfaceFields::TransactionId::ValueType transaction_id_counter_{0};
+    std::unordered_map<TransactionId::ValueType, ChannelPtr> dispatch_map_;
+    TransactionId::ValueType transaction_id_counter_{0};
+    std::unordered_multimap<proto::MsgId, ChannelPtr> event_dispatch_map_;
     bool is_running_ = false;
 
     struct ShutdownSignal
@@ -143,24 +144,6 @@ class AsyncMachineProtocolServer
         }
     }
 
-    cobalt::promise<InFrame::MsgPtr> read_with_timeout(cobalt::channel<InFrame::MsgPtr>& chan, std::chrono::milliseconds timeout)
-    {
-        // 1. Instantiate the timer on this coroutine's executor
-        boost::asio::steady_timer timer{stream_.get_executor()};
-        timer.expires_after(timeout);
-
-        // 2. Race the channel read against the timer
-        auto res = co_await cobalt::race(chan.read(), timer.async_wait(cobalt::use_op));
-
-        // 3. If index 1 wins, the timer fired first (Timeout)
-        if (res.index() == 1) {
-            throw boost::system::system_error(asio::error::operation_aborted);
-        }
-
-        // 4. Otherwise, return the parsed message cleanly
-        co_return std::move(boost::variant2::get<0>(res));
-    }
-
     template <typename ExpectedMsg>
     cobalt::promise<std::expected<ExpectedMsg, comms::ErrorStatus>> async_receive(std::chrono::milliseconds timeout)
     {
@@ -193,6 +176,41 @@ class AsyncMachineProtocolServer
         }
     };
 
+    template <typename... ExpectedEvents>
+    cobalt::generator<std::variant<std::monostate, ExpectedEvents...>> async_receive_events()
+    {
+        auto channel = std::make_shared<cobalt::channel<InFrame::MsgPtr>>(10);
+        EventSubscriptionGuard guard{this, channel, std::vector{static_cast<proto::MsgId>(ExpectedEvents::staticMsgId())...}};
+        co_await cobalt::this_coro::initial;
+
+        while (is_running_) {
+            InFrame::MsgPtr msg;
+            try {
+                msg = co_await channel->read();
+            }
+            catch (...) {
+                break; // Server shut down or channel closed
+            }
+
+            std::optional<std::variant<std::monostate, ExpectedEvents...>> matched_event;
+
+            bool _ = ([&]() -> bool {
+                if (msg->getId() == ExpectedEvents::staticMsgId()) {
+                    if (auto* concrete_ptr = dynamic_cast<ExpectedEvents*>(msg.get())) {
+                        matched_event = std::move(*concrete_ptr);
+                        return true;
+                    }
+                }
+                return false;
+            }() || ...);
+
+            if (matched_event.has_value()) {
+                co_yield std::move(*matched_event);
+            }
+        }
+        co_return {};
+    }
+
     cobalt::promise<std::expected<void, comms::ErrorStatus>> async_send(auto msg)
     {
         OutFrame frame;
@@ -224,6 +242,24 @@ class AsyncMachineProtocolServer
     }
 
   private:
+    cobalt::promise<InFrame::MsgPtr> read_with_timeout(cobalt::channel<InFrame::MsgPtr>& chan, std::chrono::milliseconds timeout)
+    {
+        // 1. Instantiate the timer on this coroutine's executor
+        boost::asio::steady_timer timer{stream_.get_executor()};
+        timer.expires_after(timeout);
+
+        // 2. Race the channel read against the timer
+        auto res = co_await cobalt::race(chan.read(), timer.async_wait(cobalt::use_op));
+
+        // 3. If index 1 wins, the timer fired first (Timeout)
+        if (res.index() == 1) {
+            throw boost::system::system_error(asio::error::operation_aborted);
+        }
+
+        // 4. Otherwise, return the parsed message cleanly
+        co_return std::move(boost::variant2::get<0>(res));
+    }
+
     ChannelPtr get_or_create_channel(proto::FrameInterfaceFields::TransactionId::ValueType id)
     {
         auto it = dispatch_map_.find(id);
@@ -236,10 +272,15 @@ class AsyncMachineProtocolServer
     void shutdown_channels()
     {
         write_queue_.close();
-        for (auto& [id, chan] : dispatch_map_) {
+        for (auto&& [id, chan] : dispatch_map_) {
             chan->close();
         }
         dispatch_map_.clear();
+
+        for (auto&& [msg_id, chan] : event_dispatch_map_) {
+            chan->close();
+        }
+        event_dispatch_map_.clear();
     }
 
     cobalt::task<void> write_loop()
@@ -272,7 +313,6 @@ class AsyncMachineProtocolServer
         std::vector<std::uint8_t> rx_buffer(4096);
         std::size_t valid_bytes = 0;
 
-        // Modernized: safe, type-safe sliding window shifting via standard algorithms
         auto consume_front = [&](std::size_t count) {
             if (count == 0) {
                 return;
@@ -343,6 +383,23 @@ class AsyncMachineProtocolServer
                         log::warn{logger_, "Dispatch failed for TX ID {}: {}", transaction_id, write_error.what()};
                     }
                 }
+                else {
+                    const auto msg_id = msg->getId();
+                    auto sub_it = event_dispatch_map_.find(msg_id);
+
+                    if (sub_it != event_dispatch_map_.end()) {
+                        try {
+                            // Yields to the *first* local channel listening for this specific message.
+                            co_await sub_it->second->write(std::move(msg));
+                        }
+                        catch (...) {
+                            log::warn{logger_, "Failed to route event with ID {} to its subscriber.", static_cast<int>(msg_id)};
+                        }
+                    }
+                    else {
+                        log::debug{logger_, "Discarding unhandled asynchronous event with ID: {}", static_cast<int>(msg_id)};
+                    }
+                }
 
                 consume_front(consumed);
             }
@@ -357,6 +414,40 @@ class AsyncMachineProtocolServer
         ~CleanupGuard()
         {
             client->dispatch_map_.erase(transaction_id);
+        }
+    };
+
+    // RAII guard to cleanly manage Subscriptions mapping locally
+    struct EventSubscriptionGuard
+    {
+        AsyncMachineProtocolServer<AsyncStream>* server;
+        ChannelPtr channel;
+        std::vector<proto::MsgId> ids;
+
+        EventSubscriptionGuard(AsyncMachineProtocolServer<AsyncStream>* s, ChannelPtr c, std::vector<proto::MsgId> i)
+            : server(s)
+            , channel(std::move(c))
+            , ids(std::move(i))
+        {
+            for (auto id : ids) {
+                server->event_dispatch_map_.emplace(id, channel);
+            }
+        }
+
+        ~EventSubscriptionGuard()
+        {
+            // Erase specifically this channel's mappings to avoid unregistering parallel listeners
+            for (auto id : ids) {
+                auto range = server->event_dispatch_map_.equal_range(id);
+                for (auto it = range.first; it != range.second;) {
+                    if (it->second == channel) {
+                        it = server->event_dispatch_map_.erase(it);
+                    }
+                    else {
+                        ++it;
+                    }
+                }
+            }
         }
     };
 };

@@ -9,9 +9,9 @@ import cm;
 using Socket = boost::asio::local::stream_protocol::socket;
 using Server = cm::AsyncMachineProtocolServer<Socket>;
 
-using TestInMsg2 = cm::InMsg1;
+using TestTxMsg = cm::OutPing;
+using TestRxMsg = cm::InPong;
 using TestClientOutFrame = cm::OutFrame;
-using TestClientOutMsg2 = cm::Msg2;
 
 constexpr cm::TransactionId::ValueType kTestTransaction = 212;
 
@@ -74,7 +74,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Sends Mes
     boost::cobalt::spawn(ioc, server.run(), boost::asio::detached);
 
     run_test(server, [&]() -> boost::cobalt::task<void> {
-        cm::Msg2 msg;
+        TestTxMsg msg;
         auto send_res = co_await server.async_send(msg);
         REQUIRE(send_res.has_value());
 
@@ -95,7 +95,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Successfu
     boost::cobalt::spawn(ioc, server.run(), boost::asio::detached);
 
     run_test(server, [&]() -> boost::cobalt::task<void> {
-        TestInMsg2 out_msg;
+        TestRxMsg out_msg;
         TestClientOutFrame frame;
 
         out_msg.transportField_transactionId().setValue(kTestTransaction);
@@ -107,7 +107,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Successfu
 
         // 1. Invoke async_receive first. This synchronously registers the channel in dispatch_map_
         //    before suspending. We hold onto the returned promise/task.
-        auto recv_task = server.async_receive<TestInMsg2>(kTestTransaction, std::chrono::milliseconds(500));
+        auto recv_task = server.async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(500));
 
         // 2. Safely blast the data over the socket.
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer), boost::cobalt::use_op);
@@ -119,7 +119,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Successfu
             FAIL("async_receive failed. comms::ErrorStatus: " << static_cast<int>(res.error()));
         }
         REQUIRE(res.has_value());
-        CHECK(res.value().getId() == TestInMsg2::staticMsgId());
+        CHECK(res.value().getId() == TestRxMsg::staticMsgId());
     });
 }
 
@@ -129,7 +129,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive F
     boost::cobalt::spawn(ioc, server.run(), boost::asio::detached);
 
     run_test(server, [&]() -> boost::cobalt::task<void> {
-        TestInMsg2 out_msg;
+        TestRxMsg out_msg;
         out_msg.transportField_transactionId().setValue(kTestTransaction);
         TestClientOutFrame frame;
         std::vector<uint8_t> buffer(frame.length(out_msg));
@@ -139,7 +139,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive F
         REQUIRE(buffer.size() > 1);
         size_t half = buffer.size() / 2;
 
-        auto recv_task = server.async_receive<TestInMsg2>(kTestTransaction, std::chrono::milliseconds(500));
+        auto recv_task = server.async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(500));
 
         // Write first half (simulating TCP fragmentation)
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer.data(), half), boost::cobalt::use_op);
@@ -159,7 +159,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive F
     });
 }
 
-struct TestInMsgFake : public TestInMsg2
+struct TestInMsgFake : public TestRxMsg
 {
     static constexpr bool hasStaticMsgId()
     {
@@ -178,7 +178,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive I
     boost::cobalt::spawn(ioc, server.run(), boost::asio::detached);
 
     run_test(server, [&]() -> boost::cobalt::task<void> {
-        TestInMsg2 out_msg;
+        TestRxMsg out_msg;
         out_msg.transportField_transactionId().setValue(kTestTransaction);
         TestClientOutFrame frame;
         std::vector<uint8_t> buffer(frame.length(out_msg));
@@ -202,15 +202,15 @@ TEST_CASE_METHOD(AsyncServerTestFixture,
     boost::cobalt::spawn(ioc, server.run(), boost::asio::detached);
 
     run_test(server, [&]() -> boost::cobalt::task<void> {
-        TestInMsg2 out_msg;
+        TestRxMsg out_msg;
         out_msg.transportField_transactionId().setValue(kTestTransaction);
         TestClientOutFrame frame;
         std::vector<uint8_t> buffer(frame.length(out_msg));
         auto* iter = buffer.data();
         frame.write(out_msg, iter, buffer.size());
 
-        auto recv_task1 = server.async_receive<TestInMsg2>(100, std::chrono::milliseconds(500));
-        auto recv_task2 = server.async_receive<TestInMsg2>(kTestTransaction, std::chrono::milliseconds(500));
+        auto recv_task1 = server.async_receive<TestRxMsg>(100, std::chrono::milliseconds(500));
+        auto recv_task2 = server.async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(500));
 
         // Blast identical messages over the socket
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer), boost::cobalt::use_op);
@@ -229,7 +229,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive T
     boost::cobalt::spawn(ioc, server.run(), boost::asio::detached);
 
     run_test(server, [&]() -> boost::cobalt::task<void> {
-        auto res = co_await server.async_receive<TestInMsg2>(kTestTransaction, std::chrono::milliseconds(10));
+        auto res = co_await server.async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(10));
         REQUIRE_FALSE(res.has_value());
         CHECK(res.error() == comms::ErrorStatus::ProtocolError);
     });
@@ -243,7 +243,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture,
     boost::cobalt::spawn(ioc, server.run(), boost::asio::detached);
 
     run_test(server, [&]() -> boost::cobalt::task<void> {
-        TestInMsg2 out_msg;
+        TestRxMsg out_msg;
         TestClientOutFrame frame;
         std::vector<uint8_t> buffer;
 
@@ -256,7 +256,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture,
         }
 
         // Create the event subscriber (Generator)
-        auto events = server.async_receive_events<TestInMsg2>();
+        auto events = server.async_receive_events<TestRxMsg>();
 
         // Blast all 3 messages over the socket
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer), boost::cobalt::use_op);
@@ -264,7 +264,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture,
         // Await them in a loop
         for (int i = 0; i < 3; ++i) {
             auto ev = co_await events;
-            REQUIRE(std::holds_alternative<TestInMsg2>(ev));
+            REQUIRE(std::holds_alternative<TestRxMsg>(ev));
         }
 
         CHECK(true);

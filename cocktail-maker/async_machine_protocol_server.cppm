@@ -8,8 +8,8 @@ module;
 #include <proto/FrameInterface.h>
 #include <proto/dispatch/DispatchServerInputMessage.h>
 #include <proto/frame/Frame.h>
+#include <proto/input/AllMessages.h>
 #include <proto/input/ServerInputMessages.h>
-#include <proto/message/Msg2.h>
 #include <proto/options/ServerDefaultOptions.h>
 
 export module cm:machine_protocol;
@@ -31,17 +31,20 @@ using InMessage = proto::FrameInterface<comms::option::app::ReadIterator<const s
 using InFrame = proto::frame::Frame<InMessage, proto::input::ServerInputMessages<InMessage>, ServerOptions>;
 
 // All server input messages
-PROTO_ALIASES_FOR_SERVER_INPUT_MESSAGES_DEFAULT_OPTIONS(In, , InMessage);
+export using InPong = proto::message::Pong<InMessage>;
+export using InAck = proto::message::Ack<InMessage>;
+export using InDeviceInfoResponse = proto::message::DeviceInfoResponse<InMessage>;
 
 export using OutMessage = proto::FrameInterface<comms::option::app::WriteIterator<std::uint8_t*>,
                                                 comms::option::app::LengthInfoInterface,
                                                 comms::option::app::IdInfoInterface,
                                                 comms::option::app::NameInterface>;
-
 export using OutFrame = proto::frame::Frame<OutMessage, std::tuple<>, ServerOptions>;
 
 // Declaration of output messages
-export using Msg2 = proto::message::Msg2<OutMessage>;
+export using OutPing = proto::message::Ping<OutMessage>;
+export using OutEmergencyStop = proto::message::EmergencyStop<OutMessage>;
+export using OutDeviceInfoRequest = proto::message::DeviceInfoRequest<OutMessage>;
 
 export using TransactionId = proto::FrameInterfaceFields::TransactionId;
 
@@ -145,7 +148,8 @@ class AsyncMachineProtocolServer
     }
 
     template <typename ExpectedMsg>
-    cobalt::promise<std::expected<ExpectedMsg, comms::ErrorStatus>> async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
+    cobalt::promise<std::expected<ExpectedMsg, comms::ErrorStatus>> async_receive(TransactionId::ValueType transaction_id,
+                                                                                  std::chrono::milliseconds timeout)
     {
         auto chan = get_or_create_channel(transaction_id);
 

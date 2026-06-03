@@ -14,11 +14,11 @@ target_sources(
     PUBLIC
         FILE_SET CXX_MODULES
             FILES
+                async_machine_protocol_server.cppm
                 execute_recipe.cppm
                 ingredient.cppm
                 lib.cppm
                 logging.cppm
-                machine_protocol.cppm
                 recipe_boost.cppm
                 recipe.cppm
                 units.cppm
@@ -36,9 +36,9 @@ if(BUILD_TESTING)
     target_sources(
         cocktail-maker-lib-tests
         PRIVATE
+            async_machine_protocol_server.test.cpp
             execute_recipe.test.cpp
             ingredient.test.cpp
-            machine_protocol.test.cpp
             recipe_boost.test.cpp
             recipe.test.cpp
     )

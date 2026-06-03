@@ -24,25 +24,11 @@ repos:
       - id: gersemi
         name: CMake linting
 
-  - repo: https://github.com/psf/black
-    rev: 26.5.1
-    hooks:
-      - id: black
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v22.1.5
     hooks:
       - id: clang-format
         types_or: [c++, c, proto]
-  # Check linting and style issues
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.15.14"
-    hooks:
-      # Run the linter.
-      - id: ruff-check
-        args: [--fix, --show-fixes]
-      # Run the formatter.
-      - id: ruff-format
-        exclude: ^(docs)
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.2

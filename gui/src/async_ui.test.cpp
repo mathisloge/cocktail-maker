@@ -52,101 +52,93 @@ struct MockUI
     }
 };
 
-TEST_CASE("async_show_manual_command_popup success path", "[ui][async]")
+struct AsyncTestFixture
 {
-    asio::io_context io;
-    auto ui = std::make_shared<MockUI>();
-    bool test_passed = false;
+    boost::asio::io_context ioc;
+    std::shared_ptr<MockUI> ui = std::make_shared<MockUI>();
 
-    cobalt::spawn(
-        io.get_executor(),
-        [&]() -> cobalt::task<void> {
-            DialogResult result = co_await async_show_manual_command_popup(ui, cm::ManualCommand{}, cobalt::use_op);
-            test_passed = true;
-        }(),
-        asio::detached);
+    AsyncTestFixture()
+    {
+        boost::cobalt::this_thread::set_executor(ioc.get_executor());
+    }
 
-    asio::post(io, [&]() {
+    // Safely executes tests and guarantees graceful server shutdown even if assertions fail
+    template <typename CoroutineFunc>
+    void run_test(CoroutineFunc&& test_coro)
+    {
+        std::exception_ptr err;
+
+        auto test_wrapper = [&, ui = ui]() -> boost::cobalt::task<void> {
+            try {
+                co_await test_coro(ui);
+            }
+            catch (...) {
+                // Catch2 REQUIRE failures throw an exception to abort the execution path
+                err = std::current_exception();
+            }
+        };
+
+        boost::cobalt::spawn(ioc, test_wrapper(), boost::asio::detached);
+        ioc.run();
+
+        if (err) {
+            std::rethrow_exception(err);
+        }
+    }
+};
+
+TEST_CASE_METHOD(AsyncTestFixture, "async_show_manual_command_popup success path", "[ui][async]")
+{
+    asio::steady_timer ui_simulator(ioc, std::chrono::milliseconds(10));
+    ui_simulator.async_wait([ui = ui](auto) {
         ui->flush_ui_events();
         CHECK(ui->is_open == true);
         ui->on_close_cb();
     });
-
-    io.run();
-    CHECK(test_passed == true);
+    run_test([&](auto ui) -> boost::cobalt::task<void> {
+        DialogResult result = co_await async_show_manual_command_popup(ui, cm::ManualCommand{}, cobalt::use_op);
+        CHECK(true);
+    });
 }
 
-TEST_CASE("async_show_manual_command_popup cancellation path", "[ui][async]")
+TEST_CASE_METHOD(AsyncTestFixture, "async_show_manual_command_popup cancellation path", "[ui][async]")
 {
-    asio::io_context io;
-    auto ui = std::make_shared<MockUI>();
-    bool was_cancelled = false;
-
-    cobalt::spawn(
-        io.get_executor(),
-        [&]() -> cobalt::task<void> {
-            try {
-                // use race to simulate cancellation
-                asio::steady_timer timeout(io, std::chrono::milliseconds(50));
-
-                auto result = co_await cobalt::race(async_show_manual_command_popup(ui, cm::ManualCommand{}, cobalt::use_op),
-                                                    timeout.async_wait(cobalt::use_op));
-
-                // Timer has won
-                CHECK(result.index() == 1);
-                was_cancelled = true;
-            }
-            catch (const boost::system::system_error& e) {
-                if (e.code() == asio::error::operation_aborted) {
-                    was_cancelled = true;
-                }
-            }
-        }(),
-        asio::detached);
-
-    asio::steady_timer ui_simulator(io, std::chrono::milliseconds(10));
+    asio::steady_timer ui_simulator(ioc, std::chrono::milliseconds(10));
     ui_simulator.async_wait([&](auto) {
         ui->flush_ui_events();
         CHECK(ui->is_open == true);
     });
 
-    asio::steady_timer verify_timer(io, std::chrono::milliseconds(100));
+    asio::steady_timer verify_timer(ioc, std::chrono::milliseconds(100));
     verify_timer.async_wait([&](auto) {
         ui->flush_ui_events();
         CHECK(ui->is_open == false);
     });
 
-    io.run();
-    CHECK(was_cancelled == true);
+    run_test([](auto ui) -> boost::cobalt::task<void> {
+        // use race to simulate cancellation
+        asio::steady_timer timeout(co_await cobalt::this_coro::executor, std::chrono::milliseconds(50));
+        auto result = co_await cobalt::race(async_show_manual_command_popup(ui, cm::ManualCommand{}, cobalt::use_op),
+                                            timeout.async_wait(cobalt::use_op));
+        // Timer has won
+        CHECK(result.index() == 1);
+    });
 }
 
-TEST_CASE("Late UI Callback after Cancel is ignored safely", "[ui][async]")
+TEST_CASE_METHOD(AsyncTestFixture, "Late UI Callback after Cancel is ignored safely", "[ui][async]")
 {
-    asio::io_context io;
-    auto ui = std::make_shared<MockUI>();
+    asio::post(ioc, [&]() { ui->flush_ui_events(); });
 
-    cobalt::spawn(
-        io.get_executor(),
-        [&]() -> cobalt::task<void> {
-            try {
-                // cancel directly
-                asio::steady_timer timeout(io, std::chrono::milliseconds(1));
-                co_await cobalt::race(async_show_manual_command_popup(ui, cm::ManualCommand{}, cobalt::use_op),
-                                      timeout.async_wait(cobalt::use_op));
-            }
-            catch (...) {
-            }
-        }(),
-        asio::detached);
-
-    asio::post(io, [&]() { ui->flush_ui_events(); });
-
-    asio::steady_timer late_fire(io, std::chrono::milliseconds(50));
-    late_fire.async_wait([&](auto) {
+    asio::steady_timer late_fire(ioc, std::chrono::milliseconds(50));
+    late_fire.async_wait([ui = ui](auto) {
         // fire callback after coroutine is removed
-        REQUIRE_NOTHROW(ui->on_close_cb());
+        REQUIRE_THROWS(ui->on_close_cb());
     });
 
-    io.run();
-    SUCCEED();
+    run_test([](auto ui) -> boost::cobalt::task<void> {
+        // cancel directly
+        asio::steady_timer timeout(co_await cobalt::this_coro::executor, std::chrono::milliseconds(1));
+        co_await cobalt::race(async_show_manual_command_popup(ui, cm::ManualCommand{}, cobalt::use_op),
+                              timeout.async_wait(cobalt::use_op));
+    });
 }

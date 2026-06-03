@@ -1,9 +1,14 @@
 add_library(cocktail-maker-gui)
 add_library(cm::gui ALIAS cocktail-maker-gui)
+add_sanitizers(cocktail-maker-gui)
 target_compile_features(cocktail-maker-gui PUBLIC cxx_std_26)
 target_link_libraries(cocktail-maker-gui PUBLIC Slint::Slint cm::lib)
 slint_target_sources(cocktail-maker-gui
   ui/app-window.slint NAMESPACE cm::gui
+)
+target_include_directories(
+    cocktail-maker-gui
+    PUBLIC "${CMAKE_CURRENT_BINARY_DIR}"
 )
 target_sources(
     cocktail-maker-gui
@@ -18,6 +23,7 @@ target_sources(
 
 if(BUILD_TESTING)
     add_executable(cocktail-maker-gui-tests)
+    add_sanitizers(cocktail-maker-gui-tests)
     target_link_libraries(
         cocktail-maker-gui-tests
         PRIVATE Catch2::Catch2WithMain cm::gui
@@ -35,4 +41,5 @@ if(BUILD_TESTING)
 endif()
 
 add_executable(cocktail-maker src/main.cpp)
+add_sanitizers(cocktail-maker)
 target_link_libraries(cocktail-maker PRIVATE cm::gui)

@@ -74,21 +74,21 @@ cpmaddpackage(
 cpmaddpackage(URI "gh:commschamp/comms@5.5.1" NAME LibComms)
 cpmaddpackage(URI "gh:commschamp/commsdsl@8.0.1" OPTIONS "COMMSDSL_BUILD_COMMSDSL2COMMS ON" "COMMSDSL_BUILD_UNIT_TESTS OFF" "BUILD_TESTING OFF")
 add_custom_command(
-  OUTPUT  ${CMAKE_CURRENT_SOURCE_DIR}/protocol/CMakeLists.txt
-  BYPRODUCTS
-          ${CMAKE_CURRENT_SOURCE_DIR}/protocol/include/proto/Version.h
-          ${CMAKE_CURRENT_SOURCE_DIR}/protocol/include/proto/MsgId.h
-          ${CMAKE_CURRENT_SOURCE_DIR}/protocol/include/proto/Message.h
-  COMMAND $<TARGET_FILE:commsdsl2comms> -o ${CMAKE_CURRENT_SOURCE_DIR}/protocol ${CMAKE_CURRENT_SOURCE_DIR}/schema.xml
-  DEPENDS commsdsl2comms ${CMAKE_CURRENT_SOURCE_DIR}/schema.xml
-  VERBATIM
+    OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/protocol/CMakeLists.txt
+    BYPRODUCTS
+        ${CMAKE_CURRENT_SOURCE_DIR}/protocol/include/proto/Version.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/protocol/include/proto/MsgId.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/protocol/include/proto/Message.h
+    COMMAND
+        $<TARGET_FILE:commsdsl2comms> -o ${CMAKE_CURRENT_SOURCE_DIR}/protocol
+        ${CMAKE_CURRENT_SOURCE_DIR}/schema.xml
+    DEPENDS commsdsl2comms ${CMAKE_CURRENT_SOURCE_DIR}/schema.xml
+    VERBATIM
 )
 
-add_custom_target(generate_commsdsl2comms
-  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/protocol/CMakeLists.txt
-)
-
-
+#add_custom_target(generate_commsdsl2comms
+#  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/protocol/CMakeLists.txt
+#)
 
 if(BUILD_TESTING)
     cpmaddpackage("gh:catchorg/Catch2@3.15.0")
@@ -97,15 +97,9 @@ if(BUILD_TESTING)
     include(Catch)
 endif()
 
-
 add_subdirectory(protocol)
 add_subdirectory(cocktail-maker)
 add_subdirectory(gui)
-
-#add_subdirectory(src)
-#add_subdirectory(utils)
-#add_subdirectory(ui)
-#add_subdirectory(i18n)
 
 install(
     FILES cmake/cocktail-maker.service

@@ -244,19 +244,17 @@ class AsyncMachineProtocolServer
   private:
     cobalt::promise<InFrame::MsgPtr> read_with_timeout(cobalt::channel<InFrame::MsgPtr>& chan, std::chrono::milliseconds timeout)
     {
-        // 1. Instantiate the timer on this coroutine's executor
         boost::asio::steady_timer timer{stream_.get_executor()};
         timer.expires_after(timeout);
 
-        // 2. Race the channel read against the timer
+        // Race the channel read against the timer
         auto res = co_await cobalt::race(chan.read(), timer.async_wait(cobalt::use_op));
 
-        // 3. If index 1 wins, the timer fired first (Timeout)
+        // If index 1 wins, the timer fired first (Timeout)
         if (res.index() == 1) {
             throw boost::system::system_error(asio::error::operation_aborted);
         }
 
-        // 4. Otherwise, return the parsed message cleanly
         co_return std::move(boost::variant2::get<0>(res));
     }
 
@@ -389,6 +387,7 @@ class AsyncMachineProtocolServer
 
                     if (sub_it != event_dispatch_map_.end()) {
                         try {
+                            //! TODO: duplicate the message for all interested listeners. Don't know if I need this yet.
                             // Yields to the *first* local channel listening for this specific message.
                             co_await sub_it->second->write(std::move(msg));
                         }

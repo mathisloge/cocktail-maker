@@ -242,13 +242,12 @@ TEST_CASE_METHOD(AsyncServerTestFixture,
         std::vector<uint8_t> buffer;
 
         // Construct a buffer containing 3 consecutive messages
-      for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < 3; ++i) {
             size_t start = buffer.size();
             buffer.resize(start + frame.length(out_msg));
-            auto* iter = buffer.data() + start; 
+            auto* iter = buffer.data() + start;
             REQUIRE(frame.write(out_msg, iter, buffer.size() - start) == comms::ErrorStatus::Success);
         }
-
 
         // Create the event subscriber (Generator)
         auto events = server.async_receive_events<TestInMsg2>();

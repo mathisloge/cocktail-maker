@@ -6,7 +6,6 @@ module;
 #include <comms/options.h>
 #include <cstddef>
 #include <proto/FrameInterface.h>
-#include <proto/Message.h>
 #include <proto/dispatch/DispatchServerInputMessage.h>
 #include <proto/frame/Frame.h>
 #include <proto/input/ServerInputMessages.h>
@@ -34,12 +33,12 @@ using InFrame = proto::frame::Frame<InMessage, proto::input::ServerInputMessages
 // All server input messages
 PROTO_ALIASES_FOR_SERVER_INPUT_MESSAGES_DEFAULT_OPTIONS(In, , InMessage);
 
-using OutMessage = proto::FrameInterface<comms::option::app::WriteIterator<std::uint8_t*>,
-                                         comms::option::app::LengthInfoInterface,
-                                         comms::option::app::IdInfoInterface,
-                                         comms::option::app::NameInterface>;
+export using OutMessage = proto::FrameInterface<comms::option::app::WriteIterator<std::uint8_t*>,
+                                                comms::option::app::LengthInfoInterface,
+                                                comms::option::app::IdInfoInterface,
+                                                comms::option::app::NameInterface>;
 
-using OutFrame = proto::frame::Frame<OutMessage, std::tuple<>, ServerOptions>;
+export using OutFrame = proto::frame::Frame<OutMessage, std::tuple<>, ServerOptions>;
 
 // Declaration of output messages
 export using Msg2 = proto::message::Msg2<OutMessage>;
@@ -144,8 +143,7 @@ class AsyncMachineProtocolServer
         }
     }
 
-    cobalt::promise<InFrame::MsgPtr> read_with_timeout(cobalt::channel<InFrame::MsgPtr>& chan,
-                                                       std::chrono::steady_clock::duration timeout)
+    cobalt::promise<InFrame::MsgPtr> read_with_timeout(cobalt::channel<InFrame::MsgPtr>& chan, std::chrono::milliseconds timeout)
     {
         // 1. Instantiate the timer on this coroutine's executor
         boost::asio::steady_timer timer{stream_.get_executor()};
@@ -167,7 +165,7 @@ class AsyncMachineProtocolServer
     cobalt::promise<std::expected<ExpectedMsg, comms::ErrorStatus>> async_receive(std::chrono::milliseconds timeout)
     {
         const auto transaction_id = transaction_id_counter_++;
-        auto chan = get_or_create_channel(transaction_id_counter_++);
+        auto chan = get_or_create_channel(transaction_id);
 
         // Garbage Collection: Ensures stale/timed-out keys are erased from the map
         // regardless of the exit path (success, timeout, exception, or cancellation)
@@ -195,7 +193,6 @@ class AsyncMachineProtocolServer
         }
     };
 
-
     cobalt::promise<std::expected<void, comms::ErrorStatus>> async_send(auto msg)
     {
         OutFrame frame;
@@ -213,7 +210,7 @@ class AsyncMachineProtocolServer
             co_return std::unexpected{es};
         }
 
-        // writeIter has been advanced, check that it reached end of the allocated buffer.
+        // write_iter has been advanced, check that it reached end of the allocated buffer.
         assert(output.size() == static_cast<std::size_t>(std::distance(output.data(), write_iter)));
 
         try {
@@ -242,6 +239,7 @@ class AsyncMachineProtocolServer
         for (auto& [id, chan] : dispatch_map_) {
             chan->close();
         }
+        dispatch_map_.clear();
     }
 
     cobalt::task<void> write_loop()
@@ -354,10 +352,9 @@ class AsyncMachineProtocolServer
         }
     }
 
-    template <class ExpectedMsg>
     struct CleanupGuard
     {
-        AsyncMachineProtocolServer<ExpectedMsg>* client;
+        AsyncMachineProtocolServer<AsyncStream>* client;
         proto::FrameInterfaceFields::TransactionId::ValueType transaction_id;
 
         ~CleanupGuard()

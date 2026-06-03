@@ -102,7 +102,7 @@ class AsyncMachineProtocolServer
             co_await boost::cobalt::race(read_loop(), write_loop());
         }
         catch (const boost::system::system_error& e) {
-            std::println(stderr, "[AsyncCommsClient] I/O loops terminated: {}", e.what());
+            log::error{logger_, "I/O loops terminated: {}", e.what()};
         }
 
         // 1. Unwind and close all active dispatch channels
@@ -259,7 +259,7 @@ class AsyncMachineProtocolServer
                                            asio::cancel_after(std::chrono::milliseconds(500), asio::as_tuple(asio::deferred)));
             }
             catch (const boost::system::system_error& e) {
-                std::println(stderr, "[AsyncCommsClient] Write aborted: {}", e.what());
+                log::error{logger_, "Write aborted: {}", e.what()};
                 break;
             }
         }
@@ -294,7 +294,7 @@ class AsyncMachineProtocolServer
         while (true) {
             if (valid_bytes == rx_buffer.size()) {
                 if (rx_buffer.size() >= kMaxBufferSize) {
-                    std::println(stderr, "[AsyncCommsClient] Fatal: Buffer limit exceeded. Dropping connection to prevent OOM.");
+                    log::error{logger_, "Fatal: Buffer limit exceeded. Dropping connection to prevent OOM."};
                     co_return;
                 }
                 rx_buffer.resize(rx_buffer.size() * 2);
@@ -340,10 +340,7 @@ class AsyncMachineProtocolServer
                         co_await chan->write(std::move(msg));
                     }
                     catch (const boost::system::system_error& write_error) {
-                        std::println(stderr,
-                                     "[AsyncCommsClient] Warning: Dispatch failed for TX ID {}: {}",
-                                     transaction_id,
-                                     write_error.what());
+                        log::warn{logger_, "Dispatch failed for TX ID {}: {}", transaction_id, write_error.what()};
                     }
                 }
 

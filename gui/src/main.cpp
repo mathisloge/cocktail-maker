@@ -8,7 +8,7 @@ import cm.gui;
 
 boost::cobalt::detached my_task(cm::Recipe r, std::shared_ptr<cm::BasicCommandExecuter> command_executer)
 {
-    co_await cm::process_commands(std::move(r.commands), std::move(command_executer));
+    co_await cm::execute_commands(std::move(r.commands), std::move(command_executer));
 }
 
 int main(int argc, char** argv)

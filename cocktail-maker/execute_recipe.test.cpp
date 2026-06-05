@@ -23,6 +23,6 @@ class MachineAdapterMock : public BasicCommandExecuter
 
 } // namespace
 
-TEST_CASE("Test process_commands", "[process_commands]")
+TEST_CASE("Test execute_commands", "[execute_commands]")
 {
 }

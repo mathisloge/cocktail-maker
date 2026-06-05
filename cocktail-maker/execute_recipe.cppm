@@ -35,7 +35,7 @@ export class BasicCommandExecuter
     virtual void update_command_status(CommandId id, CommandStatus status) = 0;
 };
 
-export cobalt::promise<void> process_commands(Commands commands, std::shared_ptr<BasicCommandExecuter> command_executer)
+export cobalt::promise<void> execute_commands(Commands commands, std::shared_ptr<BasicCommandExecuter> command_executer)
 {
 
     const auto process_command = detail::Overloaded{[command_executer](ManualCommand command) -> cobalt::promise<void> {

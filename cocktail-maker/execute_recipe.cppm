@@ -21,34 +21,34 @@ export enum CommandStatus
     finished
 };
 
-export class BasicMachineAdapter
+export class BasicCommandExecuter
 {
   public:
-    BasicMachineAdapter() = default;
-    BasicMachineAdapter(BasicMachineAdapter&&) noexcept = delete;
-    BasicMachineAdapter(const BasicMachineAdapter&) = delete;
-    BasicMachineAdapter& operator=(const BasicMachineAdapter&) = delete;
-    BasicMachineAdapter& operator=(BasicMachineAdapter&&) noexcept = delete;
-    virtual ~BasicMachineAdapter() = default;
+    BasicCommandExecuter() = default;
+    BasicCommandExecuter(BasicCommandExecuter&&) noexcept = delete;
+    BasicCommandExecuter(const BasicCommandExecuter&) = delete;
+    BasicCommandExecuter& operator=(const BasicCommandExecuter&) = delete;
+    BasicCommandExecuter& operator=(BasicCommandExecuter&&) noexcept = delete;
+    virtual ~BasicCommandExecuter() = default;
     virtual cobalt::promise<void> execute_command(ManualCommand command) = 0;
     virtual cobalt::promise<void> execute_command(DispenseCommand command) = 0;
     virtual void update_command_status(CommandId id, CommandStatus status) = 0;
 };
 
-export cobalt::promise<void> process_commands(Commands commands, std::shared_ptr<BasicMachineAdapter> machine_adapter)
+export cobalt::promise<void> process_commands(Commands commands, std::shared_ptr<BasicCommandExecuter> command_executer)
 {
 
-    const auto process_command = detail::Overloaded{[machine_adapter](ManualCommand command) -> cobalt::promise<void> {
+    const auto process_command = detail::Overloaded{[command_executer](ManualCommand command) -> cobalt::promise<void> {
                                                         const auto id = command.id;
-                                                        machine_adapter->update_command_status(id, CommandStatus::in_progress);
-                                                        co_await machine_adapter->execute_command(std::move(command));
-                                                        machine_adapter->update_command_status(id, CommandStatus::finished);
+                                                        command_executer->update_command_status(id, CommandStatus::in_progress);
+                                                        co_await command_executer->execute_command(std::move(command));
+                                                        command_executer->update_command_status(id, CommandStatus::finished);
                                                     },
-                                                    [machine_adapter](DispenseCommand command) -> cobalt::promise<void> {
+                                                    [command_executer](DispenseCommand command) -> cobalt::promise<void> {
                                                         const auto id = command.id;
-                                                        machine_adapter->update_command_status(id, CommandStatus::in_progress);
-                                                        co_await machine_adapter->execute_command(std::move(command));
-                                                        machine_adapter->update_command_status(id, CommandStatus::finished);
+                                                        command_executer->update_command_status(id, CommandStatus::in_progress);
+                                                        co_await command_executer->execute_command(std::move(command));
+                                                        command_executer->update_command_status(id, CommandStatus::finished);
                                                     },
                                                     [](std::monostate) -> cobalt::promise<void> { co_return; }};
 

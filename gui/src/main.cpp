@@ -6,9 +6,9 @@ import mp_units;
 import cm;
 import cm.gui;
 
-boost::cobalt::detached my_task(cm::Recipe r, std::shared_ptr<cm::BasicMachineAdapter> machine_adapter)
+boost::cobalt::detached my_task(cm::Recipe r, std::shared_ptr<cm::BasicCommandExecuter> command_executer)
 {
-    co_await cm::process_commands(std::move(r.commands), std::move(machine_adapter));
+    co_await cm::process_commands(std::move(r.commands), std::move(command_executer));
 }
 
 int main(int argc, char** argv)
@@ -53,15 +53,15 @@ int main(int argc, char** argv)
     auto ui = cm::gui::AppWindow::create();
     boost::asio::io_context ctx;
 
-    auto machine_adapter = std::make_shared<cm::gui::MachineAdapter>(ui, ingredient_store);
+    auto command_executer = std::make_shared<cm::gui::MachineAdapter>(ui, ingredient_store);
 
     ui->set_recipes(std::move(recipe_model));
-    ui->on_create_recipe([&ctx, &recipe_store, machine_adapter](const cm::gui::RecipeView& recipe_to_create, int boost) {
+    ui->on_create_recipe([&ctx, &recipe_store, command_executer](const cm::gui::RecipeView& recipe_to_create, int boost) {
         auto logger = cm::log::create_or_get("ui");
         cm::log::debug(logger, "create recipe '{}' with boost factor '{}'", recipe_to_create.name.begin(), boost);
 
         auto r = recipe_store.find_by_id(recipe_to_create.id).value();
-        boost::asio::post(ctx, [recipe = std::move(r), machine_adapter]() { my_task(std::move(recipe), machine_adapter); });
+        boost::asio::post(ctx, [recipe = std::move(r), command_executer]() { my_task(std::move(recipe), command_executer); });
     });
 
     ui->on_boost_recipe([&](const int boost_percentage) {

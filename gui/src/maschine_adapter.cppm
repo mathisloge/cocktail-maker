@@ -15,7 +15,7 @@ namespace cm::gui {
 namespace asio = boost::asio;
 namespace cobalt = boost::cobalt;
 
-export class MachineAdapter : public cm::BasicMachineAdapter
+export class MachineAdapter : public cm::BasicCommandExecuter
 {
     std::shared_ptr<SlintAsyncAdapter> ui_;
 

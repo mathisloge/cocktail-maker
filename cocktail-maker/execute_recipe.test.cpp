@@ -7,7 +7,7 @@ using namespace cm;
 namespace cobalt = boost::cobalt;
 
 namespace {
-class MachineAdapterMock : public BasicMachineAdapter
+class MachineAdapterMock : public BasicCommandExecuter
 {
   public:
     cobalt::promise<void> execute_command(ManualCommand command) override

@@ -1,6 +1,7 @@
 module;
 #include <boost/asio.hpp>
 #include <boost/cobalt.hpp>
+#include <comms/ErrorStatus.h>
 #include <comms/GenericMessage.h>
 #include <comms/dispatch.h>
 #include <comms/options.h>
@@ -15,6 +16,7 @@ module;
 export module cm:async_machine_protocol_server;
 
 import std;
+import :comms_adapter;
 import :logging;
 
 namespace cm {
@@ -47,6 +49,24 @@ export using OutEmergencyStop = proto::message::EmergencyStop<OutMessage>;
 export using OutDeviceInfoRequest = proto::message::DeviceInfoRequest<OutMessage>;
 
 export using TransactionId = proto::FrameInterfaceFields::TransactionId;
+
+export class ProtocolError : public std::runtime_error
+{
+  public:
+    ProtocolError(comms::ErrorStatus error_status, std::string human_readable_what)
+        : std::runtime_error{std::format("{} ErrorCode: {}", std::move(human_readable_what), error_status)}
+        , error_status_{error_status}
+    {
+    }
+
+    comms::ErrorStatus error_status() const
+    {
+        return error_status_;
+    }
+
+  private:
+    comms::ErrorStatus error_status_;
+};
 
 export template <typename AsyncStream>
 class AsyncMachineProtocolServer
@@ -147,9 +167,13 @@ class AsyncMachineProtocolServer
         }
     }
 
+    TransactionId::ValueType generate_new_transaction_id()
+    {
+        return ++transaction_id_counter_;
+    }
+
     template <typename ExpectedMsg>
-    cobalt::promise<std::expected<ExpectedMsg, comms::ErrorStatus>> async_receive(TransactionId::ValueType transaction_id,
-                                                                                  std::chrono::milliseconds timeout)
+    auto async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout) -> cobalt::promise<ExpectedMsg>
     {
         auto chan = get_or_create_channel(transaction_id);
 
@@ -157,30 +181,23 @@ class AsyncMachineProtocolServer
         // regardless of the exit path (success, timeout, exception, or cancellation)
         CleanupGuard guard{this, transaction_id};
 
-        try {
-            InFrame::MsgPtr msg = co_await read_with_timeout(*chan, timeout);
-            static_assert(ExpectedMsg::hasStaticMsgId(), "Expected message doesn't have a compile-time message id.");
-            if (msg->getId() != ExpectedMsg::staticMsgId()) {
-                co_return std::unexpected(comms::ErrorStatus::InvalidMsgId);
-            }
-            auto* concrete_ptr = dynamic_cast<ExpectedMsg*>(msg.get());
-            if (concrete_ptr == nullptr) {
-                co_return std::unexpected(comms::ErrorStatus::MsgAllocFailure);
-            }
-            auto expected_msg = std::move(*concrete_ptr);
-            msg.reset();
-            co_return std::move(expected_msg);
+        InFrame::MsgPtr msg = co_await read_with_timeout(*chan, timeout);
+        static_assert(ExpectedMsg::hasStaticMsgId(), "Expected message doesn't have a compile-time message id.");
+        if (msg->getId() != ExpectedMsg::staticMsgId()) {
+            throw ProtocolError{comms::ErrorStatus::InvalidMsgId,
+                                std::format("Expected message doesn't match with received message id({}).", msg->getId())};
         }
-        catch (const boost::system::system_error& e) {
-            if (e.code() == asio::error::operation_aborted) {
-                co_return std::unexpected(comms::ErrorStatus::ProtocolError);
-            }
-            co_return std::unexpected(comms::ErrorStatus::ProtocolError);
+        auto* concrete_ptr = dynamic_cast<ExpectedMsg*>(msg.get());
+        if (concrete_ptr == nullptr) {
+            throw ProtocolError{comms::ErrorStatus::MsgAllocFailure, "Could not cast message to expected message."};
         }
+        auto expected_msg = std::move(*concrete_ptr);
+        msg.reset();
+        co_return std::move(expected_msg);
     };
 
     template <typename... ExpectedEvents>
-    cobalt::generator<std::variant<std::monostate, ExpectedEvents...>> async_receive_events()
+    auto async_receive_events() -> cobalt::generator<std::variant<std::monostate, ExpectedEvents...>>
     {
         auto channel = std::make_shared<cobalt::channel<InFrame::MsgPtr>>(10);
         EventSubscriptionGuard guard{this, channel, std::vector{static_cast<proto::MsgId>(ExpectedEvents::staticMsgId())...}};
@@ -214,13 +231,12 @@ class AsyncMachineProtocolServer
         co_return {};
     }
 
-    cobalt::promise<std::expected<TransactionId::ValueType, comms::ErrorStatus>> async_send(auto msg)
+    auto async_send(auto msg, const TransactionId::ValueType transaction_id) -> cobalt::promise<void>
     {
         OutFrame frame;
         std::vector<std::uint8_t> output;
 
         // Add unique transaction id to frame.
-        const auto transaction_id = ++transaction_id_counter_;
         msg.transportField_transactionId().setValue(transaction_id);
 
         // Use polymorphic serialization length calculation to create
@@ -232,20 +248,13 @@ class AsyncMachineProtocolServer
         auto* write_iter = output.data();
         auto es = frame.write(msg, write_iter, output.size());
         if (es != comms::ErrorStatus::Success) {
-            co_return std::unexpected{es};
+            throw ProtocolError{es, "Could not serialize message into buffer."};
         }
 
         // write_iter has been advanced, check that it reached end of the allocated buffer.
         assert(output.size() == static_cast<std::size_t>(std::distance(output.data(), write_iter)));
-
-        try {
-            co_await write_queue_.write(std::move(output));
-            co_return transaction_id;
-        }
-        catch (...) {
-            // Reached only if shutdown_channels() closes the queue
-            co_return std::unexpected(comms::ErrorStatus::ProtocolError);
-        }
+        co_await write_queue_.write(std::move(output));
+        co_return;
     }
 
   private:
@@ -349,6 +358,7 @@ class AsyncMachineProtocolServer
                 asio::buffer(rx_buffer.data() + valid_bytes, rx_buffer.size() - valid_bytes), asio::as_tuple(cobalt::use_op));
 
             if (ec) {
+                log::debug(logger_, "Could not write buffer to stream. Returning from read-loop.");
                 co_return;
             }
 

@@ -16,6 +16,7 @@ target_sources(
             FILES
                 async_machine_interface.cppm
                 async_machine_protocol_server.cppm
+                comms_adapter.cppm
                 execute_recipe.cppm
                 ingredient.cppm
                 lib.cppm
@@ -39,6 +40,7 @@ if(BUILD_TESTING)
         PRIVATE
             async_machine_interface.test.cpp
             async_machine_protocol_server.test.cpp
+            comms_adapter.test.cpp
             execute_recipe.test.cpp
             ingredient.test.cpp
             recipe_boost.test.cpp

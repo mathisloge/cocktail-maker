@@ -75,8 +75,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Sends Mes
 
     run_test(server, [&]() -> boost::cobalt::task<void> {
         TestTxMsg msg;
-        auto send_res = co_await server.async_send(msg);
-        REQUIRE(send_res.has_value());
+        REQUIRE_NOTHROW(co_await server.async_send(msg, kTestTransaction));
 
         std::vector<uint8_t> buffer(1024);
         auto [ec, bytes_read] =
@@ -85,7 +84,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Sends Mes
         REQUIRE(!ec);
         CHECK(bytes_read > 0);
 
-        CHECK(static_cast<int>(buffer[6]) == 1);
+        CHECK(static_cast<int>(buffer[6]) == kTestTransaction);
     });
 }
 
@@ -114,12 +113,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Successfu
 
         // 3. Await the outcome. The background read_loop will route the incoming frame to recv_task.
         auto res = co_await recv_task;
-
-        if (!res.has_value()) {
-            FAIL("async_receive failed. comms::ErrorStatus: " << static_cast<int>(res.error()));
-        }
-        REQUIRE(res.has_value());
-        CHECK(res.value().getId() == TestRxMsg::staticMsgId());
+        CHECK(res.getId() == TestRxMsg::staticMsgId());
     });
 }
 
@@ -141,7 +135,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive F
 
         auto recv_task = server.async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(500));
 
-        // Write first half (simulating TCP fragmentation)
+        // Write first half
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer.data(), half), boost::cobalt::use_op);
 
         // Introduce a slight delay before writing the second half
@@ -152,10 +146,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive F
             client_socket, boost::asio::buffer(buffer.data() + half, buffer.size() - half), boost::cobalt::use_op);
 
         auto res = co_await recv_task;
-        if (!res.has_value()) {
-            FAIL("async_receive failed on fragmented read. comms::ErrorStatus: " << static_cast<int>(res.error()));
-        }
-        REQUIRE(res.has_value());
+        REQUIRE(res.transportField_transactionId().getDisplayValue() == kTestTransaction);
     });
 }
 
@@ -187,10 +178,7 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive I
 
         auto recv_task = server.async_receive<TestInMsgFake>(kTestTransaction, std::chrono::milliseconds(500));
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer), boost::cobalt::use_op);
-        auto res = co_await recv_task;
-
-        REQUIRE_FALSE(res.has_value());
-        CHECK(res.error() == comms::ErrorStatus::InvalidMsgId);
+        REQUIRE_THROWS_AS(co_await recv_task, cm::ProtocolError);
     });
 }
 
@@ -215,11 +203,9 @@ TEST_CASE_METHOD(AsyncServerTestFixture,
         // Blast identical messages over the socket
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer), boost::cobalt::use_op);
 
-        auto res1 = co_await recv_task1;
+        REQUIRE_THROWS_AS(co_await recv_task1, boost::system::system_error);
         auto res2 = co_await recv_task2;
-        REQUIRE_FALSE(res1.has_value());
-        REQUIRE(res2.has_value());
-        CHECK(res1.error() == comms::ErrorStatus::ProtocolError);
+        CHECK(res2.transportField_transactionId().value() == kTestTransaction);
     });
 }
 
@@ -229,9 +215,8 @@ TEST_CASE_METHOD(AsyncServerTestFixture, "AsyncMachineProtocolServer - Receive T
     boost::cobalt::spawn(ioc, server.run(), boost::asio::detached);
 
     run_test(server, [&]() -> boost::cobalt::task<void> {
-        auto res = co_await server.async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(10));
-        REQUIRE_FALSE(res.has_value());
-        CHECK(res.error() == comms::ErrorStatus::ProtocolError);
+        REQUIRE_THROWS_AS(co_await server.async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(10)),
+                          boost::system::system_error);
     });
 }
 

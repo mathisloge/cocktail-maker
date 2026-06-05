@@ -7,3 +7,4 @@ export import :recipe;
 export import :recipe_boost;
 export import :execute_recipe;
 export import :async_machine_protocol_server;
+export import :comms_adapter;

@@ -10,4 +10,4 @@ export import :async_machine_protocol_server;
 export import :comms_adapter;
 export import :awaitable_bool;
 export import :overloaded;
-
+export import :strong_type;

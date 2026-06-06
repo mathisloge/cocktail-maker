@@ -18,6 +18,7 @@ target_sources(
                 async_machine_protocol_server.cppm
                 awaitable_bool.cppm
                 comms_adapter.cppm
+                dispense_command.cppm
                 execute_recipe.cppm
                 ingredient.cppm
                 lib.cppm
@@ -25,6 +26,7 @@ target_sources(
                 overloaded.cppm
                 recipe_boost.cppm
                 recipe.cppm
+                strong_type.cppm
                 units.cppm
 )
 
@@ -43,10 +45,12 @@ if(BUILD_TESTING)
             async_machine_interface.test.cpp
             async_machine_protocol_server.test.cpp
             awaitable_bool.test.cpp
+            dispense_command.test.cpp
             comms_adapter.test.cpp
             execute_recipe.test.cpp
             ingredient.test.cpp
             recipe_boost.test.cpp
             recipe.test.cpp
+            strong_type.test.cpp
     )
 endif()

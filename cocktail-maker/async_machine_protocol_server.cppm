@@ -68,6 +68,12 @@ export class ProtocolError : public std::runtime_error
     comms::ErrorStatus error_status_;
 };
 
+export class TimeoutError : std::runtime_error
+{
+  public:
+    using runtime_error::runtime_error;
+};
+
 export template <typename AsyncStream>
 class AsyncMachineProtocolServer
 {
@@ -91,6 +97,11 @@ class AsyncMachineProtocolServer
     AsyncMachineProtocolServer& operator=(AsyncMachineProtocolServer&&) noexcept = delete;
     AsyncMachineProtocolServer(const AsyncMachineProtocolServer&) = delete;
     AsyncMachineProtocolServer& operator=(const AsyncMachineProtocolServer&) = delete;
+
+    auto&& get_executor()
+    {
+        return stream_.get_executor();
+    }
 
     ~AsyncMachineProtocolServer()
     {
@@ -268,7 +279,7 @@ class AsyncMachineProtocolServer
 
         // If index 1 wins, the timer fired first (Timeout)
         if (res.index() == 1) {
-            throw boost::system::system_error(asio::error::operation_aborted);
+            throw TimeoutError{"Could not receive any message"};
         }
 
         co_return std::move(boost::variant2::get<0>(res));
@@ -384,8 +395,9 @@ class AsyncMachineProtocolServer
                     consume_front((consumed != 0U) ? consumed : 1U);
                     continue;
                 }
-
                 const auto transaction_id = std::get<proto::FrameInterfaceFields::TransactionId>(msg->transportFields()).value();
+
+                log::debug(logger_, "Received message '{}' with transaction id '{}'", msg->name(), transaction_id);
 
                 const auto rx_it = dispatch_map_.find(transaction_id);
                 if (rx_it != dispatch_map_.end()) {
@@ -395,12 +407,14 @@ class AsyncMachineProtocolServer
                         co_await chan->write(std::move(msg));
                     }
                     catch (const boost::system::system_error& write_error) {
-                        log::warn{logger_, "Dispatch failed for TX ID {}: {}", transaction_id, write_error.what()};
+                        log::warn{logger_,
+                                  "Dispatch to channel of transaction id '{}' failed with: {}",
+                                  transaction_id,
+                                  write_error.what()};
                     }
                 }
                 else {
-                    const auto msg_id = msg->getId();
-                    auto sub_it = event_dispatch_map_.find(msg_id);
+                    auto sub_it = event_dispatch_map_.find(msg->getId());
 
                     if (sub_it != event_dispatch_map_.end()) {
                         try {
@@ -409,11 +423,11 @@ class AsyncMachineProtocolServer
                             co_await sub_it->second->write(std::move(msg));
                         }
                         catch (...) {
-                            log::warn{logger_, "Failed to route event with ID {} to its subscriber.", static_cast<int>(msg_id)};
+                            log::warn{logger_, "Failed to route event '{}' to its subscriber.", msg->name()};
                         }
                     }
                     else {
-                        log::debug{logger_, "Discarding unhandled asynchronous event with ID: {}", static_cast<int>(msg_id)};
+                        log::debug{logger_, "Discarding unhandled message '{}'.", msg->name()};
                     }
                 }
 

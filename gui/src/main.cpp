@@ -1,3 +1,4 @@
+#include <boost/asio/local/connect_pair.hpp>
 #include <boost/cobalt.hpp>
 #include "app-window.h"
 
@@ -5,6 +6,7 @@ import std;
 import mp_units;
 import cm;
 import cm.gui;
+import cm.sim;
 
 boost::cobalt::detached my_task(cm::Recipe r, std::shared_ptr<cm::BasicCommandExecuter> command_executer)
 {
@@ -83,6 +85,17 @@ int main(int argc, char** argv)
     std::thread cobalt_thread([&ctx, recipe = recipe_store.find_by_id(0)]() {
         auto logger = cm::log::create_or_get("cobalt_main");
         boost::cobalt::this_thread::set_executor(ctx.get_executor());
+
+        cm::sim::Socket server_socket{ctx};
+        cm::sim::Socket client_socket{ctx};
+        boost::asio::local::connect_pair(client_socket, server_socket);
+
+        cm::sim::Client client{std::move(client_socket), "Client1", {.major = 1}};
+        boost::asio::post(ctx, [&client]() { client.run(); });
+
+        cm::AsyncMachineInterface server{std::move(server_socket)};
+        boost::asio::post(ctx, [&server]() { server.run(); });
+
         ctx.run();
 
         cm::log::info(logger, "Async context finished.");

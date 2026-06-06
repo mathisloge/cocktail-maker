@@ -42,4 +42,4 @@ endif()
 
 add_executable(cocktail-maker src/main.cpp)
 add_sanitizers(cocktail-maker)
-target_link_libraries(cocktail-maker PRIVATE cm::gui)
+target_link_libraries(cocktail-maker PRIVATE cm::gui cocktail-maker-simulator)

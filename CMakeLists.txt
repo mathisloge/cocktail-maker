@@ -83,6 +83,7 @@ endif()
 
 add_subdirectory(cocktail-maker)
 add_subdirectory(gui)
+add_subdirectory(hw_simulator)
 
 install(
     FILES cmake/cocktail-maker.service

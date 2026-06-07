@@ -24,7 +24,7 @@ export component RecipeDetailPage inherits Rectangle {
         padding: 20px;
         padding-bottom: 60px;
         spacing: 60px;
-        align-items: center;
+        cross-axis-alignment: center;
         alignment: end;
         Image {
             source: recipe.image;
@@ -38,7 +38,7 @@ export component RecipeDetailPage inherits Rectangle {
 
         VerticalLayout {
             spacing: 10px;
-            align-items: center;
+            cross-axis-alignment: center;
             alignment: center;
             LargeText {
                 text: recipe.name;
@@ -102,7 +102,7 @@ export component RecipeDetailPage inherits Rectangle {
             }
 
             HorizontalBox {
-                align-items: LayoutAlignItems.center;
+                cross-axis-alignment: center;
                 SmallText {
                     text: "mild";
                     color: Palette.boost-negative-text;

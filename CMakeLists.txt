@@ -67,7 +67,7 @@ cpmaddpackage(URI "gh:simdjson/simdjson@4.6.0" OPTIONS "SIMDJSON_DISABLE_DEPRECA
 cpmaddpackage(
   NAME Slint
   GIT_REPOSITORY https://github.com/slint-ui/slint.git
-  GIT_TAG 6c564a6c043f883bacc4fd65faff3c0aaf4ca694
+  GIT_TAG 24318cebc2b3feed4f7187e237915f52715ce285
   SOURCE_SUBDIR api/cpp
 )
 cpmaddpackage(URI "gh:commschamp/comms@5.5.1" NAME LibComms)

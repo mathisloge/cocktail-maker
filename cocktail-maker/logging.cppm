@@ -77,6 +77,11 @@ class LoggingContext
         sinks_.emplace_back(std::move(sink));
     }
 
+    void add_sink(spdlog::sink_ptr sink)
+    {
+        sinks_.emplace_back(std::move(sink));
+    }
+
     void add_rotating_file_sink(const std::string& filename,
                                 std::size_t max_bytes,
                                 std::size_t max_files,
@@ -154,6 +159,11 @@ export void add_rotating_file_sink(const std::string& filename,
                                    Level lvl = level::trace)
 {
     LoggingContext::instance().add_rotating_file_sink(filename, max_bytes, max_files, lvl);
+}
+
+export void add_sink(spdlog::sink_ptr sink)
+{
+    LoggingContext::instance().add_sink(std::move(sink));
 }
 
 // Usage:

@@ -1,4 +1,5 @@
 #include <boost/asio/local/connect_pair.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/cobalt.hpp>
 #include "app-window.h"
 
@@ -15,10 +16,17 @@ boost::cobalt::detached my_task(cm::Recipe r, std::shared_ptr<cm::BasicCommandEx
 
 int main(int argc, char** argv)
 {
-    const auto recipe_db_path = std::filesystem::path{"/Users/neleschoenrock/Desktop/MathisCode/cocktail-maker/db/recipes"};
-    auto logger = cm::log::create_or_get("main");
+    boost::asio::io_context ctx;
+    auto ui = cm::gui::AppWindow::create();
 
-    cm::log::info(*logger, "Setup application...");
+    auto ui_log_sink = std::make_shared<cm::gui::ui_log_sink_st>();
+    cm::log::add_sink(ui_log_sink);
+    ui->set_log_entries(ui_log_sink->model());
+
+    auto logger = cm::log::create_or_get("main");
+    cm::log::info(logger, "Setup application...");
+
+    const auto recipe_db_path = std::filesystem::path{"/Users/neleschoenrock/Desktop/MathisCode/cocktail-maker/db/recipes"};
 
     cm::IngredientStore ingredient_store;
 
@@ -52,8 +60,6 @@ int main(int argc, char** argv)
     }
     cm::RecipeStore recipe_store{std::move(recipes)};
     auto recipe_model = std::make_shared<cm::gui::RecipeModel>(recipe_store, ingredient_store);
-    auto ui = cm::gui::AppWindow::create();
-    boost::asio::io_context ctx;
 
     auto command_executer = std::make_shared<cm::gui::MachineAdapter>(ui, ingredient_store);
 

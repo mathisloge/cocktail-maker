@@ -1,8 +1,22 @@
+export enum LogLevel { info, ok, wait, err }
+export struct LogEntry {
+    time_stamp: string,
+    level: LogLevel,
+    message: string,
+}
 
-export enum Page { cocktail_list_page, cocktail_detail_page, mix_page, finished_page  }
+export enum Page {
+    cocktail_list_page,
+    cocktail_detail_page,
+    mix_page,
+    finished_page,
+    boot_screen,
+}
 
 export enum CommandStatus {
-    not_started, in_progress, finished,
+    not_started,
+    in_progress,
+    finished,
 }
 export struct Command {
     id: int,

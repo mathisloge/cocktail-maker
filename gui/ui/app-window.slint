@@ -6,12 +6,20 @@ import {
 } from "std-widgets.slint";
 
 import { Palette } from "palette.slint";
-import { Page, RecipeView, Command, CommandStatus } from "data.slint";
+import { Page, RecipeView, Command, CommandStatus, LogEntry } from "data.slint";
 import { Button } from "components.slint";
-import { RecipeDetailPage, RecipeListPage, MixProgressPage } from "pages.slint";
+import {
+    RecipeDetailPage,
+    RecipeListPage,
+    MixProgressPage,
+    BootScreen,
+} from "pages.slint";
 import { ManualCommandPopup } from "popups.slint";
 
 export component AppWindow inherits Window {
+    in property <bool> device_ready: false;
+    in-out property <bool> boot_screen_confirmed: false;
+    in-out property <[LogEntry]> log-entries;
     in-out property <Page> current_page: Page.cocktail_list_page;
     in property <[RecipeView]> recipes;
     in-out property <RecipeView> selected_recipe;
@@ -45,7 +53,11 @@ export component AppWindow inherits Window {
     preferred-width: 1280px;
     preferred-height: 720px;
     background: Palette.background;
-
+    if !device_ready || !boot_screen_confirmed: BootScreen {
+        is-loading: !device_ready;
+        log-entries: log-entries;
+    }
+    if device_ready && boot_screen_confirmed:
     VerticalLayout {
         Rectangle {
             height: 50px;

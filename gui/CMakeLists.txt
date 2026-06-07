@@ -19,6 +19,7 @@ target_sources(
                 src/recipe_adapter.cppm
                 src/async_ui.cppm
                 src/maschine_adapter.cppm
+                src/ui_log_sink.cppm
 )
 
 if(BUILD_TESTING)

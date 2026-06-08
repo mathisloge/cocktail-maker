@@ -50,13 +50,18 @@ class Client
 
   public:
     Client(TSocket socket, std::string name, Version firmware_version)
-        : logger_{log::create_or_get(std::format("MachineClient_{}", name))}
+        : logger_{log::create_or_get(std::format("SimPod_{}", name))}
         , stream_{std::move(socket)}
     {
         device_info_response_msg_.field_deviceName().setValue(std::move(name));
         device_info_response_msg_.field_firmwareMajor().setValue(firmware_version.major);
         device_info_response_msg_.field_firmwareMinor().setValue(firmware_version.minor);
         device_info_response_msg_.field_firmwarePatch().setValue(firmware_version.patch);
+    }
+
+    TSocket& socket()
+    {
+        return stream_;
     }
 
     cobalt::detached run()
@@ -183,7 +188,7 @@ class Client
                 asio::buffer(rx_buffer.data() + valid_bytes, rx_buffer.size() - valid_bytes), asio::as_tuple(cobalt::use_op));
 
             if (ec) {
-                log::debug(logger_, "Could not write buffer to stream. Returning from read-loop.");
+                log::debug(logger_, "Could not read from stream. Returning from read-loop. Reason: {}", ec.message());
                 co_return;
             }
 

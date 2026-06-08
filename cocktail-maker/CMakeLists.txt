@@ -24,8 +24,11 @@ target_sources(
                 lib.cppm
                 logging.cppm
                 overloaded.cppm
+                pod_manager.cppm
+                pod.cppm
                 recipe_boost.cppm
                 recipe.cppm
+                station_state.cppm
                 strong_type.cppm
                 units.cppm
 )
@@ -49,6 +52,8 @@ if(BUILD_TESTING)
             comms_adapter.test.cpp
             execute_recipe.test.cpp
             ingredient.test.cpp
+            pod_manager.test.cpp
+            pod.test.cpp
             recipe_boost.test.cpp
             recipe.test.cpp
             strong_type.test.cpp

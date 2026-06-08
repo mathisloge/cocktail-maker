@@ -25,7 +25,6 @@ auto retry_on_timeout(std::size_t max_retries, F f) -> decltype(f(std::chrono::m
     std::chrono::milliseconds backoff_retry{100};
     for (;;) {
         try {
-            // co_return co_await automatically handles both void and non-void returns
             co_return co_await f(backoff_retry * (retries + 1));
         }
         catch (const TimeoutError&) {
@@ -86,10 +85,12 @@ export class Dispenser
     virtual cobalt::promise<void> dispense(units::Litre volume) = 0;
 };
 
-export class BasicAsyncMachineInterface : public std::enable_shared_from_this<BasicAsyncMachineInterface>
+export class BasicAsyncPodInterface : public std::enable_shared_from_this<BasicAsyncPodInterface>
 {
   public:
-    virtual ~BasicAsyncMachineInterface() = default;
+    virtual ~BasicAsyncPodInterface() = default;
+
+    virtual cobalt::task<void> run() = 0;
 
     [[nodiscard]] virtual std::unique_ptr<Dispenser> dispenser_for_ingredient(IngredientId ingredient_id) = 0;
     virtual cobalt::promise<void> pump(units::Litre volume, PumpId pump_id) = 0;
@@ -98,12 +99,12 @@ export class BasicAsyncMachineInterface : public std::enable_shared_from_this<Ba
 
 class Pump : public Dispenser
 {
-    std::shared_ptr<BasicAsyncMachineInterface> machine_;
+    std::shared_ptr<BasicAsyncPodInterface> machine_;
     PumpId id_;
     log::Logger logger_;
 
   public:
-    Pump(std::shared_ptr<BasicAsyncMachineInterface> machine, PumpId pump_id)
+    Pump(std::shared_ptr<BasicAsyncPodInterface> machine, PumpId pump_id)
         : machine_{std::move(machine)}
         , id_{pump_id}
         , logger_{log::create_or_get(std::format("pump_{}", pump_id))}
@@ -122,7 +123,7 @@ class Pump : public Dispenser
 
 class Valve : public Dispenser
 {
-    std::shared_ptr<BasicAsyncMachineInterface> machine_;
+    std::shared_ptr<BasicAsyncPodInterface> machine_;
 
   public:
     cobalt::promise<void> dispense(units::Litre volume) override
@@ -132,7 +133,7 @@ class Valve : public Dispenser
 };
 
 export template <typename AsyncStream>
-class AsyncMachineInterface : public BasicAsyncMachineInterface
+class AsyncMachineInterface : public BasicAsyncPodInterface
 
 {
   private:
@@ -160,14 +161,14 @@ class AsyncMachineInterface : public BasicAsyncMachineInterface
         return std::make_unique<Pump>(shared_from_this(), it->second);
     }
 
-    cobalt::detached run()
+    cobalt::task<void> run() override
     {
-        monitor_device();
-        co_await server_.run();
+        co_await cobalt::race(monitor_device(), server_.run());
+        co_await server_.stop(); // TODO: refactor using cobalt::with to always run stop.
     }
 
   private:
-    cobalt::detached monitor_device()
+    cobalt::task<void> monitor_device()
     {
         struct Cleanup
         {

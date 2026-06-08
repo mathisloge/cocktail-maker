@@ -14,6 +14,13 @@ boost::cobalt::detached my_task(cm::Recipe r, std::shared_ptr<cm::BasicCommandEx
     co_await cm::execute_commands(std::move(r.commands), std::move(command_executer));
 }
 
+boost::cobalt::detached my_task2(std::unique_ptr<cm::PodManager> pod_manager)
+{
+    auto logger = cm::log::create_or_get("main");
+    co_await pod_manager->run();
+    cm::log::debug(logger, "simulated pod manager ended.");
+}
+
 int main(int argc, char** argv)
 {
     boost::asio::io_context ctx;
@@ -92,15 +99,9 @@ int main(int argc, char** argv)
         auto logger = cm::log::create_or_get("cobalt_main");
         boost::cobalt::this_thread::set_executor(ctx.get_executor());
 
-        cm::sim::Socket server_socket{ctx};
-        cm::sim::Socket client_socket{ctx};
-        boost::asio::local::connect_pair(client_socket, server_socket);
+        auto pod_manager = std::make_unique<cm::PodManager>(std::make_unique<cm::sim::SimulatedPodDiscovery>(ctx.get_executor()));
 
-        cm::sim::Client client{std::move(client_socket), "Client1", {.major = 1}};
-        boost::asio::post(ctx, [&client]() { client.run(); });
-
-        cm::AsyncMachineInterface server{std::move(server_socket)};
-        boost::asio::post(ctx, [&server]() { server.run(); });
+        boost::asio::post(ctx, [pod_manager = std::move(pod_manager)]() mutable { my_task2(std::move(pod_manager)); });
 
         ctx.run();
 

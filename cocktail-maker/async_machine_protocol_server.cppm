@@ -369,7 +369,7 @@ class AsyncMachineProtocolServer
                 asio::buffer(rx_buffer.data() + valid_bytes, rx_buffer.size() - valid_bytes), asio::as_tuple(cobalt::use_op));
 
             if (ec) {
-                log::debug(logger_, "Could not write buffer to stream. Returning from read-loop.");
+                log::error(logger_, "Could not read from stream. Returning from read-loop. Reason: {}", ec.message());
                 co_return;
             }
 

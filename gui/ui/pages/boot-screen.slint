@@ -1,5 +1,11 @@
 import { Palette } from "../palette.slint";
-import { LargeText, SmallText, Separator, Button } from "../components.slint";
+import {
+    LargeText,
+    SmallText,
+    Separator,
+    Button,
+    PulseDot,
+} from "../components.slint";
 import { ProgressIndicator, Spinner, ScrollView } from "std-widgets.slint";
 import { LogEntry, LogLevel } from "../data.slint";
 import { Spinner } from "std-widgets.slint";
@@ -97,16 +103,6 @@ export component BootScreen inherits Rectangle {
     callback boot-complete();
 
     background: Palette.background;
-
-    property <float> dot-opacity: 0.7;
-
-    Timer {
-        interval: 700ms;
-        running: root.is-loading;
-        triggered => {
-            root.dot-opacity = root.dot-opacity > 0.6 ? 0.2 : 0.9;
-        }
-    }
 
     property <int> entry-count: log-entries.length;
     changed entry-count => {
@@ -217,14 +213,8 @@ export component BootScreen inherits Rectangle {
                         alignment: start;
                         cross-axis-alignment: center;
 
-                        Rectangle {
-                            width: 6px;
-                            height: 6px;
-                            border-radius: 3px;
-                            background: root.is-loading ? Palette.accent : #5cad75;
-                            opacity: root.dot-opacity;
-                            animate background { duration: 300ms; }
-                            animate opacity { duration: 300ms; }
+                        PulseDot {
+                            background: root.is-loading ? Palette.accent : Palette.text-success;
                         }
 
                         SmallText {

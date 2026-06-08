@@ -1,5 +1,11 @@
 import { Palette } from "../palette.slint";
-import { Button, SmallText, LargeText } from "../components.slint";
+import {
+    Button,
+    SmallText,
+    LargeText,
+    CornerDeco,
+    PulseDot,
+} from "../components.slint";
 import { Command, CommandStatus } from "../data.slint";
 export component ManualCommandPopup inherits PopupWindow {
     close-policy: PopupClosePolicy.no-auto-close;
@@ -22,77 +28,9 @@ export component ManualCommandPopup inherits PopupWindow {
         border-width: 1px;
         border-color: Palette.border-strong;
 
-        // Eckmarkierungen
-        Rectangle {
-            x: 10px;
-            y: 10px;
-            width: 16px;
-            height: 1px;
-            background: Palette.accent;
-            opacity: 0.5;
-        }
-
-        Rectangle {
-            x: 10px;
-            y: 10px;
-            width: 1px;
-            height: 16px;
-            background: Palette.accent;
-            opacity: 0.5;
-        }
-
-        Rectangle {
-            x: parent.width - 26px;
-            y: 10px;
-            width: 16px;
-            height: 1px;
-            background: Palette.accent;
-            opacity: 0.5;
-        }
-
-        Rectangle {
-            x: parent.width - 11px;
-            y: 10px;
-            width: 1px;
-            height: 16px;
-            background: Palette.accent;
-            opacity: 0.5;
-        }
-
-        Rectangle {
-            x: 10px;
-            y: parent.height - 11px;
-            width: 16px;
-            height: 1px;
-            background: Palette.accent;
-            opacity: 0.5;
-        }
-
-        Rectangle {
-            x: 10px;
-            y: parent.height - 27px;
-            width: 1px;
-            height: 16px;
-            background: Palette.accent;
-            opacity: 0.5;
-        }
-
-        Rectangle {
-            x: parent.width - 26px;
-            y: parent.height - 11px;
-            width: 16px;
-            height: 1px;
-            background: Palette.accent;
-            opacity: 0.5;
-        }
-
-        Rectangle {
-            x: parent.width - 11px;
-            y: parent.height - 27px;
-            width: 1px;
-            height: 16px;
-            background: Palette.accent;
-            opacity: 0.5;
+        CornerDeco {
+            width: 100%;
+            height: 100%;
         }
 
         box-layout := VerticalLayout {
@@ -137,17 +75,7 @@ export component ManualCommandPopup inherits PopupWindow {
             HorizontalLayout {
                 alignment: center;
                 spacing: 10px;
-                pulse-dot := Rectangle {
-                    width: 7px;
-                    height: 7px;
-                    border-radius: 4px;
-                    background: Palette.accent;
-                    opacity: 0.45;
-                    animate opacity {
-                        duration: 700ms;
-                        easing: ease-in-out;
-                    }
-                }
+                PulseDot { }
 
                 SmallText {
                     text: "MASCHINE PAUSIERT";
@@ -166,15 +94,6 @@ export component ManualCommandPopup inherits PopupWindow {
                     root.confirmed();
                 }
             }
-        }
-    }
-
-    // Puls-Animation für den Wartepunkt
-    Timer {
-        interval: 700ms;
-        running: root.visible;
-        triggered => {
-            pulse-dot.opacity = pulse-dot.opacity > 0.7 ? 0.3 : 1.0;
         }
     }
 }

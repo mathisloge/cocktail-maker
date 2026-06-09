@@ -150,7 +150,6 @@ class AsyncMachineInterface : public BasicAsyncPodInterface
         , server_{std::move(stream)}
         , device_ready_{server_.get_executor()}
     {
-
     }
 
     std::unique_ptr<Dispenser> dispenser_for_ingredient(IngredientId ingredient_id) override

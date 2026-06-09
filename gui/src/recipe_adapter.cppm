@@ -8,17 +8,9 @@ import mp_units;
 import cm;
 
 namespace cm::gui {
-namespace {
-template <class... Ts>
-struct overloaded : Ts...
-{
-    using Ts::operator()...;
-};
-} // namespace
-
 export std::optional<Command> transform_command(const cm::Command& command, const cm::IngredientStore& ingredient_store)
 {
-    return std::visit(overloaded{[](const cm::ManualCommand& manual_command) -> std::optional<Command> {
+    return std::visit(detail::Overloaded{[](const cm::ManualCommand& manual_command) -> std::optional<Command> {
                                      return Command{
                                          .id = manual_command.id,
                                          .status = CommandStatus::NotStarted,
@@ -58,7 +50,7 @@ std::shared_ptr<slint::Model<Command>> transform(const cm::Commands& commands, c
     };
 
     for (auto&& c : commands) {
-        std::visit(overloaded{[&](const cm::Command& command) { push_if_valid(command); },
+        std::visit(detail::Overloaded{[&](const cm::Command& command) { push_if_valid(command); },
                               [&](const cm::ParallelCommand& commands) {
                                   for (auto&& c : commands) {
                                       push_if_valid(c);

@@ -58,7 +58,7 @@ export class DispenserNotFound : public std::runtime_error
     }
 };
 
-export struct Version
+struct Version
 {
     int major{};
     int minor{};
@@ -67,7 +67,7 @@ export struct Version
     friend constexpr auto operator<=>(const Version&, const Version&) = default;
 };
 
-export struct DeviceInfo
+struct DeviceInfo
 {
     std::string name;
     Version firmware_version;

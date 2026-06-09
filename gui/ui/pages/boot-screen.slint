@@ -172,6 +172,7 @@ export component BootScreen inherits Rectangle {
                 if !root.is-loading:  Button {
                     height: 52px;
                     text: "START →";
+                    clicked => { root.boot-complete(); }
                 }
 
                 Rectangle {

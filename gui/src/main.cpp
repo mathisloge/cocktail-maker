@@ -14,10 +14,10 @@ boost::cobalt::detached my_task(cm::Recipe r, std::shared_ptr<cm::BasicCommandEx
     co_await cm::execute_commands(std::move(r.commands), std::move(command_executer));
 }
 
-boost::cobalt::detached my_task2(std::unique_ptr<cm::PodDiscovery> pod_discovery)
+boost::cobalt::detached my_task2(std::unique_ptr<cm::PodDiscovery> pod_discovery, std::shared_ptr<cm::StationState> station_state)
 {
     auto logger = cm::log::create_or_get("main");
-    co_await cm::discover_and_run_pods(std::move(pod_discovery));
+    co_await cm::discover_and_run_pods(std::move(pod_discovery), std::move(station_state));
     cm::log::debug(logger, "simulated pod manager ended.");
 }
 
@@ -94,13 +94,14 @@ int main(int argc, char** argv)
         ui->set_selected_recipe(cm::gui::transform(recipe, ingredient_store));
     });
 
+    auto station_state = std::make_shared<cm::gui::StationStateBridge>(ui);
     auto work_guard = boost::asio::make_work_guard(ctx);
-    std::thread cobalt_thread([&ctx, recipe = recipe_store.find_by_id(0)]() {
+    std::thread cobalt_thread([&ctx, recipe = recipe_store.find_by_id(0), station_state]() {
         auto logger = cm::log::create_or_get("cobalt_main");
         boost::cobalt::this_thread::set_executor(ctx.get_executor());
 
-        boost::asio::post(ctx, [pod_manager = std::make_unique<cm::sim::SimulatedPodDiscovery>(ctx.get_executor())]() mutable {
-            my_task2(std::move(pod_manager));
+        boost::asio::post(ctx, [station_state, pod_manager = std::make_unique<cm::sim::SimulatedPodDiscovery>(ctx.get_executor())]() mutable {
+            my_task2(std::move(pod_manager), std::move(station_state));
         });
 
         ctx.run();

@@ -18,7 +18,12 @@ import { ManualCommandPopup } from "popups.slint";
 
 export component AppWindow inherits Window {
     in property <bool> device_ready: false;
-    in-out property <bool> boot_screen_confirmed: false;
+    private property <bool> boot_screen_confirmed: false;
+    changed device_ready => {
+        if (!device_ready) {
+            boot_screen_confirmed = false;
+        }
+    }
     in-out property <[LogEntry]> log-entries;
     in-out property <Page> current_page: Page.cocktail_list_page;
     in property <[RecipeView]> recipes;
@@ -56,9 +61,11 @@ export component AppWindow inherits Window {
     if !device_ready || !boot_screen_confirmed: BootScreen {
         is-loading: !device_ready;
         log-entries: log-entries;
+        boot-complete => {
+            root.boot_screen_confirmed = true;
+        }
     }
-    if device_ready && boot_screen_confirmed:
-    VerticalLayout {
+    if device_ready && boot_screen_confirmed: VerticalLayout {
         Rectangle {
             height: 50px;
             Button {

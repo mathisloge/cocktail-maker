@@ -20,6 +20,7 @@ target_sources(
                 src/async_ui.cppm
                 src/maschine_adapter.cppm
                 src/ui_log_sink.cppm
+                src/station_state_bridge.cppm
 )
 
 if(BUILD_TESTING)

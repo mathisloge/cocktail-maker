@@ -13,6 +13,7 @@ export module cm.sim:client;
 import std;
 import cm;
 
+using namespace std::chrono_literals;
 namespace cobalt = boost::cobalt;
 namespace asio = boost::asio;
 
@@ -92,7 +93,7 @@ class Client
   private:
     cobalt::detached async_handle(InClientDeviceInfoRequest msg)
     {
-        co_await delay();
+        co_await delay(400ms);
         co_await async_send(device_info_response_msg_, msg.transportField_transactionId().getValue());
     }
 

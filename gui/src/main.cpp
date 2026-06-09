@@ -100,9 +100,10 @@ int main(int argc, char** argv)
         auto logger = cm::log::create_or_get("cobalt_main");
         boost::cobalt::this_thread::set_executor(ctx.get_executor());
 
-        boost::asio::post(ctx, [station_state, pod_manager = std::make_unique<cm::sim::SimulatedPodDiscovery>(ctx.get_executor())]() mutable {
-            my_task2(std::move(pod_manager), std::move(station_state));
-        });
+        boost::asio::post(
+            ctx, [station_state, pod_manager = std::make_unique<cm::sim::SimulatedPodDiscovery>(ctx.get_executor())]() mutable {
+                my_task2(std::move(pod_manager), std::move(station_state));
+            });
 
         ctx.run();
 

@@ -10,31 +10,32 @@ import cm;
 namespace cm::gui {
 export std::optional<Command> transform_command(const cm::Command& command, const cm::IngredientStore& ingredient_store)
 {
-    return std::visit(detail::Overloaded{[](const cm::ManualCommand& manual_command) -> std::optional<Command> {
-                                     return Command{
-                                         .id = manual_command.id,
-                                         .status = CommandStatus::NotStarted,
-                                         .text = slint::SharedString{manual_command.instruction.c_str()},
-                                     };
-                                 },
-                                 [&ingredient_store](const cm::DispenseCommand& dispense_command) -> std::optional<Command> {
-                                     auto ingredient = ingredient_store.find_by_id(dispense_command.ingredient);
-                                     if (!ingredient) {
-                                         return std::nullopt;
-                                     }
+    return std::visit(
+        detail::Overloaded{[](const cm::ManualCommand& manual_command) -> std::optional<Command> {
+                               return Command{
+                                   .id = manual_command.id,
+                                   .status = CommandStatus::NotStarted,
+                                   .text = slint::SharedString{manual_command.instruction.c_str()},
+                               };
+                           },
+                           [&ingredient_store](const cm::DispenseCommand& dispense_command) -> std::optional<Command> {
+                               auto ingredient = ingredient_store.find_by_id(dispense_command.ingredient);
+                               if (!ingredient) {
+                                   return std::nullopt;
+                               }
 
-                                     auto volume_str = std::format(
-                                         "{}", units::value_cast<std::int32_t>(dispense_command.volume.in(units::milli_litre)));
+                               auto volume_str = std::format(
+                                   "{}", units::value_cast<std::int32_t>(dispense_command.volume.in(units::milli_litre)));
 
-                                     return Command{
-                                         .id = dispense_command.id,
-                                         .status = CommandStatus::NotStarted,
-                                         .text = slint::SharedString{ingredient->display_name.c_str()},
-                                         .value = slint::SharedString{volume_str.c_str()},
-                                     };
-                                 },
-                                 [](auto&&) -> std::optional<Command> { return std::nullopt; }},
-                      command);
+                               return Command{
+                                   .id = dispense_command.id,
+                                   .status = CommandStatus::NotStarted,
+                                   .text = slint::SharedString{ingredient->display_name.c_str()},
+                                   .value = slint::SharedString{volume_str.c_str()},
+                               };
+                           },
+                           [](auto&&) -> std::optional<Command> { return std::nullopt; }},
+        command);
 }
 
 namespace {
@@ -51,11 +52,11 @@ std::shared_ptr<slint::Model<Command>> transform(const cm::Commands& commands, c
 
     for (auto&& c : commands) {
         std::visit(detail::Overloaded{[&](const cm::Command& command) { push_if_valid(command); },
-                              [&](const cm::ParallelCommand& commands) {
-                                  for (auto&& c : commands) {
-                                      push_if_valid(c);
-                                  }
-                              }},
+                                      [&](const cm::ParallelCommand& commands) {
+                                          for (auto&& c : commands) {
+                                              push_if_valid(c);
+                                          }
+                                      }},
                    c);
     }
 

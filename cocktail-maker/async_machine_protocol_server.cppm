@@ -86,12 +86,6 @@ class AsyncMachineProtocolServer
     std::unordered_multimap<proto::MsgId, ChannelPtr> event_dispatch_map_;
     bool is_running_ = false;
 
-    struct ShutdownSignal
-    {
-    };
-
-    boost::cobalt::channel<ShutdownSignal> shutdown_barrier_; // Capacity of 1 (Rendezvous/Buffered)
-
   public:
     AsyncMachineProtocolServer(AsyncMachineProtocolServer&&) noexcept = delete;
     AsyncMachineProtocolServer& operator=(AsyncMachineProtocolServer&&) noexcept = delete;
@@ -126,7 +120,6 @@ class AsyncMachineProtocolServer
         : logger_{log::create_or_get("protocol")}
         , stream_{std::move(stream)}
         , write_queue_{10, stream_.get_executor()}
-        , shutdown_barrier_{1, stream_.get_executor()}
     {
     }
 
@@ -139,43 +132,8 @@ class AsyncMachineProtocolServer
         catch (const boost::system::system_error& e) {
             log::error{logger_, "I/O loops terminated: {}", e.what()};
         }
-
-        // 1. Unwind and close all active dispatch channels
-        shutdown_channels();
         is_running_ = false;
-
-        // 2. Write to the barrier channel to signal that we have completely
-        // stopped accessing any member variables of this class.
-        try {
-            co_await shutdown_barrier_.write(ShutdownSignal{});
-        }
-        catch (...) {
-            // Suppress channel closed exceptions if shutdown happened concurrently
-        }
-    }
-
-    // Explicitly initiates shutdown, aborts I/O, and awaits absolute termination.
-    cobalt::promise<void> stop()
-    {
-        if (!is_running_) {
-            co_return;
-        }
-
-        // 1. Terminate all outstanding logical dispatch channels
         shutdown_channels();
-
-        // 2. Cancel all pending physical I/O (reads/writes) registered with the OS reactor
-        boost::system::error_code ec;
-        stream_.close(ec);
-
-        // 3. Await the barrier signal. Once this resumes, we are 100% guaranteed
-        // that the background tasks have terminated and will NEVER access 'this' again.
-        try {
-            co_await shutdown_barrier_.read();
-        }
-        catch (...) {
-            // Ignore channel closure during teardown
-        }
     }
 
     TransactionId::ValueType generate_new_transaction_id()
@@ -210,11 +168,12 @@ class AsyncMachineProtocolServer
     template <typename... ExpectedEvents>
     auto async_receive_events() -> cobalt::generator<std::variant<std::monostate, ExpectedEvents...>>
     {
+        boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
         auto channel = std::make_shared<cobalt::channel<InFrame::MsgPtr>>(10);
         EventSubscriptionGuard guard{this, channel, std::vector{static_cast<proto::MsgId>(ExpectedEvents::staticMsgId())...}};
-        co_await cobalt::this_coro::initial;
 
-        while (is_running_) {
+        co_await cobalt::this_coro::initial;
+        while (cs.cancelled() == boost::asio::cancellation_type::none) {
             InFrame::MsgPtr msg;
             try {
                 msg = co_await channel->read();

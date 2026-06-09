@@ -146,10 +146,11 @@ class AsyncMachineInterface : public BasicAsyncPodInterface
 
   public:
     AsyncMachineInterface(AsyncStream stream)
-        : logger_{log::create_or_get("machine_interface")}
+        : logger_{log::create_or_get("pod")}
         , server_{std::move(stream)}
         , device_ready_{server_.get_executor()}
     {
+
     }
 
     std::unique_ptr<Dispenser> dispenser_for_ingredient(IngredientId ingredient_id) override
@@ -164,7 +165,6 @@ class AsyncMachineInterface : public BasicAsyncPodInterface
     cobalt::task<void> run() override
     {
         co_await cobalt::race(monitor_device(), server_.run());
-        co_await server_.stop(); // TODO: refactor using cobalt::with to always run stop.
     }
 
   private:

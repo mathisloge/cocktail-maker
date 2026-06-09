@@ -37,9 +37,10 @@ export class PodManager final
                     pod_sessions.push_back(run_pod(std::move(pod)));
                 }
             }
+
             log::warn(logger_, "Pod discovery finished.");
         });
-        log::debug(logger_, "pod manager exiting now.");
+        log::debug(logger_, "Pod manager exiting now.");
     }
 
   private:

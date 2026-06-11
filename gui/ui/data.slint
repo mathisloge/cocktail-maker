@@ -1,4 +1,11 @@
-export enum LogLevel { info, ok, wait, err }
+export enum LogLevel {
+    trace,
+    debug,
+    info,
+    warn,
+    err,
+    critical,
+}
 export struct LogEntry {
     time_stamp: string,
     level: LogLevel,

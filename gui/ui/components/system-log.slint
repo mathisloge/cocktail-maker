@@ -38,17 +38,23 @@ component LogRow inherits Rectangle {
         SmallText {
             width: 44px;
             horizontal-stretch: 0;
-            text: root.entry.level == LogLevel.ok ? "OK"
+            text: root.entry.level == LogLevel.trace ? "TRACE"
+                : root.entry.level == LogLevel.debug ? "DEBUG"
+                : root.entry.level == LogLevel.info ? "INFO"
+                : root.entry.level == LogLevel.warn ? "WARN"
                 : root.entry.level == LogLevel.err ? "ERROR"
-                : root.entry.level == LogLevel.wait ? "WAIT"
+                : root.entry.level == LogLevel.critical ? "CRIT"
                 : "INFO";
             font-size: 5.5pt;
             letter-spacing: 1.5px;
             vertical-alignment: center;
-            color: root.entry.level == LogLevel.ok ? Palette.text-success
-                : root.entry.level == LogLevel.err ? Palette.text-error
-                : root.entry.level == LogLevel.wait ? Palette.accent
-                : Palette.text-muted;
+            color: root.entry.level == LogLevel.trace ? Palette.log-trace
+                : root.entry.level == LogLevel.debug ? Palette.log-debug
+                : root.entry.level == LogLevel.info ? Palette.log-info
+                : root.entry.level == LogLevel.warn ? Palette.log-warn
+                : root.entry.level == LogLevel.err ? Palette.log-error
+                : root.entry.level == LogLevel.critical ? Palette.log-critical
+                : Palette.log-info;
         }
 
         SmallText {
@@ -72,7 +78,7 @@ component LogRow inherits Rectangle {
             letter-spacing: 0.8px;
             vertical-alignment: center;
             overflow: elide;
-            color: root.entry.level == LogLevel.err ? Palette.boost-positive-text
+            color: root.entry.level == LogLevel.err || root.entry.level == LogLevel.critical ? Palette.boost-positive-text
                 : Palette.text-primary;
         }
     }

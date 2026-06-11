@@ -1,5 +1,6 @@
 import { Palette } from "../palette.slint";
 export component PulseDot inherits Rectangle {
+    in property <bool> pulse: true;
     width: 7px;
     height: 7px;
     border-radius: 4px;
@@ -17,7 +18,7 @@ export component PulseDot inherits Rectangle {
 
     Timer {
         interval: 700ms;
-        running: root.visible;
+        running: root.visible && root.pulse;
         triggered => {
             root.opacity = root.opacity > 0.7 ? 0.3 : 1.0;
         }

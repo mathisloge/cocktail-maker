@@ -19,15 +19,18 @@ target_sources(
                 awaitable_bool.cppm
                 comms_adapter.cppm
                 dispense_command.cppm
+                dispenser.cppm
                 execute_recipe.cppm
                 ingredient.cppm
                 lib.cppm
                 logging.cppm
                 overloaded.cppm
                 pod_discovery.cppm
+                pod_id.cppm
                 pod.cppm
                 recipe_boost.cppm
                 recipe.cppm
+                station_config.cppm
                 station_state.cppm
                 strong_type.cppm
                 units.cppm
@@ -57,5 +60,6 @@ if(BUILD_TESTING)
             recipe_boost.test.cpp
             recipe.test.cpp
             strong_type.test.cpp
+            station_config.test.cpp
     )
 endif()

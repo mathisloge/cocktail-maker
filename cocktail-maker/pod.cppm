@@ -13,7 +13,6 @@ import :async_machine_protocol_server;
 namespace cobalt = boost::cobalt;
 
 namespace cm {
-
 template <typename F>
 auto retry_on_timeout(std::size_t max_retries, F f) -> decltype(f(std::chrono::milliseconds{}))
 {
@@ -36,6 +35,7 @@ auto retry_on_timeout(std::size_t max_retries, F f) -> decltype(f(std::chrono::m
 class NoopPodState final : public PodState
 {
   public:
+    void update_id(PodId pod_id) override {};
     void update_state([[maybe_unused]] ConnectionState state) override {};
 };
 
@@ -58,7 +58,7 @@ export class IPod
 {
   public:
     virtual ~IPod() = default;
-    virtual cobalt::task<void> run(std::shared_ptr<PodState> state) = 0;
+    virtual cobalt::task<void> run(std::unique_ptr<PodState> state) = 0;
 };
 
 export template <typename AsyncStream>
@@ -71,7 +71,7 @@ class Pod : public IPod
     {
     }
 
-    cobalt::task<void> run(std::shared_ptr<PodState> state) override
+    cobalt::task<void> run(std::unique_ptr<PodState> state) override
     {
         state_ = std::move(state);
 
@@ -110,6 +110,7 @@ class Pod : public IPod
         Cleanup c{*this};
         state_->update_state(PodState::ConnectionState::connecting);
         const auto device_info = co_await retry_on_timeout(5, [this](auto timeout) { return aquire_device_info(timeout); });
+        state_->update_id(PodId{device_info.name});
         log::info(logger_, "Device '{}' is ready.", device_info.name);
         state_->update_state(PodState::ConnectionState::connected);
         device_ready_ = true;
@@ -155,7 +156,7 @@ class Pod : public IPod
 
   private:
     log::Logger logger_{log::create_or_get("pod")};
-    std::shared_ptr<PodState> state_{std::make_shared<NoopPodState>()};
+    std::unique_ptr<PodState> state_{std::make_unique<NoopPodState>()};
     AsyncMachineProtocolServer<AsyncStream> server_;
     AwaitableBool device_ready_;
 };

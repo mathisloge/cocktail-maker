@@ -38,7 +38,10 @@ if(BUILD_TESTING)
 
     target_sources(
         cocktail-maker-gui-tests
-        PRIVATE src/recipe_adapter.test.cpp src/async_ui.test.cpp
+        PRIVATE
+            src/recipe_adapter.test.cpp
+            src/async_ui.test.cpp
+            src/station_state_bridge.test.cpp
     )
 endif()
 

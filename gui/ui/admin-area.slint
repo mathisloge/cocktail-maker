@@ -1,15 +1,18 @@
-import { LogEntry } from "./data.slint";
+import { LogEntry, Pod } from "./data.slint";
 import { TabWidget } from "std-widgets.slint";
 import { PodConfigTab } from "./admin/pod-config-tab.slint";
 import { SystemLog } from "components.slint";
 
 export component AdminArea {
+    in property <[Pod]> pods;
     in property <[LogEntry]> log-entries;
 
     TabWidget {
         Tab {
             title: "Pod config";
-            PodConfigTab { }
+            PodConfigTab {
+                pods: pods;
+            }
         }
 
         Tab {

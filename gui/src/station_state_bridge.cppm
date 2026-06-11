@@ -9,26 +9,125 @@ import cm;
 
 namespace cm::gui {
 
+// NOTE: just use a linear search in most places, since we just have <10 pods.
+
 export class StationStateBridge;
 
-class PodStateImpl : public PodState
+struct PodStateData
+{
+    PodId id;
+    gui::ConnectionState connection_state{};
+};
+
+class PodStateImpl final : public PodState
 {
   public:
-    PodStateImpl(std::shared_ptr<StationStateBridge> parent)
+    PodStateImpl(std::weak_ptr<StationStateBridge> parent)
         : parent_{std::move(parent)}
     {
     }
 
-    ConnectionState connection_state() const
+    PodStateImpl(PodStateImpl&&) noexcept = delete ("Instances are tracked and pointer stability is needed.");
+    PodStateImpl& operator=(PodStateImpl&&) noexcept = delete;
+    PodStateImpl(const PodStateImpl& other) = delete;
+    PodStateImpl& operator=(const PodStateImpl&) = delete;
+
+    ~PodStateImpl() override;
+
+    const PodStateData& data() const
     {
-        return connection_state_;
+        return data_;
     }
+
+    void update_id(PodId pod_id) override;
 
     void update_state(ConnectionState state) override;
 
   private:
     std::weak_ptr<StationStateBridge> parent_;
-    ConnectionState connection_state_{};
+    PodStateData data_;
+};
+
+class PodUiModel : public slint::Model<gui::Pod>
+{
+  private:
+    std::optional<std::pair<size_t, gui::Pod*>> find_gui_pod(const PodStateData& pod)
+    {
+        auto it = std::ranges::find_if(pods_, [&](auto&& ui_pod) { return ui_pod.id == pod.id.raw().c_str(); });
+        if (it == pods_.end()) {
+            return std::nullopt;
+        }
+        auto row = static_cast<size_t>(std::distance(pods_.begin(), it));
+        return std::pair{row, &(*it)};
+    }
+
+  public:
+    size_t row_count() const override
+    {
+        return pods_.size();
+    }
+
+    std::optional<gui::Pod> row_data(size_t i) const override
+    {
+        if (i >= pods_.size()) {
+            return std::nullopt;
+        }
+        return pods_.at(i);
+    }
+
+    void update_pod(const PodStateData& pod)
+    {
+        const auto apply_state_to_ui = [](gui::Pod& gui_pod, const PodStateData& state_pod) {
+            bool changed = false;
+            if (gui_pod.id.data() != state_pod.id.raw()) {
+                gui_pod.id = slint::SharedString{state_pod.id.raw()};
+                changed = true;
+            }
+            if (gui_pod.connection_state != state_pod.connection_state) {
+                gui_pod.connection_state = state_pod.connection_state;
+                changed = true;
+            }
+            return changed;
+        };
+        if (auto existing_pod = find_gui_pod(pod); existing_pod.has_value()) {
+            auto [row, gui_pod] = existing_pod.value();
+            if (apply_state_to_ui(*gui_pod, pod)) {
+                this->notify_row_changed(row);
+            }
+        }
+        else {
+            // Don't add pod when no id was assigned yet (discovery phase)
+            if (pod.id == PodId{}) {
+                return;
+            }
+
+            auto row = pods_.size();
+            auto& inserted = pods_.emplace_back(gui::Pod{});
+
+            apply_state_to_ui(inserted, pod);
+            this->notify_row_added(row, 1);
+        }
+    }
+
+    void remove_pod(const PodStateData& pod)
+    {
+        const auto old_size = pods_.size();
+
+        const auto [first, last] =
+            std::ranges::remove_if(pods_, [&pod](const auto& ui_pod) { return ui_pod.id == pod.id.raw().c_str(); });
+
+        const auto removed_cout = static_cast<size_t>(std::distance(first, last));
+        if (removed_cout == 0) {
+            return;
+        }
+
+        const auto index = static_cast<size_t>(std::distance(pods_.begin(), first));
+        pods_.erase(first, last);
+        notify_row_removed(index, removed_cout);
+    }
+
+  private:
+    std::vector<gui::Pod> pods_;
 };
 
 class StationStateBridge : public StationState, public std::enable_shared_from_this<StationStateBridge>
@@ -39,38 +138,104 @@ class StationStateBridge : public StationState, public std::enable_shared_from_t
     {
     }
 
-    std::shared_ptr<PodState> create_pod_state() override
+    std::unique_ptr<PodState> create_pod_state() override
     {
-        auto pod_state = std::make_shared<PodStateImpl>(shared_from_this());
-        pods_.emplace_back(pod_state);
+        auto pod_state = std::make_unique<PodStateImpl>(shared_from_this());
+        pods_.emplace_back(pod_state.get());
         return pod_state;
     }
 
-    void pod_connection_state_changed()
+    void pod_connection_state_changed(const PodStateImpl& pod)
     {
-        // Stale entries (nur noch vom Bridge selbst gehalten) rauswerfen
-        std::erase_if(pods_, [](const std::shared_ptr<PodStateImpl>& p) {
-            return p.use_count() == 1; // kein externer Halter mehr
-        });
-
+        update_pod_model(pod);
         const bool all_connected = (not pods_.empty()) and std::ranges::all_of(pods_, [](const auto& p) {
-                                       return p->connection_state() == PodState::ConnectionState::connected;
+                                       return p->data().connection_state == gui::ConnectionState::Connected;
                                    });
 
         // update device ready to all_connected
         slint::invoke_from_event_loop([connected = all_connected, ui = ui_]() { ui->set_device_ready(connected); });
     }
 
+    void pod_about_to_removed(const PodStateImpl& pod)
+    {
+        std::erase(pods_, &pod);
+        pod_connection_state_changed(pod);
+        // ^^ always remove pod after connection state re-eval, since otherwise it will be added to the model again.
+        slint::invoke_from_event_loop([model = pod_model_, pod = pod.data()]() { model->remove_pod(pod); });
+    }
+
+    void pod_id_changed(const PodStateImpl& pod)
+    {
+        if (auto p = find_pod(&pod); p.has_value()) {
+            update_pod_model(*p.value());
+        }
+    }
+
+    std::shared_ptr<slint::Model<gui::Pod>> pod_model() const
+    {
+        return pod_model_;
+    }
+
+  private:
+    std::optional<PodStateImpl*> find_pod(const PodStateImpl* pod)
+    {
+        if (pod == nullptr) {
+            return std::nullopt;
+        }
+        auto it = std::ranges::find(pods_, pod);
+        if (it == pods_.end()) {
+            return std::nullopt;
+        }
+        return *it;
+    }
+
+    void update_pod_model(const PodStateImpl& pod)
+    {
+        slint::invoke_from_event_loop([self = shared_from_this(), pod = pod.data()]() { self->pod_model_->update_pod(pod); });
+    }
+
   private:
     slint::ComponentHandle<AppWindow> ui_;
-    std::vector<std::shared_ptr<PodStateImpl>> pods_;
+    std::vector<PodStateImpl*> pods_;
+    std::shared_ptr<PodUiModel> pod_model_{std::make_shared<PodUiModel>()};
 };
+
+PodStateImpl::~PodStateImpl()
+{
+    try {
+        if (auto p = parent_.lock(); p != nullptr) {
+            p->pod_about_to_removed(*this);
+        }
+    }
+    catch (const std::exception& ex) {
+        log::error{log::create_or_get("pod_state"), "Could not invoke station state remove pod action. Reason: {}", ex.what()};
+    }
+}
 
 void PodStateImpl::update_state(ConnectionState state)
 {
-    connection_state_ = state;
+    data_.connection_state = [state]() -> gui::ConnectionState {
+        switch (state) {
+        case PodState::ConnectionState::unknown:
+        case PodState::ConnectionState::disconnected:
+            return gui::ConnectionState::Disconnected;
+        case PodState::ConnectionState::connecting:
+            return gui::ConnectionState::Connecting;
+        case PodState::ConnectionState::connected:
+            return gui::ConnectionState::Connected;
+        }
+        std::unreachable();
+    }();
     if (auto p = parent_.lock(); p != nullptr) {
-        p->pod_connection_state_changed();
+        p->pod_connection_state_changed(*this);
+    }
+}
+
+void PodStateImpl::update_id(PodId pod_id)
+{
+    data_.id = std::move(pod_id);
+    if (auto p = parent_.lock(); p != nullptr) {
+        p->pod_id_changed(*this);
     }
 }
 } // namespace cm::gui

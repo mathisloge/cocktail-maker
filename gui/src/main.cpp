@@ -95,6 +95,8 @@ int main(int argc, char** argv)
     });
 
     auto station_state = std::make_shared<cm::gui::StationStateBridge>(ui);
+    ui->set_pods(station_state->pod_model());
+
     auto work_guard = boost::asio::make_work_guard(ctx);
     std::thread cobalt_thread([&ctx, recipe = recipe_store.find_by_id(0), station_state]() {
         auto logger = cm::log::create_or_get("cobalt_main");

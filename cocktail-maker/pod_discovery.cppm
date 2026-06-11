@@ -17,7 +17,7 @@ export class PodDiscovery
     virtual cobalt::generator<std::unique_ptr<IPod>> discover() = 0;
 };
 
-cobalt::promise<void> run_pod(std::unique_ptr<IPod> pod, std::shared_ptr<PodState> pod_state)
+cobalt::promise<void> run_pod(std::unique_ptr<IPod> pod, std::unique_ptr<PodState> pod_state)
 {
     auto logger{log::create_or_get("pod_discovery")};
     log::info(logger, "New pod discovered. Running it now...");

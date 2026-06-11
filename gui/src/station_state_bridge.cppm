@@ -48,7 +48,12 @@ class StationStateBridge : public StationState, public std::enable_shared_from_t
 
     void pod_connection_state_changed()
     {
-        const bool all_connected = (pods_.size() > 0) and std::ranges::all_of(pods_, [](const auto& p) {
+        // Stale entries (nur noch vom Bridge selbst gehalten) rauswerfen
+        std::erase_if(pods_, [](const std::shared_ptr<PodStateImpl>& p) {
+            return p.use_count() == 1; // kein externer Halter mehr
+        });
+
+        const bool all_connected = (not pods_.empty()) and std::ranges::all_of(pods_, [](const auto& p) {
                                        return p->connection_state() == PodState::ConnectionState::connected;
                                    });
 

@@ -19,19 +19,19 @@ constexpr auto kBiggerEps = 1e-9;
 auto make_store() -> IngredientStore
 {
     IngredientStore store;
-    store.add({"rum", "Dark Rum", IngredientType::alcohol, BoostCategory::boostable});
-    store.add({"vodka", "Vodka", IngredientType::alcohol, BoostCategory::boostable});
-    store.add({"cola", "Cola", IngredientType::soda, BoostCategory::reducible});
-    store.add({"juice", "Orange Juice", IngredientType::juice, BoostCategory::reducible});
-    store.add({"mint", "Mint Leaves", IngredientType::other, BoostCategory::fixed});
+    store.add({IngredientId{"rum"}, "Dark Rum", IngredientType::alcohol, BoostCategory::boostable});
+    store.add({IngredientId{"vodka"}, "Vodka", IngredientType::alcohol, BoostCategory::boostable});
+    store.add({IngredientId{"cola"}, "Cola", IngredientType::soda, BoostCategory::reducible});
+    store.add({IngredientId{"juice"}, "Orange Juice", IngredientType::juice, BoostCategory::reducible});
+    store.add({IngredientId{"mint"}, "Mint Leaves", IngredientType::other, BoostCategory::fixed});
     return store;
 }
 
 // ─── Command builders ─────────────────────────────────────────────────────────
 
-auto dispense(IngredientId id, double ml) -> Command
+auto dispense(std::string id, double ml) -> Command
 {
-    return DispenseCommand{0, std::move(id), ml * units::milli_litre};
+    return DispenseCommand{0, IngredientId{std::move(id)}, ml * units::milli_litre};
 }
 
 auto manual(std::string instruction) -> Command
@@ -43,8 +43,9 @@ auto manual(std::string instruction) -> Command
 
 // Returns the volume of the first DispenseCommand matching `id`,
 // searching both sequential and parallel slots.
-auto find_volume(const Commands& commands, const IngredientId& id) -> std::optional<units::Litre>
+auto find_volume(const Commands& commands, std::string id_str) -> std::optional<units::Litre>
 {
+    const IngredientId id{std::move(id_str)};
     const auto check_cmd = [&](const Command& cmd) -> std::optional<units::Litre> {
         if (const auto* dc = std::get_if<DispenseCommand>(&cmd); dc && dc->ingredient == id) {
             return dc->volume;

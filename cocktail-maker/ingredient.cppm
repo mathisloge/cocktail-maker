@@ -2,8 +2,12 @@ module;
 
 export module cm:ingredient;
 import std;
+import :strong_type;
 
 export namespace cm {
+
+using IngredientId = strong_type<std::string, struct IngredientIdTag, Comparable, Hashable, Formattable>;
+
 /**
  * @brief Categorizes how an ingredient should respond to a boost adjustment.
  *
@@ -101,8 +105,6 @@ enum class IngredientType
      */
     other,
 };
-
-using IngredientId = std::string;
 
 struct Ingredient
 {

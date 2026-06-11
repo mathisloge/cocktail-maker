@@ -350,11 +350,11 @@ TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
     SECTION("dispense command uses ingredient display name as text")
     {
         cm::IngredientStore ingredient_store;
-        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Rum"});
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{"rum"}, .display_name = "Rum"});
 
         cm::Recipe r = make_recipe("Mojito", {});
         r.commands = {cm::DispenseCommand{
-            .ingredient = cm::IngredientId{1},
+            .ingredient = cm::IngredientId{"rum"},
             .volume = 50 * units::milli_litre,
         }};
 
@@ -369,11 +369,11 @@ TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
     SECTION("dispense command value contains volume in millilitres")
     {
         cm::IngredientStore ingredient_store;
-        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Gin"});
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{"gin"}, .display_name = "Gin"});
 
         cm::Recipe r = make_recipe("G&T", {});
         r.commands = {cm::DispenseCommand{
-            .ingredient = cm::IngredientId{1},
+            .ingredient = cm::IngredientId{"gin"},
             .volume = 50 * units::milli_litre,
         }};
 
@@ -391,7 +391,7 @@ TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
 
         cm::Recipe r = make_recipe("Ghost", {});
         r.commands = {cm::DispenseCommand{
-            .ingredient = cm::IngredientId{99},
+            .ingredient = cm::IngredientId{"unknown"},
             .volume = 30 * units::milli_litre,
         }};
         cm::RecipeStore recipe_store{{std::move(r)}};
@@ -405,11 +405,11 @@ TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
     SECTION("dispense command volume is truncated to integer millilitres")
     {
         cm::IngredientStore ingredient_store;
-        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Syrup"});
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{"syrup"}, .display_name = "Syrup"});
 
         cm::Recipe r = make_recipe("Fancy", {});
         r.commands = {cm::DispenseCommand{
-            .ingredient = cm::IngredientId{1},
+            .ingredient = cm::IngredientId{"syrup"},
             .volume = 25 * units::milli_litre,
         }};
 
@@ -424,11 +424,11 @@ TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
     SECTION("dispense command status is NotStarted")
     {
         cm::IngredientStore ingredient_store;
-        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Vodka"});
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{"vodka"}, .display_name = "Vodka"});
 
         cm::Recipe r = make_recipe("Test", {});
         r.commands = {cm::DispenseCommand{
-            .ingredient = cm::IngredientId{1},
+            .ingredient = cm::IngredientId{"vodka"},
             .volume = 40 * units::milli_litre,
         }};
 
@@ -443,15 +443,15 @@ TEST_CASE("transform_command: DispenseCommand", "[recipe_adapter][commands]")
     SECTION("dispense command id is copied")
     {
         cm::IngredientStore ingredient_store;
-        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Vodka"});
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{"vodka"}, .display_name = "Vodka"});
 
         cm::Recipe r = make_recipe("Test", {});
         r.commands = {cm::DispenseCommand{
-                          .ingredient = cm::IngredientId{1},
+                          .ingredient = cm::IngredientId{"vodka"},
                           .volume = 40 * units::milli_litre,
                       },
                       cm::DispenseCommand{
-                          .ingredient = cm::IngredientId{1},
+                          .ingredient = cm::IngredientId{"vodka"},
                           .volume = 50 * units::milli_litre,
                       }};
 
@@ -475,14 +475,14 @@ TEST_CASE("transform: ParallelCommand flattening", "[recipe_adapter][commands]")
     SECTION("parallel commands are flattened into sequential entries")
     {
         cm::IngredientStore ingredient_store;
-        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Lemon Juice"});
-        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{2}, .display_name = "Sugar Syrup"});
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{"a"}, .display_name = "Lemon Juice"});
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{"b"}, .display_name = "Sugar Syrup"});
 
         cm::Recipe r = make_recipe("Lemonade", {});
         r.commands = {
             cm::ParallelCommand{
-                cm::DispenseCommand{.ingredient = cm::IngredientId{1}, .volume = 30 * units::milli_litre},
-                cm::DispenseCommand{.ingredient = cm::IngredientId{2}, .volume = 20 * units::milli_litre},
+                cm::DispenseCommand{.ingredient = cm::IngredientId{"a"}, .volume = 30 * units::milli_litre},
+                cm::DispenseCommand{.ingredient = cm::IngredientId{"b"}, .volume = 20 * units::milli_litre},
             },
         };
 
@@ -498,13 +498,13 @@ TEST_CASE("transform: ParallelCommand flattening", "[recipe_adapter][commands]")
     SECTION("unknown ingredient inside parallel command is skipped, others remain")
     {
         cm::IngredientStore ingredient_store;
-        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Mint"});
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{"a"}, .display_name = "Mint"});
 
         cm::Recipe r = make_recipe("Mojito", {});
         r.commands = {
             cm::ParallelCommand{
-                cm::DispenseCommand{.ingredient = cm::IngredientId{99}, .volume = 10 * units::milli_litre}, // unknown
-                cm::DispenseCommand{.ingredient = cm::IngredientId{1}, .volume = 40 * units::milli_litre},
+                cm::DispenseCommand{.ingredient = cm::IngredientId{"unknown"}, .volume = 10 * units::milli_litre}, // unknown
+                cm::DispenseCommand{.ingredient = cm::IngredientId{"a"}, .volume = 40 * units::milli_litre},
             },
         };
 
@@ -519,15 +519,15 @@ TEST_CASE("transform: ParallelCommand flattening", "[recipe_adapter][commands]")
     SECTION("mix of flat and parallel commands preserves overall order")
     {
         cm::IngredientStore ingredient_store;
-        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{1}, .display_name = "Tequila"});
-        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{2}, .display_name = "Triple Sec"});
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{"a"}, .display_name = "Tequila"});
+        ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{"b"}, .display_name = "Triple Sec"});
 
         cm::Recipe r = make_recipe("Margarita", {});
         r.commands = {
             cm::ManualCommand{.instruction = "Prepare glass"},
             cm::ParallelCommand{
-                cm::DispenseCommand{.ingredient = cm::IngredientId{1}, .volume = 50 * units::milli_litre},
-                cm::DispenseCommand{.ingredient = cm::IngredientId{2}, .volume = 25 * units::milli_litre},
+                cm::DispenseCommand{.ingredient = cm::IngredientId{"a"}, .volume = 50 * units::milli_litre},
+                cm::DispenseCommand{.ingredient = cm::IngredientId{"b"}, .volume = 25 * units::milli_litre},
             },
             cm::ManualCommand{.instruction = "Stir and serve"},
         };

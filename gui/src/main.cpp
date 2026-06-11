@@ -37,11 +37,11 @@ int main(int argc, char** argv)
 
     cm::IngredientStore ingredient_store;
 
-    ingredient_store.add(cm::Ingredient{.id = "test",
+    ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{"test"},
                                         .display_name = "Test Ingredient",
                                         .type = cm::IngredientType::other,
                                         .boost_category = cm::BoostCategory::boostable});
-    ingredient_store.add(cm::Ingredient{.id = "test2",
+    ingredient_store.add(cm::Ingredient{.id = cm::IngredientId{"test2"},
                                         .display_name = "Test Ingredient2",
                                         .type = cm::IngredientType::other,
                                         .boost_category = cm::BoostCategory::reducible});
@@ -56,11 +56,11 @@ int main(int argc, char** argv)
             .image_path = recipe_db_path / "mojito.png",
             .commands =
                 {
-                    cm::DispenseCommand{.ingredient = "test", .volume = (89 * cm::units::milli_litre)},
+                    cm::DispenseCommand{.ingredient = cm::IngredientId{"test"}, .volume = (89 * cm::units::milli_litre)},
                     cm::ManualCommand{.instruction = "Help me"},
                     cm::ParallelCommand{
-                        cm::DispenseCommand{.ingredient = "test", .volume = (101 * cm::units::milli_litre)},
-                        cm::DispenseCommand{.ingredient = "test2", .volume = (101 * cm::units::milli_litre)},
+                        cm::DispenseCommand{.ingredient = cm::IngredientId{"test"}, .volume = (101 * cm::units::milli_litre)},
+                        cm::DispenseCommand{.ingredient = cm::IngredientId{"test2"}, .volume = (101 * cm::units::milli_litre)},
                     },
                 },
         });

@@ -8,93 +8,8 @@ import {
 } from "../components.slint";
 import { ProgressIndicator, Spinner, ScrollView } from "std-widgets.slint";
 import { LogEntry, LogLevel } from "../data.slint";
-import { Spinner } from "std-widgets.slint";
-import { CornerDeco } from "../components/corner-deco.slint";
+import { CornerDeco, SystemLog } from "../components.slint";
 
-// ─────────────────────────────────────────────────────────────────────
-//  LOG ROW
-// ─────────────────────────────────────────────────────────────────────
-component LogRow inherits Rectangle {
-    in property <LogEntry> entry;
-
-    height: 26px;
-    background: transparent;
-
-    Rectangle {
-        y: parent.height - 1px;
-        height: 1px;
-        background: Palette.border-subtle;
-    }
-
-    HorizontalLayout {
-        alignment: LayoutAlignment.start;
-        padding-left: 20px;
-        padding-right: 20px;
-        spacing: 0;
-        SmallText {
-            text: root.entry.time-stamp;
-            font-size: 5.5pt;
-            letter-spacing: 0.8px;
-            vertical-alignment: center;
-            overflow: elide;
-        }
-
-        SmallText {
-            text: "│";
-            font-size: 6pt;
-            letter-spacing: 0px;
-            color: Palette.border;
-            vertical-alignment: center;
-            horizontal-stretch: 0;
-        }
-
-        SmallText {
-            width: 44px;
-            horizontal-stretch: 0;
-            text: root.entry.level == LogLevel.ok ? "OK"
-                : root.entry.level == LogLevel.err ? "ERROR"
-                : root.entry.level == LogLevel.wait ? "WAIT"
-                : "INFO";
-            font-size: 5.5pt;
-            letter-spacing: 1.5px;
-            vertical-alignment: center;
-            color: root.entry.level == LogLevel.ok ? Palette.text-success
-                : root.entry.level == LogLevel.err ? Palette.text-error
-                : root.entry.level == LogLevel.wait ? Palette.accent
-                : Palette.text-muted;
-        }
-
-        SmallText {
-            text: "│";
-            font-size: 6pt;
-            letter-spacing: 0px;
-            color: Palette.border;
-            vertical-alignment: center;
-            horizontal-stretch: 0;
-        }
-
-        Rectangle {
-            width: 12px;
-            horizontal-stretch: 0;
-            background: transparent;
-        }
-
-        SmallText {
-            text: root.entry.message;
-            font-size: 5.5pt;
-            letter-spacing: 0.8px;
-            vertical-alignment: center;
-            overflow: elide;
-            color: root.entry.level == LogLevel.err ? Palette.boost-positive-text
-                : Palette.text-primary;
-        }
-    }
-}
-
-
-// ─────────────────────────────────────────────────────────────────────
-//  BOOT SCREEN
-// ─────────────────────────────────────────────────────────────────────
 export component BootScreen inherits Rectangle {
     in property <string> machine-name: "Sir Mix-A-Lot";
     in property <bool> is-loading:   false;
@@ -104,12 +19,7 @@ export component BootScreen inherits Rectangle {
 
     background: Palette.background;
 
-    property <int> entry-count: log-entries.length;
-    changed entry-count => {
-        if log-scroll.viewport-height > log-scroll.height {
-            //log-scroll.viewport-y = - log-scroll.viewport-height;
-        }
-    }
+    private property <int> entry-count: log-entries.length;
 
     HorizontalLayout {
 
@@ -239,20 +149,8 @@ export component BootScreen inherits Rectangle {
                     }
                 }
 
-                // Scrollable log
-                log-scroll := Flickable {
-                    viewport-height: log-content.preferred-height;
-
-                    log-content := VerticalLayout {
-                        padding-top: 8px;
-                        padding-bottom: 8px;
-                        spacing: 0;
-                        alignment: start;
-
-                        for entry in root.log-entries: LogRow {
-                            entry: entry;
-                        }
-                    }
+                SystemLog {
+                    log-entries: root.log-entries;
                 }
             }
         }

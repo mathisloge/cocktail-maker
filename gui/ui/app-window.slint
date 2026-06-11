@@ -15,6 +15,7 @@ import {
     BootScreen,
 } from "pages.slint";
 import { ManualCommandPopup } from "popups.slint";
+import { AdminArea } from "admin-area.slint";
 
 export component AppWindow inherits Window {
     in property <bool> device_ready: false;
@@ -25,7 +26,7 @@ export component AppWindow inherits Window {
         }
     }
     in-out property <[LogEntry]> log-entries;
-    in-out property <Page> current_page: Page.cocktail_list_page;
+    in-out property <Page> current_page: Page.admin-area-page;
     in property <[RecipeView]> recipes;
     in-out property <RecipeView> selected_recipe;
     private property <Command> popup_command;
@@ -114,6 +115,10 @@ export component AppWindow inherits Window {
 
         if current_page == Page.mix-page: MixProgressPage {
             recipe: root.selected_recipe;
+        }
+
+        if current_page == Page.admin-area-page: AdminArea {
+            log-entries: root.log-entries;
         }
     }
 }

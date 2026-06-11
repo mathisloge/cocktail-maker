@@ -1,0 +1,19 @@
+import { TabWidget } from "std-widgets.slint";
+import { SystemLog } from "../components.slint";
+
+export component PodConfigTab inherits TabWidget {
+    orientation: vertical;
+    Tab {
+        title: "First";
+        Rectangle {
+            background: orange;
+        }
+    }
+
+    Tab {
+        title: "Second";
+        Rectangle {
+            background: pink;
+        }
+    }
+}

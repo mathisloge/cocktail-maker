@@ -97,6 +97,16 @@ int main(int argc, char** argv)
     auto station_state = std::make_shared<cm::gui::StationStateBridge>(ui);
     ui->set_pods(station_state->pod_model());
 
+    ui->on_assign_ingredient_to_dispenser(
+        [&](const cm::gui::Pod& pod, const cm::gui::Dispenser& dispenser, slint::SharedString ingredient_id) {
+            auto logger = cm::log::create_or_get("ui");
+            cm::log::debug(
+                logger, "Assign ingredient '{}' to pod '{}' and dispenser '{}'", ingredient_id.data(), pod.id.data(), dispenser.id);
+            boost::asio::post(ctx, []() {
+
+            });
+        });
+
     auto work_guard = boost::asio::make_work_guard(ctx);
     std::thread cobalt_thread([&ctx, recipe = recipe_store.find_by_id(0), station_state]() {
         auto logger = cm::log::create_or_get("cobalt_main");

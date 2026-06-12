@@ -1,4 +1,4 @@
-import { LogEntry, Pod } from "./data.slint";
+import { LogEntry, Pod, Dispenser } from "./data.slint";
 import { TabWidget } from "std-widgets.slint";
 import { PodConfigTab } from "./admin/pod-config-tab.slint";
 import { SystemLog } from "components.slint";
@@ -7,10 +7,13 @@ export component AdminArea {
     in property <[Pod]> pods;
     in property <[LogEntry]> log-entries;
 
+    callback identify-dispenser <=> pod-config.identify-dispenser;
+    callback assign-ingredient-to-dispenser <=> pod-config.assign-ingredient;
+
     TabWidget {
         Tab {
             title: "Pod config";
-            PodConfigTab {
+            pod-config := PodConfigTab {
                 pods: pods;
             }
         }

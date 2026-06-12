@@ -4,6 +4,7 @@ module;
 export module cm:pod;
 
 import std;
+import :pod_types;
 import :strong_type;
 import :station_state;
 import :awaitable_bool;
@@ -35,23 +36,8 @@ auto retry_on_timeout(std::size_t max_retries, F f) -> decltype(f(std::chrono::m
 class NoopPodState final : public PodState
 {
   public:
-    void update_id(PodId pod_id) override {};
+    void update_info(PodInfo info) override {};
     void update_state([[maybe_unused]] ConnectionState state) override {};
-};
-
-export struct Version
-{
-    int major{};
-    int minor{};
-    int patch{};
-
-    friend constexpr auto operator<=>(const Version&, const Version&) = default;
-};
-
-export struct DeviceInfo
-{
-    std::string name;
-    Version firmware_version;
 };
 
 export class IPod
@@ -78,17 +64,19 @@ class Pod : public IPod
         co_await cobalt::race(monitor_device(), server_.run());
     }
 
-    cobalt::promise<DeviceInfo> aquire_device_info(std::chrono::milliseconds timeout = std::chrono::milliseconds{100})
+    cobalt::promise<PodInfo> aquire_device_info(std::chrono::milliseconds timeout = std::chrono::milliseconds{100})
     {
         InDeviceInfoResponse msg = co_await send_and_receive<InDeviceInfoResponse>(OutDeviceInfoRequest{}, timeout);
-        co_return DeviceInfo{
-            .name = msg.field_deviceName().getValue(),
+        co_return PodInfo{
+            .id = PodId{msg.field_deviceName().getValue()},
             .firmware_version =
                 Version{
                     .major = msg.field_firmwareMajor().getValue(),
                     .minor = msg.field_firmwareMinor().getValue(),
                     .patch = msg.field_firmwarePatch().getValue(),
                 },
+            .num_pumps = msg.field_numPumps().getValue(),
+            .num_valves = msg.field_numValves().getValue(),
         };
     }
 
@@ -109,9 +97,9 @@ class Pod : public IPod
 
         Cleanup c{*this};
         state_->update_state(PodState::ConnectionState::connecting);
-        const auto device_info = co_await retry_on_timeout(5, [this](auto timeout) { return aquire_device_info(timeout); });
-        state_->update_id(PodId{device_info.name});
-        log::info(logger_, "Device '{}' is ready.", device_info.name);
+        const auto pod_info = co_await retry_on_timeout(5, [this](auto timeout) { return aquire_device_info(timeout); });
+        state_->update_info(pod_info);
+        log::info(logger_, "Device '{}' is ready.", pod_info.id);
         state_->update_state(PodState::ConnectionState::connected);
         device_ready_ = true;
 

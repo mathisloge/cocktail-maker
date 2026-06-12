@@ -13,6 +13,7 @@ import {
     CommandStatus,
     LogEntry,
     Pod,
+    Dispenser,
 } from "data.slint";
 import { Button } from "components.slint";
 import {
@@ -43,6 +44,10 @@ export component AppWindow inherits Window {
     callback boost-recipe(int);
     callback create_recipe(RecipeView, int);
     callback manual-command-confirmed();
+
+    callback identify-dispenser(Pod, Dispenser);
+    callback assign-ingredient-to-dispenser(Pod, Dispenser, string);
+
     public function open-manual-command-popup(command: Command) {
         root.popup_command = command;
         popup.show();
@@ -125,9 +130,15 @@ export component AppWindow inherits Window {
             recipe: root.selected_recipe;
         }
 
-        if current_page == Page.admin-area-page: AdminArea {
+        if current_page == Page.admin-area-page: admin-area := AdminArea {
             pods: pods;
             log-entries: root.log-entries;
+            assign-ingredient-to-dispenser(pod, dispenser, ingredient_id) => {
+                root.assign-ingredient-to-dispenser(pod, dispenser, ingredient_id);
+            };
+            identify-dispenser(pod, dispenser) => {
+                root.identify-dispenser(pod, dispenser);
+            }
         }
     }
 }

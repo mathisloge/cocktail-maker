@@ -51,8 +51,7 @@ TEST_CASE("StationStateBridge - Pod Lifecycle", "[gui][StationStateBridge]")
     {
         auto pod = bridge->create_pod_state();
 
-        // Assuming cm::PodId is constructible via string/const char*
-        pod->update_id(cm::PodId{"pod-123"});
+        pod->update_info({cm::PodId{"pod-123"}});
         flush_slint_events();
 
         REQUIRE(model->row_count() == 1);
@@ -65,7 +64,7 @@ TEST_CASE("StationStateBridge - Pod Lifecycle", "[gui][StationStateBridge]")
     SECTION("State updates map exactly to UI ConnectionState enums")
     {
         auto pod = bridge->create_pod_state();
-        pod->update_id(cm::PodId{"pod-states"});
+        pod->update_info({cm::PodId{"pod-states"}});
         flush_slint_events();
 
         REQUIRE(model->row_data(0)->connection_state == cm::gui::ConnectionState::Disconnected);
@@ -98,7 +97,7 @@ TEST_CASE("StationStateBridge - Pod Lifecycle", "[gui][StationStateBridge]")
         REQUIRE(model->row_count() == 0);
 
         // Setting the ID triggers processing and applies the previously cached state
-        pod->update_id(cm::PodId{"pod-deferred"});
+        pod->update_info({cm::PodId{"pod-deferred"}});
         flush_slint_events();
 
         REQUIRE(model->row_count() == 1);
@@ -117,8 +116,8 @@ TEST_CASE("StationStateBridge - Readiness Status and Multiple Pods", "[gui][Stat
         auto pod1 = bridge->create_pod_state();
         auto pod2 = bridge->create_pod_state();
 
-        pod1->update_id(cm::PodId{"pod-1"});
-        pod2->update_id(cm::PodId{"pod-2"});
+        pod1->update_info({cm::PodId{"pod-1"}});
+        pod2->update_info({cm::PodId{"pod-2"}});
         flush_slint_events();
 
         REQUIRE(model->row_count() == 2);
@@ -141,7 +140,7 @@ TEST_CASE("StationStateBridge - Readiness Status and Multiple Pods", "[gui][Stat
     {
         {
             auto pod = bridge->create_pod_state();
-            pod->update_id(cm::PodId{"pod-to-remove"});
+            pod->update_info({.id = cm::PodId{"pod-to-remove"}});
             pod->update_state(cm::PodState::ConnectionState::connected);
             flush_slint_events();
 

@@ -1,6 +1,25 @@
-import { TabWidget, ListView, HorizontalBox } from "std-widgets.slint";
-import { SystemLog, SmallText, PulseDot } from "../components.slint";
-import { Pod, ConnectionState } from "../data.slint";
+import {
+    TabWidget,
+    ListView,
+    HorizontalBox,
+    ComboBox,
+    VerticalBox,
+    Button,
+    ScrollView,
+} from "std-widgets.slint";
+import {
+    SystemLog,
+    SmallText,
+    PulseDot,
+    MediumText,
+} from "../components.slint";
+import {
+    Pod,
+    Dispenser,
+    ConnectionState,
+    DispenserType,
+    Ingredient,
+} from "../data.slint";
 import { Palette } from "../palette.slint";
 
 component PodListDelegate inherits Rectangle {
@@ -10,7 +29,7 @@ component PodListDelegate inherits Rectangle {
 
     background: Palette.background-card;
     border-width: 1px;
-    border-color: Palette.border-subtle;
+    border-color: root.selected ? Palette.border-strong : Palette.border-subtle;
     animate background, border-color { duration: 100ms; }
 
     HorizontalBox {
@@ -43,18 +62,30 @@ component PodListDelegate inherits Rectangle {
         hover when touch-area.has-hover: {
             root.background: Palette.background-elevated;
         }
-        selected when root.selected: {
-            root.border-color: Palette.border;
-        }
     ]
 }
 
 export component PodConfigTab inherits Rectangle {
     in property <[Pod]> pods: [
-        { id: "Pod-Connected", connection_state: ConnectionState.connected },
+        {
+            id: "Pod-Connected",
+            connection_state: ConnectionState.connected,
+            dispensers:[
+                { id: 1, type: DispenserType.pump },
+                { id: 2, type: DispenserType.pump },
+                { id: 3, type: DispenserType.pump },
+                { id: 4, type: DispenserType.pump },
+                { id: 5, type: DispenserType.valve },
+            ]
+        },
         { id: "Pod-Connecting", connection_state: ConnectionState.connecting },
         { id: "Pod-Disconnected", connection_state: ConnectionState.disconnected },
     ];
+    in property <[string]> ingredient_ids: ["vodka", "orange_juice", "gin"];
+    private property <Pod> selected;
+
+    callback identify-dispenser(Pod, Dispenser);
+    callback assign-ingredient(Pod, Dispenser, string);
 
     sidebar := VerticalLayout {
         x: 0;
@@ -64,9 +95,10 @@ export component PodConfigTab inherits Rectangle {
         ListView {
             for pod in pods: PodListDelegate {
                 width: parent.width;
-                height: 30px;
+                height: 50px;
                 pod: pod;
-                selected: pod.connection_state == ConnectionState.connecting;
+                selected: root.selected == pod;
+                clicked => { root.selected = pod; }
             }
         }
     }
@@ -79,14 +111,44 @@ export component PodConfigTab inherits Rectangle {
         background: Palette.border;
     }
 
-    content := VerticalLayout {
+    content := VerticalBox {
         x: split.x + split.width;
         y: 0;
         width: root.width - sidebar.width - split.width;
-        padding: 20px;
-        padding-top: 40px;
-        padding-bottom: 60px;
-        spacing: 15px;
-        alignment: LayoutAlignment.space-between;
+        alignment: stretch;
+
+        MediumText {
+            text: selected.id;
+        }
+
+        ScrollView {
+            VerticalBox {
+                for dispenser in root.selected.dispensers: HorizontalBox {
+                    cross-axis-alignment: center;
+                    SmallText {
+                        text: "Dispenser " + dispenser.id;
+                    }
+
+                    ComboBox {
+                        height: 40px;
+                        model: root.ingredient_ids;
+                        selected(current-value) => {
+                            assign-ingredient(selected, dispenser, current-value);
+                        }
+                    }
+
+                    Button {
+                        text: "Identify";
+                        height: 40px;
+                        clicked => { identify-dispenser(selected, dispenser); }
+                    }
+
+                    Button {
+                        text: "Calibrate";
+                        height: 40px;
+                    }
+                }
+            }
+        }
     }
 }

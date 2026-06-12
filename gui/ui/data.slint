@@ -42,6 +42,11 @@ export struct RecipeView {
     commands: [Command],
 }
 
+export struct Ingredient {
+    id: string,
+    name: string,
+}
+
 export enum DispenserType {
     pump,
     valve,
@@ -57,8 +62,4 @@ export enum ConnectionState {
     connecting,
     connected,
 }
-export struct Pod {
-    id: string,
-    connection_state: ConnectionState,
-    dispensers: [Dispenser]
-}
+export struct Pod { id: string, connection_state: ConnectionState, dispensers: [Dispenser] }

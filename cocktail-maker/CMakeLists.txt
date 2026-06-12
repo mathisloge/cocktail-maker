@@ -26,7 +26,7 @@ target_sources(
                 logging.cppm
                 overloaded.cppm
                 pod_discovery.cppm
-                pod_id.cppm
+                pod_types.cppm
                 pod.cppm
                 recipe_boost.cppm
                 recipe.cppm

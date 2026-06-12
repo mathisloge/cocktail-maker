@@ -92,7 +92,7 @@ export component BootScreen inherits Rectangle {
 
                 SmallText {
                     text: root.is-loading ? "WIRD GESTARTET …" : "BEREIT";
-                    color: root.is-loading ? Palette.accent : #5cad75;
+                    color: root.is-loading ? Palette.accent : Palette.text-success;
                     animate color { duration: 400ms; }
                 }
             }

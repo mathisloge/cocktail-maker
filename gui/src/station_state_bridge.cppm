@@ -15,7 +15,7 @@ export class StationStateBridge;
 
 struct PodStateData
 {
-    PodId id;
+    PodInfo info;
     gui::ConnectionState connection_state{};
 };
 
@@ -39,7 +39,7 @@ class PodStateImpl final : public PodState
         return data_;
     }
 
-    void update_id(PodId pod_id) override;
+    void update_info(PodInfo info) override;
 
     void update_state(ConnectionState state) override;
 
@@ -53,7 +53,7 @@ class PodUiModel : public slint::Model<gui::Pod>
   private:
     std::optional<std::pair<size_t, gui::Pod*>> find_gui_pod(const PodStateData& pod)
     {
-        auto it = std::ranges::find_if(pods_, [&](auto&& ui_pod) { return ui_pod.id == pod.id.raw().c_str(); });
+        auto it = std::ranges::find_if(pods_, [&](auto&& ui_pod) { return ui_pod.id == pod.info.id.raw().c_str(); });
         if (it == pods_.end()) {
             return std::nullopt;
         }
@@ -79,12 +79,30 @@ class PodUiModel : public slint::Model<gui::Pod>
     {
         const auto apply_state_to_ui = [](gui::Pod& gui_pod, const PodStateData& state_pod) {
             bool changed = false;
-            if (gui_pod.id.data() != state_pod.id.raw()) {
-                gui_pod.id = slint::SharedString{state_pod.id.raw()};
+            if (gui_pod.id.data() != state_pod.info.id.raw()) {
+                gui_pod.id = slint::SharedString{state_pod.info.id.raw()};
                 changed = true;
             }
             if (gui_pod.connection_state != state_pod.connection_state) {
                 gui_pod.connection_state = state_pod.connection_state;
+                changed = true;
+            }
+
+            if ((gui_pod.dispensers == nullptr) or gui_pod.dispensers->row_count() != (state_pod.info.num_pumps + state_pod.info.num_valves)) {
+                auto dispenser_model = std::make_shared<slint::VectorModel<gui::Dispenser>>();
+                for (int i = 0; i < state_pod.info.num_pumps; ++i) {
+                    dispenser_model->push_back(gui::Dispenser{
+                        .id = i,
+                        .type = DispenserType::Pump,
+                    });
+                }
+                for (int i = 0; i < state_pod.info.num_valves; ++i) {
+                    dispenser_model->push_back(gui::Dispenser{
+                        .id = (state_pod.info.num_pumps + i),
+                        .type = DispenserType::Valve,
+                    });
+                }
+                gui_pod.dispensers = std::move(dispenser_model);
                 changed = true;
             }
             return changed;
@@ -97,7 +115,7 @@ class PodUiModel : public slint::Model<gui::Pod>
         }
         else {
             // Don't add pod when no id was assigned yet (discovery phase)
-            if (pod.id == PodId{}) {
+            if (pod.info.id == PodId{}) {
                 return;
             }
 
@@ -114,7 +132,7 @@ class PodUiModel : public slint::Model<gui::Pod>
         const auto old_size = pods_.size();
 
         const auto [first, last] =
-            std::ranges::remove_if(pods_, [&pod](const auto& ui_pod) { return ui_pod.id == pod.id.raw().c_str(); });
+            std::ranges::remove_if(pods_, [&pod](const auto& ui_pod) { return ui_pod.id == pod.info.id.raw().c_str(); });
 
         const auto removed_cout = static_cast<size_t>(std::distance(first, last));
         if (removed_cout == 0) {
@@ -164,7 +182,7 @@ class StationStateBridge : public StationState, public std::enable_shared_from_t
         slint::invoke_from_event_loop([model = pod_model_, pod = pod.data()]() { model->remove_pod(pod); });
     }
 
-    void pod_id_changed(const PodStateImpl& pod)
+    void pod_info_changed(const PodStateImpl& pod)
     {
         if (auto p = find_pod(&pod); p.has_value()) {
             update_pod_model(*p.value());
@@ -231,11 +249,11 @@ void PodStateImpl::update_state(ConnectionState state)
     }
 }
 
-void PodStateImpl::update_id(PodId pod_id)
+void PodStateImpl::update_info(PodInfo info)
 {
-    data_.id = std::move(pod_id);
+    data_.info = std::move(info);
     if (auto p = parent_.lock(); p != nullptr) {
-        p->pod_id_changed(*this);
+        p->pod_info_changed(*this);
     }
 }
 } // namespace cm::gui

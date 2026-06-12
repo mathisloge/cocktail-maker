@@ -5,7 +5,7 @@ target_compile_features(cocktail-maker-lib PUBLIC cxx_std_26)
 
 target_link_libraries(
     cocktail-maker-lib
-    PUBLIC mp-units::mp-units spdlog::spdlog simdjson::simdjson Boost::cobalt
+    PUBLIC mp-units::mp-units spdlog::spdlog simdjson::simdjson Boost::cobalt libassert::assert
     PRIVATE proto
 )
 
@@ -27,6 +27,7 @@ target_sources(
                 overloaded.cppm
                 pod_discovery.cppm
                 pod_types.cppm
+                pod_registry.cppm
                 pod.cppm
                 recipe_boost.cppm
                 recipe.cppm
@@ -57,6 +58,7 @@ if(BUILD_TESTING)
             ingredient.test.cpp
             pod_discovery.test.cpp
             pod.test.cpp
+            pod_registry.test.cpp
             recipe_boost.test.cpp
             recipe.test.cpp
             strong_type.test.cpp

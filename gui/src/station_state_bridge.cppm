@@ -88,7 +88,8 @@ class PodUiModel : public slint::Model<gui::Pod>
                 changed = true;
             }
 
-            if ((gui_pod.dispensers == nullptr) or gui_pod.dispensers->row_count() != (state_pod.info.num_pumps + state_pod.info.num_valves)) {
+            if ((gui_pod.dispensers == nullptr) or
+                gui_pod.dispensers->row_count() != (state_pod.info.num_pumps + state_pod.info.num_valves)) {
                 auto dispenser_model = std::make_shared<slint::VectorModel<gui::Dispenser>>();
                 for (int i = 0; i < state_pod.info.num_pumps; ++i) {
                     dispenser_model->push_back(gui::Dispenser{

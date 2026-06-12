@@ -58,6 +58,8 @@ class Client
         device_info_response_msg_.field_firmwareMajor().setValue(firmware_version.major);
         device_info_response_msg_.field_firmwareMinor().setValue(firmware_version.minor);
         device_info_response_msg_.field_firmwarePatch().setValue(firmware_version.patch);
+        device_info_response_msg_.field_numPumps().setValue(5);
+        device_info_response_msg_.field_numValves().setValue(3);
     }
 
     TSocket& socket()

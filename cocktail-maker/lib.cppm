@@ -14,6 +14,7 @@ export import :overloaded;
 export import :strong_type;
 export import :pod_types;
 export import :pod_discovery;
+export import :pod_registry;
 export import :pod;
 export import :station_state;
 export import :station_config;

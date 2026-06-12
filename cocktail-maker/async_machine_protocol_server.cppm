@@ -12,10 +12,12 @@ module;
 #include <proto/input/AllMessages.h>
 #include <proto/input/ServerInputMessages.h>
 #include <proto/options/ServerDefaultOptions.h>
+#include <libassert/assert-macros.hpp>
 
 export module cm:async_machine_protocol_server;
 
 import std;
+import libassert;
 import :comms_adapter;
 import :logging;
 
@@ -222,7 +224,9 @@ class AsyncMachineProtocolServer
         }
 
         // write_iter has been advanced, check that it reached end of the allocated buffer.
-        assert(output.size() == static_cast<std::size_t>(std::distance(output.data(), write_iter)));
+        ASSERT(output.size() == static_cast<std::size_t>(std::distance(output.data(), write_iter)));
+
+        log::trace(logger_, "Schedule message {} with transaction id '{}'", msg.name(), transaction_id);
         co_await write_queue_.write(std::move(output));
         co_return;
     }
@@ -356,7 +360,7 @@ class AsyncMachineProtocolServer
                 }
                 const auto transaction_id = std::get<proto::FrameInterfaceFields::TransactionId>(msg->transportFields()).value();
 
-                log::debug(logger_, "Received message '{}' with transaction id '{}'", msg->name(), transaction_id);
+                log::trace(logger_, "Received message '{}' with transaction id '{}'", msg->name(), transaction_id);
 
                 const auto rx_it = dispatch_map_.find(transaction_id);
                 if (rx_it != dispatch_map_.end()) {

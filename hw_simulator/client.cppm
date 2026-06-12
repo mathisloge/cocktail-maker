@@ -42,6 +42,7 @@ class Client
     using ClientFrame = proto::frame::Frame<Message, proto::input::ClientInputMessages<Message, Options>, Options>;
 
     using DeviceInfoResponse = proto::message::DeviceInfoResponse<Message, Options>;
+    using Pong = proto::message::Pong<Message, Options>;
 
     log::Logger logger_;
     TSocket stream_;
@@ -82,7 +83,7 @@ class Client
         async_handle(msg);
     }
 
-    void handle(InClientEmergencyStop& msg)
+    void handle(InClientPing& msg)
     {
         async_handle(msg);
     }
@@ -104,10 +105,16 @@ class Client
         co_await delay();
     }
 
+    cobalt::detached async_handle(InClientPing msg)
+    {
+        co_await delay(150ms);
+        co_await async_send(Pong{}, msg.transportField_transactionId().getValue());
+    }
+
   private:
     auto async_send(auto msg, const TransactionId::ValueType transaction_id) -> cobalt::promise<void>
     {
-        log::debug(logger_, "Schedule send {} with transaction id '{}'", msg.name(), transaction_id);
+        log::trace(logger_, "Schedule send {} with transaction id '{}'", msg.name(), transaction_id);
         ClientFrame frame;
         std::vector<std::uint8_t> output;
 

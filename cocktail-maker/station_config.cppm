@@ -18,9 +18,14 @@ export struct PodDispenser
     friend constexpr auto operator<=>(const PodDispenser&, const PodDispenser&) = default;
 };
 
-export class StationConfig
+export class StationConfig final
 {
   public:
+    explicit StationConfig(const IngredientStore& ingredient_store)
+        : ingredient_store_{ingredient_store}
+    {
+    }
+
     void update_dispenser_ingredient_mapping(IngredientId ingredient_id, PodDispenser pod_dispenser_pair)
     {
         log::debug(logger_,
@@ -28,6 +33,13 @@ export class StationConfig
                    pod_dispenser_pair.pod_id,
                    pod_dispenser_pair.dispenser_id,
                    ingredient_id);
+        if (not ingredient_store_.find_by_id(ingredient_id).has_value()) {
+            log::error(logger_, "Could not find ingredient '{}'.", ingredient_id);
+            // question: throw exception here and bring it to the ui? Maybe with toasts?
+            return;
+        }
+        // allow unknown pod->dispenser pair for now, as the config file will be loaded later on before anything is
+        // discovered/connected.
         ingredient_dispenser_mapping_.insert_or_assign(std::move(ingredient_id), std::move(pod_dispenser_pair));
     }
 
@@ -43,6 +55,7 @@ export class StationConfig
 
   private:
     log::Logger logger_{log::create_or_get("station_config")};
+    const IngredientStore& ingredient_store_;
     std::unordered_map<IngredientId, PodDispenser> ingredient_dispenser_mapping_;
 };
 } // namespace cm

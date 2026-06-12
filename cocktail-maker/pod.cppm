@@ -14,6 +14,13 @@ import :async_machine_protocol_server;
 namespace cobalt = boost::cobalt;
 
 namespace cm {
+export class IPod
+{
+  public:
+    virtual ~IPod() = default;
+    virtual cobalt::task<void> run(std::unique_ptr<PodState> state) = 0;
+};
+
 template <typename F>
 auto retry_on_timeout(std::size_t max_retries, F f) -> decltype(f(std::chrono::milliseconds{}))
 {
@@ -40,13 +47,6 @@ class NoopPodState final : public PodState
     void update_state([[maybe_unused]] ConnectionState state) override {};
 };
 
-export class IPod
-{
-  public:
-    virtual ~IPod() = default;
-    virtual cobalt::task<void> run(std::unique_ptr<PodState> state) = 0;
-};
-
 export template <typename AsyncStream>
 class Pod : public IPod
 {
@@ -60,8 +60,7 @@ class Pod : public IPod
     cobalt::task<void> run(std::unique_ptr<PodState> state) override
     {
         state_ = std::move(state);
-
-        co_await cobalt::race(monitor_device(), server_.run());
+        co_await cobalt::race(server_.run(), monitor_device(), keep_alive());
     }
 
     cobalt::promise<PodInfo> aquire_device_info(std::chrono::milliseconds timeout = std::chrono::milliseconds{100})
@@ -126,6 +125,16 @@ class Pod : public IPod
 
 
         */
+    }
+
+    cobalt::task<void> keep_alive()
+    {
+        auto cs = co_await boost::asio::this_coro::cancellation_state;
+        co_await device_ready_; // wait until the device info was send.
+        while (cs.cancelled() == boost::asio::cancellation_type::none) {
+            // will be cancelled if the pong wasn't received in 200ms.
+            co_await send_and_receive<InPong>(OutPing{}, std::chrono::milliseconds{2000});
+        }
     }
 
   private:

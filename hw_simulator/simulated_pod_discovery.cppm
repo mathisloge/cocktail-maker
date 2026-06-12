@@ -12,11 +12,11 @@ namespace cobalt = boost::cobalt;
 namespace cm::sim {
 export class SimulatedPodDiscovery : public PodDiscovery
 {
-    Client<Socket> client_;
+    Client<Socket>& client_;
 
   public:
-    SimulatedPodDiscovery(cobalt::executor ex)
-        : client_{Socket{ex}, "Client1", {.major = 1}}
+    explicit SimulatedPodDiscovery(Client<Socket>& client)
+        : client_{client}
     {
     }
 

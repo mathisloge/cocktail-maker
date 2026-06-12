@@ -14,10 +14,12 @@ boost::cobalt::detached my_task(cm::Recipe r, std::shared_ptr<cm::BasicCommandEx
     co_await cm::execute_commands(std::move(r.commands), std::move(command_executer));
 }
 
-boost::cobalt::detached my_task2(std::unique_ptr<cm::PodDiscovery> pod_discovery, std::shared_ptr<cm::StationState> station_state)
+boost::cobalt::detached my_task2(std::unique_ptr<cm::PodDiscovery> pod_discovery,
+                                 cm::StationState& station_state,
+                                 cm::PodRegistry& pod_registry)
 {
     auto logger = cm::log::create_or_get("main");
-    co_await cm::discover_and_run_pods(std::move(pod_discovery), std::move(station_state));
+    co_await cm::discover_and_run_pods(std::move(pod_discovery), station_state, pod_registry);
     cm::log::debug(logger, "simulated pod manager ended.");
 }
 
@@ -45,6 +47,7 @@ int main(int argc, char** argv)
                                         .display_name = "Test Ingredient2",
                                         .type = cm::IngredientType::other,
                                         .boost_category = cm::BoostCategory::reducible});
+    cm::StationConfig station_config{ingredient_store};
 
     std::vector<cm::Recipe> recipes;
     for (int i = 0; i < 10; i++) {
@@ -101,10 +104,12 @@ int main(int argc, char** argv)
                                               const cm::gui::Dispenser& dispenser,
                                               slint::SharedString ingredient_id) {
         auto logger = cm::log::create_or_get("ui");
-        cm::log::debug(
+        cm::log::trace(
             logger, "Assign ingredient '{}' to pod '{}' and dispenser '{}'", ingredient_id.data(), pod.id.data(), dispenser.id);
-        boost::asio::post(ctx, []() {
-
+        boost::asio::post(ctx, [&station_config, pod, dispenser, ingredient_id]() {
+            station_config.update_dispenser_ingredient_mapping(
+                cm::IngredientId{ingredient_id.data()},
+                {.pod_id = cm::PodId{pod.id.data()}, .dispenser_id = cm::DispenserId{dispenser.id}});
         });
     });
 
@@ -113,10 +118,14 @@ int main(int argc, char** argv)
         auto logger = cm::log::create_or_get("cobalt_main");
         boost::cobalt::this_thread::set_executor(ctx.get_executor());
 
+        cm::PodRegistry pod_registry{};
+
+        cm::sim::Client sim_pod{cm::sim::Socket{ctx.get_executor()}, "Client1", {.major = 1}};
         boost::asio::post(
-            ctx, [station_state, pod_manager = std::make_unique<cm::sim::SimulatedPodDiscovery>(ctx.get_executor())]() mutable {
-                my_task2(std::move(pod_manager), std::move(station_state));
-            });
+            ctx,
+            [station_state,
+             pod_discovery = std::make_unique<cm::sim::SimulatedPodDiscovery>(sim_pod),
+             &pod_registry]() mutable { my_task2(std::move(pod_discovery), *station_state, pod_registry); });
 
         ctx.run();
 

@@ -33,6 +33,7 @@ export component AppWindow inherits Window {
             boot_screen_confirmed = false;
         }
     }
+    in property <[string]> ingredient-ids;
     in property <[Pod]> pods;
     in-out property <[LogEntry]> log-entries;
     in-out property <Page> current_page: Page.admin-area-page;
@@ -131,6 +132,7 @@ export component AppWindow inherits Window {
         }
 
         if current_page == Page.admin-area-page: admin-area := AdminArea {
+            ingredient-ids: ingredient-ids;
             pods: pods;
             log-entries: root.log-entries;
             assign-ingredient-to-dispenser(pod, dispenser, ingredient_id) => {

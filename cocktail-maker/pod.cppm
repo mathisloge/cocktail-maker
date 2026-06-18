@@ -10,6 +10,7 @@ import :station_state;
 import :awaitable_bool;
 import :overloaded;
 import :async_machine_protocol_server;
+import :dispenser;
 
 namespace cobalt = boost::cobalt;
 
@@ -17,8 +18,78 @@ namespace cm {
 export class IPod
 {
   public:
+    IPod() = default;
+    IPod(const IPod&) = delete ("Unique instances with non-copyable/movable state expected.");
+    IPod(IPod&&) noexcept = delete;
+    IPod& operator=(const IPod&) = delete;
+    IPod& operator=(IPod&&) noexcept = delete;
     virtual ~IPod() = default;
+
+    virtual PodId pod_id() const = 0;
     virtual cobalt::task<void> run(std::unique_ptr<PodState> state) = 0;
+    virtual std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> create_dispenser(DispenserId dispenser_id) = 0;
+};
+
+class DispenserPodImpl : public Dispenser
+{
+  public:
+    explicit DispenserPodImpl(std::weak_ptr<IPod> pod)
+        : pod_{std::move(pod)}
+    {
+    }
+
+  protected:
+    std::shared_ptr<IPod> pod()
+    {
+        auto p = pod_.lock();
+        if (p == nullptr) {
+            throw std::runtime_error("Pod lifetime exceeded");
+        }
+        return p;
+    }
+
+  private:
+    std::weak_ptr<IPod> pod_;
+};
+
+export class Pump final : public DispenserPodImpl
+{
+    DispenserId id_;
+    log::Logger logger_;
+
+  public:
+    Pump(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
+        : DispenserPodImpl{std::move(pod)}
+        , id_{dispenser_id}
+        , logger_{log::create_or_get(std::format("pump_{}", dispenser_id))}
+    {
+    }
+
+    cobalt::promise<void> dispense(units::Litre volume) override
+    {
+        log::debug(logger_, "Start dispense of {}.", volume);
+        co_return;
+    }
+};
+
+export class Valve final : public DispenserPodImpl
+{
+    DispenserId id_;
+    log::Logger logger_;
+
+  public:
+    Valve(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
+        : DispenserPodImpl{std::move(pod)}
+        , id_{dispenser_id}
+        , logger_{log::create_or_get(std::format("valve_{}", dispenser_id))}
+    {
+    }
+
+    cobalt::promise<void> dispense(units::Litre volume) override
+    {
+        log::debug(logger_, "Start dispense of {}.", volume);
+        co_return;
+    }
 };
 
 template <typename F>
@@ -48,7 +119,7 @@ class NoopPodState final : public PodState
 };
 
 export template <typename AsyncStream>
-class Pod : public IPod
+class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
 {
   public:
     explicit Pod(AsyncStream stream)
@@ -57,10 +128,27 @@ class Pod : public IPod
     {
     }
 
+    PodId pod_id() const override
+    {
+        return state_->info().id;
+    }
+
     cobalt::task<void> run(std::unique_ptr<PodState> state) override
     {
         state_ = std::move(state);
         co_await cobalt::race(server_.run(), monitor_device(), keep_alive());
+    }
+
+    std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> create_dispenser(DispenserId dispenser_id) override
+    {
+        const auto info = state_->info();
+        if (dispenser_id.raw() >= (info.num_pumps + info.num_valves)) {
+            return std::unexpected{DispenserNotFoundError{"Searched dispenser id exceeded pumps and valves"}};
+        }
+        if (dispenser_id.raw() >= info.num_pumps) {
+            return std::make_unique<Valve>(this->shared_from_this(), dispenser_id);
+        }
+        return std::make_unique<Pump>(this->shared_from_this(), dispenser_id);
     }
 
     cobalt::promise<PodInfo> aquire_device_info(std::chrono::milliseconds timeout = std::chrono::milliseconds{100})
@@ -132,7 +220,7 @@ class Pod : public IPod
         auto cs = co_await boost::asio::this_coro::cancellation_state;
         co_await device_ready_; // wait until the device info was send.
         while (cs.cancelled() == boost::asio::cancellation_type::none) {
-            // will be cancelled if the pong wasn't received in 200ms.
+            // will be cancelled if the pong wasn't received in x ms.
             co_await send_and_receive<InPong>(OutPing{}, std::chrono::milliseconds{2000});
         }
     }

@@ -131,6 +131,16 @@ class IngredientStore
         return (it != ingredients_.end()) ? std::optional{it->second} : std::nullopt;
     }
 
+    std::vector<IngredientId> ingredients() const
+    {
+        std::vector<IngredientId> result;
+        result.reserve(ingredients_.size());
+        for (const auto& [id, _] : ingredients_) {
+            result.push_back(id);
+        }
+        return result;
+    }
+
   private:
     std::unordered_map<IngredientId, Ingredient> ingredients_;
 };

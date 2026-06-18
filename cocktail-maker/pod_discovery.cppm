@@ -15,10 +15,10 @@ export class PodDiscovery
 {
   public:
     virtual ~PodDiscovery() = default;
-    virtual cobalt::generator<std::unique_ptr<IPod>> discover() = 0;
+    virtual cobalt::generator<std::shared_ptr<IPod>> discover() = 0;
 };
 
-cobalt::promise<void> run_pod(std::unique_ptr<IPod> pod, std::unique_ptr<PodState> pod_state, PodRegistry& pod_registry)
+cobalt::promise<void> run_pod(std::shared_ptr<IPod> pod, std::unique_ptr<PodState> pod_state, PodRegistry& pod_registry)
 {
     auto logger{log::create_or_get("pod_discovery")};
     log::info(logger, "New pod discovered. Running it now...");
@@ -27,10 +27,10 @@ cobalt::promise<void> run_pod(std::unique_ptr<IPod> pod, std::unique_ptr<PodStat
     {
       private:
         PodRegistry& registry_;
-        IPod& pod_;
+        std::shared_ptr<IPod> pod_;
 
       public:
-        explicit EntryGuard(PodRegistry& registry, IPod& pod)
+        explicit EntryGuard(PodRegistry& registry, std::shared_ptr<IPod> pod)
             : registry_{registry}
             , pod_{pod}
         {
@@ -41,7 +41,7 @@ cobalt::promise<void> run_pod(std::unique_ptr<IPod> pod, std::unique_ptr<PodStat
         {
             registry_.unregister_pod(pod_);
         }
-    } cleanup_guard{pod_registry, *pod};
+    } cleanup_guard{pod_registry, pod};
 
     co_await pod->run(std::move(pod_state));
 }
@@ -58,7 +58,8 @@ export cobalt::task<void> discover_and_run_pods(std::unique_ptr<PodDiscovery> po
                               BOOST_COBALT_FOR(auto pod, discover_pod)
                               {
                                   if (pod != nullptr) {
-                                      pod_sessions.push_back(run_pod(std::move(pod), station_state.create_pod_state(), pod_registry));
+                                      pod_sessions.push_back(
+                                          run_pod(std::move(pod), station_state.create_pod_state(), pod_registry));
                                   }
                               }
 

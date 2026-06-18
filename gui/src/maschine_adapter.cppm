@@ -18,10 +18,15 @@ namespace cobalt = boost::cobalt;
 export class MachineAdapter : public cm::BasicCommandExecuter
 {
     std::shared_ptr<SlintAsyncAdapter> ui_;
+    PodDispatcher pod_dispatcher_;
 
   public:
-    explicit MachineAdapter(slint::ComponentHandle<AppWindow> ui, const IngredientStore& ingredient_store)
+    explicit MachineAdapter(slint::ComponentHandle<AppWindow> ui,
+                            const IngredientStore& ingredient_store,
+                            PodRegistry& pod_registry,
+                            StationConfig& station_config)
         : ui_{std::make_shared<SlintAsyncAdapter>(std::move(ui), ingredient_store)}
+        , pod_dispatcher_{pod_registry, station_config}
     {
     }
 
@@ -37,10 +42,8 @@ export class MachineAdapter : public cm::BasicCommandExecuter
     {
         auto logger = log::create_or_get("recipe");
 
-        asio::steady_timer tim{co_await cobalt::this_coro::executor, std::chrono::milliseconds{1000}};
         log::debug{logger, "Process dispense command {}", command.ingredient};
-        co_await tim.async_wait(cobalt::use_op);
-
+        co_await pod_dispatcher_.dispatch_dispense_command(command);
         log::debug{logger, "Finished dispense command {}", command.ingredient};
         co_return;
     }

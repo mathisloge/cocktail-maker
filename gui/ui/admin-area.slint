@@ -4,6 +4,7 @@ import { PodConfigTab } from "./admin/pod-config-tab.slint";
 import { SystemLog } from "components.slint";
 
 export component AdminArea {
+    in property <[string]> ingredient-ids;
     in property <[Pod]> pods;
     in property <[LogEntry]> log-entries;
 
@@ -14,6 +15,7 @@ export component AdminArea {
         Tab {
             title: "Pod config";
             pod-config := PodConfigTab {
+                ingredient-ids: ingredient-ids;
                 pods: pods;
             }
         }

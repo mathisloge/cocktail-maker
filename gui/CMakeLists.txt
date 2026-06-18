@@ -1,4 +1,4 @@
-add_library(cocktail-maker-gui)
+add_library(cocktail-maker-gui STATIC)
 add_library(cm::gui ALIAS cocktail-maker-gui)
 add_sanitizers(cocktail-maker-gui)
 target_compile_features(cocktail-maker-gui PUBLIC cxx_std_26)

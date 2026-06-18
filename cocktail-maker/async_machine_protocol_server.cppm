@@ -6,13 +6,13 @@ module;
 #include <comms/dispatch.h>
 #include <comms/options.h>
 #include <cstddef>
+#include <libassert/assert-macros.hpp>
 #include <proto/FrameInterface.h>
 #include <proto/dispatch/DispatchServerInputMessage.h>
 #include <proto/frame/Frame.h>
 #include <proto/input/AllMessages.h>
 #include <proto/input/ServerInputMessages.h>
 #include <proto/options/ServerDefaultOptions.h>
-#include <libassert/assert-macros.hpp>
 
 export module cm:async_machine_protocol_server;
 

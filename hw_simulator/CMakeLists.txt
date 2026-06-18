@@ -1,4 +1,4 @@
-add_library(cocktail-maker-simulator)
+add_library(cocktail-maker-simulator STATIC)
 add_sanitizers(cocktail-maker-simulator)
 target_link_libraries(cocktail-maker-simulator PUBLIC cm::lib PRIVATE proto)
 target_sources(

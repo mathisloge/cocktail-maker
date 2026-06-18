@@ -112,6 +112,33 @@ TEST_CASE("IngredientStore::find_by_id returns a copy, not a reference", "[Ingre
     CHECK(stored->display_name == "Angostura Bitters");
 }
 
+TEST_CASE("IngredientStore::ingredients returns empty vector for empty store", "[IngredientStore][ingredients]")
+{
+    IngredientStore store;
+    const auto result = store.ingredients();
+    CHECK(result.empty());
+}
+
+TEST_CASE("IngredientStore::ingredients returns all ingredient ids", "[IngredientStore][ingredients]")
+{
+    IngredientStore store;
+    const auto id1 = IngredientId{"rum-white"};
+    const auto id2 = IngredientId{"lime-juice"};
+    const auto id3 = IngredientId{"simple-syrup"};
+
+    REQUIRE(store.add(make_ingredient(id1)));
+    REQUIRE(store.add(make_ingredient(id2)));
+    REQUIRE(store.add(make_ingredient(id3)));
+
+    const auto result = store.ingredients();
+    REQUIRE(result.size() == 3);
+
+    // Check that all expected ids are present
+    CHECK(std::find(result.begin(), result.end(), id1) != result.end());
+    CHECK(std::find(result.begin(), result.end(), id2) != result.end());
+    CHECK(std::find(result.begin(), result.end(), id3) != result.end());
+}
+
 // Round-trip tests
 
 TEST_CASE("IngredientStore preserves all IngredientType values", "[IngredientStore][round-trip]")

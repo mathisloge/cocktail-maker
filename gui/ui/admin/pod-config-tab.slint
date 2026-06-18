@@ -81,7 +81,7 @@ export component PodConfigTab inherits Rectangle {
         { id: "Pod-Connecting", connection_state: ConnectionState.connecting },
         { id: "Pod-Disconnected", connection_state: ConnectionState.disconnected },
     ];
-    in property <[string]> ingredient_ids: ["vodka", "orange_juice", "gin"];
+    in property <[string]> ingredient-ids: ["vodka", "orange_juice", "test2"];
     private property <Pod> selected;
 
     callback identify-dispenser(Pod, Dispenser);
@@ -131,7 +131,7 @@ export component PodConfigTab inherits Rectangle {
 
                     ComboBox {
                         height: 40px;
-                        model: root.ingredient_ids;
+                        model: root.ingredient-ids;
                         selected(current-value) => {
                             assign-ingredient(selected, dispenser, current-value);
                         }

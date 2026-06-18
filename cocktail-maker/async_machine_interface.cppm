@@ -78,13 +78,6 @@ struct PumpState
     AwaitableBool busy_;
 };
 
-export class Dispenser
-{
-  public:
-    virtual ~Dispenser() = default;
-    virtual cobalt::promise<void> dispense(units::Litre volume) = 0;
-};
-
 export class BasicAsyncPodInterface : public std::enable_shared_from_this<BasicAsyncPodInterface>
 {
   public:
@@ -95,41 +88,6 @@ export class BasicAsyncPodInterface : public std::enable_shared_from_this<BasicA
     [[nodiscard]] virtual std::unique_ptr<Dispenser> dispenser_for_ingredient(IngredientId ingredient_id) = 0;
     virtual cobalt::promise<void> pump(units::Litre volume, PumpId pump_id) = 0;
     virtual cobalt::promise<void> wait_for_pump_idle(PumpId pump_id) = 0;
-};
-
-class Pump : public Dispenser
-{
-    std::shared_ptr<BasicAsyncPodInterface> machine_;
-    PumpId id_;
-    log::Logger logger_;
-
-  public:
-    Pump(std::shared_ptr<BasicAsyncPodInterface> machine, PumpId pump_id)
-        : machine_{std::move(machine)}
-        , id_{pump_id}
-        , logger_{log::create_or_get(std::format("pump_{}", pump_id))}
-    {
-    }
-
-    cobalt::promise<void> dispense(units::Litre volume) override
-    {
-        co_await machine_->wait_for_pump_idle(id_);
-        log::debug(logger_, "Start dispense of {}.", volume);
-        co_await machine_->pump(volume, id_);
-        co_await machine_->wait_for_pump_idle(id_);
-        log::debug(logger_, "Finished dispense.");
-    }
-};
-
-class Valve : public Dispenser
-{
-    std::shared_ptr<BasicAsyncPodInterface> machine_;
-
-  public:
-    cobalt::promise<void> dispense(units::Litre volume) override
-    {
-        co_return;
-    }
 };
 
 export template <typename AsyncStream>

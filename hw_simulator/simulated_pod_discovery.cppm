@@ -20,7 +20,7 @@ export class SimulatedPodDiscovery : public PodDiscovery
     {
     }
 
-    cobalt::generator<std::unique_ptr<IPod>> discover() override
+    cobalt::generator<std::shared_ptr<IPod>> discover() override
     {
         co_await cobalt::this_coro::initial;
 
@@ -28,7 +28,7 @@ export class SimulatedPodDiscovery : public PodDiscovery
 
         boost::asio::local::connect_pair(client_.socket(), server_socket);
         boost::asio::post(client_.socket().get_executor(), [this]() { client_.run(); });
-        co_yield std::make_unique<Pod<Socket>>(std::move(server_socket));
+        co_yield std::make_shared<Pod<Socket>>(std::move(server_socket));
         co_return {};
     }
 };

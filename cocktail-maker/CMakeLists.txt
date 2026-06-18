@@ -1,11 +1,16 @@
-add_library(cocktail-maker-lib)
+add_library(cocktail-maker-lib STATIC)
 add_library(cm::lib ALIAS cocktail-maker-lib)
 add_sanitizers(cocktail-maker-lib)
 target_compile_features(cocktail-maker-lib PUBLIC cxx_std_26)
 
 target_link_libraries(
     cocktail-maker-lib
-    PUBLIC mp-units::mp-units spdlog::spdlog simdjson::simdjson Boost::cobalt libassert::assert
+    PUBLIC
+        mp-units::mp-units
+        spdlog::spdlog
+        simdjson::simdjson
+        Boost::cobalt
+        libassert::assert
     PRIVATE proto
 )
 
@@ -14,7 +19,6 @@ target_sources(
     PUBLIC
         FILE_SET CXX_MODULES
             FILES
-                async_machine_interface.cppm
                 async_machine_protocol_server.cppm
                 awaitable_bool.cppm
                 comms_adapter.cppm
@@ -28,6 +32,7 @@ target_sources(
                 pod_discovery.cppm
                 pod_types.cppm
                 pod_registry.cppm
+                pod_dispatcher.cppm
                 pod.cppm
                 recipe_boost.cppm
                 recipe.cppm

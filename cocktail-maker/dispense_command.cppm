@@ -5,15 +5,14 @@ export module cm:dispense_command;
 import std;
 import :recipe;
 import :logging;
-import :async_machine_interface;
+import :dispenser;
 
 namespace cobalt = boost::cobalt;
 
 namespace cm {
-cobalt::promise<void> execute_command(DispenseCommand cmd, std::shared_ptr<BasicAsyncPodInterface> machine_interface)
+cobalt::promise<void> execute_command(DispenseCommand cmd, std::shared_ptr<Dispenser> dispenser)
 {
-    const auto pump = machine_interface->dispenser_for_ingredient(cmd.ingredient);
-    co_await pump->dispense(cmd.volume);
+    co_await dispenser->dispense(cmd.volume);
 }
 
 } // namespace cm

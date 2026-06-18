@@ -1,0 +1,243 @@
+import {
+    VerticalBox,
+    HorizontalBox,
+    Button,
+    SpinBox, ScrollView,
+} from "std-widgets.slint";
+import {
+    SmallText,
+    MediumText,
+    PulseDot
+} from "../components.slint";
+import {
+    Pod,
+    Dispenser,
+    DispenserType,
+} from "../data.slint";
+import { Palette } from "../palette.slint";
+
+export enum CalibrationStepStatus {
+    idle,
+    running,
+    success,
+    error,
+}
+
+export struct DispenserCalibrationState {
+    offset-status: CalibrationStepStatus,
+    reference-status: CalibrationStepStatus,
+    pump-status: CalibrationStepStatus,
+    measured-ml-per-step: float,
+    error-message: string,
+}
+
+component StatusDot inherits PulseDot {
+    in property <CalibrationStepStatus> status;
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    background: root.status == CalibrationStepStatus.success ? Palette.log-info :
+        root.status == CalibrationStepStatus.running ? Palette.log-debug :
+        root.status == CalibrationStepStatus.error ? Palette.log-error :
+        Palette.border-subtle;
+}
+
+component StepCard inherits Rectangle {
+    in property <string> step-number: "1";
+    in property <string> title: "Test title";
+    in property <string> description: "Test description";
+    in property <CalibrationStepStatus> status: CalibrationStepStatus.running;
+    in property <bool> enabled: true;
+    in property <string> status-label: "Test Status Label";
+
+    background: Palette.background-card;
+    border-width: 1px;
+    border-color: Palette.border-subtle;
+    opacity: root.enabled ? 1.0 : 0.45;
+    animate opacity { duration: 150ms; }
+
+    VerticalLayout {
+        padding: 16px;
+        spacing: 12px;
+
+        HorizontalLayout {
+            spacing: 10px;
+            alignment: start;
+
+            Rectangle {
+                width: 28px;
+                height: 28px;
+                border-radius: 14px;
+                background: Palette.background-elevated;
+
+                Text {
+                    text: root.step-number;
+                    color: Palette.text-primary;
+                    font-weight: 700;
+                }
+            }
+
+            MediumText {
+                text: root.title;
+            }
+
+            Rectangle { horizontal-stretch: 1; }
+
+            HorizontalBox {
+                spacing: 6px;
+                cross-axis-alignment: center;
+                StatusDot { status: root.status; }
+                SmallText {
+                    text: root.status-label;
+                    color: Palette.text-secondary;
+                }
+            }
+        }
+
+        SmallText {
+            text: root.description;
+            wrap: word-wrap;
+        }
+
+        @children
+    }
+}
+
+export component DispenserCalibrationDialog inherits Rectangle {
+    in property <Pod> pod;
+    in property <Dispenser> dispenser;
+    in property <DispenserCalibrationState> state;
+
+    private property <int> reference-weight-g: 100;
+    private property <int> pump-test-steps: 2000;
+
+    callback calibrate-offset(Pod, Dispenser);
+    callback calibrate-reference(Pod, Dispenser, int /* reference-weight-g */);
+    callback run-pump-test(Pod, Dispenser, int /* steps */);
+    callback close();
+
+    background: Palette.background;
+
+    TouchArea {}
+
+    card := Rectangle {
+        width: 640px;
+        height: 640px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        background: Palette.background-card;
+        border-width: 1px;
+        border-color: Palette.border-strong;
+
+        VerticalBox {
+            padding: 24px;
+            spacing: 16px;
+
+            ScrollView {
+                vertical-stretch: 1;
+
+                VerticalLayout {
+                    spacing: 16px;
+
+                    StepCard {
+                        step-number: "1";
+                        title: "Nullpunkt";
+                        description: "Dispenser leer lassen und den Leergewicht-Offset der Waage erfassen.";
+                        status: root.state.offset-status;
+                        status-label: root.state.offset-status == CalibrationStepStatus.success ? "OK" :
+                            root.state.offset-status == CalibrationStepStatus.running ? "läuft..." :
+                            root.state.offset-status == CalibrationStepStatus.error ? "Fehler" : "ausstehend";
+
+                        Button {
+                            text: root.state.offset-status == CalibrationStepStatus.running ? "läuft..." : "Offset erfassen";
+                            height: 64px;
+                            enabled: root.state.offset-status != CalibrationStepStatus.running;
+                            clicked => { root.calibrate-offset(root.pod, root.dispenser); }
+                        }
+                    }
+
+                    StepCard {
+                        step-number: "2";
+                        title: "Referenzgewicht";
+                        description: "Bekanntes Referenzgewicht auflegen, Gewicht eingeben und kalibrieren.";
+                        status: root.state.reference-status;
+                        enabled: root.state.offset-status == CalibrationStepStatus.success;
+                        status-label: root.state.reference-status == CalibrationStepStatus.success ? "OK" :
+                            root.state.reference-status == CalibrationStepStatus.running ? "läuft..." :
+                            root.state.reference-status == CalibrationStepStatus.error ? "Fehler" : "ausstehend";
+
+                        HorizontalBox {
+                            cross-axis-alignment: center;
+                            spacing: 12px;
+                            SmallText { text: "Gewicht (g):"; }
+                            SpinBox {
+                                height: 48px;
+                                minimum: 1;
+                                maximum: 5000;
+                                value <=> root.reference-weight-g;
+                                enabled: root.state.offset-status == CalibrationStepStatus.success;
+                            }
+                        }
+
+                        Button {
+                            text: root.state.reference-status == CalibrationStepStatus.running ? "läuft..." : "Mit Referenzgewicht kalibrieren";
+                            height: 64px;
+                            enabled: root.state.offset-status == CalibrationStepStatus.success
+                                && root.state.reference-status != CalibrationStepStatus.running;
+                            clicked => { root.calibrate-reference(root.pod, root.dispenser, root.reference-weight-g); }
+                        }
+                    }
+
+                    if root.dispenser.type == DispenserType.pump: StepCard {
+                        step-number: "3";
+                        title: "Pumpvolumen";
+                        description: "Pumpt die eingegebene Anzahl Schritte und misst das ausgegebene Volumen mit der kalibrierten Waage.";
+                        status: root.state.pump-status;
+                        enabled: root.state.reference-status == CalibrationStepStatus.success;
+                        status-label: root.state.pump-status == CalibrationStepStatus.success ? "OK" :
+                            root.state.pump-status == CalibrationStepStatus.running ? "läuft..." :
+                            root.state.pump-status == CalibrationStepStatus.error ? "Fehler" : "ausstehend";
+
+                        HorizontalBox {
+                            cross-axis-alignment: center;
+                            spacing: 12px;
+                            SmallText { text: "Schritte:"; }
+                            SpinBox {
+                                height: 48px;
+                                minimum: 1;
+                                maximum: 20000;
+                                value <=> root.pump-test-steps;
+                                enabled: root.state.reference-status == CalibrationStepStatus.success;
+                            }
+                        }
+
+                        Button {
+                            text: root.state.pump-status == CalibrationStepStatus.running ? "läuft..." : "Pumptest starten";
+                            height: 64px;
+                            enabled: root.state.reference-status == CalibrationStepStatus.success
+                                && root.state.pump-status != CalibrationStepStatus.running;
+                            clicked => { root.run-pump-test(root.pod, root.dispenser, root.pump-test-steps); }
+                        }
+
+                        if root.state.pump-status == CalibrationStepStatus.success: SmallText {
+                            text: "Ergebnis: " + Math.round(root.state.measured-ml-per-step * 1000) / 1000 + " ml/Schritt";
+                            color: Palette.log-info;
+                        }
+                    }
+
+                    if root.state.error-message != "": SmallText {
+                        text: root.state.error-message;
+                        color: Palette.log-error;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+
+            Button {
+                text: "Schließen";
+                height: 64px;
+                clicked => { root.close(); }
+            }
+        }
+    }
+}

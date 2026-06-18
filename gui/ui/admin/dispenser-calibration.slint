@@ -2,12 +2,13 @@ import {
     VerticalBox,
     HorizontalBox,
     Button,
-    SpinBox, ScrollView,
+    SpinBox,
+    ScrollView,
 } from "std-widgets.slint";
 import {
     SmallText,
     MediumText,
-    PulseDot
+    PulseDot,
 } from "../components.slint";
 import {
     Pod,
@@ -81,12 +82,17 @@ component StepCard inherits Rectangle {
                 text: root.title;
             }
 
-            Rectangle { horizontal-stretch: 1; }
+            Rectangle {
+                horizontal-stretch: 1;
+            }
 
             HorizontalBox {
                 spacing: 6px;
                 cross-axis-alignment: center;
-                StatusDot { status: root.status; }
+                StatusDot {
+                    status: root.status;
+                }
+
                 SmallText {
                     text: root.status-label;
                     color: Palette.text-secondary;
@@ -103,7 +109,7 @@ component StepCard inherits Rectangle {
     }
 }
 
-export component DispenserCalibrationDialog inherits Rectangle {
+component DispenserCalibrationContent inherits Rectangle {
     in property <Pod> pod;
     in property <Dispenser> dispenser;
     in property <DispenserCalibrationState> state;
@@ -118,11 +124,7 @@ export component DispenserCalibrationDialog inherits Rectangle {
 
     background: Palette.background;
 
-    TouchArea {}
-
     card := Rectangle {
-        width: 640px;
-        height: 640px;
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
         background: Palette.background-card;
@@ -169,7 +171,10 @@ export component DispenserCalibrationDialog inherits Rectangle {
                         HorizontalBox {
                             cross-axis-alignment: center;
                             spacing: 12px;
-                            SmallText { text: "Gewicht (g):"; }
+                            SmallText {
+                                text: "Gewicht (g):";
+                            }
+
                             SpinBox {
                                 height: 48px;
                                 minimum: 1;
@@ -201,7 +206,10 @@ export component DispenserCalibrationDialog inherits Rectangle {
                         HorizontalBox {
                             cross-axis-alignment: center;
                             spacing: 12px;
-                            SmallText { text: "Schritte:"; }
+                            SmallText {
+                                text: "Schritte:";
+                            }
+
                             SpinBox {
                                 height: 48px;
                                 minimum: 1;
@@ -232,12 +240,22 @@ export component DispenserCalibrationDialog inherits Rectangle {
                     }
                 }
             }
-
-            Button {
-                text: "Schließen";
-                height: 64px;
-                clicked => { root.close(); }
-            }
         }
+    }
+}
+
+export component DispenserCalibrationPopup inherits PopupWindow {
+    close-policy: PopupClosePolicy.close-on-click-outside;
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: rgba(10, 8, 6, 0.88);
+    }
+
+    DispenserCalibrationContent {
+        height: 90%;
+        width: 90%;
+        x: (root.width - self.width) / 2;
+        y: (root.height - self.height) / 2;
     }
 }

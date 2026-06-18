@@ -20,6 +20,7 @@ import {
     DispenserType,
     Ingredient,
 } from "../data.slint";
+import { DispenserCalibrationPopup } from "./dispenser-calibration.slint";
 import { Palette } from "../palette.slint";
 
 component PodListDelegate inherits Rectangle {
@@ -146,9 +147,15 @@ export component PodConfigTab inherits Rectangle {
                     Button {
                         text: "Calibrate";
                         height: 40px;
+                        clicked => { cal.show(); }
                     }
                 }
             }
         }
+    }
+
+    cal := DispenserCalibrationPopup {
+        width: root.width;
+        height: root.height;
     }
 }

@@ -32,6 +32,10 @@ export global DispenserCalibrationContext {
         self.state.offset-status = status;
     }
 
+    public function update-ref-weight-status(status: CalibrationStepStatus) {
+        self.state.reference-status = status;
+    }
+
     // implemented by business logic
     callback calibrate-offset(Pod, Dispenser);
     callback calibrate-reference(Pod, Dispenser, int /* reference-weight-g */);

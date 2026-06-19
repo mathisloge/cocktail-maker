@@ -47,19 +47,22 @@ export class IPod
 class DispenserPodImpl : public Dispenser
 {
   public:
-    explicit DispenserPodImpl(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
+    explicit DispenserPodImpl(std::weak_ptr<IPod> pod, DispenserId dispenser_id, std::string logger_name)
         : dispenser_id_{dispenser_id}
         , pod_{std::move(pod)}
+        , logger_{log::create_or_get(std::move(logger_name))}
     {
     }
 
     cobalt::promise<void> load_cell_reset_offset() override
     {
+        log::debug(logger_, "Reset load cell.");
         co_await pod()->load_cell_reset_offset(dispenser_id_);
     }
 
     cobalt::promise<void> load_cell_set_ref_weight(units::Grams grams) override
     {
+        log::debug(logger_, "Set load cell ref weight to {}.", grams);
         co_await pod()->load_cell_set_ref_weight(dispenser_id_, grams);
     }
 
@@ -78,6 +81,9 @@ class DispenserPodImpl : public Dispenser
         return dispenser_id_;
     }
 
+  protected:
+    log::Logger logger_;
+
   private:
     const DispenserId dispenser_id_;
     std::weak_ptr<IPod> pod_;
@@ -85,12 +91,10 @@ class DispenserPodImpl : public Dispenser
 
 export class Pump final : public DispenserPodImpl
 {
-    log::Logger logger_;
 
   public:
     Pump(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
-        : DispenserPodImpl{std::move(pod), dispenser_id}
-        , logger_{log::create_or_get(std::format("pump_{}", dispenser_id))}
+        : DispenserPodImpl{std::move(pod), dispenser_id, std::format("pump_{}", dispenser_id)}
     {
     }
 
@@ -103,13 +107,9 @@ export class Pump final : public DispenserPodImpl
 
 export class Valve final : public DispenserPodImpl
 {
-    DispenserId id_;
-    log::Logger logger_;
-
   public:
     Valve(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
-        : DispenserPodImpl{std::move(pod), dispenser_id}
-        , logger_{log::create_or_get(std::format("valve_{}", dispenser_id))}
+        : DispenserPodImpl{std::move(pod), dispenser_id, std::format("valve_{}", dispenser_id)}
     {
     }
 

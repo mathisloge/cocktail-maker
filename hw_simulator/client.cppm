@@ -96,6 +96,11 @@ class Client
         async_handle(msg);
     }
 
+    void handle(InClientLoadCellSetRefWeight& msg)
+    {
+        async_handle(msg);
+    }
+
     void handle(Message& msg)
     {
         log::warn(logger_, "Got unexpected message '{}'", msg.name());
@@ -120,6 +125,12 @@ class Client
     }
 
     cobalt::detached async_handle(InClientLoadCellResetOffset msg)
+    {
+        co_await delay(150ms);
+        co_await async_send(Ack{}, msg.transportField_transactionId().getValue());
+    }
+
+    cobalt::detached async_handle(InClientLoadCellSetRefWeight msg)
     {
         co_await delay(150ms);
         co_await async_send(Ack{}, msg.transportField_transactionId().getValue());

@@ -2,11 +2,11 @@ import { LogEntry, Pod, Dispenser } from "./data.slint";
 import { TabWidget } from "std-widgets.slint";
 import { PodConfigTab } from "./admin/pod-config-tab.slint";
 import { SystemLog } from "components.slint";
+import { StationStateContext } from "./globals/station-state-context.slint";
 
 export component AdminArea {
     in property <[string]> ingredient-ids;
     in property <[Pod]> pods;
-    in property <[LogEntry]> log-entries;
 
     callback identify-dispenser <=> pod-config.identify-dispenser;
     callback assign-ingredient-to-dispenser <=> pod-config.assign-ingredient;
@@ -23,7 +23,7 @@ export component AdminArea {
         Tab {
             title: "System logs";
             SystemLog {
-                log-entries: log-entries;
+                log-entries: StationStateContext.log-entries;
             }
         }
     }

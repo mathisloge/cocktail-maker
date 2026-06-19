@@ -21,6 +21,7 @@ target_sources(
                 src/maschine_adapter.cppm
                 src/ui_log_sink.cppm
                 src/station_state_bridge.cppm
+                src/dispenser_calibration_bridge.cppm
 )
 
 if(BUILD_TESTING)

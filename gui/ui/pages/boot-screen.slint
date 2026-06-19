@@ -9,11 +9,12 @@ import {
 import { ProgressIndicator, Spinner, ScrollView } from "std-widgets.slint";
 import { LogEntry, LogLevel } from "../data.slint";
 import { CornerDeco, SystemLog } from "../components.slint";
+import { StationStateContext } from "./../globals/station-state-context.slint";
 
 export component BootScreen inherits Rectangle {
     in property <string> machine-name: "Sir Mix-A-Lot";
     in property <bool> is-loading:   false;
-    in property <[LogEntry]> log-entries;
+    private property <[LogEntry]> log-entries: StationStateContext.log-entries;
 
     callback boot-complete();
 

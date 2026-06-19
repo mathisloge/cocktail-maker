@@ -48,6 +48,8 @@ export using OutFrame = proto::frame::Frame<OutMessage, std::tuple<>, ServerOpti
 export using OutPing = proto::message::Ping<OutMessage>;
 export using OutEmergencyStop = proto::message::EmergencyStop<OutMessage>;
 export using OutDeviceInfoRequest = proto::message::DeviceInfoRequest<OutMessage>;
+export using OutLoadCellResetOffset = proto::message::LoadCellResetOffset<OutMessage>;
+export using OutLoadCellSetRefWeight = proto::message::LoadCellSetRefWeight<OutMessage>;
 
 export using TransactionId = proto::FrameInterfaceFields::TransactionId;
 
@@ -69,7 +71,7 @@ export class ProtocolError : public std::runtime_error
     comms::ErrorStatus error_status_;
 };
 
-export class TimeoutError : std::runtime_error
+export class TimeoutError : public std::runtime_error
 {
   public:
     using runtime_error::runtime_error;

@@ -31,7 +31,9 @@ int main(int argc, char** argv)
 
     auto ui_log_sink = std::make_shared<cm::gui::ui_log_sink_st>();
     cm::log::add_sink(ui_log_sink);
-    ui->set_log_entries(ui_log_sink->model());
+
+    const auto& ui_station_state_context = ui->global<cm::gui::StationStateContext>();
+    ui_station_state_context.set_log_entries(ui_log_sink->model());
 
     auto logger = cm::log::create_or_get("main");
     cm::log::info(logger, "Setup application...");
@@ -81,6 +83,7 @@ int main(int argc, char** argv)
     cm::PodRegistry pod_registry{};
     cm::PodDispatcher pod_dispatcher{pod_registry, station_config};
     cm::RecipeStore recipe_store{std::move(recipes)};
+    cm::gui::DispenserCalibrationBridge dispenser_calibration_bridge{ctx.get_executor(), ui, pod_registry};
     auto command_executer = std::make_shared<cm::gui::MachineAdapter>(ui, ingredient_store, pod_registry, station_config);
     auto station_state = std::make_shared<cm::gui::StationStateBridge>(ui);
 
@@ -90,7 +93,8 @@ int main(int argc, char** argv)
         cm::log::debug(logger, "create recipe '{}' with boost factor '{}'", recipe_to_create.name.begin(), boost);
 
         auto r = recipe_store.find_by_id(recipe_to_create.id).value();
-        boost::asio::post(ctx, [recipe = std::move(r), command_executer]() { my_task(std::move(recipe), command_executer); });
+        boost::asio::post(ctx.get_executor(),
+                          [recipe = std::move(r), command_executer]() { my_task(std::move(recipe), command_executer); });
     });
 
     ui->on_boost_recipe([&](const int boost_percentage) {

@@ -1,10 +1,14 @@
+export { StationStateContext }from "./globals/station-state-context.slint";
+export {
+    DispenserCalibrationContext,
+}from "./globals/dispenser-calibration-context.slint";
+
 import {
     VerticalBox,
     ScrollView,
     HorizontalBox,
     Slider,
 } from "std-widgets.slint";
-
 import { Palette } from "palette.slint";
 import {
     Page,
@@ -24,9 +28,10 @@ import {
 } from "pages.slint";
 import { ManualCommandPopup } from "popups.slint";
 import { AdminArea } from "admin-area.slint";
+import { StationStateContext } from "./globals/station-state-context.slint";
 
 export component AppWindow inherits Window {
-    in property <bool> device_ready: false;
+    private property <bool> device_ready: StationStateContext.station-ready;
     private property <bool> boot_screen_confirmed: false;
     changed device_ready => {
         if (!device_ready) {
@@ -35,7 +40,6 @@ export component AppWindow inherits Window {
     }
     in property <[string]> ingredient-ids;
     in property <[Pod]> pods;
-    in-out property <[LogEntry]> log-entries;
     in-out property <Page> current_page: Page.admin-area-page;
     in property <[RecipeView]> recipes;
     in-out property <RecipeView> selected_recipe;
@@ -75,7 +79,6 @@ export component AppWindow inherits Window {
     background: Palette.background;
     if !device_ready || !boot_screen_confirmed: BootScreen {
         is-loading: !device_ready;
-        log-entries: log-entries;
         boot-complete => {
             root.boot_screen_confirmed = true;
         }
@@ -134,7 +137,6 @@ export component AppWindow inherits Window {
         if current_page == Page.admin-area-page: admin-area := AdminArea {
             ingredient-ids: ingredient-ids;
             pods: pods;
-            log-entries: root.log-entries;
             assign-ingredient-to-dispenser(pod, dispenser, ingredient_id) => {
                 root.assign-ingredient-to-dispenser(pod, dispenser, ingredient_id);
             };

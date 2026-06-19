@@ -16,21 +16,10 @@ import {
     DispenserType,
 } from "../data.slint";
 import { Palette } from "../palette.slint";
-
-export enum CalibrationStepStatus {
-    idle,
-    running,
-    success,
-    error,
-}
-
-export struct DispenserCalibrationState {
-    offset-status: CalibrationStepStatus,
-    reference-status: CalibrationStepStatus,
-    pump-status: CalibrationStepStatus,
-    measured-ml-per-step: float,
-    error-message: string,
-}
+import {
+    DispenserCalibrationContext,
+    CalibrationStepStatus,
+} from "../globals/dispenser-calibration-context.slint";
 
 component StatusDot inherits PulseDot {
     in property <CalibrationStepStatus> status;
@@ -49,13 +38,25 @@ component StepCard inherits Rectangle {
     in property <string> description: "Test description";
     in property <CalibrationStepStatus> status: CalibrationStepStatus.running;
     in property <bool> enabled: true;
-    in property <string> status-label: "Test Status Label";
 
     background: Palette.background-card;
     border-width: 1px;
     border-color: Palette.border-subtle;
     opacity: root.enabled ? 1.0 : 0.45;
     animate opacity { duration: 150ms; }
+
+    function status-label() -> string {
+        if (root.status == CalibrationStepStatus.success) {
+            return "OK";
+        }
+        if (root.status == CalibrationStepStatus.running) {
+            return "läuft...";
+        }
+        if (root.status == CalibrationStepStatus.error) {
+            return "Fehler";
+        }
+        return "ausstehend";
+    }
 
     VerticalLayout {
         padding: 16px;
@@ -94,7 +95,7 @@ component StepCard inherits Rectangle {
                 }
 
                 SmallText {
-                    text: root.status-label;
+                    text: root.status-label();
                     color: Palette.text-secondary;
                 }
             }
@@ -103,6 +104,7 @@ component StepCard inherits Rectangle {
         SmallText {
             text: root.description;
             wrap: word-wrap;
+            color: Palette.text-secondary;
         }
 
         @children
@@ -110,17 +112,10 @@ component StepCard inherits Rectangle {
 }
 
 component DispenserCalibrationContent inherits Rectangle {
-    in property <Pod> pod;
-    in property <Dispenser> dispenser;
-    in property <DispenserCalibrationState> state;
-
+    in property <Pod> active-pod;
+    in property <Dispenser> active-dispenser;
     private property <int> reference-weight-g: 100;
-    private property <int> pump-test-steps: 2000;
-
-    callback calibrate-offset(Pod, Dispenser);
-    callback calibrate-reference(Pod, Dispenser, int /* reference-weight-g */);
-    callback run-pump-test(Pod, Dispenser, int /* steps */);
-    callback close();
+    private property <int> pump-test-steps: 200;
 
     background: Palette.background;
 
@@ -135,6 +130,20 @@ component DispenserCalibrationContent inherits Rectangle {
             padding: 24px;
             spacing: 16px;
 
+            HorizontalBox {
+                cross-axis-alignment: center;
+                MediumText {
+                    text: root.active-dispenser.type == DispenserType.pump
+                        ? "Pumpe " + root.active-dispenser.id + " kalibrieren"
+                        : "Ventil " + root.active-dispenser.id + " kalibrieren";
+                }
+            }
+
+            SmallText {
+                text: "Pod " + root.active-pod.id;
+                color: Palette.text-secondary;
+            }
+
             ScrollView {
                 vertical-stretch: 1;
 
@@ -145,16 +154,18 @@ component DispenserCalibrationContent inherits Rectangle {
                         step-number: "1";
                         title: "Nullpunkt";
                         description: "Dispenser leer lassen und den Leergewicht-Offset der Waage erfassen.";
-                        status: root.state.offset-status;
-                        status-label: root.state.offset-status == CalibrationStepStatus.success ? "OK" :
-                            root.state.offset-status == CalibrationStepStatus.running ? "läuft..." :
-                            root.state.offset-status == CalibrationStepStatus.error ? "Fehler" : "ausstehend";
+                        status: DispenserCalibrationContext.state.offset-status;
 
                         Button {
-                            text: root.state.offset-status == CalibrationStepStatus.running ? "läuft..." : "Offset erfassen";
+                            text: DispenserCalibrationContext.state.offset-status == CalibrationStepStatus.running
+                                ? "läuft..." : "Offset erfassen";
                             height: 64px;
-                            enabled: root.state.offset-status != CalibrationStepStatus.running;
-                            clicked => { root.calibrate-offset(root.pod, root.dispenser); }
+                            enabled: DispenserCalibrationContext.state.offset-status != CalibrationStepStatus.running;
+                            clicked => {
+                                DispenserCalibrationContext.calibrate-offset(
+                                    root.active-pod,
+                                    root.active-dispenser);
+                            }
                         }
                     }
 
@@ -162,11 +173,8 @@ component DispenserCalibrationContent inherits Rectangle {
                         step-number: "2";
                         title: "Referenzgewicht";
                         description: "Bekanntes Referenzgewicht auflegen, Gewicht eingeben und kalibrieren.";
-                        status: root.state.reference-status;
-                        enabled: root.state.offset-status == CalibrationStepStatus.success;
-                        status-label: root.state.reference-status == CalibrationStepStatus.success ? "OK" :
-                            root.state.reference-status == CalibrationStepStatus.running ? "läuft..." :
-                            root.state.reference-status == CalibrationStepStatus.error ? "Fehler" : "ausstehend";
+                        status: DispenserCalibrationContext.state.reference-status;
+                        enabled: DispenserCalibrationContext.state.offset-status == CalibrationStepStatus.success;
 
                         HorizontalBox {
                             cross-axis-alignment: center;
@@ -178,30 +186,33 @@ component DispenserCalibrationContent inherits Rectangle {
                             SpinBox {
                                 height: 48px;
                                 minimum: 1;
-                                maximum: 5000;
+                                maximum: 20000;
                                 value <=> root.reference-weight-g;
-                                enabled: root.state.offset-status == CalibrationStepStatus.success;
+                                enabled: DispenserCalibrationContext.state.offset-status == CalibrationStepStatus.success;
                             }
                         }
 
                         Button {
-                            text: root.state.reference-status == CalibrationStepStatus.running ? "läuft..." : "Mit Referenzgewicht kalibrieren";
+                            text: DispenserCalibrationContext.state.reference-status == CalibrationStepStatus.running
+                                ? "läuft..." : "Mit Referenzgewicht kalibrieren";
                             height: 64px;
-                            enabled: root.state.offset-status == CalibrationStepStatus.success
-                                && root.state.reference-status != CalibrationStepStatus.running;
-                            clicked => { root.calibrate-reference(root.pod, root.dispenser, root.reference-weight-g); }
+                            enabled: DispenserCalibrationContext.state.offset-status == CalibrationStepStatus.success
+                                && DispenserCalibrationContext.state.reference-status != CalibrationStepStatus.running;
+                            clicked => {
+                                DispenserCalibrationContext.calibrate-reference(
+                                    root.active-pod,
+                                    root.active-dispenser,
+                                    root.reference-weight-g);
+                            }
                         }
                     }
 
-                    if root.dispenser.type == DispenserType.pump: StepCard {
+                    if root.active-dispenser.type == DispenserType.pump: StepCard {
                         step-number: "3";
                         title: "Pumpvolumen";
                         description: "Pumpt die eingegebene Anzahl Schritte und misst das ausgegebene Volumen mit der kalibrierten Waage.";
-                        status: root.state.pump-status;
-                        enabled: root.state.reference-status == CalibrationStepStatus.success;
-                        status-label: root.state.pump-status == CalibrationStepStatus.success ? "OK" :
-                            root.state.pump-status == CalibrationStepStatus.running ? "läuft..." :
-                            root.state.pump-status == CalibrationStepStatus.error ? "Fehler" : "ausstehend";
+                        status: DispenserCalibrationContext.state.pump-status;
+                        enabled: DispenserCalibrationContext.state.reference-status == CalibrationStepStatus.success;
 
                         HorizontalBox {
                             cross-axis-alignment: center;
@@ -215,26 +226,32 @@ component DispenserCalibrationContent inherits Rectangle {
                                 minimum: 1;
                                 maximum: 20000;
                                 value <=> root.pump-test-steps;
-                                enabled: root.state.reference-status == CalibrationStepStatus.success;
+                                enabled: DispenserCalibrationContext.state.reference-status == CalibrationStepStatus.success;
                             }
                         }
 
                         Button {
-                            text: root.state.pump-status == CalibrationStepStatus.running ? "läuft..." : "Pumptest starten";
+                            text: DispenserCalibrationContext.state.pump-status == CalibrationStepStatus.running
+                                ? "läuft..." : "Pumptest starten";
                             height: 64px;
-                            enabled: root.state.reference-status == CalibrationStepStatus.success
-                                && root.state.pump-status != CalibrationStepStatus.running;
-                            clicked => { root.run-pump-test(root.pod, root.dispenser, root.pump-test-steps); }
+                            enabled: DispenserCalibrationContext.state.reference-status == CalibrationStepStatus.success
+                                && DispenserCalibrationContext.state.pump-status != CalibrationStepStatus.running;
+                            clicked => {
+                                DispenserCalibrationContext.run-pump-test(
+                                root.active-pod,
+                                    root.active-dispenser,
+                                    root.pump-test-steps);
+                            }
                         }
 
-                        if root.state.pump-status == CalibrationStepStatus.success: SmallText {
-                            text: "Ergebnis: " + Math.round(root.state.measured-ml-per-step * 1000) / 1000 + " ml/Schritt";
+                        if DispenserCalibrationContext.state.pump-status == CalibrationStepStatus.success: SmallText {
+                            text: "Ergebnis: " + Math.round(DispenserCalibrationContext.state.measured-ml-per-step * 1000) / 1000 + " ml/Schritt";
                             color: Palette.log-info;
                         }
                     }
 
-                    if root.state.error-message != "": SmallText {
-                        text: root.state.error-message;
+                    if DispenserCalibrationContext.state.error-message != "": SmallText {
+                        text: DispenserCalibrationContext.state.error-message;
                         color: Palette.log-error;
                         wrap: word-wrap;
                     }
@@ -245,6 +262,9 @@ component DispenserCalibrationContent inherits Rectangle {
 }
 
 export component DispenserCalibrationPopup inherits PopupWindow {
+    in property <Pod> active-pod;
+    in property <Dispenser> active-dispenser;
+
     close-policy: PopupClosePolicy.close-on-click-outside;
     Rectangle {
         width: 100%;
@@ -257,5 +277,7 @@ export component DispenserCalibrationPopup inherits PopupWindow {
         width: 90%;
         x: (root.width - self.width) / 2;
         y: (root.height - self.height) / 2;
+        active-pod: root.active-pod;
+        active-dispenser: root.active-dispenser;
     }
 }

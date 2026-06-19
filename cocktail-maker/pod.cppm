@@ -4,6 +4,7 @@ module;
 export module cm:pod;
 
 import std;
+import mp_units;
 import cm.core;
 import :pod_types;
 import :station_state;
@@ -11,6 +12,8 @@ import :async_machine_protocol_server;
 import :dispenser;
 
 namespace cobalt = boost::cobalt;
+
+using namespace std::chrono_literals;
 
 namespace cm {
 export class IPod
@@ -26,14 +29,28 @@ export class IPod
     virtual PodId pod_id() const = 0;
     virtual cobalt::task<void> run(std::unique_ptr<PodState> state) = 0;
     virtual std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> create_dispenser(DispenserId dispenser_id) = 0;
+
+    virtual cobalt::promise<void> load_cell_reset_offset(DispenserId dispenser_id) = 0;
+    virtual cobalt::promise<void> load_cell_set_ref_weight(DispenserId dispenser_id, units::Grams grams) = 0;
 };
 
 class DispenserPodImpl : public Dispenser
 {
   public:
-    explicit DispenserPodImpl(std::weak_ptr<IPod> pod)
-        : pod_{std::move(pod)}
+    explicit DispenserPodImpl(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
+        : dispenser_id_{dispenser_id}
+        , pod_{std::move(pod)}
     {
+    }
+
+    cobalt::promise<void> load_cell_reset_offset() override
+    {
+        co_await pod()->load_cell_reset_offset(dispenser_id_);
+    }
+
+    cobalt::promise<void> load_cell_set_ref_weight(units::Grams grams) override
+    {
+        co_await pod()->load_cell_set_ref_weight(dispenser_id_, grams);
     }
 
   protected:
@@ -46,19 +63,23 @@ class DispenserPodImpl : public Dispenser
         return p;
     }
 
+    DispenserId id() const
+    {
+        return dispenser_id_;
+    }
+
   private:
+    const DispenserId dispenser_id_;
     std::weak_ptr<IPod> pod_;
 };
 
 export class Pump final : public DispenserPodImpl
 {
-    DispenserId id_;
     log::Logger logger_;
 
   public:
     Pump(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
-        : DispenserPodImpl{std::move(pod)}
-        , id_{dispenser_id}
+        : DispenserPodImpl{std::move(pod), dispenser_id}
         , logger_{log::create_or_get(std::format("pump_{}", dispenser_id))}
     {
     }
@@ -77,8 +98,7 @@ export class Valve final : public DispenserPodImpl
 
   public:
     Valve(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
-        : DispenserPodImpl{std::move(pod)}
-        , id_{dispenser_id}
+        : DispenserPodImpl{std::move(pod), dispenser_id}
         , logger_{log::create_or_get(std::format("valve_{}", dispenser_id))}
     {
     }
@@ -149,7 +169,7 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         return std::make_unique<Pump>(this->shared_from_this(), dispenser_id);
     }
 
-    cobalt::promise<PodInfo> aquire_device_info(std::chrono::milliseconds timeout = std::chrono::milliseconds{100})
+    cobalt::promise<PodInfo> aquire_device_info(std::chrono::milliseconds timeout = 100ms)
     {
         InDeviceInfoResponse msg = co_await send_and_receive<InDeviceInfoResponse>(OutDeviceInfoRequest{}, timeout);
         co_return PodInfo{
@@ -163,6 +183,21 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
             .num_pumps = msg.field_numPumps().getValue(),
             .num_valves = msg.field_numValves().getValue(),
         };
+    }
+
+    cobalt::promise<void> load_cell_reset_offset(DispenserId dispenser_id) override
+    {
+        auto rx = OutLoadCellResetOffset{};
+        rx.field_dispenserId().setValue(dispenser_id.raw());
+        [[maybe_unused]] auto ack = co_await send_and_receive<InAck>(std::move(rx), 500ms);
+    }
+
+    cobalt::promise<void> load_cell_set_ref_weight(DispenserId dispenser_id, units::Grams grams) override
+    {
+        auto rx = OutLoadCellSetRefWeight{};
+        rx.field_dispenserId().setValue(dispenser_id.raw());
+        rx.field_gram().setValue(grams.numerical_value_in(units::si::gram));
+        [[maybe_unused]] auto ack = co_await send_and_receive<InAck>(std::move(rx), 500ms);
     }
 
   private:

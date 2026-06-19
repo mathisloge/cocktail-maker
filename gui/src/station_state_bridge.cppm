@@ -178,7 +178,8 @@ class StationStateBridge : public StationState, public std::enable_shared_from_t
                                    });
 
         // update device ready to all_connected
-        slint::invoke_from_event_loop([connected = all_connected, ui = ui_]() { ui->set_device_ready(connected); });
+        slint::invoke_from_event_loop(
+            [connected = all_connected, ui = ui_]() { ui->global<cm::gui::StationStateContext>().set_station_ready(connected); });
     }
 
     void pod_about_to_removed(const PodStateImpl& pod)

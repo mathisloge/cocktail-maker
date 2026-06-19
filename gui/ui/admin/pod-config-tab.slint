@@ -22,6 +22,7 @@ import {
 } from "../data.slint";
 import { DispenserCalibrationPopup } from "./dispenser-calibration.slint";
 import { Palette } from "../palette.slint";
+import { DispenserCalibrationContext } from "../globals/dispenser-calibration-context.slint";
 
 component PodListDelegate inherits Rectangle {
     in property <Pod> pod;
@@ -83,7 +84,8 @@ export component PodConfigTab inherits Rectangle {
         { id: "Pod-Disconnected", connection_state: ConnectionState.disconnected },
     ];
     in property <[string]> ingredient-ids: ["vodka", "orange_juice", "test2"];
-    private property <Pod> selected;
+    private property <Pod> active-pod;
+    private property <Dispenser> active-dispenser;
 
     callback identify-dispenser(Pod, Dispenser);
     callback assign-ingredient(Pod, Dispenser, string);
@@ -98,8 +100,8 @@ export component PodConfigTab inherits Rectangle {
                 width: parent.width;
                 height: 50px;
                 pod: pod;
-                selected: root.selected == pod;
-                clicked => { root.selected = pod; }
+                selected: root.active-pod == pod;
+                clicked => { root.active-pod = pod; }
             }
         }
     }
@@ -119,12 +121,12 @@ export component PodConfigTab inherits Rectangle {
         alignment: stretch;
 
         MediumText {
-            text: selected.id;
+            text: active-pod.id;
         }
 
         ScrollView {
             VerticalBox {
-                for dispenser in root.selected.dispensers: HorizontalBox {
+                for dispenser in root.active-pod.dispensers: HorizontalBox {
                     cross-axis-alignment: center;
                     SmallText {
                         text: "Dispenser " + dispenser.id;
@@ -134,20 +136,24 @@ export component PodConfigTab inherits Rectangle {
                         height: 40px;
                         model: root.ingredient-ids;
                         selected(current-value) => {
-                            assign-ingredient(selected, dispenser, current-value);
+                            assign-ingredient(active-pod, dispenser, current-value);
                         }
                     }
 
                     Button {
                         text: "Identify";
                         height: 40px;
-                        clicked => { identify-dispenser(selected, dispenser); }
+                        clicked => { identify-dispenser(active-pod, dispenser); }
                     }
 
                     Button {
                         text: "Calibrate";
                         height: 40px;
-                        clicked => { cal.show(); }
+                        clicked => {
+                            root.active-dispenser = dispenser;
+                            DispenserCalibrationContext.reset-state();
+                            cal.show();
+                        }
                     }
                 }
             }
@@ -157,5 +163,7 @@ export component PodConfigTab inherits Rectangle {
     cal := DispenserCalibrationPopup {
         width: root.width;
         height: root.height;
+        active-pod: root.active-pod;
+        active-dispenser: root.active-dispenser;
     }
 }

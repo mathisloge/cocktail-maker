@@ -1,0 +1,49 @@
+import { Pod, Dispenser } from "../data.slint";
+
+export enum CalibrationStepStatus {
+    idle,
+    running,
+    success,
+    error,
+}
+
+export struct DispenserCalibrationState {
+    offset-status: CalibrationStepStatus,
+    reference-status: CalibrationStepStatus,
+    pump-status: CalibrationStepStatus,
+    measured-ml-per-step: float,
+    error-message: string,
+}
+
+export global DispenserCalibrationContext {
+    in-out property <DispenserCalibrationState> state: {
+        offset-status: CalibrationStepStatus.idle,
+        reference-status: CalibrationStepStatus.idle,
+        pump-status: CalibrationStepStatus.idle,
+        measured-ml-per-step: 0,
+        error-message: "",
+    };
+
+    public function update-calibration-error(error: string) {
+        self.state.error-message = error;
+    }
+
+    public function update-offset-status(status: CalibrationStepStatus) {
+        self.state.offset-status = status;
+    }
+
+    // implemented by business logic
+    callback calibrate-offset(Pod, Dispenser);
+    callback calibrate-reference(Pod, Dispenser, int /* reference-weight-g */);
+    callback run-pump-test(Pod, Dispenser, int /* steps */);
+
+    public function reset-state() {
+        state = {
+            offset-status: CalibrationStepStatus.idle,
+            reference-status: CalibrationStepStatus.idle,
+            pump-status: CalibrationStepStatus.idle,
+            measured-ml-per-step: 0,
+            error-message: "",
+        };
+    }
+}

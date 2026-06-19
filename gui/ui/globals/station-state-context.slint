@@ -1,0 +1,5 @@
+import { LogEntry } from "./../data.slint";
+export global StationStateContext {
+    in-out property <bool> station-ready: false;
+    in-out property <[LogEntry]> log-entries: [];
+}

@@ -2,9 +2,8 @@ module;
 #include <boost/cobalt.hpp>
 
 export module cm:dispenser;
-import :strong_type;
-import :units;
-import :logging;
+import std;
+import cm.core;
 
 namespace cobalt = boost::cobalt;
 

@@ -3,9 +3,9 @@ module;
 export module cm:recipe_boost;
 import std;
 import mp_units;
+import cm.core;
 import :ingredient;
 import :recipe;
-import :units;
 
 namespace cm {
 namespace {

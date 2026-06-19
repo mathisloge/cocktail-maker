@@ -1,6 +1,6 @@
 module;
 
-export module cm:overloaded;
+export module cm.core:overloaded;
 
 namespace cm::detail {
 export template <class... Ts>

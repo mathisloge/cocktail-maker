@@ -4,12 +4,10 @@ module;
 
 export module cm:execute_recipe;
 import std;
+import cm.core;
 import mp_units;
 import :ingredient;
 import :recipe;
-import :units;
-import :logging;
-import :overloaded;
 
 namespace cm {
 namespace cobalt = boost::cobalt;
@@ -76,7 +74,7 @@ export cobalt::promise<void> execute_commands(Commands commands, std::shared_ptr
     if (not error_message.empty()) {
         co_await command_executer->execute_command(
             ManualCommand{.id = CommandId{},
-                          .instruction = std::format("Error occured during command execution: {}", std::move(error_message))});
+                          .instruction = std::format("Error occurred during command execution: {}", std::move(error_message))});
     }
 }
 } // namespace cm

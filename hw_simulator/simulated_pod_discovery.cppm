@@ -4,6 +4,7 @@ module;
 
 export module cm.sim:simulated_pod_discovery;
 import std;
+import cm.core;
 import cm;
 import :client;
 

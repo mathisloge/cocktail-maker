@@ -2,7 +2,7 @@ module;
 export module cm:pod_types;
 
 import std;
-import :strong_type;
+import cm.core;
 
 namespace cm {
 export using PodId = strong_type<std::string, struct PodIdTag, Comparable, Hashable, Formattable>;

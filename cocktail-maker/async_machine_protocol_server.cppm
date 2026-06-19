@@ -18,8 +18,7 @@ export module cm:async_machine_protocol_server;
 
 import std;
 import libassert;
-import :comms_adapter;
-import :logging;
+import cm.core;
 
 namespace cm {
 

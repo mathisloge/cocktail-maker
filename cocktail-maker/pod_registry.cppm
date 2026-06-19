@@ -4,7 +4,7 @@ export module cm:pod_registry;
 
 import std;
 import libassert;
-import :logging;
+import cm.core;
 import :pod;
 import :pod_types;
 import :dispenser;

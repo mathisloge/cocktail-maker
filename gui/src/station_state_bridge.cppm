@@ -5,6 +5,7 @@ module;
 export module cm.gui:station_state_bridge;
 
 import std;
+import cm.core;
 import cm;
 
 namespace cm::gui {

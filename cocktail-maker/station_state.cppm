@@ -2,6 +2,7 @@ module;
 export module cm:station_state;
 
 import std;
+import cm.core;
 import :pod_types;
 
 namespace cm {

@@ -3,7 +3,7 @@ module;
 export module cm:station_config;
 
 import std;
-import :logging;
+import cm.core;
 import :pod;
 import :ingredient;
 import :dispenser;

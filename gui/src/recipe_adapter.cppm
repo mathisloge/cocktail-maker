@@ -6,6 +6,7 @@ export module cm.gui:recipe_adapter;
 import std;
 import mp_units;
 import cm;
+import cm.core;
 
 namespace cm::gui {
 export std::optional<Command> transform_command(const cm::Command& command, const cm::IngredientStore& ingredient_store)

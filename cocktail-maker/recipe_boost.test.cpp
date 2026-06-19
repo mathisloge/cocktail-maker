@@ -3,6 +3,7 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 import std;
 import cm;
+import cm.core;
 import mp_units;
 
 using namespace cm;

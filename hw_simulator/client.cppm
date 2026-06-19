@@ -11,6 +11,7 @@ module;
 
 export module cm.sim:client;
 import std;
+import cm.core;
 import cm;
 
 using namespace std::chrono_literals;

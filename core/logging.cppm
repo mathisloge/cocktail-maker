@@ -6,7 +6,7 @@ module;
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-export module cm:logging;
+export module cm.core:logging;
 import std;
 
 namespace cm::log {

@@ -2,8 +2,8 @@ module;
 
 export module cm:recipe;
 import std;
+import cm.core;
 import :ingredient;
-import :units;
 
 namespace cm {
 

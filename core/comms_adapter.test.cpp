@@ -3,7 +3,7 @@
 #include <proto/MsgId.h>
 
 import std;
-import cm;
+import cm.core;
 
 TEST_CASE("comms::ErrorStatus formats to the expected string", "[comms]")
 {

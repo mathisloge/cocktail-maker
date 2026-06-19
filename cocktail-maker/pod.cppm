@@ -4,11 +4,9 @@ module;
 export module cm:pod;
 
 import std;
+import cm.core;
 import :pod_types;
-import :strong_type;
 import :station_state;
-import :awaitable_bool;
-import :overloaded;
 import :async_machine_protocol_server;
 import :dispenser;
 

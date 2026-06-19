@@ -1,6 +1,6 @@
 module;
 
-export module cm:units;
+export module cm.core:units;
 import std;
 import mp_units;
 

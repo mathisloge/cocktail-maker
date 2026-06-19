@@ -1,5 +1,5 @@
 module;
-export module cm:strong_type;
+export module cm.core:strong_type;
 import std;
 
 namespace cm {

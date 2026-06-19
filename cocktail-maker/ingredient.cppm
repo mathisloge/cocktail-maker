@@ -2,7 +2,7 @@ module;
 
 export module cm:ingredient;
 import std;
-import :strong_type;
+import cm.core;
 
 export namespace cm {
 

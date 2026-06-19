@@ -5,12 +5,8 @@ module;
 export module cm:async_machine_interface;
 
 import std;
-import :logging;
-import :units;
-import :strong_type;
+import cm.core;
 import :async_machine_protocol_server;
-import :awaitable_bool;
-import :overloaded;
 import :ingredient;
 
 namespace cm {

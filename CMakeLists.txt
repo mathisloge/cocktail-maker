@@ -85,6 +85,7 @@ if(BUILD_TESTING)
     include(Catch)
 endif()
 
+add_subdirectory(core)
 add_subdirectory(cocktail-maker)
 add_subdirectory(gui)
 add_subdirectory(hw_simulator)

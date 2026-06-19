@@ -4,7 +4,7 @@ module;
 export module cm:pod_discovery;
 
 import std;
-import :logging;
+import cm.core;
 import :pod;
 import :station_state;
 import :pod_registry;

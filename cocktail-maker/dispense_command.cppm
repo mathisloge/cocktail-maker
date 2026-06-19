@@ -3,8 +3,8 @@ module;
 
 export module cm:dispense_command;
 import std;
+import cm.core;
 import :recipe;
-import :logging;
 import :dispenser;
 
 namespace cobalt = boost::cobalt;

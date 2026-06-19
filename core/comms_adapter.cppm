@@ -3,7 +3,7 @@ module;
 #include <proto/MsgId.h>
 #include <proto/field/MsgIdCommon.h>
 
-export module cm:comms_adapter;
+export module cm.core:comms_adapter;
 import std;
 
 namespace {

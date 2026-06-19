@@ -3,16 +3,7 @@ add_library(cm::lib ALIAS cocktail-maker-lib)
 add_sanitizers(cocktail-maker-lib)
 target_compile_features(cocktail-maker-lib PUBLIC cxx_std_26)
 
-target_link_libraries(
-    cocktail-maker-lib
-    PUBLIC
-        mp-units::mp-units
-        spdlog::spdlog
-        simdjson::simdjson
-        Boost::cobalt
-        libassert::assert
-    PRIVATE proto
-)
+target_link_libraries(cocktail-maker-lib PUBLIC cm::core)
 
 target_sources(
     cocktail-maker-lib
@@ -20,15 +11,11 @@ target_sources(
         FILE_SET CXX_MODULES
             FILES
                 async_machine_protocol_server.cppm
-                awaitable_bool.cppm
-                comms_adapter.cppm
                 dispense_command.cppm
                 dispenser.cppm
                 execute_recipe.cppm
                 ingredient.cppm
                 lib.cppm
-                logging.cppm
-                overloaded.cppm
                 pod_discovery.cppm
                 pod_types.cppm
                 pod_registry.cppm
@@ -38,8 +25,6 @@ target_sources(
                 recipe.cppm
                 station_config.cppm
                 station_state.cppm
-                strong_type.cppm
-                units.cppm
 )
 
 if(BUILD_TESTING)
@@ -56,9 +41,7 @@ if(BUILD_TESTING)
         PRIVATE
             async_machine_interface.test.cpp
             async_machine_protocol_server.test.cpp
-            awaitable_bool.test.cpp
             dispense_command.test.cpp
-            comms_adapter.test.cpp
             execute_recipe.test.cpp
             ingredient.test.cpp
             pod_discovery.test.cpp
@@ -66,7 +49,5 @@ if(BUILD_TESTING)
             pod_registry.test.cpp
             recipe_boost.test.cpp
             recipe.test.cpp
-            strong_type.test.cpp
-            station_config.test.cpp
     )
 endif()

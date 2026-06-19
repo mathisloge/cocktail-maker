@@ -2,7 +2,7 @@
 #include <boost/asio/steady_timer.hpp>
 #include <boost/cobalt.hpp>
 #include <catch2/catch_test_macros.hpp>
-import cm;
+import cm.core;
 
 using namespace cm;
 namespace cobalt = boost::cobalt;

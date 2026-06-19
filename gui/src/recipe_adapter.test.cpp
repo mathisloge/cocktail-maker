@@ -4,6 +4,7 @@
 
 import std;
 import mp_units;
+import cm.core;
 import cm;
 import cm.gui;
 

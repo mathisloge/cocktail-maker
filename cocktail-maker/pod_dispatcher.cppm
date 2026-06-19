@@ -4,7 +4,7 @@ module;
 export module cm:pod_dispatcher;
 
 import std;
-import :logging;
+import cm.core;
 import :station_config;
 import :pod_registry;
 import :recipe;

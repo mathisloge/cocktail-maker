@@ -32,6 +32,8 @@ int main(int argc, char** argv)
     auto ui_log_sink = std::make_shared<cm::gui::ui_log_sink_st>();
     cm::log::add_sink(ui_log_sink);
 
+    cm::log::set_level(cm::log::Level::debug);
+
     const auto& ui_station_state_context = ui->global<cm::gui::StationStateContext>();
     ui_station_state_context.set_log_entries(ui_log_sink->model());
 

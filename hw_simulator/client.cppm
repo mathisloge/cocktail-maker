@@ -44,6 +44,8 @@ class Client
 
     using DeviceInfoResponse = proto::message::DeviceInfoResponse<Message, Options>;
     using Pong = proto::message::Pong<Message, Options>;
+    using Ack = proto::message::Ack<Message, Options>;
+    using Nack = proto::message::Nak<Message, Options>;
 
     log::Logger logger_;
     TSocket stream_;
@@ -89,6 +91,11 @@ class Client
         async_handle(msg);
     }
 
+    void handle(InClientLoadCellResetOffset& msg)
+    {
+        async_handle(msg);
+    }
+
     void handle(Message& msg)
     {
         log::warn(logger_, "Got unexpected message '{}'", msg.name());
@@ -108,8 +115,14 @@ class Client
 
     cobalt::detached async_handle(InClientPing msg)
     {
-        co_await delay(150ms);
+        co_await delay(500ms);
         co_await async_send(Pong{}, msg.transportField_transactionId().getValue());
+    }
+
+    cobalt::detached async_handle(InClientLoadCellResetOffset msg)
+    {
+        co_await delay(150ms);
+        co_await async_send(Ack{}, msg.transportField_transactionId().getValue());
     }
 
   private:

@@ -1,5 +1,6 @@
 module;
 #include <boost/cobalt.hpp>
+#include <proto/field/ErrorCodeCommon.h>
 
 export module cm:pod;
 
@@ -16,6 +17,15 @@ namespace cobalt = boost::cobalt;
 using namespace std::chrono_literals;
 
 namespace cm {
+export class PodReceiveError : public std::runtime_error
+{
+  public:
+    explicit PodReceiveError(proto::field::ErrorCodeVal error)
+        : runtime_error{std::format("NAK with error reason: {}", proto::field::ErrorCodeCommon::valueName(error))}
+    {
+    }
+};
+
 export class IPod
 {
   public:
@@ -189,7 +199,7 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
     {
         auto rx = OutLoadCellResetOffset{};
         rx.field_dispenserId().setValue(dispenser_id.raw());
-        [[maybe_unused]] auto ack = co_await send_and_receive<InAck>(std::move(rx), 500ms);
+        co_await send_with_ack(std::move(rx), 500ms);
     }
 
     cobalt::promise<void> load_cell_set_ref_weight(DispenserId dispenser_id, units::Grams grams) override
@@ -197,7 +207,7 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         auto rx = OutLoadCellSetRefWeight{};
         rx.field_dispenserId().setValue(dispenser_id.raw());
         rx.field_gram().setValue(grams.numerical_value_in(units::si::gram));
-        [[maybe_unused]] auto ack = co_await send_and_receive<InAck>(std::move(rx), 500ms);
+        co_await send_with_ack(std::move(rx), 500ms);
     }
 
   private:
@@ -254,14 +264,28 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         co_await device_ready_; // wait until the device info was send.
         while (cs.cancelled() == boost::asio::cancellation_type::none) {
             // will be cancelled if the pong wasn't received in x ms.
-            co_await send_and_receive<InPong>(OutPing{}, std::chrono::milliseconds{2000});
+            co_await send_and_receive<InPong>(OutPing{}, 2000ms);
         }
     }
 
   private:
+    template <typename TxMsg>
+    auto send_with_ack(TxMsg tx_msg, std::chrono::milliseconds timeout = 100ms) -> cobalt::promise<void>
+    {
+        const auto transaction_id = server_.generate_new_transaction_id();
+
+        // register queue at first
+        auto rx_action = server_.template async_receive<InAck, InNak>(transaction_id, timeout);
+
+        co_await server_.async_send(std::move(tx_msg), transaction_id);
+        const auto nak_or_ack = co_await rx_action;
+        if (std::holds_alternative<InNak>(nak_or_ack)) {
+            throw PodReceiveError{std::get<InNak>(nak_or_ack).field_errorCode().value()};
+        }
+    }
+
     template <typename RxMsg, typename TxMsg>
-    auto send_and_receive(TxMsg tx_msg, std::chrono::milliseconds timeout = std::chrono::milliseconds{100})
-        -> cobalt::promise<RxMsg>
+    auto send_and_receive(TxMsg tx_msg, std::chrono::milliseconds timeout = 100ms) -> cobalt::promise<RxMsg>
     {
         const auto transaction_id = server_.generate_new_transaction_id();
 

@@ -95,6 +95,9 @@ class LoggingContext
     void set_level(Level lvl)
     {
         spdlog::set_level(lvl);
+        for (auto&& s : sinks_) {
+            s->set_level(lvl);
+        }
     }
 
     void set_pattern(const std::string& pat)

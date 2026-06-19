@@ -36,6 +36,7 @@ using InFrame = proto::frame::Frame<InMessage, proto::input::ServerInputMessages
 // All server input messages
 export using InPong = proto::message::Pong<InMessage>;
 export using InAck = proto::message::Ack<InMessage>;
+export using InNak = proto::message::Nak<InMessage>;
 export using InDeviceInfoResponse = proto::message::DeviceInfoResponse<InMessage>;
 
 export using OutMessage = proto::FrameInterface<comms::option::app::WriteIterator<std::uint8_t*>,
@@ -95,11 +96,6 @@ class AsyncMachineProtocolServer
     AsyncMachineProtocolServer(const AsyncMachineProtocolServer&) = delete;
     AsyncMachineProtocolServer& operator=(const AsyncMachineProtocolServer&) = delete;
 
-    auto&& get_executor()
-    {
-        return stream_.get_executor();
-    }
-
     ~AsyncMachineProtocolServer()
     {
         try {
@@ -126,6 +122,11 @@ class AsyncMachineProtocolServer
     {
     }
 
+    auto&& get_executor()
+    {
+        return stream_.get_executor();
+    }
+
     cobalt::task<void> run()
     {
         is_running_ = true;
@@ -147,26 +148,16 @@ class AsyncMachineProtocolServer
     template <typename ExpectedMsg>
     auto async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout) -> cobalt::promise<ExpectedMsg>
     {
-        auto chan = get_or_create_channel(transaction_id);
+        co_return std::get<0>(co_await async_receive_impl<ExpectedMsg>(transaction_id, timeout));
+    }
 
-        // Garbage Collection: Ensures stale/timed-out keys are erased from the map
-        // regardless of the exit path (success, timeout, exception, or cancellation)
-        CleanupGuard guard{this, transaction_id};
-
-        InFrame::MsgPtr msg = co_await read_with_timeout(*chan, timeout);
-        static_assert(ExpectedMsg::hasStaticMsgId(), "Expected message doesn't have a compile-time message id.");
-        if (msg->getId() != ExpectedMsg::staticMsgId()) {
-            throw ProtocolError{comms::ErrorStatus::InvalidMsgId,
-                                std::format("Expected message doesn't match with received message id({}).", msg->getId())};
-        }
-        auto* concrete_ptr = dynamic_cast<ExpectedMsg*>(msg.get());
-        if (concrete_ptr == nullptr) {
-            throw ProtocolError{comms::ErrorStatus::MsgAllocFailure, "Could not cast message to expected message."};
-        }
-        auto expected_msg = std::move(*concrete_ptr);
-        msg.reset();
-        co_return std::move(expected_msg);
-    };
+    template <typename... ExpectedMsgs>
+        requires(sizeof...(ExpectedMsgs) >= 2)
+    auto async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
+        -> cobalt::promise<std::variant<ExpectedMsgs...>>
+    {
+        co_return co_await async_receive_impl<ExpectedMsgs...>(transaction_id, timeout);
+    }
 
     template <typename... ExpectedEvents>
     auto async_receive_events() -> cobalt::generator<std::variant<std::monostate, ExpectedEvents...>>
@@ -233,6 +224,41 @@ class AsyncMachineProtocolServer
     }
 
   private:
+    template <typename... ExpectedMsgs>
+    auto async_receive_impl(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
+        -> cobalt::promise<std::variant<ExpectedMsgs...>>
+    {
+        static_assert((ExpectedMsgs::hasStaticMsgId() && ...), "All expected messages must have a compile-time message id.");
+
+        auto chan = get_or_create_channel(transaction_id);
+        CleanupGuard guard{this, transaction_id};
+
+        InFrame::MsgPtr msg = co_await read_with_timeout(*chan, timeout);
+
+        std::optional<std::variant<ExpectedMsgs...>> result;
+
+        auto try_match = [&]<typename Msg>() {
+            if (result.has_value() || msg->getId() != Msg::staticMsgId()) {
+                return;
+            }
+            auto* concrete_ptr = dynamic_cast<Msg*>(msg.get());
+            if (concrete_ptr == nullptr) {
+                throw ProtocolError{comms::ErrorStatus::MsgAllocFailure, "Could not cast message to expected message."};
+            }
+            result = std::variant<ExpectedMsgs...>{std::in_place_type<Msg>, std::move(*concrete_ptr)};
+        };
+
+        (try_match.template operator()<ExpectedMsgs>(), ...);
+
+        if (!result.has_value()) {
+            throw ProtocolError{comms::ErrorStatus::InvalidMsgId,
+                                std::format("Expected message doesn't match with received message id({}).", msg->getId())};
+        }
+
+        msg.reset();
+        co_return std::move(*result);
+    }
+
     cobalt::promise<InFrame::MsgPtr> read_with_timeout(cobalt::channel<InFrame::MsgPtr>& chan, std::chrono::milliseconds timeout)
     {
         boost::asio::steady_timer timer{stream_.get_executor()};

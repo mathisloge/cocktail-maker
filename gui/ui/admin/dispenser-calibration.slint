@@ -237,7 +237,7 @@ component DispenserCalibrationContent inherits Rectangle {
                             enabled: DispenserCalibrationContext.state.reference-status == CalibrationStepStatus.success
                                 && DispenserCalibrationContext.state.pump-status != CalibrationStepStatus.running;
                             clicked => {
-                                DispenserCalibrationContext.run-pump-test(
+                                DispenserCalibrationContext.calibrate-pump(
                                 root.active-pod,
                                     root.active-dispenser,
                                     root.pump-test-steps);
@@ -245,7 +245,7 @@ component DispenserCalibrationContent inherits Rectangle {
                         }
 
                         if DispenserCalibrationContext.state.pump-status == CalibrationStepStatus.success: SmallText {
-                            text: "Ergebnis: " + Math.round(DispenserCalibrationContext.state.measured-ml-per-step * 1000) / 1000 + " ml/Schritt";
+                            text: "Ergebnis: " + DispenserCalibrationContext.state.measured-ml-per-step;
                             color: Palette.log-info;
                         }
                     }

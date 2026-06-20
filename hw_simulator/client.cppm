@@ -45,7 +45,8 @@ class Client
     using DeviceInfoResponse = proto::message::DeviceInfoResponse<Message, Options>;
     using Pong = proto::message::Pong<Message, Options>;
     using Ack = proto::message::Ack<Message, Options>;
-    using Nack = proto::message::Nak<Message, Options>;
+    using Nak = proto::message::Nak<Message, Options>;
+    using PumpCalibrationFinished = proto::message::PumpFinishedCalibrationResponse<Message, Options>;
 
     log::Logger logger_;
     TSocket stream_;
@@ -101,6 +102,11 @@ class Client
         async_handle(msg);
     }
 
+    void handle(InClientPumpStartCalibration& msg)
+    {
+        async_handle(msg);
+    }
+
     void handle(Message& msg)
     {
         log::warn(logger_, "Got unexpected message '{}'", msg.name());
@@ -134,6 +140,19 @@ class Client
     {
         co_await delay(150ms);
         co_await async_send(Ack{}, msg.transportField_transactionId().getValue());
+    }
+
+    cobalt::detached async_handle(InClientPumpStartCalibration msg)
+    {
+        const auto trid = msg.transportField_transactionId().getValue();
+        co_await delay(50ms);
+        co_await async_send(Ack{}, trid);
+        co_await delay((msg.field_pumpStep().value() * 1ms) + 50ms);
+
+        PumpCalibrationFinished resp{};
+        resp.field_millilitre().setValue(230);
+        resp.field_pumpStep().setValue(430);
+        co_await async_send(std::move(resp), trid);
     }
 
   private:

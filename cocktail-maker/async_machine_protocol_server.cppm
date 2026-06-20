@@ -38,6 +38,7 @@ export using InPong = proto::message::Pong<InMessage>;
 export using InAck = proto::message::Ack<InMessage>;
 export using InNak = proto::message::Nak<InMessage>;
 export using InDeviceInfoResponse = proto::message::DeviceInfoResponse<InMessage>;
+export using InPumpFinishedCalibrationResponse = proto::message::PumpFinishedCalibrationResponse<InMessage>;
 
 export using OutMessage = proto::FrameInterface<comms::option::app::WriteIterator<std::uint8_t*>,
                                                 comms::option::app::LengthInfoInterface,
@@ -51,6 +52,7 @@ export using OutEmergencyStop = proto::message::EmergencyStop<OutMessage>;
 export using OutDeviceInfoRequest = proto::message::DeviceInfoRequest<OutMessage>;
 export using OutLoadCellResetOffset = proto::message::LoadCellResetOffset<OutMessage>;
 export using OutLoadCellSetRefWeight = proto::message::LoadCellSetRefWeight<OutMessage>;
+export using OutPumpStartCalibration = proto::message::PumpStartCalibration<OutMessage>;
 
 export using TransactionId = proto::FrameInterfaceFields::TransactionId;
 

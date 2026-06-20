@@ -11,7 +11,7 @@ export struct DispenserCalibrationState {
     offset-status: CalibrationStepStatus,
     reference-status: CalibrationStepStatus,
     pump-status: CalibrationStepStatus,
-    measured-ml-per-step: float,
+    measured-ml-per-step: string,
     error-message: string,
 }
 
@@ -20,7 +20,7 @@ export global DispenserCalibrationContext {
         offset-status: CalibrationStepStatus.idle,
         reference-status: CalibrationStepStatus.idle,
         pump-status: CalibrationStepStatus.idle,
-        measured-ml-per-step: 0,
+        measured-ml-per-step: "",
         error-message: "",
     };
 
@@ -36,10 +36,18 @@ export global DispenserCalibrationContext {
         self.state.reference-status = status;
     }
 
+    public function update-pump-status(status: CalibrationStepStatus) {
+        self.state.pump-status = status;
+    }
+
+    public function update-pump-measured-calibrated-value(litre_str: string) {
+        self.state.measured-ml-per-step = litre-str;
+    }
+
     // implemented by business logic
     callback calibrate-offset(Pod, Dispenser);
     callback calibrate-reference(Pod, Dispenser, int /* reference-weight-g */);
-    callback run-pump-test(Pod, Dispenser, int /* steps */);
+    callback calibrate-pump(Pod, Dispenser, int /* steps */);
 
     public function reset-state() {
         state = {

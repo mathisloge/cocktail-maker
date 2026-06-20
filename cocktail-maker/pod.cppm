@@ -42,6 +42,8 @@ export class IPod
 
     virtual cobalt::promise<void> load_cell_reset_offset(DispenserId dispenser_id) = 0;
     virtual cobalt::promise<void> load_cell_set_ref_weight(DispenserId dispenser_id, units::Grams grams) = 0;
+
+    virtual cobalt::promise<units::Litre> pump_calibrate(DispenserId dispenser_id, units::Steps steps) = 0;
 };
 
 class DispenserPodImpl : public Dispenser
@@ -102,6 +104,12 @@ export class Pump final : public DispenserPodImpl
     {
         log::debug(logger_, "Start dispense of {}.", volume);
         co_return;
+    }
+
+    cobalt::promise<units::Litre> calibrate(units::Steps steps)
+    {
+        log::debug(logger_, "Start calibration with {}.", steps);
+        co_return co_await pod()->pump_calibrate(id(), steps);
     }
 };
 
@@ -197,17 +205,28 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
 
     cobalt::promise<void> load_cell_reset_offset(DispenserId dispenser_id) override
     {
-        auto rx = OutLoadCellResetOffset{};
-        rx.field_dispenserId().setValue(dispenser_id.raw());
-        co_await send_with_ack(std::move(rx), 500ms);
+        auto tx = OutLoadCellResetOffset{};
+        tx.field_dispenserId().setValue(dispenser_id.raw());
+        co_await send_with_ack(std::move(tx), 500ms);
     }
 
-    cobalt::promise<void> load_cell_set_ref_weight(DispenserId dispenser_id, units::Grams grams) override
+    cobalt::promise<void> load_cell_set_ref_weight(const DispenserId dispenser_id, const units::Grams grams) override
     {
-        auto rx = OutLoadCellSetRefWeight{};
-        rx.field_dispenserId().setValue(dispenser_id.raw());
-        rx.field_gram().setValue(grams.numerical_value_in(units::si::gram));
-        co_await send_with_ack(std::move(rx), 500ms);
+        auto tx = OutLoadCellSetRefWeight{};
+        tx.field_dispenserId().setValue(dispenser_id.raw());
+        tx.field_gram().setValue(grams.numerical_value_in(units::si::gram));
+        co_await send_with_ack(std::move(tx), 500ms);
+    }
+
+    cobalt::promise<units::Litre> pump_calibrate(const DispenserId dispenser_id, const units::Steps steps) override
+    {
+        auto tx = OutPumpStartCalibration{};
+        tx.field_dispenserId().setValue(dispenser_id.raw());
+        tx.field_pumpStep().setValue(steps);
+
+        const InPumpFinishedCalibrationResponse finish_result =
+            co_await send_action_with_response<InPumpFinishedCalibrationResponse>(std::move(tx), (steps * 2ms) + 100ms);
+        co_return finish_result.field_millilitre().value() * units::milli_litre;
     }
 
   private:
@@ -270,7 +289,7 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
 
   private:
     template <typename TxMsg>
-    auto send_with_ack(TxMsg tx_msg, std::chrono::milliseconds timeout = 100ms) -> cobalt::promise<void>
+    auto send_with_ack(TxMsg tx_msg, std::chrono::milliseconds timeout = 100ms) -> cobalt::promise<TransactionId::ValueType>
     {
         const auto transaction_id = server_.generate_new_transaction_id();
 
@@ -282,6 +301,7 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         if (std::holds_alternative<InNak>(nak_or_ack)) {
             throw PodReceiveError{std::get<InNak>(nak_or_ack).field_errorCode().value()};
         }
+        co_return transaction_id;
     }
 
     template <typename RxMsg, typename TxMsg>
@@ -294,6 +314,17 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
 
         co_await server_.async_send(std::move(tx_msg), transaction_id);
         co_return co_await rx_action;
+    }
+
+    template <typename RxMsg, typename TxMsg>
+    auto send_action_with_response(TxMsg tx_msg, std::chrono::milliseconds action_timeout) -> cobalt::promise<RxMsg>
+    {
+        const auto transaction_id = co_await send_with_ack(std::move(tx_msg));
+        const auto nak_or_action = co_await server_.template async_receive<RxMsg, InNak>(transaction_id, action_timeout);
+        if (std::holds_alternative<InNak>(nak_or_action)) {
+            throw PodReceiveError{std::get<InNak>(nak_or_action).field_errorCode().value()};
+        }
+        co_return std::get<RxMsg>(nak_or_action);
     }
 
   private:

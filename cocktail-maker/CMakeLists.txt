@@ -11,7 +11,6 @@ target_sources(
         FILE_SET CXX_MODULES
             FILES
                 async_machine_protocol_server.cppm
-                dispense_command.cppm
                 dispenser.cppm
                 execute_recipe.cppm
                 ingredient.cppm
@@ -41,7 +40,6 @@ if(BUILD_TESTING)
         PRIVATE
             async_machine_interface.test.cpp
             async_machine_protocol_server.test.cpp
-            dispense_command.test.cpp
             execute_recipe.test.cpp
             ingredient.test.cpp
             pod_discovery.test.cpp

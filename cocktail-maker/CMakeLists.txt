@@ -38,7 +38,6 @@ if(BUILD_TESTING)
     target_sources(
         cocktail-maker-lib-tests
         PRIVATE
-            async_machine_interface.test.cpp
             async_machine_protocol_server.test.cpp
             execute_recipe.test.cpp
             ingredient.test.cpp

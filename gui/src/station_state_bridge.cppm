@@ -1,4 +1,7 @@
 module;
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/cobalt/detached.hpp>
 #include <slint.h>
 #include "app-window.h"
 
@@ -158,10 +161,22 @@ class PodUiModel : public slint::Model<gui::Pod>
 class StationStateBridge : public StationState, public std::enable_shared_from_this<StationStateBridge>
 {
   public:
-    explicit StationStateBridge(slint::ComponentHandle<AppWindow> ui)
-        : ui_{std::move(ui)}
+    explicit StationStateBridge(slint::ComponentHandle<AppWindow> ui,
+                                PodRegistry& pod_registry,
+                                boost::asio::any_io_executor executor)
+        : executor_{std::move(executor)}
+        , ui_{std::move(ui)}
+        , pod_registry_{pod_registry}
     {
         ui_->global<StationStateContext>().set_pods(pod_model_);
+        ui_->global<StationStateContext>().on_highlight_dispenser(
+            [&pod_registry = pod_registry_, executor = executor_](const gui::Pod pod, const gui::Dispenser dispenser) {
+                boost::asio::post(
+                    executor,
+                    [&pod_registry, pod_id = PodId{std::string{pod.id.data()}}, dispenser_id = DispenserId{dispenser.id}]() {
+                        async_highlight_dispenser(pod_registry, pod_id, dispenser_id);
+                    });
+            });
     }
 
     std::unique_ptr<PodState> create_pod_state() override
@@ -221,10 +236,30 @@ class StationStateBridge : public StationState, public std::enable_shared_from_t
         slint::invoke_from_event_loop([self = shared_from_this(), pod = pod.data()]() { self->pod_model_->update_pod(pod); });
     }
 
+    static boost::cobalt::detached async_highlight_dispenser(PodRegistry& pod_registry,
+                                                             const PodId pod_id,
+                                                             const DispenserId dispenser_id)
+    {
+        log::Logger logger_{log::create_or_get("station_state_bridge")};
+        auto dispenser = pod_registry.dispenser_of_pod(pod_id, dispenser_id);
+        if (not dispenser.has_value()) {
+            log::error{logger_, "Could not find a dispenser with id {} or pod with id {}", dispenser_id, pod_id};
+            co_return;
+        }
+        try {
+            co_await (*dispenser)->highlight(std::chrono::seconds{2});
+        }
+        catch (const std::exception& err) {
+            log::error{logger_, "Error while highlighting: {}", err.what()};
+        }
+    }
+
   private:
+    boost::asio::any_io_executor executor_;
     slint::ComponentHandle<AppWindow> ui_;
     std::vector<PodStateImpl*> pods_;
     std::shared_ptr<PodUiModel> pod_model_{std::make_shared<PodUiModel>()};
+    PodRegistry& pod_registry_;
 };
 
 PodStateImpl::~PodStateImpl()

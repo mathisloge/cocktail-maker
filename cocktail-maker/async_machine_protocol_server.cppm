@@ -53,6 +53,7 @@ export using OutDeviceInfoRequest = proto::message::DeviceInfoRequest<OutMessage
 export using OutLoadCellResetOffset = proto::message::LoadCellResetOffset<OutMessage>;
 export using OutLoadCellSetRefWeight = proto::message::LoadCellSetRefWeight<OutMessage>;
 export using OutPumpStartCalibration = proto::message::PumpStartCalibration<OutMessage>;
+export using OutHighlightDispenser = proto::message::HighlightDispenser<OutMessage>;
 
 export using TransactionId = proto::FrameInterfaceFields::TransactionId;
 

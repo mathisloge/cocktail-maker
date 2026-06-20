@@ -107,6 +107,11 @@ class Client
         async_handle(msg);
     }
 
+    void handle(InClientHighlightDispenser& msg)
+    {
+        async_handle(msg);
+    }
+
     void handle(Message& msg)
     {
         log::warn(logger_, "Got unexpected message '{}'", msg.name());
@@ -153,6 +158,13 @@ class Client
         resp.field_millilitre().setValue(230);
         resp.field_pumpStep().setValue(430);
         co_await async_send(std::move(resp), trid);
+    }
+
+    cobalt::detached async_handle(InClientHighlightDispenser msg)
+    {
+        const auto trid = msg.transportField_transactionId().getValue();
+        co_await delay(50ms);
+        co_await async_send(Ack{}, trid);
     }
 
   private:

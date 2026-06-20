@@ -1,6 +1,7 @@
 module;
 #include <boost/cobalt.hpp>
 #include <proto/field/ErrorCodeCommon.h>
+#include <proto/field/LedEffectCommon.h>
 
 export module cm:pod;
 
@@ -40,6 +41,8 @@ export class IPod
     virtual cobalt::task<void> run(std::unique_ptr<PodState> state) = 0;
     virtual std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> create_dispenser(DispenserId dispenser_id) = 0;
 
+    virtual cobalt::promise<void> highlight_dispenser(DispenserId dispenser_id, std::chrono::milliseconds duration) = 0;
+
     virtual cobalt::promise<void> load_cell_reset_offset(DispenserId dispenser_id) = 0;
     virtual cobalt::promise<void> load_cell_set_ref_weight(DispenserId dispenser_id, units::Grams grams) = 0;
 
@@ -66,6 +69,12 @@ class DispenserPodImpl : public Dispenser
     {
         log::debug(logger_, "Set load cell ref weight to {}.", grams);
         co_await pod()->load_cell_set_ref_weight(dispenser_id_, grams);
+    }
+
+    cobalt::promise<void> highlight(std::chrono::milliseconds duration) override
+    {
+        log::debug(logger_, "Highlight for {}.", duration);
+        co_await pod()->highlight_dispenser(id(), duration);
     }
 
   protected:
@@ -227,6 +236,15 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         const InPumpFinishedCalibrationResponse finish_result =
             co_await send_action_with_response<InPumpFinishedCalibrationResponse>(std::move(tx), (steps * 2ms) + 100ms);
         co_return finish_result.field_millilitre().value() * units::milli_litre;
+    }
+
+    cobalt::promise<void> highlight_dispenser(DispenserId dispenser_id, std::chrono::milliseconds duration) override
+    {
+        auto tx = OutHighlightDispenser{};
+        tx.field_dispenserId().setValue(dispenser_id.raw());
+        tx.field_ledEffect().setValue(proto::field::LedEffectVal::Highlight);
+        tx.field_milliseconds().setValue(duration.count());
+        co_await send_with_ack(std::move(tx), 100ms);
     }
 
   private:

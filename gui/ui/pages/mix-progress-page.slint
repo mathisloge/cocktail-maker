@@ -6,13 +6,14 @@ import {
     SeparatorText,
     CommandItem,
     SmallText,
+    MediumText,
     LargeText,
 } from "../components.slint";
-import { MediumText } from "../components/medium-text.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
 
 
 export component MixProgressPage inherits Rectangle {
-    in property <RecipeView> recipe;
+    private property <RecipeView> recipe: RecipeContext.active-recipe;
 
     background: Palette.background-elevated;
     GridLayout {
@@ -30,7 +31,7 @@ export component MixProgressPage inherits Rectangle {
                 cross-axis-alignment: center;
                 spacing: 10px;
                 SmallText {
-                    text: "NOW CRAFTING";
+                    text: "WIRD ZUBEREITET";
                     letter-spacing: 2pt;
                     highlight: true;
                 }
@@ -50,7 +51,7 @@ export component MixProgressPage inherits Rectangle {
                 }
 
                 SmallText {
-                    text: "analyzing recipe...";
+                    text: "rezept wird analysiert...";
                     color: Palette.text-muted;
                 }
             }
@@ -69,7 +70,7 @@ export component MixProgressPage inherits Rectangle {
             rowspan: 2;
 
             SeparatorText {
-                text: "INGREDIENT QUEUE:";
+                text: "SCHRITTE:";
             }
 
             VerticalLayout {

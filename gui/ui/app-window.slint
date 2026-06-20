@@ -1,4 +1,5 @@
 export { StationStateContext }from "./globals/station-state-context.slint";
+export { RecipeContext }from "./globals/recipe-context.slint";
 export {
     DispenserCalibrationContext,
 }from "./globals/dispenser-calibration-context.slint";
@@ -40,11 +41,8 @@ export component AppWindow inherits Window {
         }
     }
     in-out property <Page> current_page: Page.admin-area-page;
-    in-out property <RecipeView> selected_recipe;
 
     callback operation_canceled();
-    callback boost-recipe(int);
-    callback create_recipe(RecipeView, int);
     callback manual-command-confirmed();
 
     public function open-manual-command-popup(command: Command) {
@@ -108,24 +106,18 @@ export component AppWindow inherits Window {
         }
 
         if current_page == Page.cocktail-list-page: RecipeListPage {
-            recipe-selected(cocktail) => {
-                root.selected_recipe = cocktail;
+            recipe-selected() => {
                 root.current_page = Page.cocktail-detail-page;
             }
         }
 
         if current_page == Page.cocktail-detail-page: RecipeDetailPage {
-            recipe: root.selected_recipe;
-            boost-recipe(boost) => boost-recipe(boost);
-            create-recipe(boost) => {
-                create_recipe(root.selected_recipe, boost);
+            process-recipe() => {
                 root.current_page = Page.mix-page;
             }
         }
 
-        if current_page == Page.mix-page: MixProgressPage {
-            recipe: root.selected_recipe;
-        }
+        if current_page == Page.mix-page: MixProgressPage { }
 
         if current_page == Page.admin-area-page: admin-area := AdminArea { }
     }

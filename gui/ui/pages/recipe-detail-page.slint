@@ -6,14 +6,14 @@ import {
     Button,
     SeparatorText,
     LargeText,
+    MediumText,
     SmallText,
 } from "../components.slint";
-import { MediumText } from "../components/medium-text.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
 
 export component RecipeDetailPage inherits Rectangle {
-    in property <RecipeView> recipe;
-    callback create-recipe(int);
-    callback boost-recipe(int);
+    private property <RecipeView> recipe: RecipeContext.active-recipe;
+    callback process-recipe();
 
     background: Palette.background-elevated;
 
@@ -80,7 +80,7 @@ export component RecipeDetailPage inherits Rectangle {
             Rectangle { }
 
             SeparatorText {
-                text: "INGREDIENTS:";
+                text: "ZUTATEN:";
             }
 
             GridLayout {
@@ -93,18 +93,18 @@ export component RecipeDetailPage inherits Rectangle {
             }
 
             SeparatorText {
-                text: "ALCOHOL BOOST:";
+                text: "ALKOHOL BOOST:";
             }
 
             MediumText {
-                text: "💪 Strength Adjustment";
+                text: "💪 Alkoholgehalt boosten";
                 primary: true;
             }
 
             HorizontalBox {
                 cross-axis-alignment: center;
                 SmallText {
-                    text: "mild";
+                    text: "milde";
                     color: Palette.boost-negative-text;
                 }
 
@@ -114,21 +114,22 @@ export component RecipeDetailPage inherits Rectangle {
                     value: 0;
 
                     changed(value) => {
-                        boost-recipe(value);
+                        RecipeContext.boost-active-recipe(value)
                     }
                 }
 
                 SmallText {
-                    text: "strong";
+                    text: "stark";
                     color: Palette.boost-positive-text;
                 }
             }
         }
 
         Button {
-            text: "Prepare Cocktail →";
+            text: "Zubereiten →";
             clicked => {
-                root.create-recipe(booster.value);
+                RecipeContext.process-active-recipe(booster.value);
+                root.process-recipe();
             }
         }
     }

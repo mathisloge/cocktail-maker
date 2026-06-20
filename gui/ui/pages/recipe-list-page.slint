@@ -1,9 +1,8 @@
 import { ScrollView } from "std-widgets.slint";
-import { RecipeView } from "../data.slint";
 import { RecipeCard } from "../components.slint";
-import { StationStateContext } from "../globals/station-state-context.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
 export component RecipeListPage inherits Rectangle {
-    callback recipe-selected(RecipeView);
+    callback recipe-selected();
 
     ScrollView {
         horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
@@ -11,12 +10,13 @@ export component RecipeListPage inherits Rectangle {
         GridLayout {
             padding: 10px;
             spacing: 5px;
-            for recipe[index] in StationStateContext.recipes: RecipeCard {
+            for recipe[index] in RecipeContext.recipes: RecipeCard {
                 row: index / 3;
                 col: Math.mod(index, 3);
                 recipe: recipe;
                 clicked => {
-                    root.recipe-selected(recipe)
+                    RecipeContext.active-recipe = recipe;
+                    root.recipe-selected()
                 }
             }
         }

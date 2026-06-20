@@ -10,11 +10,6 @@ import cm;
 import cm.gui;
 import cm.sim;
 
-boost::cobalt::detached my_task(cm::Recipe r, std::shared_ptr<cm::BasicCommandExecuter> command_executer)
-{
-    co_await cm::execute_commands(std::move(r.commands), std::move(command_executer));
-}
-
 boost::cobalt::detached my_task2(std::unique_ptr<cm::PodDiscovery> pod_discovery,
                                  cm::StationState& station_state,
                                  cm::PodRegistry& pod_registry)
@@ -53,16 +48,6 @@ int main(int argc, char** argv)
                                         .type = cm::IngredientType::other,
                                         .boost_category = cm::BoostCategory::reducible});
 
-    {
-        const auto ingredients = ingredient_store.ingredients();
-        std::vector<slint::SharedString> ingredient_ids;
-        ingredient_ids.reserve(ingredients.size());
-        std::ranges::transform(ingredients, std::back_inserter(ingredient_ids), [](const auto& ingredient) {
-            return slint::SharedString(ingredient.raw().c_str());
-        });
-        ui->global<cm::gui::StationStateContext>().set_ingredient_ids(
-            std::make_shared<slint::VectorModel<slint::SharedString>>(std::move(ingredient_ids)));
-    }
     std::vector<cm::Recipe> recipes;
     for (int i = 0; i < 10; i++) {
         recipes.emplace_back(cm::Recipe{
@@ -84,50 +69,11 @@ int main(int argc, char** argv)
     }
     cm::StationConfig station_config{ingredient_store};
     cm::PodRegistry pod_registry{};
-    cm::PodDispatcher pod_dispatcher{pod_registry, station_config};
     cm::RecipeStore recipe_store{std::move(recipes)};
     cm::gui::DispenserCalibrationBridge dispenser_calibration_bridge{ctx.get_executor(), ui, pod_registry};
-    auto command_executer = std::make_shared<cm::gui::MachineAdapter>(ui, ingredient_store, pod_registry, station_config);
+    cm::gui::RecipeContextBridge recipe_context_bridge{
+        ctx.get_executor(), ui, recipe_store, ingredient_store, station_config, pod_registry};
     auto station_state = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, ctx.get_executor());
-
-    ui->global<cm::gui::StationStateContext>().set_recipes(
-        std::make_shared<cm::gui::RecipeModel>(recipe_store, ingredient_store));
-    ui->on_create_recipe([&ctx, &recipe_store, command_executer](const cm::gui::RecipeView& recipe_to_create, int boost) {
-        auto logger = cm::log::create_or_get("ui");
-        cm::log::debug(logger, "create recipe '{}' with boost factor '{}'", recipe_to_create.name.begin(), boost);
-
-        auto r = recipe_store.find_by_id(recipe_to_create.id).value();
-        boost::asio::post(ctx.get_executor(),
-                          [recipe = std::move(r), command_executer]() { my_task(std::move(recipe), command_executer); });
-    });
-
-    ui->on_boost_recipe([&](const int boost_percentage) {
-        const auto boost = boost_percentage * cm::units::percent;
-        auto logger = cm::log::create_or_get("ui");
-        auto opt_recipe = recipe_store.find_by_id(ui->get_selected_recipe().id);
-        if (not opt_recipe.has_value()) {
-            cm::log::error(logger, "Could not find a recipe with id '{}'", ui->get_selected_recipe().id);
-            return;
-        }
-        auto recipe = opt_recipe.value();
-        cm::log::trace(logger, "boosting {} by {}.", recipe, boost);
-        recipe.commands = cm::boost_recipe(recipe.commands, boost, ingredient_store);
-
-        ui->set_selected_recipe(cm::gui::transform(recipe, ingredient_store));
-    });
-
-    ui->global<cm::gui::StationStateContext>().on_assign_ingredient_to_dispenser([&](const cm::gui::Pod& pod,
-                                                                                     const cm::gui::Dispenser& dispenser,
-                                                                                     slint::SharedString ingredient_id) {
-        auto logger = cm::log::create_or_get("ui");
-        cm::log::trace(
-            logger, "Assign ingredient '{}' to pod '{}' and dispenser '{}'", ingredient_id.data(), pod.id.data(), dispenser.id);
-        boost::asio::post(ctx, [&station_config, pod, dispenser, ingredient_id]() {
-            station_config.update_dispenser_ingredient_mapping(
-                cm::IngredientId{ingredient_id.data()},
-                {.pod_id = cm::PodId{pod.id.data()}, .dispenser_id = cm::DispenserId{dispenser.id}});
-        });
-    });
 
     auto work_guard = boost::asio::make_work_guard(ctx);
     std::thread cobalt_thread([&]() {

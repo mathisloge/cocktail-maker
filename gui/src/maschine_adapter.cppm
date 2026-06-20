@@ -54,7 +54,7 @@ export class MachineAdapter : public cm::BasicCommandExecuter
         log::debug(logger, "Updating command '{}' status to '{}'", id, static_cast<int>(status));
 
         ui_->run_in_ui_thread([id, status, ui = ui_]() {
-            auto selected = ui->ui->get_selected_recipe();
+            auto selected = ui->ui->global<RecipeContext>().get_active_recipe();
             for (int i = 0; i < selected.commands->row_count(); i++) {
                 auto cmd = selected.commands->row_data(i);
                 if (cmd.has_value() and cmd->id == id) {
@@ -71,7 +71,7 @@ export class MachineAdapter : public cm::BasicCommandExecuter
                     }();
                     cmd->status = ui_status;
                     selected.commands->set_row_data(i, *cmd);
-                    ui->ui->set_selected_recipe(selected);
+                    ui->ui->global<RecipeContext>().set_active_recipe(selected);
                     return;
                 }
             }

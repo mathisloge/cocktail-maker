@@ -11,10 +11,7 @@ export global StationStateContext {
     in-out property <bool> station-ready: false;
     in-out property <[LogEntry]> log-entries: [];
 
-    in-out property <[RecipeView]> recipes;
-    in-out property <[string]> ingredient-ids: /* example data */ ["vodka", "orange_juice", "test2"];
     callback highlight-dispenser(Pod, Dispenser);
-    callback assign-ingredient-to-dispenser(Pod, Dispenser, string/* ingredient-id */);
 
     in-out property <[Pod]> pods: /* example data */[
         {

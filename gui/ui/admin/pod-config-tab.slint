@@ -26,6 +26,7 @@ import {
     DispenserCalibrationContext,
 } from "../globals/dispenser-calibration-context.slint";
 import { StationStateContext } from "../globals/station-state-context.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
 
 component PodListDelegate inherits Rectangle {
     in property <Pod> pod;
@@ -118,9 +119,9 @@ export component PodConfigTab inherits Rectangle {
 
                     ComboBox {
                         height: 40px;
-                        model: StationStateContext.ingredient-ids;
+                        model: RecipeContext.ingredient-ids;
                         selected(current-value) => {
-                            StationStateContext.assign-ingredient-to-dispenser(active-pod, dispenser, current-value);
+                            RecipeContext.assign-ingredient-to-dispenser(active-pod, dispenser, current-value);
                         }
                     }
 

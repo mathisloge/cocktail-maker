@@ -165,9 +165,8 @@ template <typename T, typename Fn>
  * @param store      Ingredient store used to resolve boost categories.
  * @return A new Commands with scaled volumes; input is left unchanged.
  */
-export [[nodiscard]] auto boost_recipe(const Commands& commands,
-                                       units::quantity<units::percent> boost_pct,
-                                       const IngredientStore& store) -> Commands
+export [[nodiscard]] auto boost_recipe(const Commands& commands, units::Percent boost_pct, const IngredientStore& store)
+    -> Commands
 {
     const double p = boost_pct.numerical_value_in(units::percent) / 100.0; // normalise to [-1, 1]
 

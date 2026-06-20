@@ -12,7 +12,6 @@ import { CornerDeco, SystemLog } from "../components.slint";
 import { StationStateContext } from "./../globals/station-state-context.slint";
 
 export component BootScreen inherits Rectangle {
-    in property <string> machine-name: "Sir Mix-A-Lot";
     in property <bool> is-loading:   false;
     private property <[LogEntry]> log-entries: StationStateContext.log-entries;
 
@@ -58,7 +57,7 @@ export component BootScreen inherits Rectangle {
                 }
 
                 LargeText {
-                    text: root.machine-name;
+                    text: StationStateContext.station-name;
                     font-italic: true;
                 }
 

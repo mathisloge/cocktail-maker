@@ -1,5 +1,34 @@
-import { LogEntry } from "./../data.slint";
+import {
+    LogEntry,
+    Pod,
+    RecipeView,
+    Dispenser,
+    ConnectionState,
+    DispenserType,
+} from "./../data.slint";
 export global StationStateContext {
+    out property <string> station-name: "Sir Mix-A-Lot";
     in-out property <bool> station-ready: false;
     in-out property <[LogEntry]> log-entries: [];
+
+    in-out property <[RecipeView]> recipes;
+    in-out property <[string]> ingredient-ids: /* example data */ ["vodka", "orange_juice", "test2"];
+    callback highlight-dispenser(Pod, Dispenser);
+    callback assign-ingredient-to-dispenser(Pod, Dispenser, string/* ingredient-id */);
+
+    in-out property <[Pod]> pods: /* example data */[
+        {
+            id: "Pod-Connected",
+            connection_state: ConnectionState.connected,
+            dispensers:[
+                { id: 1, type: DispenserType.pump },
+                { id: 2, type: DispenserType.pump },
+                { id: 3, type: DispenserType.pump },
+                { id: 4, type: DispenserType.pump },
+                { id: 5, type: DispenserType.valve },
+            ]
+        },
+        { id: "Pod-Connecting", connection_state: ConnectionState.connecting },
+        { id: "Pod-Disconnected", connection_state: ConnectionState.disconnected },
+    ];
 }

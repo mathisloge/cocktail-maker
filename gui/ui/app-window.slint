@@ -33,25 +33,19 @@ import { StationStateContext } from "./globals/station-state-context.slint";
 export component AppWindow inherits Window {
     private property <bool> device_ready: StationStateContext.station-ready;
     private property <bool> boot_screen_confirmed: false;
+    private property <Command> popup_command;
     changed device_ready => {
         if (!device_ready) {
             boot_screen_confirmed = false;
         }
     }
-    in property <[string]> ingredient-ids;
-    in property <[Pod]> pods;
     in-out property <Page> current_page: Page.admin-area-page;
-    in property <[RecipeView]> recipes;
     in-out property <RecipeView> selected_recipe;
-    private property <Command> popup_command;
 
     callback operation_canceled();
     callback boost-recipe(int);
     callback create_recipe(RecipeView, int);
     callback manual-command-confirmed();
-
-    callback identify-dispenser(Pod, Dispenser);
-    callback assign-ingredient-to-dispenser(Pod, Dispenser, string);
 
     public function open-manual-command-popup(command: Command) {
         root.popup_command = command;
@@ -114,7 +108,6 @@ export component AppWindow inherits Window {
         }
 
         if current_page == Page.cocktail-list-page: RecipeListPage {
-            recipes: recipes;
             recipe-selected(cocktail) => {
                 root.selected_recipe = cocktail;
                 root.current_page = Page.cocktail-detail-page;
@@ -134,15 +127,6 @@ export component AppWindow inherits Window {
             recipe: root.selected_recipe;
         }
 
-        if current_page == Page.admin-area-page: admin-area := AdminArea {
-            ingredient-ids: ingredient-ids;
-            pods: pods;
-            assign-ingredient-to-dispenser(pod, dispenser, ingredient_id) => {
-                root.assign-ingredient-to-dispenser(pod, dispenser, ingredient_id);
-            };
-            identify-dispenser(pod, dispenser) => {
-                root.identify-dispenser(pod, dispenser);
-            }
-        }
+        if current_page == Page.admin-area-page: admin-area := AdminArea { }
     }
 }

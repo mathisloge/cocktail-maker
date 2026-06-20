@@ -5,19 +5,10 @@ import { SystemLog } from "components.slint";
 import { StationStateContext } from "./globals/station-state-context.slint";
 
 export component AdminArea {
-    in property <[string]> ingredient-ids;
-    in property <[Pod]> pods;
-
-    callback identify-dispenser <=> pod-config.identify-dispenser;
-    callback assign-ingredient-to-dispenser <=> pod-config.assign-ingredient;
-
     TabWidget {
         Tab {
             title: "Pod config";
-            pod-config := PodConfigTab {
-                ingredient-ids: ingredient-ids;
-                pods: pods;
-            }
+            pod-config := PodConfigTab { }
         }
 
         Tab {

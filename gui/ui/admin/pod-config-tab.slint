@@ -22,7 +22,10 @@ import {
 } from "../data.slint";
 import { DispenserCalibrationPopup } from "./dispenser-calibration.slint";
 import { Palette } from "../palette.slint";
-import { DispenserCalibrationContext } from "../globals/dispenser-calibration-context.slint";
+import {
+    DispenserCalibrationContext,
+} from "../globals/dispenser-calibration-context.slint";
+import { StationStateContext } from "../globals/station-state-context.slint";
 
 component PodListDelegate inherits Rectangle {
     in property <Pod> pod;
@@ -68,27 +71,8 @@ component PodListDelegate inherits Rectangle {
 }
 
 export component PodConfigTab inherits Rectangle {
-    in property <[Pod]> pods: [
-        {
-            id: "Pod-Connected",
-            connection_state: ConnectionState.connected,
-            dispensers:[
-                { id: 1, type: DispenserType.pump },
-                { id: 2, type: DispenserType.pump },
-                { id: 3, type: DispenserType.pump },
-                { id: 4, type: DispenserType.pump },
-                { id: 5, type: DispenserType.valve },
-            ]
-        },
-        { id: "Pod-Connecting", connection_state: ConnectionState.connecting },
-        { id: "Pod-Disconnected", connection_state: ConnectionState.disconnected },
-    ];
-    in property <[string]> ingredient-ids: ["vodka", "orange_juice", "test2"];
     private property <Pod> active-pod;
     private property <Dispenser> active-dispenser;
-
-    callback identify-dispenser(Pod, Dispenser);
-    callback assign-ingredient(Pod, Dispenser, string);
 
     sidebar := VerticalLayout {
         x: 0;
@@ -96,7 +80,7 @@ export component PodConfigTab inherits Rectangle {
         width: 33%;
 
         ListView {
-            for pod in pods: PodListDelegate {
+            for pod in StationStateContext.pods: PodListDelegate {
                 width: parent.width;
                 height: 50px;
                 pod: pod;
@@ -134,16 +118,16 @@ export component PodConfigTab inherits Rectangle {
 
                     ComboBox {
                         height: 40px;
-                        model: root.ingredient-ids;
+                        model: StationStateContext.ingredient-ids;
                         selected(current-value) => {
-                            assign-ingredient(active-pod, dispenser, current-value);
+                            StationStateContext.assign-ingredient-to-dispenser(active-pod, dispenser, current-value);
                         }
                     }
 
                     Button {
                         text: "Identify";
                         height: 40px;
-                        clicked => { identify-dispenser(active-pod, dispenser); }
+                        clicked => { StationStateContext.highlight-dispenser(active-pod, dispenser); }
                     }
 
                     Button {

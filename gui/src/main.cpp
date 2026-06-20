@@ -60,7 +60,8 @@ int main(int argc, char** argv)
         std::ranges::transform(ingredients, std::back_inserter(ingredient_ids), [](const auto& ingredient) {
             return slint::SharedString(ingredient.raw().c_str());
         });
-        ui->set_ingredient_ids(std::make_shared<slint::VectorModel<slint::SharedString>>(std::move(ingredient_ids)));
+        ui->global<cm::gui::StationStateContext>().set_ingredient_ids(
+            std::make_shared<slint::VectorModel<slint::SharedString>>(std::move(ingredient_ids)));
     }
     std::vector<cm::Recipe> recipes;
     for (int i = 0; i < 10; i++) {
@@ -89,7 +90,8 @@ int main(int argc, char** argv)
     auto command_executer = std::make_shared<cm::gui::MachineAdapter>(ui, ingredient_store, pod_registry, station_config);
     auto station_state = std::make_shared<cm::gui::StationStateBridge>(ui);
 
-    ui->set_recipes(std::make_shared<cm::gui::RecipeModel>(recipe_store, ingredient_store));
+    ui->global<cm::gui::StationStateContext>().set_recipes(
+        std::make_shared<cm::gui::RecipeModel>(recipe_store, ingredient_store));
     ui->on_create_recipe([&ctx, &recipe_store, command_executer](const cm::gui::RecipeView& recipe_to_create, int boost) {
         auto logger = cm::log::create_or_get("ui");
         cm::log::debug(logger, "create recipe '{}' with boost factor '{}'", recipe_to_create.name.begin(), boost);
@@ -114,11 +116,9 @@ int main(int argc, char** argv)
         ui->set_selected_recipe(cm::gui::transform(recipe, ingredient_store));
     });
 
-    ui->set_pods(station_state->pod_model());
-
-    ui->on_assign_ingredient_to_dispenser([&](const cm::gui::Pod& pod,
-                                              const cm::gui::Dispenser& dispenser,
-                                              slint::SharedString ingredient_id) {
+    ui->global<cm::gui::StationStateContext>().on_assign_ingredient_to_dispenser([&](const cm::gui::Pod& pod,
+                                                                                     const cm::gui::Dispenser& dispenser,
+                                                                                     slint::SharedString ingredient_id) {
         auto logger = cm::log::create_or_get("ui");
         cm::log::trace(
             logger, "Assign ingredient '{}' to pod '{}' and dispenser '{}'", ingredient_id.data(), pod.id.data(), dispenser.id);

@@ -161,6 +161,7 @@ class StationStateBridge : public StationState, public std::enable_shared_from_t
     explicit StationStateBridge(slint::ComponentHandle<AppWindow> ui)
         : ui_{std::move(ui)}
     {
+        ui_->global<StationStateContext>().set_pods(pod_model_);
     }
 
     std::unique_ptr<PodState> create_pod_state() override

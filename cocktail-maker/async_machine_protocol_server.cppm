@@ -39,6 +39,7 @@ export using InAck = proto::message::Ack<InMessage>;
 export using InNak = proto::message::Nak<InMessage>;
 export using InDeviceInfoResponse = proto::message::DeviceInfoResponse<InMessage>;
 export using InPumpFinishedCalibrationResponse = proto::message::PumpFinishedCalibrationResponse<InMessage>;
+export using InDispenseFinished = proto::message::DispenseFinished<InMessage>;
 
 export using OutMessage = proto::FrameInterface<comms::option::app::WriteIterator<std::uint8_t*>,
                                                 comms::option::app::LengthInfoInterface,
@@ -54,6 +55,7 @@ export using OutLoadCellResetOffset = proto::message::LoadCellResetOffset<OutMes
 export using OutLoadCellSetRefWeight = proto::message::LoadCellSetRefWeight<OutMessage>;
 export using OutPumpStartCalibration = proto::message::PumpStartCalibration<OutMessage>;
 export using OutHighlightDispenser = proto::message::HighlightDispenser<OutMessage>;
+export using OutDispense = proto::message::Dispense<OutMessage>;
 
 export using TransactionId = proto::FrameInterfaceFields::TransactionId;
 
@@ -420,7 +422,7 @@ class AsyncMachineProtocolServer
                         }
                     }
                     else {
-                        log::debug{logger_, "Discarding unhandled message '{}'.", msg->name()};
+                        log::debug(logger_, "Discarding unhandled message '{}'.", msg->name());
                     }
                 }
 

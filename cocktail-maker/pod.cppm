@@ -45,6 +45,7 @@ export class IPod
 
     virtual cobalt::promise<void> load_cell_reset_offset(DispenserId dispenser_id) = 0;
     virtual cobalt::promise<void> load_cell_set_ref_weight(DispenserId dispenser_id, units::Grams grams) = 0;
+    virtual cobalt::promise<void> dispense(DispenserId dispenser_id, units::Litre volume) = 0;
 
     virtual cobalt::promise<units::Litre> pump_calibrate(DispenserId dispenser_id, units::Steps steps) = 0;
 };
@@ -57,6 +58,12 @@ class DispenserPodImpl : public Dispenser
         , pod_{std::move(pod)}
         , logger_{log::create_or_get(std::move(logger_name))}
     {
+    }
+
+    cobalt::promise<void> dispense(units::Litre volume) override
+    {
+        log::debug(logger_, "Start dispense of {}.", volume);
+        co_await pod()->dispense(dispenser_id_, volume);
     }
 
     cobalt::promise<void> load_cell_reset_offset() override
@@ -109,12 +116,6 @@ export class Pump final : public DispenserPodImpl
     {
     }
 
-    cobalt::promise<void> dispense(units::Litre volume) override
-    {
-        log::debug(logger_, "Start dispense of {}.", volume);
-        co_return;
-    }
-
     cobalt::promise<units::Litre> calibrate(units::Steps steps)
     {
         log::debug(logger_, "Start calibration with {}.", steps);
@@ -128,12 +129,6 @@ export class Valve final : public DispenserPodImpl
     Valve(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
         : DispenserPodImpl{std::move(pod), dispenser_id, std::format("valve_{}", dispenser_id)}
     {
-    }
-
-    cobalt::promise<void> dispense(units::Litre volume) override
-    {
-        log::debug(logger_, "Start dispense of {}.", volume);
-        co_return;
     }
 };
 
@@ -225,6 +220,15 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         tx.field_dispenserId().setValue(dispenser_id.raw());
         tx.field_gram().setValue(grams.numerical_value_in(units::si::gram));
         co_await send_with_ack(std::move(tx), 500ms);
+    }
+
+    cobalt::promise<void> dispense(DispenserId dispenser_id, units::Litre volume) override
+    {
+        auto tx = OutDispense{};
+        tx.field_dispenserId().setValue(dispenser_id.raw());
+        tx.field_millilitre().setValue(volume.numerical_value_in(units::milli_litre));
+
+        const InDispenseFinished finish_result = co_await send_action_with_response<InDispenseFinished>(std::move(tx), 30s);
     }
 
     cobalt::promise<units::Litre> pump_calibrate(const DispenserId dispenser_id, const units::Steps steps) override

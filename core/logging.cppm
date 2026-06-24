@@ -35,7 +35,7 @@ void log_impl(
     spdlog::logger& logger, const std::source_location& location, Level lvl, spdlog::format_string_t<Args...> fmt, Args&&... args)
 {
     spdlog::source_loc loc{location.file_name(), static_cast<int>(location.line()), location.function_name()};
-    logger.log(loc, lvl, fmt, std::forward<Args>(args)...);
+    logger.log(std::move(loc), lvl, fmt, std::forward<Args>(args)...);
 }
 
 } // namespace detail

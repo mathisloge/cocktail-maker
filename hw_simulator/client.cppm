@@ -47,6 +47,7 @@ class Client
     using Ack = proto::message::Ack<Message, Options>;
     using Nak = proto::message::Nak<Message, Options>;
     using PumpCalibrationFinished = proto::message::PumpFinishedCalibrationResponse<Message, Options>;
+    using DispenseFinished = proto::message::DispenseFinished<Message, Options>;
 
     log::Logger logger_;
     TSocket stream_;
@@ -112,6 +113,11 @@ class Client
         async_handle(msg);
     }
 
+    void handle(InClientDispense& msg)
+    {
+        async_handle(msg);
+    }
+
     void handle(Message& msg)
     {
         log::warn(logger_, "Got unexpected message '{}'", msg.name());
@@ -165,6 +171,15 @@ class Client
         const auto trid = msg.transportField_transactionId().getValue();
         co_await delay(50ms);
         co_await async_send(Ack{}, trid);
+    }
+
+    cobalt::detached async_handle(InClientDispense msg)
+    {
+        const auto trid = msg.transportField_transactionId().getValue();
+        co_await delay(50ms);
+        co_await async_send(Ack{}, trid);
+        co_await delay(msg.field_millilitre().value() * 20ms);
+        co_await async_send(DispenseFinished{}, trid);
     }
 
   private:

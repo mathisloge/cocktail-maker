@@ -49,14 +49,14 @@ export class RecipeContextBridge
         ui_->global<RecipeContext>().on_process_active_recipe([this](const int boost_raw) {
             const auto recipe_to_create = ui_->global<RecipeContext>().get_active_recipe();
             const auto boost = boost_raw * units::percent;
-            cm::log::debug(logger_, "create recipe '{}' with boost factor '{}'", recipe_to_create.name.begin(), boost);
-            auto r = recipe_store_.find_by_id(recipe_to_create.id);
+            auto r = recipe_store_.find_by_id(RecipeId{recipe_to_create.id.data()});
             if (r.has_value()) {
+                cm::log::debug(logger_, "create {} with boost factor '{}'", r.value(), boost);
                 r->commands = boost_recipe(r->commands, boost, ingredient_store_);
                 boost::asio::post(executor_, [recipe = std::move(r.value()), this]() { async_process_recipe(recipe); });
             }
             else {
-                log::error(logger_, "Could not find recipe {}", recipe_to_create.name.data());
+                log::error(logger_, "Could not find a recipe {}", recipe_to_create.name.data());
             }
         });
         ui->global<cm::gui::RecipeContext>().on_assign_ingredient_to_dispenser(
@@ -79,7 +79,7 @@ export class RecipeContextBridge
     {
         const auto boost = boost_percentage * units::percent;
         const auto active_ui_recipe = ui_->global<RecipeContext>().get_active_recipe();
-        auto opt_recipe = recipe_store_.find_by_id(active_ui_recipe.id);
+        auto opt_recipe = recipe_store_.find_by_id(RecipeId{active_ui_recipe.id.data()});
         if (not opt_recipe.has_value()) {
             log::error(logger_, "Could not find a recipe with id '{}'", active_ui_recipe.id);
             return;

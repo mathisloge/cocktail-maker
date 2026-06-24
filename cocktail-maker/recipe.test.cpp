@@ -8,9 +8,12 @@ Recipe make_recipe(std::string name, std::string description = "", int n_command
 {
     Commands commands;
     for (int i = 0; i < n_commands; i++) {
-        commands.emplace_back(Command{ManualCommand{.id = 99, .instruction = std::format("N={}", i)}});
+        commands.emplace_back(Command{ManualCommand{.id = CommandId{99}, .instruction = std::format("N={}", i)}});
     }
-    return Recipe{.display_name = std::move(name), .description = std::move(description), .commands = std::move(commands)};
+    return Recipe{.id = RecipeId{name},
+                  .display_name = std::move(name),
+                  .description = std::move(description),
+                  .commands = std::move(commands)};
 }
 
 std::vector<Recipe> three_recipes()
@@ -26,10 +29,10 @@ std::vector<Recipe> three_recipes()
 
 TEST_CASE("Recipe can be formatted.", "[Recipe]")
 {
-    Recipe recipe;
+    Recipe recipe{.id = RecipeId{"Id"}, .display_name = "DisplayName"};
 
     const auto formatted_str = std::format("Test={}", recipe);
-    CHECK(formatted_str == "Test=Recipe(name=)");
+    CHECK(formatted_str == "Test=Recipe(id=Id, name=DisplayName)");
 }
 
 // ---------------------------------------------------------------------------
@@ -50,20 +53,22 @@ TEST_CASE("RecipeStore construction", "[RecipeStore]")
         CHECK(store.recipe_count() == 3);
     }
 
-    SECTION("ids are assigned sequentially starting from 0")
+    SECTION("ids are assigned")
     {
-        RecipeStore store{three_recipes()};
+        const auto recipes = three_recipes();
+        RecipeStore store{recipes};
         for (std::size_t i = 0; i < store.recipe_count(); ++i) {
-            auto recipe = store.find_by_id(static_cast<int>(i));
+            auto&& ref = recipes.at(i);
+            auto recipe = store.find_by_id(ref.id);
             REQUIRE(recipe.has_value());
-            CHECK(recipe->id == static_cast<int>(i));
+            CHECK(recipe->id == ref.id);
         }
     }
 
     SECTION("command ids are assigned sequentially starting from 0")
     {
         RecipeStore store{{make_recipe("Quattro Frommagi", "4 Käse", 4)}};
-        auto recipe = store.find_by_id(0);
+        auto recipe = store.find_by_id(RecipeId{"Quattro Frommagi"});
         REQUIRE(recipe.has_value());
         REQUIRE(recipe->commands.size() == 4);
         for (int i = 1; i <= recipe->commands.size(); ++i) {
@@ -71,15 +76,16 @@ TEST_CASE("RecipeStore construction", "[RecipeStore]")
             REQUIRE(common_cmd != nullptr);
             auto* cmd = std::get_if<ManualCommand>(common_cmd);
             REQUIRE(cmd != nullptr);
-            CHECK(cmd->id == i);
+            CHECK(cmd->id == CommandId{i});
         }
     }
 
     SECTION("recipe data is preserved after construction")
     {
         RecipeStore store{{make_recipe("Pasta Carbonara", "Classic Roman pasta")}};
-        auto recipe = store.find_by_id(0);
+        auto recipe = store.find_by_id(RecipeId{"Pasta Carbonara"});
         REQUIRE(recipe.has_value());
+        CHECK(recipe->id == RecipeId{"Pasta Carbonara"});
         CHECK(recipe->display_name == "Pasta Carbonara");
         CHECK(recipe->description == "Classic Roman pasta");
     }
@@ -95,32 +101,20 @@ TEST_CASE("RecipeStore::find_by_id", "[RecipeStore]")
 
     SECTION("returns recipe for valid id")
     {
-        auto result = store.find_by_id(0);
+        auto result = store.find_by_id(RecipeId{"Pasta Carbonara"});
         REQUIRE(result.has_value());
         CHECK(result->display_name == "Pasta Carbonara");
     }
 
-    SECTION("returns last recipe by id")
-    {
-        auto result = store.find_by_id(2);
-        REQUIRE(result.has_value());
-        CHECK(result->display_name == "Lemon Tart");
-    }
-
     SECTION("returns nullopt for id equal to recipe_count (one past end)")
     {
-        CHECK_FALSE(store.find_by_id(static_cast<int>(store.recipe_count())).has_value());
-    }
-
-    SECTION("returns nullopt for negative id")
-    {
-        CHECK_FALSE(store.find_by_id(-1).has_value());
+        CHECK_FALSE(store.find_by_id(RecipeId{"AlreadyEaten"}).has_value());
     }
 
     SECTION("returns nullopt on empty store")
     {
         RecipeStore empty{{}};
-        CHECK_FALSE(empty.find_by_id(0).has_value());
+        CHECK_FALSE(empty.find_by_id(RecipeId{"Is there someone?"}).has_value());
     }
 }
 
@@ -167,25 +161,5 @@ TEST_CASE("RecipeStore::find_by_index", "[RecipeStore]")
     {
         RecipeStore empty{{}};
         CHECK_FALSE(empty.find_by_index(0).has_value());
-    }
-}
-
-// ---------------------------------------------------------------------------
-// find_by_id / find_by_index equivalence
-// ---------------------------------------------------------------------------
-
-TEST_CASE("RecipeStore::find_by_id and RecipeStore::find_by_index return the same recipe", "[RecipeStore]")
-{
-    // Since ids are assigned sequentially from 0, find_by_id(n) must equal
-    // find_by_index(n) for all valid n.
-    RecipeStore store{three_recipes()};
-
-    for (std::size_t i = 0; i < store.recipe_count(); ++i) {
-        auto by_id = store.find_by_id(static_cast<int>(i));
-        auto by_index = store.find_by_index(i);
-        REQUIRE(by_id.has_value());
-        REQUIRE(by_index.has_value());
-        CHECK(by_id->id == by_index->id);
-        CHECK(by_id->display_name == by_index->display_name);
     }
 }

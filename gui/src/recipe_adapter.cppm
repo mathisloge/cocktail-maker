@@ -14,7 +14,7 @@ export std::optional<Command> transform_command(const cm::Command& command, cons
     return std::visit(
         detail::Overloaded{[](const cm::ManualCommand& manual_command) -> std::optional<Command> {
                                return Command{
-                                   .id = manual_command.id,
+                                   .id = manual_command.id.raw(),
                                    .status = CommandStatus::NotStarted,
                                    .text = slint::SharedString{manual_command.instruction.c_str()},
                                };
@@ -29,7 +29,7 @@ export std::optional<Command> transform_command(const cm::Command& command, cons
                                    "{}", units::value_cast<std::int32_t>(dispense_command.volume.in(units::milli_litre)));
 
                                return Command{
-                                   .id = dispense_command.id,
+                                   .id = dispense_command.id.raw(),
                                    .status = CommandStatus::NotStarted,
                                    .text = slint::SharedString{ingredient->display_name.c_str()},
                                    .value = slint::SharedString{volume_str.c_str()},
@@ -68,7 +68,7 @@ std::shared_ptr<slint::Model<Command>> transform(const cm::Commands& commands, c
 export RecipeView transform(Recipe r, const cm::IngredientStore& ingredient_store)
 {
     return RecipeView{
-        .id = r.id,
+        .id = slint::SharedString{r.id.raw().c_str()},
         .name = slint::SharedString{r.display_name.c_str()},
         .tag_line = std::make_shared<slint::VectorModel<slint::SharedString>>(
             std::ranges::to<std::vector>(std::move(r.tags) | std::views::transform([](std::string tag) {

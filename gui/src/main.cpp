@@ -51,6 +51,7 @@ int main(int argc, char** argv)
     std::vector<cm::Recipe> recipes;
     for (int i = 0; i < 10; i++) {
         recipes.emplace_back(cm::Recipe{
+            .id = cm::RecipeId{std::format("mojito_{}", i)},
             .display_name = "Mojito",
             .description = "Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, Zucker und Soda – perfekt für "
                            "den Sommer.",

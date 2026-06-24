@@ -19,6 +19,7 @@ cm::Recipe make_recipe(std::string name, std::vector<std::string> tags, std::str
         description = "desc_" + name;
     }
     return cm::Recipe{
+        .id = cm::RecipeId{name},
         .display_name = std::move(name),
         .description = std::move(description),
         .tags = std::move(tags),
@@ -75,8 +76,8 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
         auto fungi_row = model.row_data(1);
         REQUIRE(maga_row.has_value());
         REQUIRE(fungi_row.has_value());
-        CHECK(maga_row->id == 0);
-        CHECK(fungi_row->id == 1);
+        CHECK(maga_row->id == "Margherita Pizza");
+        CHECK(fungi_row->id == "Fungi Pizza");
     }
 
     SECTION("display_name is preserved as SharedString")

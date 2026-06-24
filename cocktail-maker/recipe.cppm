@@ -7,7 +7,8 @@ import :ingredient;
 
 namespace cm {
 
-export using CommandId = int;
+export using RecipeId = strong_type<std::string, struct CommandIdTag, Comparable, Hashable, Formattable>;
+export using CommandId = strong_type<int, struct CommandIdTag, Incrementable, Decrementable, Comparable, Hashable, Formattable>;
 
 export struct DispenseCommand
 {
@@ -28,7 +29,7 @@ export using Commands = std::vector<std::variant<Command, ParallelCommand>>;
 
 export struct Recipe
 {
-    int id;
+    RecipeId id;
     std::string display_name;
     std::string description;
     std::vector<std::string> tags;
@@ -57,7 +58,7 @@ inline constexpr bool is_variant_v = is_variant<std::remove_cvref_t<T>>::value;
 
 constexpr void assign_unique_command_ids(Recipe& recipe)
 {
-    int next_id = 1;
+    CommandId next_id{1};
     auto visitor = [&next_id](this auto const& self, auto& node) -> void {
         // Does this node have a command_id? Assign Id.
         if constexpr (requires { node.id; }) {
@@ -84,17 +85,19 @@ export class RecipeStore
   public:
     explicit RecipeStore(std::vector<Recipe> recipes)
     {
-        int id{0};
         for (auto&& r : recipes) {
-            r.id = id++;
             assign_unique_command_ids(r);
             recipes_.emplace_back(std::move(r));
         }
     }
 
-    std::optional<Recipe> find_by_id(int id) const
+    std::optional<Recipe> find_by_id(RecipeId id) const
     {
-        return find_by_index(id); // inserted in order of id.
+        auto it = std::ranges::find(recipes_, id, &Recipe::id);
+        if (it == recipes_.end()) {
+            return std::nullopt;
+        }
+        return *it;
     }
 
     std::optional<Recipe> find_by_index(int index) const
@@ -120,6 +123,6 @@ struct std::formatter<cm::Recipe> : formatter<string_view>
 {
     auto format(const cm::Recipe& r, format_context& ctx) const -> format_context::iterator
     {
-        return formatter<string_view>::format(std::format("Recipe(name={})", r.display_name), ctx);
+        return formatter<string_view>::format(std::format("Recipe(id={}, name={})", r.id, r.display_name), ctx);
     }
 };

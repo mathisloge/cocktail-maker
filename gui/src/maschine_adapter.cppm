@@ -57,7 +57,7 @@ export class MachineAdapter : public cm::BasicCommandExecuter
             auto selected = ui->ui->global<RecipeContext>().get_active_recipe();
             for (int i = 0; i < selected.commands->row_count(); i++) {
                 auto cmd = selected.commands->row_data(i);
-                if (cmd.has_value() and cmd->id == id) {
+                if (cmd.has_value() and cmd->id == id.raw()) {
                     const auto ui_status = [status]() {
                         switch (status) {
                         case unknown:

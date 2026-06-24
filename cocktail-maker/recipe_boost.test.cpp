@@ -32,12 +32,12 @@ auto make_store() -> IngredientStore
 
 auto dispense(std::string id, double ml) -> Command
 {
-    return DispenseCommand{0, IngredientId{std::move(id)}, ml * units::milli_litre};
+    return DispenseCommand{CommandId{0}, IngredientId{std::move(id)}, ml * units::milli_litre};
 }
 
 auto manual(std::string instruction) -> Command
 {
-    return ManualCommand{0, std::move(instruction)};
+    return ManualCommand{CommandId{0}, std::move(instruction)};
 }
 
 // ─── Inspection helpers ───────────────────────────────────────────────────────

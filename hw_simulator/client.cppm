@@ -93,12 +93,12 @@ class Client
         async_handle(msg);
     }
 
-    void handle(InClientLoadCellResetOffset& msg)
+    void handle(InClientLoadCellCalibrateWithRefWeight& msg)
     {
         async_handle(msg);
     }
 
-    void handle(InClientLoadCellSetRefWeight& msg)
+    void handle(InClientLoadCellTare& msg)
     {
         async_handle(msg);
     }
@@ -141,13 +141,13 @@ class Client
         co_await async_send(Pong{}, msg.transportField_transactionId().getValue());
     }
 
-    cobalt::detached async_handle(InClientLoadCellResetOffset msg)
+    cobalt::detached async_handle(InClientLoadCellCalibrateWithRefWeight msg)
     {
         co_await delay(150ms);
         co_await async_send(Ack{}, msg.transportField_transactionId().getValue());
     }
 
-    cobalt::detached async_handle(InClientLoadCellSetRefWeight msg)
+    cobalt::detached async_handle(InClientLoadCellTare msg)
     {
         co_await delay(150ms);
         co_await async_send(Ack{}, msg.transportField_transactionId().getValue());

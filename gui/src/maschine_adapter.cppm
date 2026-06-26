@@ -44,6 +44,14 @@ export class MachineAdapter : public cm::BasicCommandExecuter
 
         log::debug{logger, "Process dispense command {}", command.ingredient};
         co_await pod_dispatcher_.dispatch_dispense_command(command);
+
+        // TODO NOW: 1. Error DispenserEmpty hinzufügen
+        // Pod meldet DispenserEmpty und station empfängt und throwed DispenserEmptyError
+        // Hier catchen und manual command mit refill ausführen
+        // nach bestätigung mit neuen DispenseCommand mit rest volume erstellen.
+        // Vllt message mit Abfrage Füllstand einführen. Dann kann dies erst abgerufen werden und daraus der Rest ermittelt werden
+        // Optional kann dann auch vorher der dialog kommen, um aufzufüllen. Hängt dann aber von der ui ab und kann einfach
+        // geändert werden.
         log::debug{logger, "Finished dispense command {}", command.ingredient};
         co_return;
     }

@@ -8,8 +8,8 @@ export enum CalibrationStepStatus {
 }
 
 export struct DispenserCalibrationState {
-    offset-status: CalibrationStepStatus,
-    reference-status: CalibrationStepStatus,
+    load-cell-status: CalibrationStepStatus,
+    load-cell-tare-status: CalibrationStepStatus,
     pump-status: CalibrationStepStatus,
     measured-ml-per-step: string,
     error-message: string,
@@ -17,8 +17,8 @@ export struct DispenserCalibrationState {
 
 export global DispenserCalibrationContext {
     in-out property <DispenserCalibrationState> state: {
-        offset-status: CalibrationStepStatus.idle,
-        reference-status: CalibrationStepStatus.idle,
+        load-cell-status: CalibrationStepStatus.idle,
+        load-cell-tare-status: CalibrationStepStatus.idle,
         pump-status: CalibrationStepStatus.idle,
         measured-ml-per-step: "",
         error-message: "",
@@ -28,12 +28,12 @@ export global DispenserCalibrationContext {
         self.state.error-message = error;
     }
 
-    public function update-offset-status(status: CalibrationStepStatus) {
-        self.state.offset-status = status;
+    public function update-load-cell-ref-weight-status(status: CalibrationStepStatus) {
+        self.state.load-cell-status = status;
     }
 
-    public function update-ref-weight-status(status: CalibrationStepStatus) {
-        self.state.reference-status = status;
+    public function update-load-cell-tare-status(status: CalibrationStepStatus) {
+        self.state.load-cell-tare-status = status;
     }
 
     public function update-pump-status(status: CalibrationStepStatus) {
@@ -45,14 +45,14 @@ export global DispenserCalibrationContext {
     }
 
     // implemented by business logic
-    callback calibrate-offset(Pod, Dispenser);
-    callback calibrate-reference(Pod, Dispenser, int /* reference-weight-g */);
+    callback calibrate-load-cell-ref-weight(Pod, Dispenser, int /* reference-weight-g */);
+    callback load-cell-tare(Pod, Dispenser);
     callback calibrate-pump(Pod, Dispenser, int /* steps */);
 
     public function reset-state() {
         state = {
-            offset-status: CalibrationStepStatus.idle,
-            reference-status: CalibrationStepStatus.idle,
+            load-cell-status: CalibrationStepStatus.idle,
+            load-cell-tare-status: CalibrationStepStatus.idle,
             pump-status: CalibrationStepStatus.idle,
             measured-ml-per-step: 0,
             error-message: "",

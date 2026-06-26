@@ -152,29 +152,10 @@ component DispenserCalibrationContent inherits Rectangle {
 
                     StepCard {
                         step-number: "1";
-                        title: "Nullpunkt";
-                        description: "Dispenser leer lassen und den Leergewicht-Offset der Waage erfassen.";
-                        status: DispenserCalibrationContext.state.offset-status;
-
-                        Button {
-                            text: DispenserCalibrationContext.state.offset-status == CalibrationStepStatus.running
-                                ? "läuft..." : "Offset erfassen";
-                            height: 64px;
-                            enabled: DispenserCalibrationContext.state.offset-status != CalibrationStepStatus.running;
-                            clicked => {
-                                DispenserCalibrationContext.calibrate-offset(
-                                    root.active-pod,
-                                    root.active-dispenser);
-                            }
-                        }
-                    }
-
-                    StepCard {
-                        step-number: "2";
                         title: "Referenzgewicht";
                         description: "Bekanntes Referenzgewicht auflegen, Gewicht eingeben und kalibrieren.";
-                        status: DispenserCalibrationContext.state.reference-status;
-                        enabled: DispenserCalibrationContext.state.offset-status == CalibrationStepStatus.success;
+                        status: DispenserCalibrationContext.state.load-cell-status;
+                        enabled: true;
 
                         HorizontalBox {
                             cross-axis-alignment: center;
@@ -188,21 +169,39 @@ component DispenserCalibrationContent inherits Rectangle {
                                 minimum: 1;
                                 maximum: 20000;
                                 value <=> root.reference-weight-g;
-                                enabled: DispenserCalibrationContext.state.offset-status == CalibrationStepStatus.success;
+                                enabled: DispenserCalibrationContext.state.load-cell-status != CalibrationStepStatus.running;
                             }
                         }
 
                         Button {
-                            text: DispenserCalibrationContext.state.reference-status == CalibrationStepStatus.running
+                            text: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.running
                                 ? "läuft..." : "Mit Referenzgewicht kalibrieren";
                             height: 64px;
-                            enabled: DispenserCalibrationContext.state.offset-status == CalibrationStepStatus.success
-                                && DispenserCalibrationContext.state.reference-status != CalibrationStepStatus.running;
+                            enabled: DispenserCalibrationContext.state.load-cell-status != CalibrationStepStatus.running;
                             clicked => {
-                                DispenserCalibrationContext.calibrate-reference(
+                                DispenserCalibrationContext.calibrate-load-cell-ref-weight(
                                     root.active-pod,
                                     root.active-dispenser,
                                     root.reference-weight-g);
+                            }
+                        }
+                    }
+
+                    StepCard {
+                        step-number: "2";
+                        title: "Tare";
+                        description: "TARE";
+                        status: DispenserCalibrationContext.state.load-cell-tare-status;
+
+                        Button {
+                            text: DispenserCalibrationContext.state.load-cell-tare-status == CalibrationStepStatus.running
+                                ? "läuft..." : "TARE";
+                            height: 64px;
+                            enabled: DispenserCalibrationContext.state.load-cell-tare-status != CalibrationStepStatus.running;
+                            clicked => {
+                                DispenserCalibrationContext.load-cell-tare(
+                                    root.active-pod,
+                                    root.active-dispenser);
                             }
                         }
                     }
@@ -212,7 +211,7 @@ component DispenserCalibrationContent inherits Rectangle {
                         title: "Pumpvolumen";
                         description: "Pumpt die eingegebene Anzahl Schritte und misst das ausgegebene Volumen mit der kalibrierten Waage.";
                         status: DispenserCalibrationContext.state.pump-status;
-                        enabled: DispenserCalibrationContext.state.reference-status == CalibrationStepStatus.success;
+                        enabled: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.success;
 
                         HorizontalBox {
                             cross-axis-alignment: center;
@@ -226,7 +225,7 @@ component DispenserCalibrationContent inherits Rectangle {
                                 minimum: 1;
                                 maximum: 20000;
                                 value <=> root.pump-test-steps;
-                                enabled: DispenserCalibrationContext.state.reference-status == CalibrationStepStatus.success;
+                                enabled: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.success;
                             }
                         }
 
@@ -234,7 +233,7 @@ component DispenserCalibrationContent inherits Rectangle {
                             text: DispenserCalibrationContext.state.pump-status == CalibrationStepStatus.running
                                 ? "läuft..." : "Pumptest starten";
                             height: 64px;
-                            enabled: DispenserCalibrationContext.state.reference-status == CalibrationStepStatus.success
+                            enabled: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.success
                                 && DispenserCalibrationContext.state.pump-status != CalibrationStepStatus.running;
                             clicked => {
                                 DispenserCalibrationContext.calibrate-pump(

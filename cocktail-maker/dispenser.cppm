@@ -27,8 +27,8 @@ export class Dispenser
     Dispenser& operator=(Dispenser&&) noexcept = delete;
 
     virtual cobalt::promise<void> dispense(units::Litre volume) = 0;
-    virtual cobalt::promise<void> load_cell_reset_offset() = 0;
-    virtual cobalt::promise<void> load_cell_set_ref_weight(units::Grams grams) = 0;
+    virtual cobalt::promise<void> load_cell_calibrate_with_ref_weight(units::Grams grams) = 0;
+    virtual cobalt::promise<void> load_cell_tare() = 0;
     virtual cobalt::promise<void> highlight(std::chrono::milliseconds duration) = 0;
 };
 

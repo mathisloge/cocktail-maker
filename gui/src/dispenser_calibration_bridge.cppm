@@ -28,13 +28,12 @@ export class DispenserCalibrationBridge
         , ui_{std::move(ui)}
         , pod_registry_{pod_registry}
     {
-        ui_->global<DispenserCalibrationContext>().on_calibrate_offset(
-            [this](gui::Pod pod, gui::Dispenser dispenser) { dispatch_load_cell_reset(std::move(pod), std::move(dispenser)); });
-
-        ui_->global<DispenserCalibrationContext>().on_calibrate_reference(
+        ui_->global<DispenserCalibrationContext>().on_calibrate_load_cell_ref_weight(
             [this](gui::Pod pod, gui::Dispenser dispenser, int grams) {
-                dispatch_load_cell_set_ref_weight(std::move(pod), std::move(dispenser), (grams * units::si::gram));
+                dispatch_calibrate_load_cell_ref_weight(std::move(pod), std::move(dispenser), (grams * units::si::gram));
             });
+        ui_->global<DispenserCalibrationContext>().on_load_cell_tare(
+            [this](gui::Pod pod, gui::Dispenser dispenser) { dispatch_load_tare(std::move(pod), std::move(dispenser)); });
 
         ui_->global<DispenserCalibrationContext>().on_calibrate_pump([this](gui::Pod pod, gui::Dispenser dispenser, int steps) {
             dispatch_calibrate_pump(std::move(pod), std::move(dispenser), (steps * units::step));
@@ -42,17 +41,17 @@ export class DispenserCalibrationBridge
     }
 
   private:
-    void dispatch_load_cell_reset(const gui::Pod pod, const gui::Dispenser dispenser)
+    void dispatch_load_tare(const gui::Pod pod, const gui::Dispenser dispenser)
     {
         asio::post(executor_, [pod_id = pod.id, dispenser_id = dispenser.id, this]() {
-            async_dispatch_load_cell_reset(PodId{std::string{pod_id.data()}}, DispenserId{dispenser_id});
+            async_dispatch_load_tare(PodId{std::string{pod_id.data()}}, DispenserId{dispenser_id});
         });
     }
 
-    void dispatch_load_cell_set_ref_weight(const gui::Pod pod, const gui::Dispenser dispenser, const units::Grams grams)
+    void dispatch_calibrate_load_cell_ref_weight(const gui::Pod pod, const gui::Dispenser dispenser, const units::Grams grams)
     {
         asio::post(executor_, [pod_id = pod.id, dispenser_id = dispenser.id, grams, this]() {
-            async_dispatch_load_cell_set_ref_weight(PodId{std::string{pod_id.data()}}, DispenserId{dispenser_id}, grams);
+            async_dispatch_calibrate_load_cell_ref_weight(PodId{std::string{pod_id.data()}}, DispenserId{dispenser_id}, grams);
         });
     }
 
@@ -63,42 +62,42 @@ export class DispenserCalibrationBridge
         });
     }
 
-    cobalt::detached async_dispatch_load_cell_reset(const PodId pod_id, const DispenserId dispenser_id)
+    cobalt::detached async_dispatch_load_tare(const PodId pod_id, const DispenserId dispenser_id)
     {
-        update_load_cell_offset_status(CalibrationStepStatus::Running);
+        update_load_tare_status(CalibrationStepStatus::Running);
         auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
         if (not dispenser.has_value()) {
-            update_load_cell_offset_status(CalibrationStepStatus::Error);
+            update_load_tare_status(CalibrationStepStatus::Error);
             update_ui_error("Es konnte kein Dispenser gefunden werden.");
             co_return;
         }
         try {
-            co_await (*dispenser)->load_cell_reset_offset();
-            update_load_cell_offset_status(CalibrationStepStatus::Success);
+            co_await (*dispenser)->load_cell_tare();
+            update_load_tare_status(CalibrationStepStatus::Success);
         }
         catch (const std::exception& err) {
-            update_load_cell_offset_status(CalibrationStepStatus::Error);
+            update_load_tare_status(CalibrationStepStatus::Error);
             update_ui_error(err.what());
         }
     }
 
-    cobalt::detached async_dispatch_load_cell_set_ref_weight(const PodId pod_id,
-                                                             const DispenserId dispenser_id,
-                                                             const units::Grams grams)
+    cobalt::detached async_dispatch_calibrate_load_cell_ref_weight(const PodId pod_id,
+                                                                   const DispenserId dispenser_id,
+                                                                   const units::Grams grams)
     {
-        update_load_cell_ref_weight_status(CalibrationStepStatus::Running);
+        update_load_cell_calibration_status(CalibrationStepStatus::Running);
         auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
         if (not dispenser.has_value()) {
-            update_load_cell_ref_weight_status(CalibrationStepStatus::Error);
+            update_load_cell_calibration_status(CalibrationStepStatus::Error);
             update_ui_error("Es konnte kein Dispenser gefunden werden.");
             co_return;
         }
         try {
-            co_await (*dispenser)->load_cell_set_ref_weight(grams);
-            update_load_cell_ref_weight_status(CalibrationStepStatus::Success);
+            co_await (*dispenser)->load_cell_calibrate_with_ref_weight(grams);
+            update_load_cell_calibration_status(CalibrationStepStatus::Success);
         }
         catch (const std::exception& err) {
-            update_load_cell_ref_weight_status(CalibrationStepStatus::Error);
+            update_load_cell_calibration_status(CalibrationStepStatus::Error);
             update_ui_error(err.what());
         }
     }
@@ -133,16 +132,17 @@ export class DispenserCalibrationBridge
         });
     }
 
-    void update_load_cell_offset_status(CalibrationStepStatus status)
+    void update_load_cell_calibration_status(CalibrationStepStatus status)
     {
-        slint::invoke_from_event_loop(
-            [ui = ui_, status]() { ui->global<DispenserCalibrationContext>().invoke_update_offset_status(status); });
+        slint::invoke_from_event_loop([ui = ui_, status]() {
+            ui->global<DispenserCalibrationContext>().invoke_update_load_cell_ref_weight_status(status);
+        });
     }
 
-    void update_load_cell_ref_weight_status(CalibrationStepStatus status)
+    void update_load_tare_status(CalibrationStepStatus status)
     {
         slint::invoke_from_event_loop(
-            [ui = ui_, status]() { ui->global<DispenserCalibrationContext>().invoke_update_ref_weight_status(status); });
+            [ui = ui_, status]() { ui->global<DispenserCalibrationContext>().invoke_update_load_cell_tare_status(status); });
     }
 
     void update_pump_status(CalibrationStepStatus status)

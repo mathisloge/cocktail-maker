@@ -43,8 +43,9 @@ export class IPod
 
     virtual cobalt::promise<void> highlight_dispenser(DispenserId dispenser_id, std::chrono::milliseconds duration) = 0;
 
-    virtual cobalt::promise<void> load_cell_reset_offset(DispenserId dispenser_id) = 0;
-    virtual cobalt::promise<void> load_cell_set_ref_weight(DispenserId dispenser_id, units::Grams grams) = 0;
+    virtual cobalt::promise<void> load_cell_calibrate_with_ref_weight(DispenserId dispenser_id, units::Grams grams) = 0;
+    virtual cobalt::promise<void> load_cell_tare(DispenserId dispenser_id) = 0;
+
     virtual cobalt::promise<void> dispense(DispenserId dispenser_id, units::Litre volume) = 0;
 
     virtual cobalt::promise<units::Litre> pump_calibrate(DispenserId dispenser_id, units::Steps steps) = 0;
@@ -66,16 +67,16 @@ class DispenserPodImpl : public Dispenser
         co_await pod()->dispense(dispenser_id_, volume);
     }
 
-    cobalt::promise<void> load_cell_reset_offset() override
-    {
-        log::debug(logger_, "Reset load cell.");
-        co_await pod()->load_cell_reset_offset(dispenser_id_);
-    }
-
-    cobalt::promise<void> load_cell_set_ref_weight(units::Grams grams) override
+    cobalt::promise<void> load_cell_calibrate_with_ref_weight(units::Grams grams) override
     {
         log::debug(logger_, "Set load cell ref weight to {}.", grams);
-        co_await pod()->load_cell_set_ref_weight(dispenser_id_, grams);
+        co_await pod()->load_cell_calibrate_with_ref_weight(dispenser_id_, grams);
+    }
+
+    cobalt::promise<void> load_cell_tare() override
+    {
+        log::debug(logger_, "load cell TARE.");
+        co_await pod()->load_cell_tare(dispenser_id_);
     }
 
     cobalt::promise<void> highlight(std::chrono::milliseconds duration) override
@@ -207,18 +208,18 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         };
     }
 
-    cobalt::promise<void> load_cell_reset_offset(DispenserId dispenser_id) override
+    cobalt::promise<void> load_cell_calibrate_with_ref_weight(const DispenserId dispenser_id, const units::Grams grams) override
     {
-        auto tx = OutLoadCellResetOffset{};
+        auto tx = OutLoadCellCalibrateWithRefWeight{};
         tx.field_dispenserId().setValue(dispenser_id.raw());
+        tx.field_gram().setValue(grams.numerical_value_in(units::si::gram));
         co_await send_with_ack(std::move(tx), 500ms);
     }
 
-    cobalt::promise<void> load_cell_set_ref_weight(const DispenserId dispenser_id, const units::Grams grams) override
+    cobalt::promise<void> load_cell_tare(DispenserId dispenser_id) override
     {
-        auto tx = OutLoadCellSetRefWeight{};
+        auto tx = OutLoadCellTare{};
         tx.field_dispenserId().setValue(dispenser_id.raw());
-        tx.field_gram().setValue(grams.numerical_value_in(units::si::gram));
         co_await send_with_ack(std::move(tx), 500ms);
     }
 

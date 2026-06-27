@@ -1,0 +1,360 @@
+
+import { Palette } from "../palette.slint";
+import {
+    SeparatorText,
+    CommandItem,
+    SmallText,
+    MediumText,
+    LargeText,
+    CornerDeco,
+} from "../components.slint";
+import { Button } from "../components/button.slint";
+
+// ─────────────────────────────────────────────────────────────────────
+//  Small local helper — one "what failed" detail row
+//  (not exported; scoped to this file)
+// ─────────────────────────────────────────────────────────────────────
+component ErrorDetailRow inherits Rectangle {
+    in property <string> icon;
+    in property <string> label;
+    in property <string> sub-label;
+
+    height: 56px;
+    background: Palette.background-card;
+    border-width: 1px;
+    border-color: Palette.border;
+
+    HorizontalLayout {
+        padding: 0px;
+        spacing: 14px;
+
+        Rectangle {
+            width: 30px;
+            horizontal-stretch: 0;
+            SmallText {
+                text: root.icon;
+                font-size: 14pt;
+                letter-spacing: 0px;
+                vertical-alignment: center;
+            }
+        }
+
+        VerticalLayout {
+            alignment: center;
+            spacing: 3px;
+            MediumText {
+                text: root.label;
+                font-italic: false;
+                font-weight: FontWeight.semi-bold;
+                font-size: 11pt;
+                color: Palette.text-primary;
+            }
+
+            SmallText {
+                text: root.sub-label;
+                font-size: 6pt;
+                letter-spacing: 1.5px;
+                color: Palette.text-muted;
+            }
+        }
+
+        Rectangle {
+            horizontal-stretch: 1;
+            background: transparent;
+        }
+
+        Rectangle {
+            horizontal-stretch: 0;
+            background: transparent;
+            border-width: 1px;
+            border-color: Palette.text-error;
+            HorizontalLayout {
+                padding: 5px;
+                SmallText {
+                    text: "FAILED";
+                    font-size: 6pt;
+                    letter-spacing: 2px;
+                    font-weight: FontWeight.semi-bold;
+                    color: Palette.text-error;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  ERROR SCREEN  —  redesigned
+// ═══════════════════════════════════════════════════════════════════
+export component ErrorScreen inherits Rectangle {
+    in property <string> cocktail-name:        "Negroni";
+    in property <string> error-title:          "We Hit a Snag";
+    in property <string> error-reason:          "The dispensing pod did not respond before the safety timeout elapsed.";
+    in property <string> error-code:            "ERR_POD_TIMEOUT";
+    in property <string> failed-ingredient-icon: "E";
+    in property <string> failed-ingredient-name: "Campari";
+    in property <string> failed-pod-label:       "POD 2  ·  DISPENSER 3";
+    callback cancel();
+
+    background: Palette.background;
+
+    // ── Mount trigger ──────────────────────────────────────────
+    property <bool> appear: false;
+    Timer {
+        interval: 60ms;
+        running: !root.appear;
+        triggered => { root.appear = true; }
+    }
+
+    // ── Continuous slow breathing pulse on the broken ring ───────
+    property <bool> pulse: false;
+    Timer {
+        interval: 1700ms;
+        running: true;
+        triggered => { root.pulse = !root.pulse; }
+    }
+
+    HorizontalLayout {
+
+        // ════════════════════════════════════════════════════
+        //  LEFT  —  status icon
+        // ════════════════════════════════════════════════════
+        Rectangle {
+            width: 380px;
+            horizontal-stretch: 0;
+            background: Palette.background;
+
+            Rectangle {
+                x: parent.width - 1px;
+                width: 1px;
+                background: Palette.border;
+            }
+
+            CornerDeco {
+                width: parent.width;
+                height: parent.height;
+            }
+
+            VerticalLayout {
+                alignment: center;
+                spacing: 0;
+
+                // ── Broken-ring icon ─────────────────────────
+                HorizontalLayout {
+                    alignment: center;
+                    icon-stack := Rectangle {
+                        width: 168px;
+                        height: 168px;
+                        background: transparent;
+
+                        // Static amber base ring (the "glass rim")
+                        Rectangle {
+                            width: 112px;
+                            height: 112px;
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+                            border-radius: 56px;
+                            border-width: root.pulse ? 1px : 3px;
+                            border-color: root.pulse ? Palette.border : Palette.text-error;
+                            background: Palette.background-elevated;
+                            animate border-color, border-width {
+                                duration: 400ms;
+                                easing: ease-in-out;
+                            }
+                        }
+
+                        Path {
+                            width: 112px;
+                            height: 112px;
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+                            viewbox-width: 100;
+                            viewbox-height: 100;
+                            // triangle, gently rounded corners
+                            commands: "M 50 32 Q 52 32 53 34 L 64 58 Q 66 62 62 62 L 38 62 Q 34 62 36 58 L 47 34 Q 48 32 50 32 Z";
+                            fill: transparent;
+                            stroke: root.pulse ? Palette.border : Palette.text-error;
+                            stroke-width: 2px;
+                            opacity: root.appear ? 1 : 0;
+                            animate opacity, stroke {
+                                duration: 400ms;
+                                easing: ease-in-out;
+                            }
+                        }
+
+                        Path {
+                            width: 112px;
+                            height: 112px;
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+                            viewbox-width: 100;
+                            viewbox-height: 100;
+                            // exclamation bar + dot
+                            commands: "M 49 41 L 51 41 L 50.5 51 L 49.5 51 Z M 48.5 55 L 51.5 55 L 51.5 58 L 48.5 58 Z";
+                            fill: root.pulse ? Palette.border : Palette.text-error;
+                            stroke: transparent;
+                            opacity: root.appear ? 1 : 0;
+                            animate opacity, fill {
+                                duration: 400ms;
+                                easing: ease-in-out;
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    height: 28px;
+                    background: transparent;
+                }
+
+                VerticalLayout {
+                    spacing: 6px;
+                    opacity: root.appear ? 1 : 0;
+                    animate opacity {
+                        duration: 400ms;
+                        delay: 280ms;
+                    }
+
+                    SmallText {
+                        text: "PREPARATION INTERRUPTED";
+                        font-size: 6pt;
+                        letter-spacing: 3.5px;
+                        color: Palette.text-error;
+                        horizontal-alignment: center;
+                    }
+
+                    MediumText {
+                        text: root.cocktail-name;
+                        font-italic: true;
+                        font-size: 13pt;
+                        color: Palette.text-muted;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════════
+        //  RIGHT  —  details & actions
+        // ════════════════════════════════════════════════════
+        Rectangle {
+            horizontal-stretch: 1;
+            background: Palette.background;
+
+            VerticalLayout {
+                padding: 56px;
+                spacing: 0;
+                alignment: center;
+
+                LargeText {
+                    text: root.error-title;
+                    font-size: 27pt;
+                    opacity: root.appear ? 1 : 0;
+                    animate opacity {
+                        duration: 400ms;
+                        delay: 320ms;
+                    }
+                }
+
+                Rectangle {
+                    height: 10px;
+                    background: transparent;
+                }
+
+                MediumText {
+                    text: root.error-reason;
+                    wrap: word-wrap;
+
+                    opacity: root.appear ? 1 : 0;
+                    animate opacity {
+                        duration: 400ms;
+                        delay: 360ms;
+                    }
+                }
+
+                Rectangle {
+                    height: 28px;
+                    background: transparent;
+                }
+
+                // ── Failed-at-step detail ─────────────────────
+                if root.failed-ingredient-name != "": VerticalLayout {
+                    spacing: 10px;
+                    opacity: root.appear ? 1 : 0;
+                    animate opacity {
+                        duration: 400ms;
+                        delay: 420ms;
+                    }
+
+                    SmallText {
+                        text: "INTERRUPTED AT";
+                        font-size: 7pt;
+                        letter-spacing: 3.5px;
+                    }
+
+                    ErrorDetailRow {
+                        icon: root.failed-ingredient-icon;
+                        label: root.failed-ingredient-name;
+                        sub-label: root.failed-pod-label;
+                    }
+                }
+
+                Rectangle {
+                    height: 18px;
+                    background: transparent;
+                }
+
+                // ── Technical code chip ───────────────────────
+                HorizontalLayout {
+                    alignment: start;
+                    opacity: root.appear ? 1 : 0;
+                    animate opacity {
+                        duration: 400ms;
+                        delay: 460ms;
+                    }
+
+                    Rectangle {
+                        horizontal-stretch: 0;
+                        background: Palette.background-card;
+                        border-width: 1px;
+                        border-color: Palette.border;
+                        HorizontalLayout {
+                            padding: 7px;
+                            SmallText {
+                                text: root.error-code;
+                                font-size: 6pt;
+                                letter-spacing: 2px;
+                                color: Palette.text-muted;
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    height: 36px;
+                    background: transparent;
+                }
+
+                // ── Actions ────────────────────────────────────
+                HorizontalLayout {
+                    spacing: 14px;
+                    opacity: root.appear ? 1 : 0;
+                    animate opacity {
+                        duration: 400ms;
+                        delay: 520ms;
+                    }
+
+                    Rectangle {
+                        width: 170px;
+                        horizontal-stretch: 0;
+                        Button {
+                            text: "CANCEL ORDER";
+                            clicked => { root.cancel(); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -11,6 +11,7 @@ module;
 
 export module cm.sim:client;
 import std;
+import mp_units;
 import cm.core;
 import cm;
 
@@ -49,23 +50,30 @@ class Client
     using PumpCalibrationFinished = proto::message::PumpFinishedCalibrationResponse<Message, Options>;
     using DispenseFinished = proto::message::DispenseFinished<Message, Options>;
 
+    static constexpr int kNumPumps = 5;
+    static constexpr int kNumValves = 3;
+
     log::Logger logger_;
     TSocket stream_;
     DeviceInfoResponse device_info_response_msg_{};
     cobalt::channel<std::vector<uint8_t>> write_queue_;
     ClientFrame frame_;
+    std::array<units::Litre, (kNumPumps + kNumValves)> dispenser_volume_;
 
   public:
     Client(TSocket socket, std::string name, Version firmware_version)
         : logger_{log::create_or_get(std::format("SimPod_{}", name))}
         , stream_{std::move(socket)}
     {
+        for (auto&& d : dispenser_volume_) {
+            d = 500 * units::milli_litre;
+        }
         device_info_response_msg_.field_deviceName().setValue(std::move(name));
         device_info_response_msg_.field_firmwareMajor().setValue(firmware_version.major);
         device_info_response_msg_.field_firmwareMinor().setValue(firmware_version.minor);
         device_info_response_msg_.field_firmwarePatch().setValue(firmware_version.patch);
-        device_info_response_msg_.field_numPumps().setValue(5);
-        device_info_response_msg_.field_numValves().setValue(3);
+        device_info_response_msg_.field_numPumps().setValue(kNumPumps);
+        device_info_response_msg_.field_numValves().setValue(kNumValves);
     }
 
     TSocket& socket()
@@ -137,7 +145,7 @@ class Client
 
     cobalt::detached async_handle(InClientPing msg)
     {
-        co_await delay(500ms);
+        co_await delay(400ms);
         co_await async_send(Pong{}, msg.transportField_transactionId().getValue());
     }
 
@@ -176,10 +184,28 @@ class Client
     cobalt::detached async_handle(InClientDispense msg)
     {
         const auto trid = msg.transportField_transactionId().getValue();
+        auto& remaining_volume = dispenser_volume_[msg.field_dispenserId().value()];
+        const auto requested_volume = (msg.field_millilitre().value() * units::milli_litre);
+
         co_await delay(50ms);
+        if (remaining_volume < (5 * units::milli_litre)) {
+            Nak nak{};
+            nak.field_errorCode().setValue(proto::field::ErrorCodeCommon::ValueType::DispenserEmpty);
+            co_await async_send(std::move(nak), trid);
+            co_return;
+        }
         co_await async_send(Ack{}, trid);
-        co_await delay(msg.field_millilitre().value() * 20ms);
-        co_await async_send(DispenseFinished{}, trid);
+        co_await delay(requested_volume.numerical_value_in(units::milli_litre) * 20ms);
+        DispenseFinished tx{};
+        if (remaining_volume > requested_volume) {
+            remaining_volume = remaining_volume - requested_volume;
+            tx.field_millilitre().setValue(requested_volume.numerical_value_in(units::milli_litre));
+        }
+        else {
+            tx.field_millilitre().setValue(remaining_volume.numerical_value_in(units::milli_litre));
+            remaining_volume = (0 * units::milli_litre);
+        }
+        co_await async_send(std::move(tx), trid);
     }
 
   private:

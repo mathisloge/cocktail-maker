@@ -30,7 +30,7 @@ template <class A, class B>
 export class PodRegistry
 {
   public:
-    std::expected<std::unique_ptr<Dispenser>, std::out_of_range> dispenser_of_pod(PodId pod_id, DispenserId dispenser_id)
+    std::expected<std::unique_ptr<Dispenser>, std::out_of_range> dispenser_of_pod(PodId pod_id, DispenserId dispenser_id) const
     {
         for (const auto& weak_pod : pods_) {
             if (auto pod = weak_pod.lock()) {

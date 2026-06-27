@@ -18,7 +18,8 @@ namespace cobalt = boost::cobalt;
 export class MachineAdapter : public cm::BasicCommandExecuter
 {
     std::shared_ptr<SlintAsyncAdapter> ui_;
-    PodDispatcher pod_dispatcher_;
+    PodRegistry& pod_registry_;
+    StationConfig& station_config_;
 
   public:
     explicit MachineAdapter(slint::ComponentHandle<AppWindow> ui,
@@ -26,7 +27,8 @@ export class MachineAdapter : public cm::BasicCommandExecuter
                             PodRegistry& pod_registry,
                             StationConfig& station_config)
         : ui_{std::make_shared<SlintAsyncAdapter>(std::move(ui), ingredient_store)}
-        , pod_dispatcher_{pod_registry, station_config}
+        , pod_registry_{pod_registry}
+        , station_config_{station_config}
     {
     }
 
@@ -41,19 +43,36 @@ export class MachineAdapter : public cm::BasicCommandExecuter
     cobalt::promise<void> execute_command(DispenseCommand command) override
     {
         auto logger = log::create_or_get("recipe");
-
         log::debug{logger, "Process dispense command {}", command.ingredient};
-        co_await pod_dispatcher_.dispatch_dispense_command(command);
 
-        // TODO NOW: 1. Error DispenserEmpty hinzufügen
-        // Pod meldet DispenserEmpty und station empfängt und throwed DispenserEmptyError
-        // Hier catchen und manual command mit refill ausführen
-        // nach bestätigung mit neuen DispenseCommand mit rest volume erstellen.
-        // Vllt message mit Abfrage Füllstand einführen. Dann kann dies erst abgerufen werden und daraus der Rest ermittelt werden
-        // Optional kann dann auch vorher der dialog kommen, um aufzufüllen. Hängt dann aber von der ui ab und kann einfach
-        // geändert werden.
+        auto dispatcher = create_dispenser_for_ingredient(pod_registry_, station_config_, command.ingredient);
+
+        constexpr auto kDispenseTolerance = 20 * units::milli_litre;
+
+        units::Litre dispensed = 0 * units::milli_litre;
+        bool needs_refill = false;
+
+        try {
+            dispensed = co_await dispatcher->dispense(command.volume);
+            // If we missed the target by more than the tolerance, the pod is running low.
+            needs_refill = units::abs(dispensed - command.volume) > kDispenseTolerance;
+        }
+        catch (const DispenserEmptyError&) {
+            // Pod ran out mid-pour. Assume whatever was left (+-5ml sensor tolerance)
+            // got dispensed before it failed.
+            log::debug{logger, "Dispense failed: pod ran empty. Refilling and continuing..."};
+            dispensed = 0 * units::milli_litre;
+            needs_refill = true;
+        }
+
+        if (needs_refill) {
+            co_await execute_command(ManualCommand{.instruction = "Refill ingredient"});
+            // After refill confirmation, assume the pod is full again.
+            // Otherwise a new DispenserEmptyError will propagate and abort the cocktail.
+            co_await dispatcher->dispense(command.volume - dispensed);
+        }
+
         log::debug{logger, "Finished dispense command {}", command.ingredient};
-        co_return;
     }
 
     void update_command_status(cm::CommandId id, cm::CommandStatus status) override

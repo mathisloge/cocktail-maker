@@ -1,5 +1,6 @@
 module;
 #include <boost/cobalt.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <proto/field/ErrorCodeCommon.h>
 #include <proto/field/LedEffectCommon.h>
 
@@ -14,6 +15,7 @@ import :async_machine_protocol_server;
 import :dispenser;
 
 namespace cobalt = boost::cobalt;
+namespace asio = boost::asio;
 
 using namespace std::chrono_literals;
 
@@ -46,7 +48,7 @@ export class IPod
     virtual cobalt::promise<void> load_cell_calibrate_with_ref_weight(DispenserId dispenser_id, units::Grams grams) = 0;
     virtual cobalt::promise<void> load_cell_tare(DispenserId dispenser_id) = 0;
 
-    virtual cobalt::promise<void> dispense(DispenserId dispenser_id, units::Litre volume) = 0;
+    virtual cobalt::promise<units::Litre> dispense(DispenserId dispenser_id, units::Litre volume) = 0;
 
     virtual cobalt::promise<units::Litre> pump_calibrate(DispenserId dispenser_id, units::Steps steps) = 0;
 };
@@ -61,10 +63,12 @@ class DispenserPodImpl : public Dispenser
     {
     }
 
-    cobalt::promise<void> dispense(units::Litre volume) override
+    cobalt::promise<units::Litre> dispense(units::Litre volume) override
     {
         log::debug(logger_, "Start dispense of {}.", volume);
-        co_await pod()->dispense(dispenser_id_, volume);
+        const auto measured_volume = co_await pod()->dispense(dispenser_id_, volume);
+        log::debug(logger_, "Finished dispensing of {}. Dispensed: {}.", volume, measured_volume);
+        co_return measured_volume;
     }
 
     cobalt::promise<void> load_cell_calibrate_with_ref_weight(units::Grams grams) override
@@ -223,13 +227,14 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         co_await send_with_ack(std::move(tx), 500ms);
     }
 
-    cobalt::promise<void> dispense(DispenserId dispenser_id, units::Litre volume) override
+    cobalt::promise<units::Litre> dispense(DispenserId dispenser_id, units::Litre volume) override
     {
         auto tx = OutDispense{};
         tx.field_dispenserId().setValue(dispenser_id.raw());
         tx.field_millilitre().setValue(volume.numerical_value_in(units::milli_litre));
 
         const InDispenseFinished finish_result = co_await send_action_with_response<InDispenseFinished>(std::move(tx), 30s);
+        co_return (finish_result.field_millilitre().value() * units::milli_litre);
     }
 
     cobalt::promise<units::Litre> pump_calibrate(const DispenserId dispenser_id, const units::Steps steps) override
@@ -302,11 +307,13 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
 
     cobalt::task<void> keep_alive()
     {
-        auto cs = co_await boost::asio::this_coro::cancellation_state;
-        co_await device_ready_; // wait until the device info was send.
-        while (cs.cancelled() == boost::asio::cancellation_type::none) {
-            // will be cancelled if the pong wasn't received in x ms.
-            co_await send_and_receive<InPong>(OutPing{}, 2000ms);
+        auto cs = co_await asio::this_coro::cancellation_state;
+        co_await device_ready_;
+        asio::steady_timer timer{server_.get_executor()};
+        while (cs.cancelled() == asio::cancellation_type::none) {
+            co_await send_and_receive<InPong>(OutPing{}, 1s);
+            timer.expires_after(2s);
+            co_await timer.async_wait(cobalt::use_op);
         }
     }
 
@@ -322,7 +329,7 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         co_await server_.async_send(std::move(tx_msg), transaction_id);
         const auto nak_or_ack = co_await rx_action;
         if (std::holds_alternative<InNak>(nak_or_ack)) {
-            throw PodReceiveError{std::get<InNak>(nak_or_ack).field_errorCode().value()};
+            process_nak(std::get<InNak>(nak_or_ack));
         }
         co_return transaction_id;
     }
@@ -345,9 +352,27 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         const auto transaction_id = co_await send_with_ack(std::move(tx_msg));
         const auto nak_or_action = co_await server_.template async_receive<RxMsg, InNak>(transaction_id, action_timeout);
         if (std::holds_alternative<InNak>(nak_or_action)) {
-            throw PodReceiveError{std::get<InNak>(nak_or_action).field_errorCode().value()};
+            process_nak(std::get<InNak>(nak_or_action));
         }
         co_return std::get<RxMsg>(nak_or_action);
+    }
+
+    void process_nak(const InNak& nak)
+    {
+        switch (nak.field_errorCode().value()) {
+        case proto::field::ErrorCodeCommon::ValueType::DispenserEmpty:
+            throw DispenserEmptyError{"Dispenser empty."}; // TODO: maybe this should contain the pod and dispenser id?
+        case proto::field::ErrorCodeCommon::ValueType::InvalidParameter:
+        case proto::field::ErrorCodeCommon::ValueType::DispenserNotFound:
+        case proto::field::ErrorCodeCommon::ValueType::UnsupportedInCurrentState:
+        case proto::field::ErrorCodeCommon::ValueType::HardwareFault:
+        case proto::field::ErrorCodeCommon::ValueType::Busy:
+        case proto::field::ErrorCodeCommon::ValueType::NotCalibrated:
+        case proto::field::ErrorCodeCommon::ValueType::InternalError:
+        case proto::field::ErrorCodeCommon::ValueType::ValuesLimit:
+            throw PodReceiveError{nak.field_errorCode().value()};
+        }
+        std::unreachable();
     }
 
   private:

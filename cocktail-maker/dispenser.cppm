@@ -26,10 +26,16 @@ export class Dispenser
     Dispenser& operator=(const Dispenser&) = delete;
     Dispenser& operator=(Dispenser&&) noexcept = delete;
 
-    virtual cobalt::promise<void> dispense(units::Litre volume) = 0;
+    virtual cobalt::promise<units::Litre> dispense(units::Litre volume) = 0;
     virtual cobalt::promise<void> load_cell_calibrate_with_ref_weight(units::Grams grams) = 0;
     virtual cobalt::promise<void> load_cell_tare() = 0;
     virtual cobalt::promise<void> highlight(std::chrono::milliseconds duration) = 0;
+};
+
+export class DispenserEmptyError : public std::runtime_error
+{
+  public:
+    using runtime_error::runtime_error;
 };
 
 } // namespace cm

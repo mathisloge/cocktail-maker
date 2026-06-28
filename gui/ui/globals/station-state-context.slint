@@ -5,10 +5,12 @@ import {
     Dispenser,
     ConnectionState,
     DispenserType,
+    Page,
 } from "./../data.slint";
 export global StationStateContext {
     out property <string> station-name: "Sir Mix-A-Lot";
     in-out property <bool> station-ready: false;
+    in-out property <Page> active-screen: Page.admin-area-page;
     in-out property <[LogEntry]> log-entries: [];
 
     callback highlight-dispenser(Pod, Dispenser);

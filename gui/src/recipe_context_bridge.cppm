@@ -23,14 +23,12 @@ export class RecipeContextBridge
                                  slint::ComponentHandle<AppWindow> ui,
                                  RecipeStore& recipe_store,
                                  IngredientStore& ingredient_store,
-                                 cm::StationConfig& station_config,
-                                 PodRegistry& pod_registry)
+                                 cm::StationConfig& station_config)
         : executor_{std::move(executor)}
         , ui_{std::move(ui)}
         , recipe_store_{recipe_store}
         , ingredient_store_{ingredient_store}
         , station_config_{station_config}
-        , pod_registry_{pod_registry}
     {
         {
             const auto ingredients = ingredient_store_.ingredients();
@@ -45,20 +43,6 @@ export class RecipeContextBridge
         ui_->global<RecipeContext>().set_recipes(std::make_shared<RecipeModel>(recipe_store_, ingredient_store_));
         ui_->global<RecipeContext>().on_boost_active_recipe(
             [this](const int boost_percentage) { boost_recipe_callback(boost_percentage); });
-
-        ui_->global<RecipeContext>().on_process_active_recipe([this](const int boost_raw) {
-            const auto recipe_to_create = ui_->global<RecipeContext>().get_active_recipe();
-            const auto boost = boost_raw * units::percent;
-            auto r = recipe_store_.find_by_id(RecipeId{recipe_to_create.id.data()});
-            if (r.has_value()) {
-                cm::log::debug(logger_, "create {} with boost factor '{}'", r.value(), boost);
-                r->commands = boost_recipe(r->commands, boost, ingredient_store_);
-                boost::asio::post(executor_, [recipe = std::move(r.value()), this]() { async_process_recipe(recipe); });
-            }
-            else {
-                log::error(logger_, "Could not find a recipe {}", recipe_to_create.name.data());
-            }
-        });
         ui->global<cm::gui::RecipeContext>().on_assign_ingredient_to_dispenser(
             [this](const cm::gui::Pod& pod, const cm::gui::Dispenser& dispenser, slint::SharedString ingredient_id) {
                 cm::log::trace(logger_,
@@ -91,17 +75,10 @@ export class RecipeContextBridge
         ui_->global<RecipeContext>().set_active_recipe(transform(recipe, ingredient_store_));
     }
 
-    boost::cobalt::detached async_process_recipe(Recipe recipe)
-    {
-        auto command_executer = std::make_shared<MachineAdapter>(ui_, ingredient_store_, pod_registry_, station_config_);
-        co_await cm::execute_commands(std::move(recipe.commands), std::move(command_executer));
-    }
-
   private:
     log::Logger logger_{log::create_or_get("ui")};
     boost::asio::any_io_executor executor_;
     slint::ComponentHandle<AppWindow> ui_;
-    PodRegistry& pod_registry_;
     RecipeStore& recipe_store_;
     IngredientStore& ingredient_store_;
     cm::StationConfig& station_config_;

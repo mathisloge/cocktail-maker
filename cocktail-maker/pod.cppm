@@ -1,6 +1,6 @@
 module;
-#include <boost/cobalt.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/cobalt.hpp>
 #include <proto/field/ErrorCodeCommon.h>
 #include <proto/field/LedEffectCommon.h>
 

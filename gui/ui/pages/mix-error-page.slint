@@ -1,5 +1,6 @@
 
 import { Palette } from "../palette.slint";
+import { ProcessContext } from "../globals/process-context.slint";
 import {
     SeparatorText,
     CommandItem,
@@ -83,18 +84,14 @@ component ErrorDetailRow inherits Rectangle {
     }
 }
 
-
-// ═══════════════════════════════════════════════════════════════════
-//  ERROR SCREEN  —  redesigned
-// ═══════════════════════════════════════════════════════════════════
-export component ErrorScreen inherits Rectangle {
-    in property <string> cocktail-name:        "Negroni";
-    in property <string> error-title:          "We Hit a Snag";
-    in property <string> error-reason:          "The dispensing pod did not respond before the safety timeout elapsed.";
-    in property <string> error-code:            "ERR_POD_TIMEOUT";
-    in property <string> failed-ingredient-icon: "E";
-    in property <string> failed-ingredient-name: "Campari";
-    in property <string> failed-pod-label:       "POD 2  ·  DISPENSER 3";
+export component MixErrorPage inherits Rectangle {
+    private property <string> cocktail-name:            "Negroni";
+    private property <string> error-title:              ProcessContext.error-title;
+    private property <string> error-reason:             ProcessContext.error-description;
+    private property <string> error-code:               "ERR_POD_TIMEOUT";
+    private property <string> failed-ingredient-icon:   ProcessContext.error-item-category;
+    private property <string> failed-ingredient-name:   ProcessContext.error-item-name;
+    private property <string> failed-pod-label:         ProcessContext.error-item-details;
     callback cancel();
 
     background: Palette.background;

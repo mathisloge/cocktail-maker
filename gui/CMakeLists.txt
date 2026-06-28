@@ -23,6 +23,7 @@ target_sources(
                 src/station_state_bridge.cppm
                 src/dispenser_calibration_bridge.cppm
                 src/recipe_context_bridge.cppm
+                src/process_context_bridge.cppm
 )
 
 if(BUILD_TESTING)

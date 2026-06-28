@@ -72,7 +72,8 @@ int main(int argc, char** argv)
     cm::PodRegistry pod_registry{};
     cm::RecipeStore recipe_store{std::move(recipes)};
     cm::gui::DispenserCalibrationBridge dispenser_calibration_bridge{ctx.get_executor(), ui, pod_registry};
-    cm::gui::RecipeContextBridge recipe_context_bridge{
+    cm::gui::RecipeContextBridge recipe_context_bridge{ctx.get_executor(), ui, recipe_store, ingredient_store, station_config};
+    cm::gui::ProcessContextBridge process_context_bridge{
         ctx.get_executor(), ui, recipe_store, ingredient_store, station_config, pod_registry};
     auto station_state = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, ctx.get_executor());
 

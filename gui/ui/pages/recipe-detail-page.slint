@@ -10,6 +10,7 @@ import {
     SmallText,
 } from "../components.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
+import { ProcessContext } from "../globals/process-context.slint";
 
 export component RecipeDetailPage inherits Rectangle {
     private property <RecipeView> recipe: RecipeContext.active-recipe;
@@ -128,7 +129,7 @@ export component RecipeDetailPage inherits Rectangle {
         Button {
             text: "Zubereiten →";
             clicked => {
-                RecipeContext.process-active-recipe(booster.value);
+                ProcessContext.process-active-recipe(booster.value);
                 root.process-recipe();
             }
         }

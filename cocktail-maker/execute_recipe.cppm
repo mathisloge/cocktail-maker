@@ -50,31 +50,20 @@ export cobalt::promise<void> execute_commands(Commands commands, std::shared_ptr
                                                     },
                                                     [](std::monostate) -> cobalt::promise<void> { co_return; }};
 
-    std::string error_message;
-    try {
-        for (auto&& c : commands) {
-            co_await std::visit(detail::Overloaded{
-                                    [process_command](const Command& command) { return std::visit(process_command, command); },
-                                    [process_command](ParallelCommand commands) -> cobalt::promise<void> {
-                                        std::vector<cobalt::promise<void>> parallel_group;
-                                        parallel_group.reserve(commands.size());
-                                        for (auto&& c : commands) {
-                                            parallel_group.emplace_back(std::visit(process_command, c));
-                                        }
-                                        co_await cobalt::join(std::move(parallel_group));
-                                        co_return;
-                                    },
+    for (auto&& c : commands) {
+        co_await std::visit(detail::Overloaded{
+                                [process_command](const Command& command) { return std::visit(process_command, command); },
+                                [process_command](ParallelCommand commands) -> cobalt::promise<void> {
+                                    std::vector<cobalt::promise<void>> parallel_group;
+                                    parallel_group.reserve(commands.size());
+                                    for (auto&& c : commands) {
+                                        parallel_group.emplace_back(std::visit(process_command, c));
+                                    }
+                                    co_await cobalt::join(std::move(parallel_group));
+                                    co_return;
                                 },
-                                c);
-        }
-    }
-    catch (const std::exception& ex) {
-        error_message = ex.what();
-    }
-    if (not error_message.empty()) {
-        co_await command_executer->execute_command(
-            ManualCommand{.id = CommandId{},
-                          .instruction = std::format("Error occurred during command execution: {}", std::move(error_message))});
+                            },
+                            c);
     }
 }
 } // namespace cm

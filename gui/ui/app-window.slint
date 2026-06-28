@@ -3,6 +3,9 @@ export { RecipeContext }from "./globals/recipe-context.slint";
 export {
     DispenserCalibrationContext,
 }from "./globals/dispenser-calibration-context.slint";
+export {
+    ProcessContext,
+}from "./globals/process-context.slint";
 
 import {
     VerticalBox,
@@ -26,6 +29,7 @@ import {
     RecipeListPage,
     MixProgressPage,
     BootScreen,
+    MixErrorPage,
 } from "pages.slint";
 import { ManualCommandPopup } from "popups.slint";
 import { AdminArea } from "admin-area.slint";
@@ -40,7 +44,6 @@ export component AppWindow inherits Window {
             boot_screen_confirmed = false;
         }
     }
-    in-out property <Page> current_page: Page.admin-area-page;
 
     callback operation_canceled();
     callback manual-command-confirmed();
@@ -54,7 +57,7 @@ export component AppWindow inherits Window {
     }
 
     operation_canceled => {
-        current_page = Page.cocktail-list-page;
+        StationStateContext.active-screen = Page.cocktail-list-page;
     }
 
     popup := ManualCommandPopup {
@@ -82,7 +85,7 @@ export component AppWindow inherits Window {
                 secondary: true;
                 text: "← Back";
                 x: 20px;
-                visible: current_page != Page.cocktail-list-page && current_page != Page.finished-page;
+                visible: StationStateContext.active-screen != Page.cocktail-list-page && StationStateContext.active-screen != Page.finished-page;
                 clicked => {
                     operation_canceled();
                 }
@@ -105,20 +108,26 @@ export component AppWindow inherits Window {
             background: Palette.border;
         }
 
-        if current_page == Page.cocktail-list-page: RecipeListPage {
+        if StationStateContext.active-screen == Page.cocktail-list-page: RecipeListPage {
             recipe-selected() => {
-                root.current_page = Page.cocktail-detail-page;
+                StationStateContext.active-screen = Page.cocktail-detail-page;
             }
         }
 
-        if current_page == Page.cocktail-detail-page: RecipeDetailPage {
+        if StationStateContext.active-screen == Page.cocktail-detail-page: RecipeDetailPage {
             process-recipe() => {
-                root.current_page = Page.mix-page;
+                StationStateContext.active-screen = Page.mix-page;
             }
         }
 
-        if current_page == Page.mix-page: MixProgressPage { }
+        if StationStateContext.active-screen == Page.mix-page: MixProgressPage { }
 
-        if current_page == Page.admin-area-page: admin-area := AdminArea { }
+        if StationStateContext.active-screen == Page.admin-area-page: admin-area := AdminArea { }
+
+        if StationStateContext.active-screen == Page.mix-error-page: MixErrorPage {
+            cancel => {
+                StationStateContext.active-screen = Page.cocktail-list-page;
+            }
+        }
     }
 }

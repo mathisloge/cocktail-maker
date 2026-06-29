@@ -79,6 +79,12 @@ export component MixSuccessPage inherits Page {
     private property <string> boost-text: get-boost-slogan(root.boost-value);
     callback finish();
 
+    Timer {
+        interval: 5s;
+        running: true;
+        triggered => { finish(); }
+    }
+
     VerticalLayout {
         padding-top: 56px;
         padding-bottom: 56px;

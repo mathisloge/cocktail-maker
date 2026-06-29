@@ -11,6 +11,7 @@ import {
 } from "../components.slint";
 import { Button } from "../components/button.slint";
 import { Page } from "page.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
 
 // ─────────────────────────────────────────────────────────────────────
 //  Small local helper — one "what failed" detail row
@@ -86,10 +87,9 @@ component ErrorDetailRow inherits Rectangle {
 }
 
 export component MixErrorPage inherits Page {
-    private property <string> cocktail-name:            "Negroni";
+    private property <string> cocktail-name:            RecipeContext.active-recipe.name;
     private property <string> error-title:              ProcessContext.error-title;
     private property <string> error-reason:             ProcessContext.error-description;
-    private property <string> error-code:               "ERR_POD_TIMEOUT";
     private property <string> failed-ingredient-icon:   ProcessContext.error-item-category;
     private property <string> failed-ingredient-name:   ProcessContext.error-item-name;
     private property <string> failed-pod-label:         ProcessContext.error-item-details;
@@ -205,18 +205,14 @@ export component MixErrorPage inherits Page {
                     }
 
                     SmallText {
-                        text: "PREPARATION INTERRUPTED";
-                        font-size: 6pt;
-                        letter-spacing: 3.5px;
+                        text: "ZUBEREITUNG UNTERBROCHEN";
                         color: Palette.text-error;
                         horizontal-alignment: center;
                     }
 
                     MediumText {
                         text: root.cocktail-name;
-                        font-italic: true;
-                        font-size: 13pt;
-                        color: Palette.text-muted;
+                        primary: false;
                         horizontal-alignment: center;
                     }
                 }
@@ -237,7 +233,6 @@ export component MixErrorPage inherits Page {
 
                 LargeText {
                     text: root.error-title;
-                    font-size: 27pt;
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
                         duration: 400ms;
@@ -253,6 +248,7 @@ export component MixErrorPage inherits Page {
                 MediumText {
                     text: root.error-reason;
                     wrap: word-wrap;
+                    primary: true;
 
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
@@ -276,9 +272,7 @@ export component MixErrorPage inherits Page {
                     }
 
                     SmallText {
-                        text: "INTERRUPTED AT";
-                        font-size: 7pt;
-                        letter-spacing: 3.5px;
+                        text: "UNTERBROCHEN BEI";
                     }
 
                     ErrorDetailRow {
@@ -289,58 +283,19 @@ export component MixErrorPage inherits Page {
                 }
 
                 Rectangle {
-                    height: 18px;
-                    background: transparent;
-                }
-
-                // ── Technical code chip ───────────────────────
-                HorizontalLayout {
-                    alignment: start;
-                    opacity: root.mounted ? 1 : 0;
-                    animate opacity {
-                        duration: 400ms;
-                        delay: 460ms;
-                    }
-
-                    Rectangle {
-                        horizontal-stretch: 0;
-                        background: Palette.background-card;
-                        border-width: 1px;
-                        border-color: Palette.border;
-                        HorizontalLayout {
-                            padding: 7px;
-                            SmallText {
-                                text: root.error-code;
-                                font-size: 6pt;
-                                letter-spacing: 2px;
-                                color: Palette.text-muted;
-                            }
-                        }
-                    }
-                }
-
-                Rectangle {
-                    height: 36px;
+                    height: 54px;
                     background: transparent;
                 }
 
                 // ── Actions ────────────────────────────────────
-                HorizontalLayout {
-                    spacing: 14px;
+                Button {
+                    text: "ABBRECHEN";
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
                         duration: 400ms;
                         delay: 520ms;
                     }
-
-                    Rectangle {
-                        width: 170px;
-                        horizontal-stretch: 0;
-                        Button {
-                            text: "CANCEL ORDER";
-                            clicked => { root.cancel(); }
-                        }
-                    }
+                    clicked => { root.cancel(); }
                 }
             }
         }

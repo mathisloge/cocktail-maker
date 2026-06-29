@@ -30,7 +30,7 @@ import {
     BootScreen,
     MixProgressPage,
     MixErrorPage,
-    MixSuccessPage
+    MixSuccessPage,
 } from "pages.slint";
 import { ManualCommandPopup } from "popups.slint";
 import { AdminArea } from "admin-area.slint";
@@ -123,17 +123,18 @@ export component AppWindow inherits Window {
 
         if StationStateContext.active-screen == Page.mix-page: MixProgressPage { }
 
-        if StationStateContext.active-screen == Page.admin-area-page: admin-area := AdminArea { }
-
         if StationStateContext.active-screen == Page.mix-error-page: MixErrorPage {
             cancel => {
                 StationStateContext.active-screen = Page.cocktail-list-page;
             }
         }
-        if StationStateContext.active-screen == Page.mix-error-page: MixSuccessPage {
+
+        if StationStateContext.active-screen == Page.mix-success-page: MixSuccessPage {
             finish => {
                 StationStateContext.active-screen = Page.cocktail-list-page;
             }
         }
+
+        if StationStateContext.active-screen == Page.admin-area-page: admin-area := AdminArea { }
     }
 }

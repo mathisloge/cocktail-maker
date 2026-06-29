@@ -37,9 +37,8 @@ export class ProcessContextBridge
             const auto boost = boost_raw * units::percent;
             auto r = recipe_store_.find_by_id(RecipeId{recipe_to_create.id.data()});
             if (r.has_value()) {
-                cm::log::debug(logger_, "create {} with boost factor '{}'", r.value(), boost);
-                r->commands = boost_recipe(r->commands, boost, ingredient_store_);
-                boost::asio::post(executor_, [recipe = std::move(r.value()), this]() { async_process_recipe(recipe); });
+                boost::asio::post(executor_,
+                                  [recipe = std::move(r.value()), boost, this]() { async_process_recipe(recipe, boost); });
             }
             else {
                 log::error(logger_, "Could not find a recipe {}", recipe_to_create.name.data());
@@ -48,11 +47,19 @@ export class ProcessContextBridge
     }
 
   private:
-    boost::cobalt::detached async_process_recipe(Recipe recipe)
+    boost::cobalt::detached async_process_recipe(Recipe recipe, const units::Percent boost)
     {
+        using Clock = std::chrono::steady_clock;
+
+        log::debug(logger_, "Create {} with boost factor '{}'", recipe, boost);
+        const auto start_tp = Clock::now();
+        recipe.commands = boost_recipe(recipe.commands, boost, ingredient_store_);
         auto command_executer = std::make_shared<MachineAdapter>(ui_, ingredient_store_, pod_registry_, station_config_);
         try {
-            co_await cm::execute_commands(std::move(recipe.commands), std::move(command_executer));
+            co_await execute_commands(std::move(recipe.commands), std::move(command_executer));
+            const auto duration = std::chrono::duration_cast<std::chrono::seconds>(Clock::now() - start_tp);
+            log::debug(logger_, "Finished {} in '{}'", recipe, duration);
+            display_ui_success(duration, boost);
         }
         catch (const std::exception& ex) {
             log::error(logger_, "Unknown error while processing recipe: {}", ex.what());
@@ -60,7 +67,7 @@ export class ProcessContextBridge
         }
     }
 
-    void display_ui_error(const std::exception& ex)
+    void display_ui_error(const std::exception& ex) const
     {
         auto error_desc = slint::SharedString{ex.what()};
         slint::invoke_from_event_loop([ui = ui_, error_desc = std::move(error_desc)]() {
@@ -71,6 +78,16 @@ export class ProcessContextBridge
             process_ctx.set_error_item_name("Unbekannt");
             process_ctx.set_error_item_details("");
             ui->global<StationStateContext>().set_active_screen(Page::MixErrorPage);
+        });
+    }
+
+    void display_ui_success(const std::chrono::milliseconds duration, const units::Percent boost) const
+    {
+        slint::invoke_from_event_loop([ui = ui_, duration, boost]() {
+            const auto& process_ctx = ui->global<ProcessContext>();
+            process_ctx.set_elapsed_time(duration.count());
+            process_ctx.set_boost(static_cast<int>(boost.numerical_value_in(units::percent)));
+            ui->global<StationStateContext>().set_active_screen(Page::MixSuccessPage);
         });
     }
 

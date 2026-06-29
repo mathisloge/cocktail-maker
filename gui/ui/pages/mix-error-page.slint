@@ -10,6 +10,7 @@ import {
     CornerDeco,
 } from "../components.slint";
 import { Button } from "../components/button.slint";
+import { Page } from "page.slint";
 
 // ─────────────────────────────────────────────────────────────────────
 //  Small local helper — one "what failed" detail row
@@ -84,7 +85,7 @@ component ErrorDetailRow inherits Rectangle {
     }
 }
 
-export component MixErrorPage inherits Rectangle {
+export component MixErrorPage inherits Page {
     private property <string> cocktail-name:            "Negroni";
     private property <string> error-title:              ProcessContext.error-title;
     private property <string> error-reason:             ProcessContext.error-description;
@@ -93,16 +94,6 @@ export component MixErrorPage inherits Rectangle {
     private property <string> failed-ingredient-name:   ProcessContext.error-item-name;
     private property <string> failed-pod-label:         ProcessContext.error-item-details;
     callback cancel();
-
-    background: Palette.background;
-
-    // ── Mount trigger ──────────────────────────────────────────
-    property <bool> appear: false;
-    Timer {
-        interval: 60ms;
-        running: !root.appear;
-        triggered => { root.appear = true; }
-    }
 
     // ── Continuous slow breathing pulse on the broken ring ───────
     property <bool> pulse: false;
@@ -173,7 +164,7 @@ export component MixErrorPage inherits Rectangle {
                             fill: transparent;
                             stroke: root.pulse ? Palette.border : Palette.text-error;
                             stroke-width: 2px;
-                            opacity: root.appear ? 1 : 0;
+                            opacity: root.mounted ? 1 : 0;
                             animate opacity, stroke {
                                 duration: 400ms;
                                 easing: ease-in-out;
@@ -191,7 +182,7 @@ export component MixErrorPage inherits Rectangle {
                             commands: "M 49 41 L 51 41 L 50.5 51 L 49.5 51 Z M 48.5 55 L 51.5 55 L 51.5 58 L 48.5 58 Z";
                             fill: root.pulse ? Palette.border : Palette.text-error;
                             stroke: transparent;
-                            opacity: root.appear ? 1 : 0;
+                            opacity: root.mounted ? 1 : 0;
                             animate opacity, fill {
                                 duration: 400ms;
                                 easing: ease-in-out;
@@ -207,7 +198,7 @@ export component MixErrorPage inherits Rectangle {
 
                 VerticalLayout {
                     spacing: 6px;
-                    opacity: root.appear ? 1 : 0;
+                    opacity: root.mounted ? 1 : 0;
                     animate opacity {
                         duration: 400ms;
                         delay: 280ms;
@@ -247,7 +238,7 @@ export component MixErrorPage inherits Rectangle {
                 LargeText {
                     text: root.error-title;
                     font-size: 27pt;
-                    opacity: root.appear ? 1 : 0;
+                    opacity: root.mounted ? 1 : 0;
                     animate opacity {
                         duration: 400ms;
                         delay: 320ms;
@@ -263,7 +254,7 @@ export component MixErrorPage inherits Rectangle {
                     text: root.error-reason;
                     wrap: word-wrap;
 
-                    opacity: root.appear ? 1 : 0;
+                    opacity: root.mounted ? 1 : 0;
                     animate opacity {
                         duration: 400ms;
                         delay: 360ms;
@@ -278,7 +269,7 @@ export component MixErrorPage inherits Rectangle {
                 // ── Failed-at-step detail ─────────────────────
                 if root.failed-ingredient-name != "": VerticalLayout {
                     spacing: 10px;
-                    opacity: root.appear ? 1 : 0;
+                    opacity: root.mounted ? 1 : 0;
                     animate opacity {
                         duration: 400ms;
                         delay: 420ms;
@@ -305,7 +296,7 @@ export component MixErrorPage inherits Rectangle {
                 // ── Technical code chip ───────────────────────
                 HorizontalLayout {
                     alignment: start;
-                    opacity: root.appear ? 1 : 0;
+                    opacity: root.mounted ? 1 : 0;
                     animate opacity {
                         duration: 400ms;
                         delay: 460ms;
@@ -336,7 +327,7 @@ export component MixErrorPage inherits Rectangle {
                 // ── Actions ────────────────────────────────────
                 HorizontalLayout {
                     spacing: 14px;
-                    opacity: root.appear ? 1 : 0;
+                    opacity: root.mounted ? 1 : 0;
                     animate opacity {
                         duration: 400ms;
                         delay: 520ms;

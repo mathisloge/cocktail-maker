@@ -10,14 +10,13 @@ import { ProgressIndicator, Spinner, ScrollView } from "std-widgets.slint";
 import { LogEntry, LogLevel } from "../data.slint";
 import { CornerDeco, SystemLog } from "../components.slint";
 import { StationStateContext } from "./../globals/station-state-context.slint";
+import { Page } from "page.slint";
 
-export component BootScreen inherits Rectangle {
+export component BootScreen inherits Page {
     in property <bool> is-loading:   false;
     private property <[LogEntry]> log-entries: StationStateContext.log-entries;
 
     callback boot-complete();
-
-    background: Palette.background;
 
     private property <int> entry-count: log-entries.length;
 

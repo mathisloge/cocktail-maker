@@ -11,12 +11,11 @@ import {
 } from "../components.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
 import { ProcessContext } from "../globals/process-context.slint";
+import { Page } from "page.slint";
 
-export component RecipeDetailPage inherits Rectangle {
+export component RecipeDetailPage inherits Page {
     private property <RecipeView> recipe: RecipeContext.active-recipe;
     callback process-recipe();
-
-    background: Palette.background-elevated;
 
     sidebar := VerticalLayout {
         x: 0;

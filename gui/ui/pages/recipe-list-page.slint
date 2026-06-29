@@ -1,7 +1,8 @@
 import { ScrollView } from "std-widgets.slint";
 import { RecipeCard } from "../components.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
-export component RecipeListPage inherits Rectangle {
+import { Page } from "page.slint";
+export component RecipeListPage inherits Page {
     callback recipe-selected();
 
     ScrollView {

@@ -10,12 +10,11 @@ import {
     LargeText,
 } from "../components.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
+import { Page } from "page.slint";
 
 
-export component MixProgressPage inherits Rectangle {
+export component MixProgressPage inherits Page {
     private property <RecipeView> recipe: RecipeContext.active-recipe;
-
-    background: Palette.background-elevated;
     GridLayout {
         VerticalLayout {
             width: 33%;

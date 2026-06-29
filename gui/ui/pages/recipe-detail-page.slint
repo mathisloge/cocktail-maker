@@ -26,6 +26,11 @@ export component RecipeDetailPage inherits Page {
         spacing: 60px;
         cross-axis-alignment: center;
         alignment: end;
+        opacity: root.mounted ? 1 : 0;
+        animate opacity {
+            duration: Palette.mount-animation-duration;
+            easing: Palette.mount-animation-easing;
+        }
         Image {
             source: recipe.image;
         }
@@ -69,6 +74,11 @@ export component RecipeDetailPage inherits Page {
         padding-bottom: 60px;
         spacing: 15px;
         alignment: LayoutAlignment.space-between;
+        opacity: root.mounted ? 1 : 0;
+        animate opacity {
+            duration: Palette.mount-animation-duration;
+            easing: Palette.mount-animation-easing;
+        }
 
         VerticalLayout {
             spacing: content.spacing;

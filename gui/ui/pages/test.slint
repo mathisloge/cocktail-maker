@@ -1,0 +1,325 @@
+import { SmallText, MediumText, CornerDeco, LargeText, Button } from "../components.slint";
+import { Palette } from "../palette.slint";
+// ─────────────────────────────────────────────────────────────────────
+//  Small local helper — one compact order-summary stat
+// ─────────────────────────────────────────────────────────────────────
+component StatChip inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <color>  value-color: Palette.text-primary;
+
+    background: Palette.background-card;
+    border-width: 1px;
+    border-color: Palette.border;
+
+    VerticalLayout {
+        padding-top: 14px;
+        padding-bottom: 14px;
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 6px;
+        alignment: center;
+
+        SmallText {
+            text: root.label;
+            font-size: 6pt;
+            letter-spacing: 2.5px;
+            color: Palette.text-muted;
+            horizontal-alignment: center;
+        }
+        MediumText {
+            text: root.value;
+            font-italic: false;
+            font-weight: FontWeight.semi-bold;
+            font-size: 13pt;
+            color: root.value-color;
+            horizontal-alignment: center;
+        }
+    }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+//  SUCCESS SCREEN
+// ═══════════════════════════════════════════════════════════════════
+export component SuccessScreen inherits Rectangle {
+    in property <string> cocktail-name:      "Dry Martini";
+    in property <image>  cocktail-image;
+    in property <int>    prep-time-seconds:   38;
+    in property <string> glass-summary:       "Coupe · 210ml";
+    in property <float>  boost-value:         0.0;   // -100 … +100
+    callback craft-another();
+
+    background: Palette.background;
+
+    // ── Mount trigger ──────────────────────────────────────────
+    property <bool> appear: false;
+    Timer {
+        interval: 60ms;
+        running: !root.appear;
+        triggered => { root.appear = true; }
+    }
+
+    // ── Continuous calm breathing on the complete ring ──────────
+    // Same 1700ms cadence as ErrorScreen's pulse, for a consistent
+    // "alive" feel across both transient screens.
+    property <bool> pulse: false;
+    Timer {
+        interval: 1700ms;
+        running: true;
+        triggered => { root.pulse = !root.pulse; }
+    }
+
+    HorizontalLayout {
+
+        // ════════════════════════════════════════════════════
+        //  LEFT  —  status icon
+        // ════════════════════════════════════════════════════
+        Rectangle {
+            width: 380px;
+            horizontal-stretch: 0;
+            background: Palette.background;
+
+            Rectangle { x: parent.width - 1px; width: 1px; background: Palette.border; }
+            CornerDeco {}
+
+            VerticalLayout {
+                alignment: center;
+                spacing: 0;
+
+                HorizontalLayout {
+                    alignment: center;
+                    icon-stack := Rectangle {
+                        width: 168px;
+                        height: 168px;
+                        background: transparent;
+
+                        // One-shot completion ripple — fires once on
+                        // arrival, then fully fades and stays gone.
+                        Rectangle {
+                            width:  root.appear ? 168px : 96px;
+                            height: root.appear ? 168px : 96px;
+                            x: (parent.width  - self.width)  / 2;
+                            y: (parent.height - self.height) / 2;
+                            border-radius: self.width / 2;
+                            border-width: 1.5px;
+                            border-color: Palette.text-success;
+                            background: transparent;
+                            opacity: root.appear ? 0 : 0.6;
+                            animate width, height, opacity {
+                                duration: 1100ms; easing: ease-out;
+                            }
+                        }
+
+                        // Complete ring — breathes continuously.
+                        // The counterpart to the error screen's broken,
+                        // pulsing arc: here the circle is whole.
+                        Rectangle {
+                            width:  root.pulse ? 124px : 108px;
+                            height: root.pulse ? 124px : 108px;
+                            x: (parent.width  - self.width)  / 2;
+                            y: (parent.height - self.height) / 2;
+                            border-radius: self.width / 2;
+                            border-width: 3px;
+                            border-color: Palette.text-success;
+                            background: transparent;
+                            opacity: root.appear ? (root.pulse ? 0.35 : 0.85) : 0;
+                            animate width, height, opacity {
+                                duration: 1700ms; easing: ease-in-out;
+                            }
+                        }
+
+                        // Circular cocktail photo — bounces in
+                        photo := Rectangle {
+                            width:  root.appear ? 128px : 24px;
+                            height: root.appear ? 128px : 24px;
+                            x: (parent.width  - self.width)  / 2;
+                            y: (parent.height - self.height) / 2;
+                            border-radius: self.width / 2;
+                            clip: true;
+                            border-width: 2px;
+                            border-color: Palette.border-strong;
+                            background: Palette.background-elevated;
+                            animate width, height {
+                                duration: 600ms;
+                                easing: cubic-bezier(0.34, 1.56, 0.64, 1);
+                                delay: 120ms;
+                            }
+
+                            Image {
+                                source: root.cocktail-image;
+                                image-fit: cover;
+                                opacity: root.appear ? 1 : 0;
+                                animate opacity { duration: 400ms; delay: 360ms; }
+                            }
+                        }
+
+                        // Check badge — drawn glyph, consistent with the
+                        // hand-drawn exclamation mark on ErrorScreen.
+                        Rectangle {
+                            width: 30px;
+                            height: 30px;
+                            x: parent.width  / 2 + 36px;
+                            y: parent.height / 2 + 36px;
+                            border-radius: 15px;
+                            background: Palette.text-success;
+                            border-width: 3px;
+                            border-color: Palette.background;
+                            opacity: root.appear ? 1 : 0;
+                            animate opacity { duration: 280ms; delay: 560ms; }
+
+                            Path {
+                                width: 15px; height: 15px;
+                                x: (parent.width - self.width) / 2;
+                                y: (parent.height - self.height) / 2;
+                                viewbox-width: 24; viewbox-height: 24;
+                                commands: "M 4 13 L 9 18 L 20 6";
+                                stroke: Palette.background;
+                                stroke-width: 2.8px;
+                                fill: transparent;
+                            }
+                        }
+                    }
+                }
+
+                Rectangle { height: 28px; background: transparent; }
+
+                VerticalLayout {
+                    spacing: 6px;
+                    opacity: root.appear ? 1 : 0;
+                    animate opacity { duration: 400ms; delay: 480ms; }
+
+                    SmallText {
+                        text: "PREPARATION COMPLETE";
+                        font-size: 6pt;
+                        letter-spacing: 3.5px;
+                        color: Palette.text-success;
+                        horizontal-alignment: center;
+                    }
+                    MediumText {
+                        text: root.cocktail-name;
+                        font-italic: true;
+                        font-size: 13pt;
+                        color: Palette.text-muted;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+        }
+
+        // ════════════════════════════════════════════════════
+        //  RIGHT  —  summary & actions
+        // ════════════════════════════════════════════════════
+        Rectangle {
+            horizontal-stretch: 1;
+            background: Palette.background;
+
+            VerticalLayout {
+                padding-top: 56px;
+                padding-bottom: 56px;
+                padding-left: 48px;
+                padding-right: 48px;
+                spacing: 0;
+                alignment: center;
+
+                LargeText {
+                    text: root.cocktail-name;
+                    font-size: 30pt;
+                    font-italic: true;
+                    opacity: root.appear ? 1 : 0;
+                    animate opacity { duration: 400ms; delay: 320ms; }
+                }
+
+                Rectangle { height: 10px; background: transparent; }
+
+                MediumText {
+                    text: "Ready to serve — enjoy responsibly.";
+                    opacity: root.appear ? 1 : 0;
+                    animate opacity { duration: 400ms; delay: 360ms; }
+                }
+
+                Rectangle { height: 30px; background: transparent; }
+
+                // ── Order summary strip ───────────────────────
+                VerticalLayout {
+                    spacing: 10px;
+                    opacity: root.appear ? 1 : 0;
+                    animate opacity { duration: 400ms; delay: 420ms; }
+
+                    SmallText { text: "ORDER SUMMARY"; font-size: 7pt; letter-spacing: 3.5px; }
+
+                    HorizontalLayout {
+                        spacing: 10px;
+
+                        StatChip {
+                            label: "GLASS";
+                            value: root.glass-summary;
+                            value-color: Palette.text-primary;
+                        }
+                        StatChip {
+                            label: "STRENGTH";
+                            value: root.boost-value == 0
+                                ? "Base"
+                                : (root.boost-value > 0 ? "+" : "") + Math.round(root.boost-value) + "%";
+                            value-color: root.boost-value > 0 ? Palette.boost-positive-text
+                                       : root.boost-value < 0 ? Palette.boost-negative-text
+                                       : Palette.accent-light;
+                        }
+                        StatChip {
+                            label: "TIME";
+                            value: root.prep-time-seconds + "s";
+                            value-color: Palette.text-success;
+                        }
+                    }
+                }
+
+                Rectangle { height: 18px; background: transparent; }
+
+                // ── Completed progress bar — full, glowing.
+                // Visual callback to ProcessingScreen's progress bar,
+                // now permanently at 100%.
+                VerticalLayout {
+                    spacing: 7px;
+                    opacity: root.appear ? 1 : 0;
+                    animate opacity { duration: 400ms; delay: 460ms; }
+
+                    Rectangle {
+                        height: 2px;
+                        background: Palette.border;
+                        border-radius: 1px;
+                        Rectangle {
+                            height: 2px;
+                            border-radius: 1px;
+                            width: root.appear ? parent.width : 0px;
+                            background: Palette.text-success;
+                            animate width { duration: 700ms; easing: ease-out; delay: 200ms; }
+                        }
+                    }
+                    SmallText {
+                        text: "ALL INGREDIENTS DISPENSED SUCCESSFULLY";
+                        font-size: 6pt;
+                        letter-spacing: 2px;
+                        color: Palette.text-muted;
+                    }
+                }
+
+                Rectangle { height: 36px; background: transparent; }
+
+                HorizontalLayout {
+                    alignment: start;
+                    opacity: root.appear ? 1 : 0;
+                    animate opacity { duration: 400ms; delay: 560ms; }
+
+                    Rectangle {
+                        width: 300px;
+                        horizontal-stretch: 0;
+                        Button {
+                            text: "CRAFT ANOTHER →";
+                            clicked => { root.craft-another(); }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

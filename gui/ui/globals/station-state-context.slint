@@ -10,10 +10,16 @@ import {
 export global StationStateContext {
     out property <string> station-name: "Sir Mix-A-Lot";
     in-out property <bool> station-ready: false;
-    in-out property <Page> active-screen: Page.admin-area-page;
+    out property <Page> active-screen: Page.admin-area-page;
     in-out property <[LogEntry]> log-entries: [];
 
     callback highlight-dispenser(Pod, Dispenser);
+    callback navigated-to(Page, Page);
+
+    public function navigate-to(screen: Page) {
+        navigated-to(active-screen, screen);
+        active-screen = screen;
+    }
 
     in-out property <[Pod]> pods: /* example data */[
         {

@@ -58,7 +58,7 @@ export component AppWindow inherits Window {
     }
 
     operation_canceled => {
-        StationStateContext.active-screen = Page.cocktail-list-page;
+        StationStateContext.navigate-to(Page.cocktail-list-page);
     }
 
     popup := ManualCommandPopup {
@@ -111,13 +111,13 @@ export component AppWindow inherits Window {
 
         if StationStateContext.active-screen == Page.cocktail-list-page: RecipeListPage {
             recipe-selected() => {
-                StationStateContext.active-screen = Page.cocktail-detail-page;
+                StationStateContext.navigate-to(Page.cocktail-detail-page);
             }
         }
 
         if StationStateContext.active-screen == Page.cocktail-detail-page: RecipeDetailPage {
             process-recipe() => {
-                StationStateContext.active-screen = Page.mix-page;
+                StationStateContext.navigate-to(Page.mix-page);
             }
         }
 
@@ -125,13 +125,13 @@ export component AppWindow inherits Window {
 
         if StationStateContext.active-screen == Page.mix-error-page: MixErrorPage {
             cancel => {
-                StationStateContext.active-screen = Page.cocktail-list-page;
+                StationStateContext.navigate-to(Page.cocktail-list-page);
             }
         }
 
         if StationStateContext.active-screen == Page.mix-success-page: MixSuccessPage {
             finish => {
-                StationStateContext.active-screen = Page.cocktail-list-page;
+                StationStateContext.navigate-to(Page.cocktail-list-page);
             }
         }
 

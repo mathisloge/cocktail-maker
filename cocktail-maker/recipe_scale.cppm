@@ -10,7 +10,7 @@ import :recipe;
 import :ingredient;
 
 namespace cm {
-[[nodiscard]] auto scale_command_volume(const Command& cmd, double factor) -> Command
+[[nodiscard]] auto scale_command_volume(const Command& cmd, const double factor) -> Command
 {
     return std::visit(
         [&](const auto& c) -> Command {
@@ -24,7 +24,7 @@ namespace cm {
         cmd);
 }
 
-[[nodiscard]] auto scale_commands_uniformly(const Commands& commands, double factor) -> Commands
+[[nodiscard]] auto scale_commands_uniformly(const Commands& commands, const double factor) -> Commands
 {
     const auto scale_item = [&](const std::variant<Command, ParallelCommand>& item) -> std::variant<Command, ParallelCommand> {
         return std::visit(
@@ -70,8 +70,9 @@ namespace cm {
  *                                 (Recipe::nominal_serving_volume).
  * @return A new Commands with scaled volumes; input is left unchanged.
  */
-export [[nodiscard]] auto scale_recipe(const Commands& commands, units::Litre nominal_serving_volume, units::Litre target_volume)
-    -> Commands
+export [[nodiscard]] auto scale_recipe(const Commands& commands,
+                                       const units::Litre nominal_serving_volume,
+                                       const units::Litre target_volume) -> Commands
 {
     const auto nominal_ml = nominal_serving_volume.numerical_value_in(units::milli_litre);
     const auto target_ml = target_volume.numerical_value_in(units::milli_litre);

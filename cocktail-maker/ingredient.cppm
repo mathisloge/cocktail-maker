@@ -136,7 +136,7 @@ class IngredientStore
         std::vector<IngredientId> result;
         result.reserve(ingredients_.size());
         for (const auto& [id, _] : ingredients_) {
-            result.push_back(id);
+            result.emplace_back(id);
         }
         return result;
     }

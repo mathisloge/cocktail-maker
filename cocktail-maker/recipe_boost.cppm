@@ -173,7 +173,7 @@ export [[nodiscard]] auto boost_recipe(const Commands& commands, units::Percent 
     ASSERT((units::abs(boost_pct) <= 100 * units::percent), "Boost can only be between -100% and 100%");
     const double p = boost_pct.numerical_value_in(units::percent) / 100.0; // normalise to [-1, 1]
 
-    if (p == 0.0) {
+    if (std::abs(p) < std::numeric_limits<double>::epsilon()) {
         return commands;
     }
 

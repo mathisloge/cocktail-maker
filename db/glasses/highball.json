@@ -1,0 +1,21 @@
+{
+    "$schema": "../glass-schema.json",
+    "id": "highball",
+    "display_name": "Highball Glas",
+    "common_volumes_ml": [
+        300,
+        350,
+        400,
+        450,
+        500
+    ],
+    "icon": {
+        "viewbox_width": 100,
+        "viewbox_height": 180,
+        "outline": "M 22 18 L 22 158 Q 22 162 26 162 L 74 162 Q 78 162 78 158 L 78 18",
+        "rim": [
+            "M 18 18 L 82 18",
+            "M 22 26 L 78 26"
+        ]
+    }
+}

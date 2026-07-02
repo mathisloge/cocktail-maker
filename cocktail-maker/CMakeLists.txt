@@ -20,6 +20,7 @@ target_sources(
                 pod_registry.cppm
                 pod_dispatcher.cppm
                 pod.cppm
+                pod_algorithms.cppm
                 recipe_boost.cppm
                 recipe.cppm
                 station_config.cppm
@@ -44,6 +45,7 @@ if(BUILD_TESTING)
             pod_discovery.test.cpp
             pod.test.cpp
             pod_registry.test.cpp
+            pod_algorithms.test.cpp
             recipe_boost.test.cpp
             recipe.test.cpp
     )

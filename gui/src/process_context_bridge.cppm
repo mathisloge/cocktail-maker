@@ -62,7 +62,7 @@ export class ProcessContextBridge
     }
 
   private:
-    boost::cobalt::task<void> async_process_recipe(Recipe recipe, const units::Percent boost)
+    cobalt::task<void> async_process_recipe(Recipe recipe, const units::Percent boost)
     {
         using Clock = std::chrono::steady_clock;
 
@@ -79,7 +79,7 @@ export class ProcessContextBridge
         catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::asio::error::operation_aborted) {
                 log::info(logger_, "Recipe processing cancelled");
-                // TODO: boost::cobalt::spawn(executor_, bring_all_pods_into_safe_state(), boost::asio::detached);
+                cobalt::spawn(executor_, pod_registry_.force_safe_state_all_pods(), boost::asio::detached);
                 co_return; // clean exit, no UI error
             }
             log::error(logger_, "System error while processing recipe: {}", ex.what());

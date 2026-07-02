@@ -19,7 +19,7 @@ using namespace std::chrono_literals;
 namespace cobalt = boost::cobalt;
 namespace asio = boost::asio;
 
-cobalt::promise<void> delay(std::chrono::milliseconds duration = std::chrono::milliseconds{100})
+cobalt::promise<void> delay(std::chrono::milliseconds duration = std::chrono::milliseconds{50})
 {
     asio::steady_timer tim{co_await asio::this_coro::executor, duration};
     co_await tim.async_wait(cobalt::use_op);
@@ -126,6 +126,11 @@ class Client
         async_handle(msg);
     }
 
+    void handle(InClientEmergencyStop& msg)
+    {
+        async_handle(msg);
+    }
+
     void handle(Message& msg)
     {
         log::warn(logger_, "Got unexpected message '{}'", msg.name());
@@ -140,7 +145,8 @@ class Client
 
     cobalt::detached async_handle(InClientEmergencyStop msg)
     {
-        co_await delay();
+        co_await delay(50ms);
+        co_await async_send(Ack{}, msg.transportField_transactionId().getValue());
     }
 
     cobalt::detached async_handle(InClientPing msg)

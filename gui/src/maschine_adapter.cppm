@@ -18,14 +18,14 @@ namespace cobalt = boost::cobalt;
 export class MachineAdapter : public cm::BasicCommandExecuter
 {
     std::shared_ptr<SlintAsyncAdapter> ui_;
-    PodRegistry& pod_registry_;
-    StationConfig& station_config_;
+    const PodRegistry& pod_registry_;
+    const StationConfig& station_config_;
 
   public:
     explicit MachineAdapter(slint::ComponentHandle<AppWindow> ui,
                             const IngredientStore& ingredient_store,
-                            PodRegistry& pod_registry,
-                            StationConfig& station_config)
+                            const PodRegistry& pod_registry,
+                            const StationConfig& station_config)
         : ui_{std::make_shared<SlintAsyncAdapter>(std::move(ui), ingredient_store)}
         , pod_registry_{pod_registry}
         , station_config_{station_config}

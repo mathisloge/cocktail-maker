@@ -51,6 +51,7 @@ export class IPod
     virtual cobalt::promise<units::Litre> dispense(DispenserId dispenser_id, units::Litre volume) = 0;
 
     virtual cobalt::promise<units::Litre> pump_calibrate(DispenserId dispenser_id, units::Steps steps) = 0;
+    virtual cobalt::task<void> force_safe_state() = 0;
 };
 
 class DispenserPodImpl : public Dispenser
@@ -255,6 +256,10 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         tx.field_ledEffect().setValue(proto::field::LedEffectVal::Highlight);
         tx.field_milliseconds().setValue(duration.count());
         co_await send_with_ack(std::move(tx), 100ms);
+    }
+
+    cobalt::task<void> force_safe_state() override  {
+        co_await send_with_ack(OutEmergencyStop{}, 100ms);
     }
 
   private:

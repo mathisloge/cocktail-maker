@@ -1,4 +1,5 @@
 module;
+#include <boost/cobalt/task.hpp>
 #include <libassert/assert-macros.hpp>
 export module cm:pod_registry;
 
@@ -8,11 +9,9 @@ import cm.core;
 import :pod;
 import :pod_types;
 import :dispenser;
+import :pod_algorithms;
 
 namespace cm {
-
-namespace {
-
 // Mirrors std::owner_equal (P1901R2) for any shared_ptr/weak_ptr combination.
 // Drop-in removable once defines __cpp_lib_smart_ptr_owner_equality.
 template <class A, class B>
@@ -24,8 +23,6 @@ template <class A, class B>
 {
     return !a.owner_before(b) && !b.owner_before(a);
 }
-
-} // namespace
 
 export class PodRegistry
 {
@@ -54,6 +51,14 @@ export class PodRegistry
     void unregister_pod(std::shared_ptr<IPod> pod)
     {
         std::erase_if(pods_, [&pod](const std::weak_ptr<IPod>& p) { return owner_equal(p, pod); });
+    }
+
+    cobalt::task<void> force_safe_state_all_pods() const
+    {
+        auto locked = pods_ | std::views::transform([](const std::weak_ptr<IPod>& p) { return p.lock(); }) |
+                      std::views::filter([](const std::shared_ptr<IPod>& p) { return p != nullptr; });
+
+        co_await force_safe_state_all(locked);
     }
 
   private:

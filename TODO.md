@@ -1,8 +1,6 @@
-- Abort recipe process when cancelling
 - Scale recipe to glass volume
 - Add Pod / Dispenser Ids to Errors for better error reporting
 - Add glass json db? (Set glass display name, serving volume, id, svg picture)
-- Add glass selection after cocktail selection
 - Add Admin page for glass de-/activation
 - Add remaining tests
 - Add any_io_stream class and de-template async_machine_protocol_server and pod

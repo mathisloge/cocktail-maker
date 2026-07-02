@@ -139,7 +139,7 @@ export component RecipeDetailPage inherits Page {
         Button {
             text: "Zubereiten →";
             clicked => {
-                ProcessContext.process-active-recipe(booster.value);
+                ProcessContext.boost = booster.value;
                 root.process-recipe();
             }
         }

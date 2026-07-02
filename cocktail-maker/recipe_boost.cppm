@@ -1,7 +1,9 @@
 module;
+#include <libassert/assert-macros.hpp>
 
 export module cm:recipe_boost;
 import std;
+import libassert;
 import mp_units;
 import cm.core;
 import :ingredient;
@@ -168,6 +170,7 @@ template <typename T, typename Fn>
 export [[nodiscard]] auto boost_recipe(const Commands& commands, units::Percent boost_pct, const IngredientStore& store)
     -> Commands
 {
+    ASSERT((units::abs(boost_pct) <= 100 * units::percent), "Boost can only be between -100% and 100%");
     const double p = boost_pct.numerical_value_in(units::percent) / 100.0; // normalise to [-1, 1]
 
     if (p == 0.0) {

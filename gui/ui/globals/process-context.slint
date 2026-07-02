@@ -1,4 +1,4 @@
-
+import { GlassDescriptor } from "../data.slint";
 export global ProcessContext {
     in-out property <string> error-title: "Pod error";
     in-out property <string> error-description: "The dispensing pod did not respond before the safety timeout elapsed.";
@@ -8,6 +8,8 @@ export global ProcessContext {
 
     in-out property <duration> elapsed-time: 30s;
     in-out property <int> boost: 0;
+    in-out property <GlassDescriptor> glass;
+    in-out property <int> glass-volume;
 
-    callback process-active-recipe(int/* boost */);
+    callback process-active-recipe();
 }

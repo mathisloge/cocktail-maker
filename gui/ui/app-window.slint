@@ -6,6 +6,9 @@ export {
 export {
     ProcessContext,
 }from "./globals/process-context.slint";
+export {
+    GlassContext,
+}from "./globals/glass-context.slint";
 
 import {
     VerticalBox,
@@ -31,10 +34,13 @@ import {
     MixProgressPage,
     MixErrorPage,
     MixSuccessPage,
+    MixGlassSelectionPage,
 } from "pages.slint";
 import { ManualCommandPopup } from "popups.slint";
 import { AdminArea } from "admin-area.slint";
 import { StationStateContext } from "./globals/station-state-context.slint";
+import { ProcessContext } from "./globals/process-context.slint";
+import { GlassContext } from "globals/glass-context.slint";
 
 export component AppWindow inherits Window {
     private property <bool> device_ready: StationStateContext.station-ready;
@@ -117,11 +123,26 @@ export component AppWindow inherits Window {
 
         if StationStateContext.active-screen == Page.cocktail-detail-page: RecipeDetailPage {
             process-recipe() => {
-                StationStateContext.navigate-to(Page.mix-page);
+                // Don't show glass selection if there is only one glas with one volume, then process the recipe directly.
+                if (GlassContext.glasses.length == 1 && GlassContext.glasses[0].common-volumes-ml.length == 1) {
+                    ProcessContext.glass = GlassContext.glasses[0];
+                    ProcessContext.glass-volume = GlassContext.glasses[0].common-volumes-ml[0];
+                    // business logic should navigate to mix-progress or any error page
+                    ProcessContext.process-active-recipe();
+                } else {
+                    StationStateContext.navigate-to(Page.mix-glass-selection-page);
+                }
             }
         }
 
         if StationStateContext.active-screen == Page.mix-page: MixProgressPage { }
+
+        if StationStateContext.active-screen == Page.mix-glass-selection-page: MixGlassSelectionPage {
+            glass-confirmed() => {
+                // business logic should navigate to mix-progress or any error page
+                ProcessContext.process-active-recipe();
+            }
+        }
 
         if StationStateContext.active-screen == Page.mix-error-page: MixErrorPage {
             cancel => {

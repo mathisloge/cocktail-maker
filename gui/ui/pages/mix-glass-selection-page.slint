@@ -1,0 +1,180 @@
+import { Palette } from "../palette.slint";
+import {
+    GlassIcon,
+    Button,
+    SmallText,
+    MediumText,
+    LargeText,
+} from "../components.slint";
+import { Page } from "./page.slint";
+import { GlassDescriptor } from "../data.slint";
+import { GlassContext } from "../globals/glass-context.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
+import { ProcessContext } from "../globals/process-context.slint";
+
+global Layout {
+    out property <length> touch-min: 75px;
+    out property <length> touch-recommended: 91px;
+    out property <length> grid: 8px;
+}
+
+// --- Volume chip ---------------------------------------------------------
+
+component VolumeChip inherits Rectangle {
+    in property <int> volume-ml;
+    in property <bool> selected;
+    callback picked();
+
+    height: Layout.touch-min;
+    min-width: 96px;
+    border-radius: self.height / 2;
+    background: root.selected ? Palette.accent : transparent;
+    border-width: 1px;
+    border-color: root.selected ? Palette.border-strong : Palette.border;
+
+    animate background, border-color { duration: Palette.mount-animation-duration / 3; }
+
+    MediumText {
+        text: root.volume-ml + " ml";
+        font-weight: root.selected ? 600 : 400;
+        primary: root.selected;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+
+    TouchArea {
+        clicked => { root.picked(); }
+    }
+}
+
+component GlassCard inherits Rectangle {
+    in property <GlassDescriptor> descriptor;
+    in property <bool> selected;
+    callback picked();
+
+    width: 168px;
+    height: 232px;
+    border-radius: 12px;
+    background: root.selected ? Palette.accent-dim : Palette.background-card;
+    border-width: root.selected ? 2px : 1px;
+    border-color: root.selected ? Palette.border-strong : Palette.border;
+
+    animate background, border-color, border-width { duration: Palette.mount-animation-duration / 3; }
+
+    VerticalLayout {
+        padding: 16px;
+        spacing: Layout.grid;
+        alignment: center;
+        cross-axis-alignment: center;
+
+        GlassIcon {
+            data: root.descriptor.icon;
+            stroke-color: root.selected ? Palette.accent : Palette.text-muted;
+            stroke-width: root.selected ? 2.5px : 2px;
+            width: 84px;
+            height: 84px * root.descriptor.icon.viewbox-height / max(1, root.descriptor.icon.viewbox-width);
+            horizontal-stretch: 0;
+        }
+
+        MediumText {
+            text: root.descriptor.display-name;
+            font-weight: root.selected ? 600 : 400;
+            primary: root.selected;
+            horizontal-alignment: center;
+        }
+    }
+
+    TouchArea {
+        clicked => { root.picked(); }
+    }
+}
+
+
+export component MixGlassSelectionPage inherits Page {
+    callback glass-confirmed();
+
+    property <bool> has-glass-selected: ProcessContext.glass.id != "";
+    property <bool> can-confirm: root.has-glass-selected && ProcessContext.glass-volume > 0;
+
+    background: Palette.background;
+
+    VerticalLayout {
+        padding: 32px;
+        spacing: 24px;
+
+        // Header: back button + title + recipe context
+        HorizontalLayout {
+            spacing: 16px;
+            alignment: start;
+
+            VerticalLayout {
+                alignment: center;
+                spacing: 2px;
+
+                LargeText {
+                    text: "Wähle dein Glas";
+                    primary: true;
+                }
+
+                MediumText {
+                    text: "Für " + RecipeContext.active-recipe.name;
+                }
+            }
+        }
+
+        // Glass shelf
+        Flickable {
+            height: 232px;
+            glass-row := HorizontalLayout {
+                spacing: 16px;
+
+                for descriptor[index] in GlassContext.glasses: GlassCard {
+                    descriptor: descriptor;
+                    selected: descriptor.id == ProcessContext.glass.id;
+                    picked => {
+                        ProcessContext.glass = descriptor;
+                        ProcessContext.glass-volume = descriptor.common-volumes-ml.length == 1 ? descriptor.common-volumes-ml[0] : 0;
+                    }
+                }
+            }
+        }
+
+        // Volume picker, only once a glass is chosen
+        if root.has-glass-selected && (ProcessContext.glass.common-volumes-ml.length > 1): VerticalLayout {
+            SmallText {
+                horizontal-alignment: start;
+                text: "Volumen:";
+            }
+
+            Flickable {
+                height: Layout.touch-min;
+
+                volume-row := HorizontalLayout {
+                    spacing: 12px;
+
+                    for volume in ProcessContext.glass.common-volumes-ml: VolumeChip {
+                        width: 110px;
+                        volume-ml: volume;
+                        selected: volume == ProcessContext.glass-volume;
+                        picked => { ProcessContext.glass-volume = volume; }
+                    }
+                }
+            }
+        }
+
+        // Spacer pushes the confirm button to the bottom
+        Rectangle {
+            vertical-stretch: 1;
+        }
+
+        // Confirm
+        Button {
+            width: 220px;
+            text: "Weiter  →";
+            enabled: root.can-confirm;
+            clicked => {
+                root.glass-confirmed();
+            }
+        }
+    }
+}

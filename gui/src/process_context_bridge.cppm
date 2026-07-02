@@ -35,11 +35,12 @@ export class ProcessContextBridge
         , station_config_{station_config}
         , pod_registry_{pod_registry}
     {
-        ui_->global<ProcessContext>().on_process_active_recipe([this](const int boost_raw) {
+        ui_->global<ProcessContext>().on_process_active_recipe([this]() {
             const auto recipe_to_create = ui_->global<RecipeContext>().get_active_recipe();
-            const auto boost = boost_raw * units::percent;
+            const auto boost = ui_->global<ProcessContext>().get_boost() * units::percent;
             auto r = recipe_store_.find_by_id(RecipeId{recipe_to_create.id.data()});
             if (r.has_value()) {
+                ui_->global<StationStateContext>().invoke_navigate_to(Page::MixPage);
                 boost::asio::post(executor_, [recipe = std::move(r.value()), boost, this]() {
                     active_cancel_signal_.emit(boost::asio::cancellation_type::all);
                     boost::cobalt::spawn(
@@ -49,6 +50,8 @@ export class ProcessContextBridge
                 });
             }
             else {
+                // TODO: Add RecipeNotFoundError
+                display_ui_error(std::runtime_error{"Could not find recipe"});
                 log::error(logger_, "Could not find a recipe {}", recipe_to_create.name.data());
             }
         });
@@ -74,7 +77,7 @@ export class ProcessContextBridge
             co_await execute_commands(std::move(recipe.commands), std::move(command_executer));
             const auto duration = std::chrono::duration_cast<std::chrono::seconds>(Clock::now() - start_tp);
             log::debug(logger_, "Finished {} in '{}'", recipe, duration);
-            display_ui_success(duration, boost);
+            display_ui_success(duration);
         }
         catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::asio::error::operation_aborted) {
@@ -105,12 +108,11 @@ export class ProcessContextBridge
         });
     }
 
-    void display_ui_success(const std::chrono::milliseconds duration, const units::Percent boost) const
+    void display_ui_success(const std::chrono::milliseconds duration) const
     {
-        slint::invoke_from_event_loop([ui = ui_, duration, boost]() {
+        slint::invoke_from_event_loop([ui = ui_, duration]() {
             const auto& process_ctx = ui->global<ProcessContext>();
             process_ctx.set_elapsed_time(duration.count());
-            process_ctx.set_boost(static_cast<int>(boost.numerical_value_in(units::percent)));
             ui->global<StationStateContext>().invoke_navigate_to(Page::MixSuccessPage);
         });
     }

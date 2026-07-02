@@ -1,4 +1,3 @@
-- Scale recipe to glass volume
 - Add Pod / Dispenser Ids to Errors for better error reporting
 - Add glass json db? (Set glass display name, serving volume, id, svg picture)
 - Add Admin page for glass de-/activation

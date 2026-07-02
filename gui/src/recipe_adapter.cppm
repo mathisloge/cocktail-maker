@@ -39,9 +39,7 @@ export std::optional<Command> transform_command(const cm::Command& command, cons
         command);
 }
 
-namespace {
-
-std::shared_ptr<slint::Model<Command>> transform(const cm::Commands& commands, const cm::IngredientStore& ingredient_store)
+export std::shared_ptr<slint::Model<Command>> transform(const cm::Commands& commands, const cm::IngredientStore& ingredient_store)
 {
     auto model = std::make_shared<slint::VectorModel<Command>>();
 
@@ -63,7 +61,6 @@ std::shared_ptr<slint::Model<Command>> transform(const cm::Commands& commands, c
 
     return model;
 }
-} // namespace
 
 export RecipeView transform(Recipe r, const cm::IngredientStore& ingredient_store)
 {

@@ -34,6 +34,9 @@ export struct Recipe
     std::string description;
     std::vector<std::string> tags;
     std::filesystem::path image_path;
+    // The sum of the dispensing commands can be less then the nominal_serving_volume (e.g. because of ice cubes displacement
+    // etc.)
+    units::Litre nominal_serving_volume;
     Commands commands;
 
     friend struct std::formatter<Recipe>;

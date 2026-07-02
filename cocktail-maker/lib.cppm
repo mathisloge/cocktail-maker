@@ -3,6 +3,7 @@ export module cm;
 export import :ingredient;
 export import :recipe;
 export import :recipe_boost;
+export import :recipe_scale;
 export import :execute_recipe;
 export import :async_machine_protocol_server;
 export import :dispenser;

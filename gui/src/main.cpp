@@ -57,13 +57,14 @@ int main(int argc, char** argv)
                            "den Sommer.",
             .tags = {std::string{"classic"}},
             .image_path = recipe_db_path / "mojito.png",
+            .nominal_serving_volume = 250 * cm::units::milli_litre,
             .commands =
                 {
-                    cm::DispenseCommand{.ingredient = cm::IngredientId{"test"}, .volume = (89 * cm::units::milli_litre)},
+                    cm::DispenseCommand{.ingredient = cm::IngredientId{"test"}, .volume = (75 * cm::units::milli_litre)},
                     cm::ManualCommand{.instruction = "Help me"},
                     cm::ParallelCommand{
-                        cm::DispenseCommand{.ingredient = cm::IngredientId{"test"}, .volume = (101 * cm::units::milli_litre)},
-                        cm::DispenseCommand{.ingredient = cm::IngredientId{"test2"}, .volume = (101 * cm::units::milli_litre)},
+                        cm::DispenseCommand{.ingredient = cm::IngredientId{"test"}, .volume = (100 * cm::units::milli_litre)},
+                        cm::DispenseCommand{.ingredient = cm::IngredientId{"test2"}, .volume = (50 * cm::units::milli_litre)},
                     },
                 },
         });

@@ -38,14 +38,15 @@ export class ProcessContextBridge
         ui_->global<ProcessContext>().on_process_active_recipe([this]() {
             const auto recipe_to_create = ui_->global<RecipeContext>().get_active_recipe();
             const auto boost = ui_->global<ProcessContext>().get_boost() * units::percent;
+            const auto target_volume = ui_->global<ProcessContext>().get_glass_volume() * units::milli_litre;
             auto r = recipe_store_.find_by_id(RecipeId{recipe_to_create.id.data()});
             if (r.has_value()) {
                 ui_->global<StationStateContext>().invoke_navigate_to(Page::MixPage);
-                boost::asio::post(executor_, [recipe = std::move(r.value()), boost, this]() {
+                boost::asio::post(executor_, [recipe = std::move(r.value()), boost, target_volume, this]() {
                     active_cancel_signal_.emit(boost::asio::cancellation_type::all);
                     boost::cobalt::spawn(
                         executor_,
-                        async_process_recipe(recipe, boost),
+                        async_process_recipe(recipe, boost, target_volume),
                         boost::asio::bind_cancellation_slot(active_cancel_signal_.slot(), boost::asio::detached));
                 });
             }
@@ -65,13 +66,15 @@ export class ProcessContextBridge
     }
 
   private:
-    cobalt::task<void> async_process_recipe(Recipe recipe, const units::Percent boost)
+    cobalt::task<void> async_process_recipe(Recipe recipe, const units::Percent boost, const units::Litre target_volume)
     {
         using Clock = std::chrono::steady_clock;
 
-        log::debug(logger_, "Create {} with boost factor '{}'", recipe, boost);
+        log::debug(logger_, "Create {} with boost factor '{}' and target volume '{}'", recipe, boost, target_volume);
         const auto start_tp = Clock::now();
+        recipe.commands = scale_recipe(recipe.commands, recipe.nominal_serving_volume, target_volume);
         recipe.commands = boost_recipe(recipe.commands, boost, ingredient_store_);
+        update_ui_recipe(recipe);
         auto command_executer = std::make_shared<MachineAdapter>(ui_, ingredient_store_, pod_registry_, station_config_);
         try {
             co_await execute_commands(std::move(recipe.commands), std::move(command_executer));
@@ -92,6 +95,15 @@ export class ProcessContextBridge
             log::error(logger_, "Unknown error while processing recipe: {}", ex.what());
             display_ui_error(ex);
         }
+    }
+
+    void update_ui_recipe(const Recipe& recipe) const
+    {
+        slint::invoke_from_event_loop([ui = ui_, recipe = std::move(recipe), &ingredient_store = ingredient_store_]() {
+            auto ui_recipe = ui->global<RecipeContext>().get_active_recipe();
+            ui_recipe.commands = transform(recipe.commands, ingredient_store);
+            ui->global<RecipeContext>().set_active_recipe(ui_recipe);
+        });
     }
 
     void display_ui_error(const std::exception& ex) const

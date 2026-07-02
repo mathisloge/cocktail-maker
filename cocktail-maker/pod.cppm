@@ -258,7 +258,8 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         co_await send_with_ack(std::move(tx), 100ms);
     }
 
-    cobalt::task<void> force_safe_state() override  {
+    cobalt::task<void> force_safe_state() override
+    {
         co_await send_with_ack(OutEmergencyStop{}, 100ms);
     }
 

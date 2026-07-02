@@ -1,6 +1,6 @@
 module;
-#include <boost/cobalt/task.hpp>
 #include <boost/cobalt/gather.hpp>
+#include <boost/cobalt/task.hpp>
 #include <libassert/assert-macros.hpp>
 
 export module cm:pod_algorithms;

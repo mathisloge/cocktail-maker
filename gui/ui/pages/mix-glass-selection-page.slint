@@ -65,7 +65,7 @@ export component MixGlassSelectionPage inherits Page {
             }
 
             Flickable {
-                height: Layout.touch-height-min;
+                height: Layout.touch-height;
 
                 volume-row := HorizontalLayout {
                     spacing: 12px;
@@ -86,7 +86,7 @@ export component MixGlassSelectionPage inherits Page {
 
         Button {
             width: 220px;
-            height: Layout.touch-height-min;
+            height: Layout.touch-height;
             text: "Weiter  →";
             enabled: root.can-confirm;
             clicked => {

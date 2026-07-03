@@ -1,4 +1,4 @@
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 
 export component Button {
     in property <string> text;
@@ -11,7 +11,7 @@ export component Button {
     private property <brush> text-color: self.secondary ? Palette.text-secondary : #000;
 
     min-width: max(32px, i-layout.min-width);
-    min-height: max(32px, i-layout.min-height);
+    min-height: max(Layout.touch-height, i-layout.min-height);
     horizontal-stretch: 0;
     vertical-stretch: 0;
     forward-focus: i-focus-scope;

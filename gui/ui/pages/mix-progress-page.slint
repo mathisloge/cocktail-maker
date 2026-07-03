@@ -8,8 +8,11 @@ import {
     SmallText,
     MediumText,
     LargeText,
+    GlassCard,
+    Chip,
 } from "../components.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
+import { ProcessContext } from "../globals/process-context.slint";
 import { Page } from "page.slint";
 
 
@@ -53,6 +56,14 @@ export component MixProgressPage inherits Page {
                     text: "rezept wird analysiert...";
                     color: Palette.text-muted;
                 }
+            }
+
+            GlassCard {
+                descriptor: ProcessContext.glass;
+            }
+
+            Chip {
+                text: ProcessContext.glass-volume + " mL";
             }
         }
 

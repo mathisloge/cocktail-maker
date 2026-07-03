@@ -13,6 +13,7 @@ target_sources(
                 async_machine_protocol_server.cppm
                 dispenser.cppm
                 execute_recipe.cppm
+                glass.cppm
                 ingredient.cppm
                 lib.cppm
                 pod_discovery.cppm

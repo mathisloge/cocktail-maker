@@ -1,5 +1,6 @@
 module;
 export module cm;
+export import :glass;
 export import :ingredient;
 export import :recipe;
 export import :recipe_boost;

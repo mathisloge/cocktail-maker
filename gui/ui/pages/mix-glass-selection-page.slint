@@ -1,8 +1,8 @@
 import { Palette, Layout } from "../palette.slint";
 import {
-    GlassIcon,
     Button,
     Chip,
+    GlassCard,
     SmallText,
     MediumText,
     LargeText,
@@ -12,49 +12,6 @@ import { GlassDescriptor } from "../data.slint";
 import { GlassContext } from "../globals/glass-context.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
 import { ProcessContext } from "../globals/process-context.slint";
-
-component GlassCard inherits Rectangle {
-    in property <GlassDescriptor> descriptor;
-    in property <bool> selected;
-    callback picked();
-
-    width: 168px;
-    height: 232px;
-    border-radius: 12px;
-    background: root.selected ? Palette.accent-dim : Palette.background-card;
-    border-width: root.selected ? 2px : 1px;
-    border-color: root.selected ? Palette.border-strong : Palette.border;
-
-    animate background, border-color, border-width { duration: Palette.mount-animation-duration / 3; }
-
-    VerticalLayout {
-        padding: 16px;
-        spacing: 8px;
-        alignment: center;
-        cross-axis-alignment: center;
-
-        GlassIcon {
-            data: root.descriptor.icon;
-            stroke-color: root.selected ? Palette.accent : Palette.text-muted;
-            stroke-width: root.selected ? 2.5px : 2px;
-            width: 84px;
-            height: 84px * root.descriptor.icon.viewbox-height / max(1, root.descriptor.icon.viewbox-width);
-            horizontal-stretch: 0;
-        }
-
-        MediumText {
-            text: root.descriptor.display-name;
-            font-weight: root.selected ? 600 : 400;
-            primary: root.selected;
-            horizontal-alignment: center;
-        }
-    }
-
-    TouchArea {
-        clicked => { root.picked(); }
-    }
-}
-
 
 export component MixGlassSelectionPage inherits Page {
     callback glass-confirmed();
@@ -67,24 +24,19 @@ export component MixGlassSelectionPage inherits Page {
     VerticalLayout {
         padding: 32px;
         spacing: 24px;
+        cross-axis-alignment: center;
 
-        // Header: back button + title + recipe context
-        HorizontalLayout {
-            spacing: 16px;
-            alignment: start;
+        VerticalLayout {
+            alignment: center;
+            spacing: 2px;
 
-            VerticalLayout {
-                alignment: center;
-                spacing: 2px;
+            LargeText {
+                text: "Wähle dein Glas";
+                primary: true;
+            }
 
-                LargeText {
-                    text: "Wähle dein Glas";
-                    primary: true;
-                }
-
-                MediumText {
-                    text: "Für " + RecipeContext.active-recipe.name;
-                }
+            MediumText {
+                text: "Für " + RecipeContext.active-recipe.name;
             }
         }
 
@@ -97,16 +49,16 @@ export component MixGlassSelectionPage inherits Page {
                 for descriptor[index] in GlassContext.glasses: GlassCard {
                     descriptor: descriptor;
                     selected: descriptor.id == ProcessContext.glass.id;
-                    picked => {
+                    clicked => {
                         ProcessContext.glass = descriptor;
-                        ProcessContext.glass-volume = descriptor.common-volumes-ml.length == 1 ? descriptor.common-volumes-ml[0] : 0;
+                        ProcessContext.glass-volume = descriptor.active-volumes-ml.length == 1 ? descriptor.active-volumes-ml[0].to-float() : 0;
                     }
                 }
             }
         }
 
         // Volume picker, only once a glass is chosen
-        if root.has-glass-selected && (ProcessContext.glass.common-volumes-ml.length > 1): VerticalLayout {
+        if root.has-glass-selected && (ProcessContext.glass.active-volumes-ml.length > 1): VerticalLayout {
             SmallText {
                 horizontal-alignment: start;
                 text: "Volumen:";
@@ -118,24 +70,23 @@ export component MixGlassSelectionPage inherits Page {
                 volume-row := HorizontalLayout {
                     spacing: 12px;
 
-                    for volume in ProcessContext.glass.common-volumes-ml: Chip {
+                    for volume in ProcessContext.glass.active-volumes-ml: Chip {
                         width: 110px;
                         text: volume + " mL";
                         selected: volume == ProcessContext.glass-volume;
-                        clicked => { ProcessContext.glass-volume = volume; }
+                        clicked => { ProcessContext.glass-volume = volume.to-float(); }
                     }
                 }
             }
         }
 
-        // Spacer pushes the confirm button to the bottom
         Rectangle {
             vertical-stretch: 1;
         }
 
-        // Confirm
         Button {
             width: 220px;
+            height: Layout.touch-height-min;
             text: "Weiter  →";
             enabled: root.can-confirm;
             clicked => {

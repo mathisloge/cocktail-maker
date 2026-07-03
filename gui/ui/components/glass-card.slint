@@ -1,0 +1,45 @@
+import { GlassDescriptor } from "../data.slint";
+import { Palette } from "../palette.slint";
+import { GlassIcon } from "glass-icon.slint";
+import { MediumText } from "medium-text.slint";
+export component GlassCard inherits Rectangle {
+    in property <GlassDescriptor> descriptor;
+    in property <bool> selected;
+    callback clicked();
+
+    width: 168px;
+    height: 232px;
+    border-radius: 12px;
+    background: root.selected ? Palette.accent-dim : Palette.background-card;
+    border-width: root.selected ? 2px : 1px;
+    border-color: root.selected ? Palette.border-strong : Palette.border;
+
+    animate background, border-color, border-width { duration: Palette.mount-animation-duration / 3; }
+
+    VerticalLayout {
+        padding: 16px;
+        spacing: 8px;
+        alignment: center;
+        cross-axis-alignment: center;
+
+        GlassIcon {
+            data: root.descriptor.icon;
+            stroke-color: root.selected ? Palette.accent : Palette.text-muted;
+            stroke-width: root.selected ? 2.5px : 2px;
+            width: 84px;
+            height: 84px * root.descriptor.icon.viewbox-height / max(1, root.descriptor.icon.viewbox-width);
+            horizontal-stretch: 0;
+        }
+
+        MediumText {
+            text: root.descriptor.display-name;
+            font-weight: root.selected ? 600 : 400;
+            primary: root.selected;
+            horizontal-alignment: center;
+        }
+    }
+
+    TouchArea {
+        clicked => { root.clicked(); }
+    }
+}

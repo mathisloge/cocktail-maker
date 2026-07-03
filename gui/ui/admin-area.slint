@@ -1,6 +1,7 @@
 import { LogEntry, Pod, Dispenser } from "./data.slint";
 import { TabWidget } from "std-widgets.slint";
 import { PodConfigTab } from "./admin/pod-config-tab.slint";
+import { GlassConfigTab } from "./admin/glass-config-tab.slint";
 import { SystemLog } from "components.slint";
 import { StationStateContext } from "./globals/station-state-context.slint";
 
@@ -8,7 +9,12 @@ export component AdminArea {
     TabWidget {
         Tab {
             title: "Pod config";
-            pod-config := PodConfigTab { }
+            PodConfigTab { }
+        }
+
+        Tab {
+            title: "Glass config";
+            GlassConfigTab { }
         }
 
         Tab {

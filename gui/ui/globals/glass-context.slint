@@ -2,11 +2,13 @@ import { GlassDescriptor } from "../data.slint";
 // Populated by C++ at startup from glass_catalog/*.json (static, read-only
 // catalog — no need to reconfigure on every boot).
 export global GlassContext {
+    in property <[string]> available-glasses: ["highball", "wine"];
     in property <[GlassDescriptor]> glasses: [
         {
             id: "highball",
             display-name: "Highball Glas",
             common-volumes-ml: [300, 350, 400, 450, 500],
+            active-volumes-ml: [300, 350, 400],
             icon: {
                 viewbox-width: 100,
                 viewbox-height: 180,
@@ -17,7 +19,8 @@ export global GlassContext {
         {
             id: "wine",
             display-name: "Weinglas",
-            common-volumes-ml: [300],
+            common-volumes-ml: [300, 400],
+            active-volumes-ml: [300],
             icon: {
                 viewbox-width: 100,
                 viewbox-height: 180,
@@ -27,5 +30,9 @@ export global GlassContext {
         }
     ];
 
-    in property <[GlassDescriptor]> active-glasses: glasses;
+    // needs backend impl:
+    callback add-glass(string /*glass-id*/);
+    callback remove-glass(string /*glass-id*/);
+    callback add-volume-from-glass(string /* glass-id */, int /* volume */);
+    callback remove-volume-from-glass(string /* glass-id */, int /* volume */);
 }

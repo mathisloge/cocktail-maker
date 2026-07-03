@@ -126,7 +126,7 @@ export component AppWindow inherits Window {
                 // Don't show glass selection if there is only one glas with one volume, then process the recipe directly.
                 if (GlassContext.glasses.length == 1 && GlassContext.glasses[0].common-volumes-ml.length == 1) {
                     ProcessContext.glass = GlassContext.glasses[0];
-                    ProcessContext.glass-volume = GlassContext.glasses[0].common-volumes-ml[0];
+                    ProcessContext.glass-volume = GlassContext.glasses[0].common-volumes-ml[0].to-float();
                     // business logic should navigate to mix-progress or any error page
                     ProcessContext.process-active-recipe();
                 } else {

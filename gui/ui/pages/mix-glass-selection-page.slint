@@ -1,7 +1,8 @@
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import {
     GlassIcon,
     Button,
+    Chip,
     SmallText,
     MediumText,
     LargeText,
@@ -11,41 +12,6 @@ import { GlassDescriptor } from "../data.slint";
 import { GlassContext } from "../globals/glass-context.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
 import { ProcessContext } from "../globals/process-context.slint";
-
-global Layout {
-    out property <length> touch-min: 75px;
-    out property <length> touch-recommended: 91px;
-    out property <length> grid: 8px;
-}
-
-// --- Volume chip ---------------------------------------------------------
-
-component VolumeChip inherits Rectangle {
-    in property <int> volume-ml;
-    in property <bool> selected;
-    callback picked();
-
-    height: Layout.touch-min;
-    min-width: 96px;
-    border-radius: self.height / 2;
-    background: root.selected ? Palette.accent : transparent;
-    border-width: 1px;
-    border-color: root.selected ? Palette.border-strong : Palette.border;
-
-    animate background, border-color { duration: Palette.mount-animation-duration / 3; }
-
-    MediumText {
-        text: root.volume-ml + " ml";
-        font-weight: root.selected ? 600 : 400;
-        primary: root.selected;
-        horizontal-alignment: center;
-        vertical-alignment: center;
-    }
-
-    TouchArea {
-        clicked => { root.picked(); }
-    }
-}
 
 component GlassCard inherits Rectangle {
     in property <GlassDescriptor> descriptor;
@@ -63,7 +29,7 @@ component GlassCard inherits Rectangle {
 
     VerticalLayout {
         padding: 16px;
-        spacing: Layout.grid;
+        spacing: 8px;
         alignment: center;
         cross-axis-alignment: center;
 
@@ -147,16 +113,16 @@ export component MixGlassSelectionPage inherits Page {
             }
 
             Flickable {
-                height: Layout.touch-min;
+                height: Layout.touch-height-min;
 
                 volume-row := HorizontalLayout {
                     spacing: 12px;
 
-                    for volume in ProcessContext.glass.common-volumes-ml: VolumeChip {
+                    for volume in ProcessContext.glass.common-volumes-ml: Chip {
                         width: 110px;
-                        volume-ml: volume;
+                        text: volume + " mL";
                         selected: volume == ProcessContext.glass-volume;
-                        picked => { ProcessContext.glass-volume = volume; }
+                        clicked => { ProcessContext.glass-volume = volume; }
                     }
                 }
             }

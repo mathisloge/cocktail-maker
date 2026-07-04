@@ -24,6 +24,7 @@ target_sources(
                 src/dispenser_calibration_bridge.cppm
                 src/recipe_context_bridge.cppm
                 src/process_context_bridge.cppm
+                src/glass_context_bridge.cppm
 )
 
 if(BUILD_TESTING)

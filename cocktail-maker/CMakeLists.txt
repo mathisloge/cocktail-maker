@@ -43,6 +43,7 @@ if(BUILD_TESTING)
         PRIVATE
             async_machine_protocol_server.test.cpp
             execute_recipe.test.cpp
+            glass.test.cpp
             ingredient.test.cpp
             pod_discovery.test.cpp
             pod.test.cpp

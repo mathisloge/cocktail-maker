@@ -76,6 +76,7 @@ int main(int argc, char** argv)
     cm::gui::RecipeContextBridge recipe_context_bridge{ctx.get_executor(), ui, recipe_store, ingredient_store, station_config};
     cm::gui::ProcessContextBridge process_context_bridge{
         ctx.get_executor(), ui, recipe_store, ingredient_store, station_config, pod_registry};
+    cm::gui::GlassContextBridge glass_context_bridge{ui};
     auto station_state = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, ctx.get_executor());
 
     auto work_guard = boost::asio::make_work_guard(ctx);

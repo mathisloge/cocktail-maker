@@ -1,0 +1,102 @@
+import { LogEntry, LogLevel } from "../data.slint";
+import { Palette } from "../palette.slint";
+import { SmallText } from "./small-text.slint";
+component LogRow inherits Rectangle {
+    in property <LogEntry> entry;
+
+    height: 26px;
+    background: transparent;
+
+    Rectangle {
+        y: parent.height - 1px;
+        height: 1px;
+        background: Palette.border-subtle;
+    }
+
+    HorizontalLayout {
+        alignment: LayoutAlignment.start;
+        padding-left: 20px;
+        padding-right: 20px;
+        spacing: 0;
+        SmallText {
+            text: root.entry.time-stamp;
+            font-size: 5.5pt;
+            letter-spacing: 0.8px;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+
+        SmallText {
+            text: "│";
+            font-size: 6pt;
+            letter-spacing: 0px;
+            color: Palette.border;
+            vertical-alignment: center;
+            horizontal-stretch: 0;
+        }
+
+        SmallText {
+            width: 44px;
+            horizontal-stretch: 0;
+            text: root.entry.level == LogLevel.trace ? "TRACE"
+                : root.entry.level == LogLevel.debug ? "DEBUG"
+                : root.entry.level == LogLevel.info ? "INFO"
+                : root.entry.level == LogLevel.warn ? "WARN"
+                : root.entry.level == LogLevel.err ? "ERROR"
+                : root.entry.level == LogLevel.critical ? "CRIT"
+                : "INFO";
+            font-size: 5.5pt;
+            letter-spacing: 1.5px;
+            vertical-alignment: center;
+            color: root.entry.level == LogLevel.trace ? Palette.log-trace
+                : root.entry.level == LogLevel.debug ? Palette.log-debug
+                : root.entry.level == LogLevel.info ? Palette.log-info
+                : root.entry.level == LogLevel.warn ? Palette.log-warn
+                : root.entry.level == LogLevel.err ? Palette.log-error
+                : root.entry.level == LogLevel.critical ? Palette.log-critical
+                : Palette.log-info;
+        }
+
+        SmallText {
+            text: "│";
+            font-size: 6pt;
+            letter-spacing: 0px;
+            color: Palette.border;
+            vertical-alignment: center;
+            horizontal-stretch: 0;
+        }
+
+        Rectangle {
+            width: 12px;
+            horizontal-stretch: 0;
+            background: transparent;
+        }
+
+        SmallText {
+            text: root.entry.message;
+            font-size: 5.5pt;
+            letter-spacing: 0.8px;
+            vertical-alignment: center;
+            overflow: elide;
+            color: root.entry.level == LogLevel.err || root.entry.level == LogLevel.critical ? Palette.boost-positive-text
+                : Palette.text-primary;
+        }
+    }
+}
+
+export component SystemLog inherits Flickable {
+    in property <[LogEntry]> log-entries;
+
+    viewport-height: log-content.preferred-height;
+
+    log-content := VerticalLayout {
+        padding-top: 8px;
+        padding-bottom: 8px;
+        spacing: 0;
+        alignment: start;
+
+        for entry in root.log-entries: LogRow {
+            entry: entry;
+        }
+    }
+}

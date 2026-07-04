@@ -1,0 +1,72 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://elixir.local/schemas/glass.schema.json",
+    "title": "GlassDescriptor",
+    "description": "Static description of a glass type: identity, common fill volumes, and icon outline. One file per glass type, e.g. glasses/highball.json.",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "Unique, stable identifier of the glass type. Should match the file name (without .json).",
+            "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "display_name": {
+            "type": "string",
+            "description": "Display name shown in the UI.",
+            "minLength": 1
+        },
+        "common_volumes_ml": {
+            "type": "array",
+            "description": "Suggested fill volumes in milliliters, ascending order. Serves the UI as selection/snap points, not a fixed enumeration.",
+            "items": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+            },
+            "minItems": 1,
+            "uniqueItems": true
+        },
+        "icon": {
+            "type": "object",
+            "description": "Vector outline of the glass as SVG path commands, compatible with Slint's Path element.",
+            "properties": {
+                "viewbox_width": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                },
+                "viewbox_height": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                },
+                "outline": {
+                    "type": "string",
+                    "description": "SVG path commands (d-attribute syntax) for the closed outer contour of the glass.",
+                    "minLength": 1,
+                    "pattern": "^[MmLlHhVvCcSsQqTtAaZz0-9\\s.,+-]+$"
+                },
+                "rim": {
+                    "type": "array",
+                    "description": "Additional, thinner accent lines (e.g. art-deco rim bands). May be empty.",
+                    "items": {
+                        "type": "string",
+                        "minLength": 1,
+                        "pattern": "^[MmLlHhVvCcSsQqTtAaZz0-9\\s.,+-]+$"
+                    },
+                    "default": []
+                }
+            },
+            "required": [
+                "viewbox_width",
+                "viewbox_height",
+                "outline"
+            ],
+            "additionalProperties": false
+        }
+    },
+    "required": [
+        "id",
+        "display_name",
+        "common_volumes_ml",
+        "icon"
+    ],
+    "additionalProperties": false
+}

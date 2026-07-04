@@ -1,0 +1,8 @@
+module;
+export module cm.core;
+export import :logging;
+export import :units;
+export import :comms_adapter;
+export import :awaitable_bool;
+export import :overloaded;
+export import :strong_type;

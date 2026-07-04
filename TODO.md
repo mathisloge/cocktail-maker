@@ -1,0 +1,5 @@
+- Add Pod / Dispenser Ids to Errors for better error reporting
+- Add glass json db? (Set glass display name, serving volume, id, svg picture)
+- Add Admin page for glass configuration
+- Add any_io_stream class and de-template async_machine_protocol_server and pod
+- Add remaining tests

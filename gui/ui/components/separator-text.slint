@@ -1,0 +1,19 @@
+import { Palette } from "../palette.slint";
+import { SmallText } from "./small-text.slint";
+export component SeparatorText {
+    in property <string> text;
+    HorizontalLayout {
+        spacing: 20px;
+        cross-axis-alignment: center;
+
+        SmallText {
+            text: root.text;
+            color: Palette.text-secondary;
+        }
+
+        Rectangle {
+            height: 1px;
+            background: Palette.border;
+        }
+    }
+}

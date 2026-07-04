@@ -1,0 +1,7 @@
+{
+    "$schema": "../ingredient-schema.json",
+    "id": "white_rum",
+    "display_name": "Weißer Rum",
+    "type": "alcohol",
+    "boost": "boostable"
+}

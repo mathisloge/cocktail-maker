@@ -1,0 +1,61 @@
+import { Pod, Dispenser } from "../data.slint";
+
+export enum CalibrationStepStatus {
+    idle,
+    running,
+    success,
+    error,
+}
+
+export struct DispenserCalibrationState {
+    load-cell-status: CalibrationStepStatus,
+    load-cell-tare-status: CalibrationStepStatus,
+    pump-status: CalibrationStepStatus,
+    measured-ml-per-step: string,
+    error-message: string,
+}
+
+export global DispenserCalibrationContext {
+    in-out property <DispenserCalibrationState> state: {
+        load-cell-status: CalibrationStepStatus.idle,
+        load-cell-tare-status: CalibrationStepStatus.idle,
+        pump-status: CalibrationStepStatus.idle,
+        measured-ml-per-step: "",
+        error-message: "",
+    };
+
+    public function update-calibration-error(error: string) {
+        self.state.error-message = error;
+    }
+
+    public function update-load-cell-ref-weight-status(status: CalibrationStepStatus) {
+        self.state.load-cell-status = status;
+    }
+
+    public function update-load-cell-tare-status(status: CalibrationStepStatus) {
+        self.state.load-cell-tare-status = status;
+    }
+
+    public function update-pump-status(status: CalibrationStepStatus) {
+        self.state.pump-status = status;
+    }
+
+    public function update-pump-measured-calibrated-value(litre_str: string) {
+        self.state.measured-ml-per-step = litre-str;
+    }
+
+    // implemented by business logic
+    callback calibrate-load-cell-ref-weight(Pod, Dispenser, int /* reference-weight-g */);
+    callback load-cell-tare(Pod, Dispenser);
+    callback calibrate-pump(Pod, Dispenser, int /* steps */);
+
+    public function reset-state() {
+        state = {
+            load-cell-status: CalibrationStepStatus.idle,
+            load-cell-tare-status: CalibrationStepStatus.idle,
+            pump-status: CalibrationStepStatus.idle,
+            measured-ml-per-step: 0,
+            error-message: "",
+        };
+    }
+}

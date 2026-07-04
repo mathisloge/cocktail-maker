@@ -1,0 +1,90 @@
+import { Palette, Layout } from "../palette.slint";
+import {
+    GlassIcon,
+    GlassCard,
+    PulseDot,
+    MediumText,
+    Chip,
+} from "../components.slint";
+import { GlassDescriptor } from "../data.slint";
+import { GlassContext } from "../globals/glass-context.slint";
+import {
+    ComboBox,
+    VerticalBox,
+    Button,
+    HorizontalBox,
+} from "std-widgets.slint";
+
+export component GlassConfigTab inherits Rectangle {
+    private property <GlassDescriptor> selected-glass;
+    VerticalBox {
+        alignment: LayoutAlignment.start;
+        HorizontalBox {
+            vertical-stretch: 0;
+            glass-chooser := ComboBox {
+                width: 100px;
+                model: GlassContext.available-glasses;
+            }
+
+            Button {
+                text: "Add";
+                clicked => {
+                    GlassContext.add-glass(glass-chooser.current-value)
+                }
+            }
+        }
+
+        Flickable {
+            height: 232px;
+            glass-row := HorizontalLayout {
+                spacing: 16px;
+
+                for descriptor[index] in GlassContext.glasses: GlassCard {
+                    descriptor: descriptor;
+                    selected: selected-glass.id == descriptor.id;
+                    clicked => {
+                        selected-glass = descriptor;
+                    }
+
+                    Button {
+                        x: parent.width - self.width - 10px;
+                        y: 10px;
+                        text: "x";
+                        clicked => {
+                            GlassContext.remove-glass(descriptor.id);
+                        }
+                    }
+                }
+            }
+        }
+
+        HorizontalBox {
+            vertical-stretch: 0;
+            volume-box := ComboBox {
+                width: 100px;
+                model: selected-glass.common-volumes-ml;
+            }
+
+            Button {
+                text: "Add";
+                clicked => {
+                    GlassContext.add-volume-from-glass(selected-glass.id, volume-box.current-value.to-float())
+                }
+            }
+        }
+
+        Flickable {
+            height: Layout.touch-height;
+
+            volume-row := HorizontalLayout {
+                spacing: 12px;
+
+                for volume in selected-glass.active-volumes-ml: Chip {
+                    width: 110px;
+                    text: volume;
+                    clicked => { GlassContext.remove-volume-from-glass(selected-glass.id, volume.to-float()); }
+                }
+            }
+        }
+    }
+}

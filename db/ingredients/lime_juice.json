@@ -1,0 +1,7 @@
+{
+    "$schema": "../ingredient-schema.json",
+    "id": "lime_juice",
+    "display_name": "Limettensaft",
+    "type": "juice",
+    "boost": "reducible"
+}

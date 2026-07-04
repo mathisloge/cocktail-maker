@@ -1,0 +1,282 @@
+import {
+    VerticalBox,
+    HorizontalBox,
+    Button,
+    SpinBox,
+    ScrollView,
+} from "std-widgets.slint";
+import {
+    SmallText,
+    MediumText,
+    PulseDot,
+} from "../components.slint";
+import {
+    Pod,
+    Dispenser,
+    DispenserType,
+} from "../data.slint";
+import { Palette } from "../palette.slint";
+import {
+    DispenserCalibrationContext,
+    CalibrationStepStatus,
+} from "../globals/dispenser-calibration-context.slint";
+
+component StatusDot inherits PulseDot {
+    in property <CalibrationStepStatus> status;
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    background: root.status == CalibrationStepStatus.success ? Palette.log-info :
+        root.status == CalibrationStepStatus.running ? Palette.log-debug :
+        root.status == CalibrationStepStatus.error ? Palette.log-error :
+        Palette.border-subtle;
+}
+
+component StepCard inherits Rectangle {
+    in property <string> step-number: "1";
+    in property <string> title: "Test title";
+    in property <string> description: "Test description";
+    in property <CalibrationStepStatus> status: CalibrationStepStatus.running;
+    in property <bool> enabled: true;
+
+    background: Palette.background-card;
+    border-width: 1px;
+    border-color: Palette.border-subtle;
+    opacity: root.enabled ? 1.0 : 0.45;
+    animate opacity { duration: 150ms; }
+
+    function status-label() -> string {
+        if (root.status == CalibrationStepStatus.success) {
+            return "OK";
+        }
+        if (root.status == CalibrationStepStatus.running) {
+            return "läuft...";
+        }
+        if (root.status == CalibrationStepStatus.error) {
+            return "Fehler";
+        }
+        return "ausstehend";
+    }
+
+    VerticalLayout {
+        padding: 16px;
+        spacing: 12px;
+
+        HorizontalLayout {
+            spacing: 10px;
+            alignment: start;
+
+            Rectangle {
+                width: 28px;
+                height: 28px;
+                border-radius: 14px;
+                background: Palette.background-elevated;
+
+                Text {
+                    text: root.step-number;
+                    color: Palette.text-primary;
+                    font-weight: 700;
+                }
+            }
+
+            MediumText {
+                text: root.title;
+            }
+
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+
+            HorizontalBox {
+                spacing: 6px;
+                cross-axis-alignment: center;
+                StatusDot {
+                    status: root.status;
+                }
+
+                SmallText {
+                    text: root.status-label();
+                    color: Palette.text-secondary;
+                }
+            }
+        }
+
+        SmallText {
+            text: root.description;
+            wrap: word-wrap;
+            color: Palette.text-secondary;
+        }
+
+        @children
+    }
+}
+
+component DispenserCalibrationContent inherits Rectangle {
+    in property <Pod> active-pod;
+    in property <Dispenser> active-dispenser;
+    private property <int> reference-weight-g: 100;
+    private property <int> pump-test-steps: 200;
+
+    background: Palette.background;
+
+    card := Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        background: Palette.background-card;
+        border-width: 1px;
+        border-color: Palette.border-strong;
+
+        VerticalBox {
+            padding: 24px;
+            spacing: 16px;
+
+            HorizontalBox {
+                cross-axis-alignment: center;
+                MediumText {
+                    text: root.active-dispenser.type == DispenserType.pump
+                        ? "Pumpe " + root.active-dispenser.id + " kalibrieren"
+                        : "Ventil " + root.active-dispenser.id + " kalibrieren";
+                }
+            }
+
+            SmallText {
+                text: "Pod " + root.active-pod.id;
+                color: Palette.text-secondary;
+            }
+
+            ScrollView {
+                vertical-stretch: 1;
+
+                VerticalLayout {
+                    spacing: 16px;
+
+                    StepCard {
+                        step-number: "1";
+                        title: "Referenzgewicht";
+                        description: "Bekanntes Referenzgewicht auflegen, Gewicht eingeben und kalibrieren.";
+                        status: DispenserCalibrationContext.state.load-cell-status;
+                        enabled: true;
+
+                        HorizontalBox {
+                            cross-axis-alignment: center;
+                            spacing: 12px;
+                            SmallText {
+                                text: "Gewicht (g):";
+                            }
+
+                            SpinBox {
+                                height: 48px;
+                                minimum: 1;
+                                maximum: 20000;
+                                value <=> root.reference-weight-g;
+                                enabled: DispenserCalibrationContext.state.load-cell-status != CalibrationStepStatus.running;
+                            }
+                        }
+
+                        Button {
+                            text: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.running
+                                ? "läuft..." : "Mit Referenzgewicht kalibrieren";
+                            height: 64px;
+                            enabled: DispenserCalibrationContext.state.load-cell-status != CalibrationStepStatus.running;
+                            clicked => {
+                                DispenserCalibrationContext.calibrate-load-cell-ref-weight(
+                                    root.active-pod,
+                                    root.active-dispenser,
+                                    root.reference-weight-g);
+                            }
+                        }
+                    }
+
+                    StepCard {
+                        step-number: "2";
+                        title: "Tare";
+                        description: "TARE";
+                        status: DispenserCalibrationContext.state.load-cell-tare-status;
+
+                        Button {
+                            text: DispenserCalibrationContext.state.load-cell-tare-status == CalibrationStepStatus.running
+                                ? "läuft..." : "TARE";
+                            height: 64px;
+                            enabled: DispenserCalibrationContext.state.load-cell-tare-status != CalibrationStepStatus.running;
+                            clicked => {
+                                DispenserCalibrationContext.load-cell-tare(
+                                    root.active-pod,
+                                    root.active-dispenser);
+                            }
+                        }
+                    }
+
+                    if root.active-dispenser.type == DispenserType.pump: StepCard {
+                        step-number: "3";
+                        title: "Pumpvolumen";
+                        description: "Pumpt die eingegebene Anzahl Schritte und misst das ausgegebene Volumen mit der kalibrierten Waage.";
+                        status: DispenserCalibrationContext.state.pump-status;
+                        enabled: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.success;
+
+                        HorizontalBox {
+                            cross-axis-alignment: center;
+                            spacing: 12px;
+                            SmallText {
+                                text: "Schritte:";
+                            }
+
+                            SpinBox {
+                                height: 48px;
+                                minimum: 1;
+                                maximum: 20000;
+                                value <=> root.pump-test-steps;
+                                enabled: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.success;
+                            }
+                        }
+
+                        Button {
+                            text: DispenserCalibrationContext.state.pump-status == CalibrationStepStatus.running
+                                ? "läuft..." : "Pumptest starten";
+                            height: 64px;
+                            enabled: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.success
+                                && DispenserCalibrationContext.state.pump-status != CalibrationStepStatus.running;
+                            clicked => {
+                                DispenserCalibrationContext.calibrate-pump(
+                                root.active-pod,
+                                    root.active-dispenser,
+                                    root.pump-test-steps);
+                            }
+                        }
+
+                        if DispenserCalibrationContext.state.pump-status == CalibrationStepStatus.success: SmallText {
+                            text: "Ergebnis: " + DispenserCalibrationContext.state.measured-ml-per-step;
+                            color: Palette.log-info;
+                        }
+                    }
+
+                    if DispenserCalibrationContext.state.error-message != "": SmallText {
+                        text: DispenserCalibrationContext.state.error-message;
+                        color: Palette.log-error;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component DispenserCalibrationPopup inherits PopupWindow {
+    in property <Pod> active-pod;
+    in property <Dispenser> active-dispenser;
+
+    close-policy: PopupClosePolicy.close-on-click-outside;
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: rgba(10, 8, 6, 0.88);
+    }
+
+    DispenserCalibrationContent {
+        height: 90%;
+        width: 90%;
+        x: (root.width - self.width) / 2;
+        y: (root.height - self.height) / 2;
+        active-pod: root.active-pod;
+        active-dispenser: root.active-dispenser;
+    }
+}

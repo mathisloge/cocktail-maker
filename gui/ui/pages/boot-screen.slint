@@ -1,0 +1,157 @@
+import { Palette } from "../palette.slint";
+import {
+    LargeText,
+    SmallText,
+    Separator,
+    Button,
+    PulseDot,
+} from "../components.slint";
+import { ProgressIndicator, Spinner, ScrollView } from "std-widgets.slint";
+import { LogEntry, LogLevel } from "../data.slint";
+import { CornerDeco, SystemLog } from "../components.slint";
+import { StationStateContext } from "./../globals/station-state-context.slint";
+import { Page } from "page.slint";
+
+export component BootScreen inherits Page {
+    in property <bool> is-loading:   false;
+    private property <[LogEntry]> log-entries: StationStateContext.log-entries;
+
+    callback boot-complete();
+
+    private property <int> entry-count: log-entries.length;
+
+    HorizontalLayout {
+
+        // ── LEFT: branding + spinner ─────────────────────────
+        left-panel := Rectangle {
+            horizontal-stretch: 42;
+            background: Palette.background;
+
+            Rectangle {
+                x: parent.width - 1px;
+                width: 1px;
+                background: Palette.border;
+            }
+
+            // Corner deco marks
+            CornerDeco {
+                width: 100%;
+                height: 100%;
+            }
+
+            VerticalLayout {
+                alignment: center;
+                cross-axis-alignment: center;
+                padding: 52px;
+                spacing: 0;
+
+                SmallText {
+                    text: "COCKTAIL MACHINE";
+                    font-size: 5.5pt;
+                    letter-spacing: 4px;
+                }
+
+                Rectangle {
+                    height: 18px;
+                }
+
+                LargeText {
+                    text: StationStateContext.station-name;
+                    font-italic: true;
+                }
+
+                Rectangle {
+                    height: 10px;
+                }
+
+                Separator {
+                    width: 52px;
+                }
+
+                Rectangle {
+                    height: 52px;
+                }
+
+                if root.is-loading:  Spinner {
+                    indeterminate: true;
+                    width: 52px;
+                    height: 52px;
+                }
+
+                if !root.is-loading:  Button {
+                    height: 52px;
+                    text: "START →";
+                    clicked => { root.boot-complete(); }
+                }
+
+                Rectangle {
+                    height: 18px;
+                    background: transparent;
+                }
+
+                SmallText {
+                    text: root.is-loading ? "WIRD GESTARTET …" : "BEREIT";
+                    color: root.is-loading ? Palette.accent : Palette.text-success;
+                    animate color { duration: 400ms; }
+                }
+            }
+        }
+
+        // ── RIGHT: boot log ──────────────────────────────────
+        Rectangle {
+            horizontal-stretch: 58;
+            background: Palette.background-card;
+
+            VerticalLayout {
+                spacing: 0;
+
+                // Toolbar
+                Rectangle {
+                    height: 40px;
+                    background: Palette.background;
+
+                    Rectangle {
+                        y: parent.height - 1px;
+                        height: 1px;
+                        background: Palette.border;
+                    }
+
+                    HorizontalLayout {
+                        padding-left: 20px;
+                        padding-right: 20px;
+                        spacing: 10px;
+                        alignment: start;
+                        cross-axis-alignment: center;
+
+                        PulseDot {
+                            background: root.is-loading ? Palette.accent : Palette.text-success;
+                        }
+
+                        SmallText {
+                            text: "SYSTEM LOG";
+                            font-size: 5.5pt;
+                            letter-spacing: 3.5px;
+                        }
+
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            background: transparent;
+                        }
+
+                        SmallText {
+                            text: root.log-entries.length + " ZEILEN";
+                            font-size: 5pt;
+                            letter-spacing: 2px;
+                            highlight: true;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+
+                SystemLog {
+                    log-entries: root.log-entries;
+                }
+            }
+        }
+    }
+}

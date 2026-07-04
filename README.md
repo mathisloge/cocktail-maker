@@ -1,75 +1,114 @@
-# 🍸 Cocktail Maker
+# Sir-Mix-A-Lot
 
-**Cocktail Maker** is a modern **Qt-based desktop application** for creating and managing cocktail recipes — and even controlling real-world hardware to mix your drinks automatically!
+**An autonomous cocktail dispensing machine, built for commercial rental in Germany.**
 
----
-
-## 🧭 Overview
-
-This project combines **C++23**, **Qt**, and a range of modern C++ libraries to deliver a sleek, responsive, and extensible cocktail-making experience.
+Sir-Mix-A-Lot is a full-stack hardware/software project: a self-contained kiosk that mixes and
+pours cocktails unattended, designed to be reliable and food-safe. The project is developed end to end — embedded
+firmware, host application, UI/UX and mechanical/electrical design.
 
 ---
 
-## 🎥 Demo
+## Vision
 
-Watch a short demo on YouTube:
-👉 [https://youtu.be/46x27AaOHKw](https://youtu.be/46x27AaOHKw)
-
-[![Watch the demo](https://img.youtube.com/vi/46x27AaOHKw/0.jpg)](https://www.youtube.com/watch?v=46x27AaOHKw)
-
----
-
-## 🧩 Features
-
-- 🥃 Choose cocktail recipes
-- 🧠 Safe and type-checked units with [mp-units](https://github.com/mpusz/mp-units)
-- ⚡ Asynchronous hardware control using `boost::asio`
-- 💡 GPIO control with libgpiod
-- 💬 Fast and structured logging via [spdlog](https://github.com/gabime/spdlog)
-- 🎨 Responsive UI built with [Qt](https://qt.io)
-- 🧪 Comprehensive testing using [catch2](https://github.com/catchorg/Catch2) and [quite](https://github.com/mathisloge/quite/) for UI tests
+| Quality Goal        | What it means for Sir-Mix-A-Lot                                             |
+|----------------------|-----------------------------------------------------------------------|
+| **Safety**           | No mechanism, electrical fault, or software bug may endanger a user   |
+| **Food Safety**      | All guest-contact parts and flow paths use food-safe materials        |
+| **Reliability**      | The machine must run unattended for long stretches without failure   |
+| **Maintainability**  | Operator can service, refill, and calibrate without deep expertise |
+| **Usability**        | Guests with no instructions can order and receive a drink intuitively |
 
 ---
 
-## 📚 Contribute Recipes
+## System Architecture
 
-Want to expand the cocktail collection?
-Add your recipes here:
-➡️ [recipes directory](https://github.com/mathisloge/cocktail-maker/tree/main/ui/db/src/recipes)
+Sir-Mix-A-Lot consists of exactly **one Station** and **one or more Pods**.
 
----
-
-## 🛠️ Technologies Used
-
-| Purpose | Library / Framework |
-|----------|--------------------|
-| Language | **C++23** |
-| UI | [Qt](https://qt.io) |
-| Async I/O | **Boost.Asio** |
-| GPIO Control | **libgpiod** |
-| Units & Safety | [mp-units](https://github.com/mpusz/mp-units) |
-| Logging | [spdlog](https://github.com/gabime/spdlog) |
-| Formatting | [fmt](https://github.com/fmtlib/fmt) |
-| Testing | [Catch2](https://github.com/catchorg/Catch2), [quite](https://github.com/mathisloge/quite/) |
-
----
-
-## 🚀 Getting Started
-
-### Clone the repository
-
-1. Download [vcpkg](https://github.com/microsoft/vcpkg) and set the environment variable `VCPKG_ROOT`.
-
-Then:
-```bash
-git clone https://github.com/mathisloge/cocktail-maker.git
-cd cocktail-maker
-cmake --workflow production
+```
+┌─────────────────────────────────┐
+│             Station             │
+│  (Raspberry Pi + Display + UI)  │
+│                                 │
+│   ┌─────────┐   ┌─────────┐    │
+│   │  Pod 0  │   │  Pod 1  │... │
+│   │ (USB)   │   │ (USB)   │    │
+│   └─────────┘   └─────────┘    │
+└─────────────────────────────────┘
 ```
 
-Afterwards install the generated .deb package and run `cocktail-maker`.
+### Station
+
+The **Station** is the central orchestrator of the machine. It houses the Raspberry Pi,
+the guest-facing touch display, and the glass placement area. There is exactly one
+Station per machine.
+
+- Runs the host application (UI, recipe logic, session management)
+- Maintains USB connections to all Pods
+- Sends dispensing commands and receives status/events from Pods
+- Owns the domain model: recipes, ingredients, calibration state
+
+### Pod
+
+A **Pod** is a self-contained dispensing module holding one or more bottles, along with
+the embedded board, stepper motors, servos, valves, and load cells needed to measure and
+dispense its ingredients autonomously. Each Pod communicates with the Station over a USB
+CDC interface using a defined serial request–response protocol, and is identified by a
+unique Pod ID assigned at connection time.
+
+- Controls its own actuators (steppers, servos, valves)
+- Reports weight measurements via load cells
+- Responds to Station requests
+- Emits events (calibration complete, error conditions, etc.)
+
+The Station is the sole initiator of communication; each Pod is an independent device
+that the Station tracks.
+
+---
+
+## Naming Conventions
+
+Naming is deliberately consistent across hardware docs, code, protocol definitions, and
+API boundaries.
+
+Compound names always place the entity name first — `StationManager`, `PodDescriptor`,
+`PodCalibrationState` — never `ManagerStation` or `DescriptorPod`. C++ identifiers use
+entity-first compound naming; Slint files/components use kebab-case. All code comments
+and in-app text are written in English.
+
+---
+
+## Technology Stack
+
+### Station
+
+- https://github.com/mathisloge/cocktail-maker
+
+#### Backend (C++)
+
+- **C++ Modules** for compilation units, including module partitions (e.g. `cm:recipe_scale`)
+- **Boost.Asio / Boost.Cobalt** for asynchronous I/O and coroutines
+- **mp-units** for physical quantities and unit-safe arithmetic
+- **libassert** for expressive runtime assertions
+- **Catch2** for testing
+- **spdlog** for logging, with a custom sink that feeds a ring-buffer `slint::Model<LogEntry>`
+  for on-device log display (bidirectional `LogLevel` ↔ `spdlog::level` mapping)
+- Strong domain types throughout: `PodId`, `DispenserId`, `IngredientId`, `RecipeId`
+
+#### Frontend (Slint)
+
+- A centralized **design color system** — no theme switching, single dark art-deco aesthetic
+- Shared components should go into components and never depend on the globals except Layout and Palette.
+- `global` singletons used idiomatically to avoid prop-drilling; purely presentational
+  components read directly from globals
 
 
-### Hardware setup
+### Pod (Embedded)
 
-**TBD**
+- Zephyr with C++
+- **mp-units** for physical quantities and unit-safe arithmetic
+- https://github.com/mathisloge/cocktail-maker-embedded
+
+### Station-Pod Protocol
+
+- Based on **comms**
+- https://github.com/mathisloge/cocktail-maker-protocol

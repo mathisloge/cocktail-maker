@@ -1,0 +1,67 @@
+
+import { Palette } from "../palette.slint";
+import { RecipeView } from "../data.slint";
+import { VerticalBox } from "std-widgets.slint";
+import { SmallText } from "./small-text.slint";
+import { MediumText } from "./medium-text.slint";
+export component RecipeCard inherits Rectangle {
+    in property <RecipeView> recipe: {
+        name: "ExampleName",
+        tag_line: ["CLASSIC"],
+        description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla nisi elit, bibendum vitae mi nec, sodales vulputate felis. Etiam maximus ligula non neque porttitor tincidunt."
+    };
+    callback clicked();
+    border-color: Palette.border;
+    border-width: 2px;
+    background: Palette.background-card;
+    animate background { duration: 200ms; }
+
+    preferred-width: 250px;
+    height: self.width;
+
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    Image {
+        source: recipe.image;
+        width: parent.width;
+        height: parent.height;
+    }
+
+    Rectangle {
+        border-color: Palette.border;
+        border-width: 2px;
+        background: Palette.background-elevated;
+        height: name-text.height + tags-text.height + 30px;
+        width: 100%;
+        y: root.height - self.height;
+        name-text := MediumText {
+            x: 20px;
+            y: 10px;
+            font-weight: FontWeight.bold;
+            font-size: 28pt;
+            text: recipe.name;
+            primary: true;
+            font-italic: true;
+        }
+
+        tags-text := SmallText {
+            x: 20px;
+            y: name-text.y + name-text.height + 10px;
+            text: recipe.tag-line[0];
+            highlight: true;
+            horizontal-alignment: left;
+        }
+    }
+
+    states [
+        inactive when !ta.has-hover: {}
+        active-hover when ta.has-hover: {
+            root.background: @radial-gradient(circle, Palette.accent 0%, Palette.background-card 90%);
+        }
+    ]
+}

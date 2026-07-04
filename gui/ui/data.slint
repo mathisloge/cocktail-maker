@@ -1,0 +1,83 @@
+export enum LogLevel {
+    trace,
+    debug,
+    info,
+    warn,
+    err,
+    critical,
+}
+export struct LogEntry {
+    time_stamp: string,
+    level: LogLevel,
+    message: string,
+}
+
+export enum Page {
+    cocktail_list_page,
+    cocktail_detail_page,
+    mix_page,
+    mix_glass_selection_page,
+    mix_error_page,
+    mix_success_page,
+    finished_page,
+    boot_screen,
+    admin_area_page,
+}
+
+export enum CommandStatus {
+    not_started,
+    in_progress,
+    finished,
+}
+export struct Command {
+    id: int,
+    status: CommandStatus,
+    text: string,
+    value: string,
+}
+
+export struct RecipeView {
+    id: string,
+    name: string,
+    tag_line: [string],
+    description: string,
+    image: image,
+    commands: [Command],
+}
+
+export struct Ingredient {
+    id: string,
+    name: string,
+}
+
+export enum DispenserType {
+    pump,
+    valve,
+}
+
+export struct Dispenser {
+    id: int,
+    type: DispenserType,
+}
+
+export enum ConnectionState {
+    disconnected,
+    connecting,
+    connected,
+}
+export struct Pod { id: string, connection_state: ConnectionState, dispensers: [Dispenser] }
+
+export struct GlassIconData {
+    viewbox-width: float,
+    viewbox-height: float,
+    outline: string,
+    rim: [string],
+}
+
+export struct GlassDescriptor {
+    id: string,
+    display-name: string,
+    common-volumes-ml: [string],
+    active-volumes-ml: [string],
+    icon: GlassIconData,
+}

@@ -1,0 +1,161 @@
+export { StationStateContext }from "./globals/station-state-context.slint";
+export { RecipeContext }from "./globals/recipe-context.slint";
+export {
+    DispenserCalibrationContext,
+}from "./globals/dispenser-calibration-context.slint";
+export {
+    ProcessContext,
+}from "./globals/process-context.slint";
+export {
+    GlassContext,
+}from "./globals/glass-context.slint";
+
+import {
+    VerticalBox,
+    ScrollView,
+    HorizontalBox,
+    Slider,
+} from "std-widgets.slint";
+import { Palette } from "palette.slint";
+import {
+    Page,
+    RecipeView,
+    Command,
+    CommandStatus,
+    LogEntry,
+    Pod,
+    Dispenser,
+} from "data.slint";
+import { Button } from "components.slint";
+import {
+    RecipeDetailPage,
+    RecipeListPage,
+    BootScreen,
+    MixProgressPage,
+    MixErrorPage,
+    MixSuccessPage,
+    MixGlassSelectionPage,
+} from "pages.slint";
+import { ManualCommandPopup } from "popups.slint";
+import { AdminArea } from "admin-area.slint";
+import { StationStateContext } from "./globals/station-state-context.slint";
+import { ProcessContext } from "./globals/process-context.slint";
+import { GlassContext } from "globals/glass-context.slint";
+
+export component AppWindow inherits Window {
+    private property <bool> device_ready: StationStateContext.station-ready;
+    private property <bool> boot_screen_confirmed: false;
+    private property <Command> popup_command;
+    changed device_ready => {
+        if (!device_ready) {
+            boot_screen_confirmed = false;
+        }
+    }
+
+    callback operation_canceled();
+    callback manual-command-confirmed();
+
+    public function open-manual-command-popup(command: Command) {
+        root.popup_command = command;
+        popup.show();
+    }
+    public function close-manual-command-popup() {
+        popup.close();
+    }
+
+    operation_canceled => {
+        StationStateContext.navigate-to(Page.cocktail-list-page);
+    }
+
+    popup := ManualCommandPopup {
+        width: root.width;
+        height: root.height;
+        command: root.popup_command;
+        confirmed => {
+            root.manual-command-confirmed();
+        }
+    }
+
+    preferred-width: 1280px;
+    preferred-height: 720px;
+    background: Palette.background;
+    if !device_ready || !boot_screen_confirmed: BootScreen {
+        is-loading: !device_ready;
+        boot-complete => {
+            root.boot_screen_confirmed = true;
+        }
+    }
+    if device_ready && boot_screen_confirmed: VerticalLayout {
+        Rectangle {
+            height: 50px;
+            Button {
+                secondary: true;
+                text: "← Back";
+                x: 20px;
+                visible: StationStateContext.active-screen != Page.cocktail-list-page && StationStateContext.active-screen != Page.finished-page;
+                clicked => {
+                    operation_canceled();
+                }
+            }
+
+            Text {
+                text: "Sir Mix-A-Lot";
+                font-size: 20pt;
+                font-weight: FontWeight.extra-bold;
+                letter-spacing: 0.38rem;
+                color: Palette.text-secondary;
+
+                horizontal-alignment: TextHorizontalAlignment.center;
+                vertical-alignment: TextVerticalAlignment.center;
+            }
+        }
+
+        Rectangle {
+            height: 1px;
+            background: Palette.border;
+        }
+
+        if StationStateContext.active-screen == Page.cocktail-list-page: RecipeListPage {
+            recipe-selected() => {
+                StationStateContext.navigate-to(Page.cocktail-detail-page);
+            }
+        }
+
+        if StationStateContext.active-screen == Page.cocktail-detail-page: RecipeDetailPage {
+            process-recipe() => {
+                // Don't show glass selection if there is only one glas with one volume, then process the recipe directly.
+                if (GlassContext.glasses.length == 1 && GlassContext.glasses[0].common-volumes-ml.length == 1) {
+                    ProcessContext.glass = GlassContext.glasses[0];
+                    ProcessContext.glass-volume = GlassContext.glasses[0].common-volumes-ml[0].to-float();
+                    // business logic should navigate to mix-progress or any error page
+                    ProcessContext.process-active-recipe();
+                } else {
+                    StationStateContext.navigate-to(Page.mix-glass-selection-page);
+                }
+            }
+        }
+
+        if StationStateContext.active-screen == Page.mix-page: MixProgressPage { }
+
+        if StationStateContext.active-screen == Page.mix-glass-selection-page: MixGlassSelectionPage {
+            glass-confirmed() => {
+                // business logic should navigate to mix-progress or any error page
+                ProcessContext.process-active-recipe();
+            }
+        }
+
+        if StationStateContext.active-screen == Page.mix-error-page: MixErrorPage {
+            cancel => {
+                StationStateContext.navigate-to(Page.cocktail-list-page);
+            }
+        }
+
+        if StationStateContext.active-screen == Page.mix-success-page: MixSuccessPage {
+            finish => {
+                StationStateContext.navigate-to(Page.cocktail-list-page);
+            }
+        }
+
+        if StationStateContext.active-screen == Page.admin-area-page: admin-area := AdminArea { }
+    }
+}

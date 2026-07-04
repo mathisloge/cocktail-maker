@@ -1,0 +1,99 @@
+import { Palette } from "../palette.slint";
+import {
+    Button,
+    SmallText,
+    LargeText,
+    CornerDeco,
+    PulseDot,
+} from "../components.slint";
+import { Command, CommandStatus } from "../data.slint";
+export component ManualCommandPopup inherits PopupWindow {
+    close-policy: PopupClosePolicy.no-auto-close;
+    in property <string> title: "Bitte führe den angezeigten Schritt aus:";
+    in property <Command> command: { status: CommandStatus.in-progress, text:"2 Minzblätter", value:"" };
+    callback confirmed();
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: rgba(10, 8, 6, 0.88);
+    }
+
+    Rectangle {
+        height: 50%;
+        width: 50%;
+        x: root.width / 4;
+        y: root.height / 4;
+        background: Palette.background-elevated;
+        border-width: 1px;
+        border-color: Palette.border-strong;
+
+        CornerDeco {
+            width: 100%;
+            height: 100%;
+        }
+
+        box-layout := VerticalLayout {
+            padding-top: 44px;
+            padding-left: 48px;
+            padding-bottom: 40px;
+            padding-right: 48px;
+            spacing: 0;
+            alignment: center;
+
+            // Header-Label
+            SmallText {
+                text: "MANUELLE AKTION ERFORDERLICH";
+                highlight: true;
+            }
+
+            Rectangle {
+                height: 28px;
+                background: transparent;
+            }
+
+            LargeText {
+                text: command.text;
+                primary: true;
+            }
+
+            Rectangle {
+                height: 6px;
+                background: transparent;
+            }
+
+            Rectangle {
+                height: 1px;
+                background: Palette.border;
+            }
+
+            Rectangle {
+                height: 24px;
+                background: transparent;
+            }
+
+            HorizontalLayout {
+                alignment: center;
+                spacing: 10px;
+                PulseDot { }
+
+                SmallText {
+                    text: "MASCHINE PAUSIERT";
+                }
+            }
+
+            Rectangle {
+                height: 24px;
+                background: transparent;
+            }
+
+            Button {
+                text: "ERLEDIGT — WEITER →";
+                clicked => {
+                    root.close();
+                    root.confirmed();
+                }
+            }
+        }
+    }
+}

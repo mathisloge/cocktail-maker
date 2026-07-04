@@ -1,0 +1,54 @@
+
+export global Palette {
+    in-out property <duration> mount-animation-duration: 400ms;
+    in-out property <easing> mount-animation-easing: ease-in;
+    // ── Backgrounds ─────────────────────────────────────
+    in-out property <color> background:          #0a0806;
+    in-out property <color> background-card:     #120e0a;
+    in-out property <color> background-elevated: #1c1510;
+
+    // ── Borders ─────────────────────────────────────────
+    in-out property <color> border:              #c8913a3d;  // amber 24 %
+    in-out property <color> border-strong:       #c8913a;    // amber solid (hover/selected)
+    in-out property <color> border-subtle:       #c8913a14;  // amber 8 % (ingredient dividers)
+
+    // ── Amber accent ────────────────────────────────────
+    in-out property <color> accent:              #c8913a;
+    in-out property <color> accent-light:        #e8b86d;
+    in-out property <color> accent-dim:          #c8913a24;  // 14 % fill (hover bg, slider)
+
+    // ── Text ────────────────────────────────────────────
+    in-out property <color> text-primary:        #f5eed8;
+    in-out property <color> text-secondary:      #c8913a;    // amber labels / tags
+    in-out property <color> text-muted:          #f5eed885;  // cream 52 % (descriptions)
+    in-out property <color> text-on-accent:      #0a0806;    // dark text on amber button
+    in-out property <color> text-error:          #c0392b;
+    in-out property <color> text-success:        #5cad75;
+
+    // ── Boost slider ────────────────────────────────────
+    in-out property <color> boost-negative:      #2980b9;    // blue  (less alcohol)
+    in-out property <color> boost-positive:      #c0392b;    // red   (more alcohol)
+    in-out property <color> boost-negative-text: #70a8e0;    // lighter blue for amount display
+    in-out property <color> boost-positive-text: #e07070;    // lighter red  for amount display
+
+    // ── Processing states ────────────────────────────────
+    in-out property <color> status-waiting:      #f5eed885;
+    in-out property <color> status-pouring:      #c8913a;
+    in-out property <color> status-done:         #f5eed854;
+
+    // ── Overlays ────────────────────────────────────────
+    in-out property <color> overlay-done:        #0a0806eb;  // 92 % opaque (done screen)
+    in-out property <color> overlay-card-scrim:  #0a08069e;  // 62 % (photo gradient bottom)
+
+    // ── Log levels ──────────────────────────────────────
+    in-out property <color> log-trace:           #7A8594;    // gray-blue (trace)
+    in-out property <color> log-debug:           #3B6EA8;    // blue (debug)
+    in-out property <color> log-info:            #4A8F5A;    // green (info)
+    in-out property <color> log-warn:            #C58A2B;    // amber (warning)
+    in-out property <color> log-error:           #C55A3D;    // orange-red (error)
+    in-out property <color> log-critical:        #A12D2D;    // dark red (critical)
+}
+
+export global Layout {
+    out property <length> touch-height: 75px;
+}

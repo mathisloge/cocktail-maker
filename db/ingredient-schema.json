@@ -1,0 +1,50 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Ingredient",
+    "type": "object",
+    "required": [
+        "id",
+        "display_name",
+        "type",
+        "boost"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "$schema": {
+            "type": "string"
+        },
+        "id": {
+            "type": "string",
+            "description": "Unique machine-readable identifier for the ingredient",
+            "pattern": "^[a-z0-9_]+$"
+        },
+        "display_name": {
+            "type": "string",
+            "description": "Human-readable name shown in the UI"
+        },
+        "type": {
+            "type": "string",
+            "description": "Broad category of the ingredient",
+            "enum": [
+                "alcohol",
+                "juice",
+                "syrup",
+                "soda",
+                "water",
+                "dairy",
+                "bitters",
+                "puree",
+                "other"
+            ]
+        },
+        "boost": {
+            "type": "string",
+            "description": "How the ingredient quantity responds to a boost adjustment",
+            "enum": [
+                "fixed",
+                "boostable",
+                "reducible"
+            ]
+        }
+    }
+}

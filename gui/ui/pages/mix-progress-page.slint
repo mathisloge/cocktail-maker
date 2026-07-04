@@ -1,0 +1,95 @@
+
+import { Palette } from "../palette.slint";
+import { RecipeView, CommandStatus } from "../data.slint";
+import { ProgressIndicator, Spinner } from "std-widgets.slint";
+import {
+    SeparatorText,
+    CommandItem,
+    SmallText,
+    MediumText,
+    LargeText,
+    GlassCard,
+    Chip,
+} from "../components.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
+import { ProcessContext } from "../globals/process-context.slint";
+import { Page } from "page.slint";
+
+
+export component MixProgressPage inherits Page {
+    private property <RecipeView> recipe: RecipeContext.active-recipe;
+    GridLayout {
+        VerticalLayout {
+            width: 33%;
+            alignment: start;
+            cross-axis-alignment: center;
+            padding: 20px;
+            padding-top: 40px;
+            spacing: 60px;
+            rowspan: 1;
+
+            VerticalLayout {
+                alignment: start;
+                cross-axis-alignment: center;
+                spacing: 10px;
+                SmallText {
+                    text: "WIRD ZUBEREITET";
+                    letter-spacing: 2pt;
+                    highlight: true;
+                }
+
+                LargeText {
+                    text: recipe.name;
+                    primary: true;
+                }
+            }
+
+            VerticalLayout {
+                spacing: 10px;
+                ProgressIndicator {
+                    indeterminate: true;
+                    height: 2px;
+                    width: 90%;
+                }
+
+                SmallText {
+                    text: "rezept wird analysiert...";
+                    color: Palette.text-muted;
+                }
+            }
+
+            GlassCard {
+                descriptor: ProcessContext.glass;
+            }
+
+            Chip {
+                text: ProcessContext.glass-volume + " mL";
+            }
+        }
+
+        Rectangle {
+            width: 1px;
+            height: 100%;
+            background: Palette.border;
+        }
+
+        VerticalLayout {
+            padding: 40px;
+            spacing: 15px;
+            alignment: LayoutAlignment.start;
+            rowspan: 2;
+
+            SeparatorText {
+                text: "SCHRITTE:";
+            }
+
+            VerticalLayout {
+                spacing: 10px;
+
+                for command in recipe.commands: CommandItem {
+                    command: command;
+                }
+            }
+        }
+    }
+}

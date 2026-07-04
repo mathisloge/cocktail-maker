@@ -1,0 +1,7 @@
+{
+    "$schema": "../ingredient-schema.json",
+    "id": "soda",
+    "display_name": "Wasser",
+    "type": "soda",
+    "boost": "reducible"
+}

@@ -1,0 +1,223 @@
+import {
+    SmallText,
+    MediumText,
+    CornerDeco,
+    LargeText,
+    Button,
+} from "../components.slint";
+import { Palette } from "../palette.slint";
+import { Page } from "page.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
+import { ProcessContext } from "../globals/process-context.slint";
+// ─────────────────────────────────────────────────────────────────────
+//  Small local helper — one compact order-summary stat
+// ─────────────────────────────────────────────────────────────────────
+component StatChip inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <color> value-color: Palette.text-primary;
+
+    background: Palette.background-card;
+    border-width: 1px;
+    border-color: Palette.border;
+
+    VerticalLayout {
+        padding-top: 14px;
+        padding-bottom: 14px;
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 6px;
+        alignment: center;
+
+        SmallText {
+            text: root.label;
+            font-size: 6pt;
+            letter-spacing: 2.5px;
+            color: Palette.text-muted;
+            horizontal-alignment: center;
+        }
+
+        MediumText {
+            text: root.value;
+            font-italic: false;
+            font-weight: FontWeight.semi-bold;
+            font-size: 13pt;
+            color: root.value-color;
+            horizontal-alignment: center;
+        }
+    }
+}
+
+
+export component MixSuccessPage inherits Page {
+    private property <string> cocktail-name: RecipeContext.active-recipe.name;
+    private property <duration> prep-time-seconds: ProcessContext.elapsed-time;
+    private property <int> boost-value: ProcessContext.boost;
+
+    pure function get-boost-slogan(val: int) -> string {
+        if (val <= -100) {
+            return "0% Sprit, 100% Geschmack. Hau rein, der Kater hat heute frei!";
+        } else if (val <= -75) {
+            return "Spurenelemente von Alkohol. Reicht höchstens für 'nen Placebo-Pegel, aber der Vibe im Glas stimmt zu 100%!";
+        } else if (val <= -50) {
+            return "Halbgas! Geht runter wie Limo, aber behalt trotzdem dein Limit im Auge.";
+        } else if (val <= -25) {
+            return "Gute Mische, sanfter Flow. Ein Cocktail zum Genießen, nicht zum Eskalieren.";
+        } else if (val <= 0) { // Die goldene Mitte (alles zwischen -24 und 0)
+            return "Sauber ausbalanciert. Kickt genau richtig, also trink mit Stil und saug nicht alles auf einmal durch den Strohhalm.";
+        } else if (val <= 25) {
+            return "Da ist ordentlich Musik drin. Feuer frei, aber lass die Handbremse in Reichweite!";
+        } else if (val <= 50) {
+            return "Zieht dir direkt die Schuhe aus. Genieß es, aber bestell schon mal das Taxi.";
+        } else if (val <= 75) {
+            return "Achtung, Endgegner! Nippen, nicht kippen – sonst gute Nacht!";
+        } else {
+            // Alles über 75 (bis 100+)
+            return "Systemabsturz incoming! Purer Raketentreibstoff – R.I.P. an deine Leber, trink auf eigene Gefahr.";
+        }
+    }
+    private property <string> boost-text: get-boost-slogan(root.boost-value);
+    callback finish();
+
+    Timer {
+        interval: 5s;
+        running: true;
+        triggered => { finish(); }
+    }
+
+    VerticalLayout {
+        padding-top: 56px;
+        padding-bottom: 56px;
+        padding-left: 48px;
+        padding-right: 48px;
+        spacing: 0;
+        alignment: center;
+
+        LargeText {
+            text: root.cocktail-name;
+            font-size: 30pt;
+            font-italic: true;
+            opacity: root.mounted ? 1 : 0;
+            animate opacity {
+                duration: Palette.mount-animation-duration;
+                easing: Palette.mount-animation-easing;
+                delay: 320ms;
+            }
+        }
+
+        Rectangle {
+            height: 10px;
+            background: transparent;
+        }
+
+        MediumText {
+            text: root.boost-text;
+            horizontal-alignment: center;
+            opacity: root.mounted ? 1 : 0;
+            primary: true;
+            wrap: word-wrap;
+            animate opacity {
+                duration: Palette.mount-animation-duration;
+                easing: Palette.mount-animation-easing;
+                delay: 360ms;
+            }
+        }
+
+        Rectangle {
+            height: 30px;
+            background: transparent;
+        }
+
+        VerticalLayout {
+            spacing: 10px;
+            opacity: root.mounted ? 1 : 0;
+            animate opacity {
+                duration: Palette.mount-animation-duration;
+                easing: Palette.mount-animation-easing;
+                delay: 420ms;
+            }
+
+            SmallText {
+                text: "ZUSAMMENFASSUNG";
+                font-size: 7pt;
+                letter-spacing: 3.5px;
+            }
+
+            HorizontalLayout {
+                spacing: 10px;
+
+                StatChip {
+                    label: "BOOST";
+                    value: root.boost-value == 0
+                        ? "Normal"
+                        : (root.boost-value > 0 ? "+" : "") + Math.round(root.boost-value) + "%";
+                    value-color: root.boost-value > 0 ? Palette.boost-positive-text
+                        : root.boost-value < 0 ? Palette.boost-negative-text
+                        : Palette.accent-light;
+                }
+
+                StatChip {
+                    label: "ZEIT";
+                    value: root.prep-time-seconds / 1s + "s";
+                    value-color: Palette.text-success;
+                }
+            }
+        }
+
+        Rectangle {
+            height: 18px;
+            background: transparent;
+        }
+
+        VerticalLayout {
+            spacing: 7px;
+            opacity: root.mounted ? 1 : 0;
+            animate opacity {
+                duration: Palette.mount-animation-duration;
+                easing: Palette.mount-animation-easing;
+                delay: 460ms;
+            }
+
+            Rectangle {
+                height: 2px;
+                background: Palette.border;
+                border-radius: 1px;
+                Rectangle {
+                    height: 2px;
+                    border-radius: 1px;
+                    width: root.mounted ? parent.width : 0px;
+                    background: Palette.text-success;
+                    animate width {
+                        duration: 700ms;
+                        easing: ease-out;
+                        delay: 200ms;
+                    }
+                }
+            }
+
+            SmallText {
+                text: "ALLES ERFOLGREICH GEMIXT";
+                font-size: 6pt;
+                letter-spacing: 2px;
+                color: Palette.text-muted;
+            }
+        }
+
+        Rectangle {
+            height: 36px;
+            background: transparent;
+        }
+
+        Button {
+            opacity: root.mounted ? 1 : 0;
+            animate opacity {
+                duration: Palette.mount-animation-duration;
+                easing: Palette.mount-animation-easing;
+                delay: 560ms;
+            }
+            secondary: true;
+            text: "FERTIG →";
+            clicked => { root.finish(); }
+        }
+    }
+}

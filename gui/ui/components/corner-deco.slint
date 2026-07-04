@@ -1,0 +1,74 @@
+import { Palette } from "../palette.slint";
+export component CornerDeco {
+    Rectangle {
+        x: 14px;
+        y: 14px;
+        width: 18px;
+        height: 1px;
+        background: Palette.accent;
+        opacity: 0.4;
+    }
+
+    Rectangle {
+        x: 14px;
+        y: 14px;
+        width: 1px;
+        height: 18px;
+        background: Palette.accent;
+        opacity: 0.4;
+    }
+
+    Rectangle {
+        x: parent.width - 33px;
+        y: 14px;
+        width: 18px;
+        height: 1px;
+        background: Palette.accent;
+        opacity: 0.4;
+    }
+
+    Rectangle {
+        x: parent.width - 15px;
+        y: 14px;
+        width: 1px;
+        height: 18px;
+        background: Palette.accent;
+        opacity: 0.4;
+    }
+
+    Rectangle {
+        x: 14px;
+        y: parent.height - 15px;
+        width: 18px;
+        height: 1px;
+        background: Palette.accent;
+        opacity: 0.4;
+    }
+
+    Rectangle {
+        x: 14px;
+        y: parent.height - 33px;
+        width: 1px;
+        height: 18px;
+        background: Palette.accent;
+        opacity: 0.4;
+    }
+
+    Rectangle {
+        x: parent.width - 33px;
+        y: parent.height - 15px;
+        width: 18px;
+        height: 1px;
+        background: Palette.accent;
+        opacity: 0.4;
+    }
+
+    Rectangle {
+        x: parent.width - 15px;
+        y: parent.height - 33px;
+        width: 1px;
+        height: 18px;
+        background: Palette.accent;
+        opacity: 0.4;
+    }
+}

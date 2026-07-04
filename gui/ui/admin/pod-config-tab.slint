@@ -1,0 +1,154 @@
+import {
+    TabWidget,
+    ListView,
+    HorizontalBox,
+    ComboBox,
+    VerticalBox,
+    Button,
+    ScrollView,
+} from "std-widgets.slint";
+import {
+    SystemLog,
+    SmallText,
+    PulseDot,
+    MediumText,
+} from "../components.slint";
+import {
+    Pod,
+    Dispenser,
+    ConnectionState,
+    DispenserType,
+    Ingredient,
+} from "../data.slint";
+import { DispenserCalibrationPopup } from "./dispenser-calibration.slint";
+import { Palette } from "../palette.slint";
+import {
+    DispenserCalibrationContext,
+} from "../globals/dispenser-calibration-context.slint";
+import { StationStateContext } from "../globals/station-state-context.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
+
+component PodListDelegate inherits Rectangle {
+    in property <Pod> pod;
+    in property <bool> selected;
+    callback clicked();
+
+    background: Palette.background-card;
+    border-width: 1px;
+    border-color: root.selected ? Palette.border-strong : Palette.border-subtle;
+    animate background, border-color { duration: 100ms; }
+
+    HorizontalBox {
+        cross-axis-alignment: center;
+        PulseDot {
+            pulse: pod.connection-state == ConnectionState.connecting;
+            background: pod.connection-state == ConnectionState.connected ? Palette.log-info :
+                pod.connection-state == ConnectionState.connecting ? Palette.log-debug :
+                Palette.log-error;
+        }
+
+        title := SmallText {
+            text: pod.id;
+            animate color { duration: 100ms; }
+        }
+    }
+
+    touch-area := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    states [
+        pressed when touch-area.pressed: {
+            root.background: Palette.background-elevated.brighter(1);
+            root.border-color: Palette.border;
+            title.color: Palette.text-primary;
+        }
+        hover when touch-area.has-hover: {
+            root.background: Palette.background-elevated;
+        }
+    ]
+}
+
+export component PodConfigTab inherits Rectangle {
+    private property <Pod> active-pod;
+    private property <Dispenser> active-dispenser;
+
+    sidebar := VerticalLayout {
+        x: 0;
+        y: 0;
+        width: 33%;
+
+        ListView {
+            for pod in StationStateContext.pods: PodListDelegate {
+                width: parent.width;
+                height: 50px;
+                pod: pod;
+                selected: root.active-pod == pod;
+                clicked => { root.active-pod = pod; }
+            }
+        }
+    }
+
+    split := Rectangle {
+        width: 1px;
+        height: 100%;
+        x: sidebar.width;
+        y: 0;
+        background: Palette.border;
+    }
+
+    content := VerticalBox {
+        x: split.x + split.width;
+        y: 0;
+        width: root.width - sidebar.width - split.width;
+        alignment: stretch;
+
+        MediumText {
+            text: active-pod.id;
+        }
+
+        ScrollView {
+            VerticalBox {
+                for dispenser in root.active-pod.dispensers: HorizontalBox {
+                    cross-axis-alignment: center;
+                    SmallText {
+                        text: "Dispenser " + dispenser.id;
+                    }
+
+                    ComboBox {
+                        height: 40px;
+                        model: RecipeContext.ingredient-ids;
+                        selected(current-value) => {
+                            RecipeContext.assign-ingredient-to-dispenser(active-pod, dispenser, current-value);
+                        }
+                    }
+
+                    Button {
+                        text: "Identify";
+                        height: 40px;
+                        clicked => { StationStateContext.highlight-dispenser(active-pod, dispenser); }
+                    }
+
+                    Button {
+                        text: "Calibrate";
+                        height: 40px;
+                        clicked => {
+                            root.active-dispenser = dispenser;
+                            DispenserCalibrationContext.reset-state();
+                            cal.show();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    cal := DispenserCalibrationPopup {
+        width: root.width;
+        height: root.height;
+        active-pod: root.active-pod;
+        active-dispenser: root.active-dispenser;
+    }
+}

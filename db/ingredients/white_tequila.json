@@ -1,0 +1,7 @@
+{
+  "$schema": "../ingredient-schema.json",
+  "id": "white_tequila",
+  "display_name": "Weißer Tequila",
+  "type": "alcohol",
+  "boost": "boostable"
+}

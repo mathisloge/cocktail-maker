@@ -1,0 +1,97 @@
+import { Palette, Layout } from "../palette.slint";
+import {
+    Button,
+    Chip,
+    GlassCard,
+    SmallText,
+    MediumText,
+    LargeText,
+} from "../components.slint";
+import { Page } from "./page.slint";
+import { GlassDescriptor } from "../data.slint";
+import { GlassContext } from "../globals/glass-context.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
+import { ProcessContext } from "../globals/process-context.slint";
+
+export component MixGlassSelectionPage inherits Page {
+    callback glass-confirmed();
+
+    property <bool> has-glass-selected: ProcessContext.glass.id != "";
+    property <bool> can-confirm: root.has-glass-selected && ProcessContext.glass-volume > 0;
+
+    background: Palette.background;
+
+    VerticalLayout {
+        padding: 32px;
+        spacing: 24px;
+        cross-axis-alignment: center;
+
+        VerticalLayout {
+            alignment: center;
+            spacing: 2px;
+
+            LargeText {
+                text: "Wähle dein Glas";
+                primary: true;
+            }
+
+            MediumText {
+                text: "Für " + RecipeContext.active-recipe.name;
+            }
+        }
+
+        // Glass shelf
+        Flickable {
+            height: 232px;
+            glass-row := HorizontalLayout {
+                spacing: 16px;
+
+                for descriptor[index] in GlassContext.glasses: GlassCard {
+                    descriptor: descriptor;
+                    selected: descriptor.id == ProcessContext.glass.id;
+                    clicked => {
+                        ProcessContext.glass = descriptor;
+                        ProcessContext.glass-volume = descriptor.active-volumes-ml.length == 1 ? descriptor.active-volumes-ml[0].to-float() : 0;
+                    }
+                }
+            }
+        }
+
+        // Volume picker, only once a glass is chosen
+        if root.has-glass-selected && (ProcessContext.glass.active-volumes-ml.length > 1): VerticalLayout {
+            SmallText {
+                horizontal-alignment: start;
+                text: "Volumen:";
+            }
+
+            Flickable {
+                height: Layout.touch-height;
+
+                volume-row := HorizontalLayout {
+                    spacing: 12px;
+
+                    for volume in ProcessContext.glass.active-volumes-ml: Chip {
+                        width: 110px;
+                        text: volume + " mL";
+                        selected: volume == ProcessContext.glass-volume;
+                        clicked => { ProcessContext.glass-volume = volume.to-float(); }
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+            vertical-stretch: 1;
+        }
+
+        Button {
+            width: 220px;
+            height: Layout.touch-height;
+            text: "Weiter  →";
+            enabled: root.can-confirm;
+            clicked => {
+                root.glass-confirmed();
+            }
+        }
+    }
+}

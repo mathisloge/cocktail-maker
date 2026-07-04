@@ -1,0 +1,26 @@
+import { Palette } from "../palette.slint";
+import { Command } from "../data.slint";
+import { MediumText } from "medium-text.slint";
+
+export component CommandListItem {
+    in property <Command> command;
+    VerticalLayout {
+        spacing: 10px;
+        HorizontalLayout {
+            alignment: LayoutAlignment.space-between;
+            MediumText {
+                text: command.text;
+                primary: true;
+            }
+
+            MediumText {
+                text: command.value;
+            }
+        }
+
+        Rectangle {
+            height: 1px;
+            background: Palette.border-subtle;
+        }
+    }
+}

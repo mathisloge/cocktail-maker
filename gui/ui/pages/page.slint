@@ -1,0 +1,13 @@
+import { Palette } from "../palette.slint";
+export component Page inherits Rectangle {
+    background: Palette.background;
+
+    // Property used for initial animations
+    out property <bool> mounted: false;
+    Timer {
+        interval: 60ms;
+        running: !root.mounted;
+        triggered => { root.mounted = true; }
+    }
+    @children
+}

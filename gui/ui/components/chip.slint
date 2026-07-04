@@ -1,0 +1,28 @@
+import { Palette, Layout } from "../palette.slint";
+import { MediumText } from "medium-text.slint";
+export component Chip inherits Rectangle {
+    in property <string> text;
+    in property <bool> selected;
+    callback clicked();
+
+    height: Layout.touch-height;
+    min-width: 96px;
+    border-radius: self.height / 2;
+    background: root.selected ? Palette.accent : transparent;
+    border-width: 1px;
+    border-color: root.selected ? Palette.border-strong : Palette.border;
+
+    animate background, border-color { duration: Palette.mount-animation-duration / 3; }
+
+    MediumText {
+        text: root.text;
+        font-weight: root.selected ? 600 : 400;
+        primary: root.selected;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+
+    TouchArea {
+        clicked => { root.clicked(); }
+    }
+}

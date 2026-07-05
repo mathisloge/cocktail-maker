@@ -22,6 +22,7 @@ target_sources(
                 pod_registry.cppm
                 pod_dispatcher.cppm
                 pod.cppm
+                pod.cpp
                 pod_algorithms.cppm
                 recipe_boost.cppm
                 recipe_scale.cppm

@@ -10,8 +10,8 @@ target_sources(
     PUBLIC
         FILE_SET CXX_MODULES
             FILES
-                async_machine_protocol_server.cpp
                 async_machine_protocol_server.cppm
+                async_machine_protocol_server.cpp
                 dispenser.cppm
                 execute_recipe.cppm
                 glass.cppm
@@ -28,6 +28,8 @@ target_sources(
                 recipe.cppm
                 station_config.cppm
                 station_state.cppm
+                serial.cppm
+                serial.cpp
 )
 
 if(BUILD_TESTING)

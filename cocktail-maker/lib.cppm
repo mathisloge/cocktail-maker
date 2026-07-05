@@ -15,3 +15,4 @@ export import :pod_dispatcher;
 export import :pod;
 export import :station_state;
 export import :station_config;
+export import :serial;

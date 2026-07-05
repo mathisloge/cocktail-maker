@@ -164,8 +164,7 @@ class NoopPodState final : public PodState
     void update_state([[maybe_unused]] ConnectionState state) override {};
 };
 
-export
-class Pod : public IPod, public std::enable_shared_from_this<Pod>
+export class Pod : public IPod, public std::enable_shared_from_this<Pod>
 {
   public:
     explicit Pod(std::unique_ptr<AnyIoStream> stream)

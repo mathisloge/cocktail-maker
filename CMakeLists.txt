@@ -66,11 +66,11 @@ cpmaddpackage(URI "gh:CLIUtils/CLI11@2.6.2" OPTIONS "CLI11_PRECOMPILED ON")
 cpmaddpackage(URI "gh:mpusz/mp-units#8df25adeefc73931ff3a1da52804e5c7a061e2d1" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
 )
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
-cpmaddpackage(URI "gh:simdjson/simdjson@4.6.0" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF")
+cpmaddpackage(URI "gh:simdjson/simdjson@4.6.4" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF")
 cpmaddpackage(
   NAME Slint
   GIT_REPOSITORY https://github.com/slint-ui/slint.git
-  GIT_TAG 22fe8d511683797ae8c1e466eb6dfdd568604a27
+  GIT_TAG 2447c697327e7f87c5044af229e0be6c18608fcc
   SOURCE_SUBDIR api/cpp
 )
 cpmaddpackage(URI "gh:commschamp/comms@5.5.2" NAME LibComms)
@@ -79,7 +79,7 @@ cpmaddpackage(URI "gh:mathisloge/cocktail-maker-protocol#main" SOURCE_SUBDIR gen
 cpmaddpackage(URI "gh:jeremy-rifkin/libassert@2.2.1")
 
 if(BUILD_TESTING)
-    cpmaddpackage("gh:catchorg/Catch2@3.15.0")
+    cpmaddpackage("gh:catchorg/Catch2@3.15.1")
     list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
     include(CTest)
     include(Catch)

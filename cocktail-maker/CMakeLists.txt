@@ -10,6 +10,7 @@ target_sources(
     PUBLIC
         FILE_SET CXX_MODULES
             FILES
+                async_machine_protocol_server.cpp
                 async_machine_protocol_server.cppm
                 dispenser.cppm
                 execute_recipe.cppm

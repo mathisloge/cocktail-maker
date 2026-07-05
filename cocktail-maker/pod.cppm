@@ -164,11 +164,11 @@ class NoopPodState final : public PodState
     void update_state([[maybe_unused]] ConnectionState state) override {};
 };
 
-export template <typename AsyncStream>
-class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
+export
+class Pod : public IPod, public std::enable_shared_from_this<Pod>
 {
   public:
-    explicit Pod(AsyncStream stream)
+    explicit Pod(std::unique_ptr<AnyIoStream> stream)
         : server_{std::move(stream)}
         , device_ready_{server_.get_executor()}
     {
@@ -286,7 +286,7 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         state_->update_state(PodState::ConnectionState::connected);
         device_ready_ = true;
 
-        BOOST_COBALT_FOR(auto event, server_.template async_receive_events<InPong>())
+        BOOST_COBALT_FOR(auto event, server_.async_receive_events<InPong>())
         {
             std::visit(detail::Overloaded{
                            [](InPong msg) {},
@@ -330,7 +330,7 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         const auto transaction_id = server_.generate_new_transaction_id();
 
         // register queue at first
-        auto rx_action = server_.template async_receive<InAck, InNak>(transaction_id, timeout);
+        auto rx_action = server_.async_receive<InAck, InNak>(transaction_id, timeout);
 
         co_await server_.async_send(std::move(tx_msg), transaction_id);
         const auto nak_or_ack = co_await rx_action;
@@ -346,7 +346,7 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
         const auto transaction_id = server_.generate_new_transaction_id();
 
         // register queue at first
-        auto rx_action = server_.template async_receive<RxMsg>(transaction_id, timeout);
+        auto rx_action = server_.async_receive<RxMsg>(transaction_id, timeout);
 
         co_await server_.async_send(std::move(tx_msg), transaction_id);
         co_return co_await rx_action;
@@ -356,7 +356,7 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
     auto send_action_with_response(TxMsg tx_msg, std::chrono::milliseconds action_timeout) -> cobalt::promise<RxMsg>
     {
         const auto transaction_id = co_await send_with_ack(std::move(tx_msg));
-        const auto nak_or_action = co_await server_.template async_receive<RxMsg, InNak>(transaction_id, action_timeout);
+        const auto nak_or_action = co_await server_.async_receive<RxMsg, InNak>(transaction_id, action_timeout);
         if (std::holds_alternative<InNak>(nak_or_action)) {
             process_nak(std::get<InNak>(nak_or_action));
         }
@@ -384,7 +384,7 @@ class Pod : public IPod, public std::enable_shared_from_this<Pod<AsyncStream>>
   private:
     log::Logger logger_{log::create_or_get("pod")};
     std::unique_ptr<PodState> state_{std::make_unique<NoopPodState>()};
-    AsyncMachineProtocolServer<AsyncStream> server_;
+    AsyncMachineProtocolServer server_;
     AwaitableBool device_ready_;
 };
 } // namespace cm

@@ -83,11 +83,10 @@ export class TimeoutError : public std::runtime_error
     using runtime_error::runtime_error;
 };
 
-export template <typename AsyncStream>
-class AsyncMachineProtocolServer
+export class AsyncMachineProtocolServer
 {
     log::Logger logger_;
-    AsyncStream stream_;
+    std::unique_ptr<AnyIoStream> stream_;
     cobalt::channel<std::vector<uint8_t>> write_queue_;
     using ChannelPtr = std::shared_ptr<cobalt::channel<InFrame::MsgPtr>>;
     std::unordered_map<TransactionId::ValueType, ChannelPtr> dispatch_map_;
@@ -111,8 +110,7 @@ class AsyncMachineProtocolServer
             }
 
             // Force close stream and channels synchronously to prevent hanging the io_context
-            boost::system::error_code ec;
-            stream_.close(ec);
+            std::ignore = stream_->close();
             shutdown_channels();
         }
         catch (const std::exception& ex) {
@@ -120,16 +118,16 @@ class AsyncMachineProtocolServer
         }
     }
 
-    AsyncMachineProtocolServer(AsyncStream stream)
+    AsyncMachineProtocolServer(std::unique_ptr<AnyIoStream> stream)
         : logger_{log::create_or_get("protocol")}
         , stream_{std::move(stream)}
-        , write_queue_{10, stream_.get_executor()}
+        , write_queue_{10, stream_->get_executor()}
     {
     }
 
-    auto&& get_executor()
+    auto get_executor() -> asio::any_io_executor
     {
-        return stream_.get_executor();
+        return stream_->get_executor();
     }
 
     cobalt::task<void> run()
@@ -266,7 +264,7 @@ class AsyncMachineProtocolServer
 
     cobalt::promise<InFrame::MsgPtr> read_with_timeout(cobalt::channel<InFrame::MsgPtr>& chan, std::chrono::milliseconds timeout)
     {
-        boost::asio::steady_timer timer{stream_.get_executor()};
+        boost::asio::steady_timer timer{stream_->get_executor()};
         timer.expires_after(timeout);
 
         // Race the channel read against the timer
@@ -315,9 +313,7 @@ class AsyncMachineProtocolServer
             }
 
             try {
-                co_await asio::async_write(stream_,
-                                           asio::buffer(data),
-                                           asio::cancel_after(std::chrono::milliseconds(500), asio::as_tuple(asio::deferred)));
+                co_await stream_->async_write(asio::buffer(data), std::chrono::milliseconds(500));
             }
             catch (const boost::system::system_error& e) {
                 log::error{logger_, "Write aborted: {}", e.what()};
@@ -360,8 +356,8 @@ class AsyncMachineProtocolServer
                 rx_buffer.resize(rx_buffer.size() * 2);
             }
 
-            auto [ec, bytes_read] = co_await stream_.async_read_some(
-                asio::buffer(rx_buffer.data() + valid_bytes, rx_buffer.size() - valid_bytes), asio::as_tuple(cobalt::use_op));
+            auto [ec, bytes_read] =
+                co_await stream_->async_read(asio::buffer(rx_buffer.data() + valid_bytes, rx_buffer.size() - valid_bytes));
 
             if (ec) {
                 log::error(logger_, "Could not read from stream. Returning from read-loop. Reason: {}", ec.message());
@@ -433,7 +429,7 @@ class AsyncMachineProtocolServer
 
     struct CleanupGuard
     {
-        AsyncMachineProtocolServer<AsyncStream>* client;
+        AsyncMachineProtocolServer* client;
         proto::FrameInterfaceFields::TransactionId::ValueType transaction_id;
 
         ~CleanupGuard()
@@ -445,11 +441,11 @@ class AsyncMachineProtocolServer
     // RAII guard to cleanly manage Subscriptions mapping locally
     struct EventSubscriptionGuard
     {
-        AsyncMachineProtocolServer<AsyncStream>* server;
+        AsyncMachineProtocolServer* server;
         ChannelPtr channel;
         std::vector<proto::MsgId> ids;
 
-        EventSubscriptionGuard(AsyncMachineProtocolServer<AsyncStream>* s, ChannelPtr c, std::vector<proto::MsgId> i)
+        EventSubscriptionGuard(AsyncMachineProtocolServer* s, ChannelPtr c, std::vector<proto::MsgId> i)
             : server(s)
             , channel(std::move(c))
             , ids(std::move(i))

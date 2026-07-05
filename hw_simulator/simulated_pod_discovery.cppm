@@ -29,7 +29,7 @@ export class SimulatedPodDiscovery : public PodDiscovery
 
         boost::asio::local::connect_pair(client_.socket(), server_socket);
         boost::asio::post(client_.socket().get_executor(), [this]() { client_.run(); });
-        co_yield std::make_shared<Pod<Socket>>(std::move(server_socket));
+        co_yield std::make_shared<Pod>(std::make_unique<SocketIoStream<Socket>>(std::move(server_socket)));
         co_return {};
     }
 };

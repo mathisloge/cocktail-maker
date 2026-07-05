@@ -6,3 +6,4 @@ export import :comms_adapter;
 export import :awaitable_bool;
 export import :overloaded;
 export import :strong_type;
+export import :any_io_stream;

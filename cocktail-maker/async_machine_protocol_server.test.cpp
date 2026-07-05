@@ -4,10 +4,11 @@
 #include <comms/ErrorStatus.h>
 
 import std;
+import cm.core;
 import cm;
 
 using Socket = boost::asio::local::stream_protocol::socket;
-using Server = cm::AsyncMachineProtocolServer<Socket>;
+using Server = cm::AsyncMachineProtocolServer;
 
 using TestTxMsg = cm::OutPing;
 using TestRxMsg = cm::InPong;
@@ -57,7 +58,7 @@ struct AsyncServerTestFixture
         boost::cobalt::this_thread::set_executor(ioc.get_executor());
         Socket server_socket{ioc};
         boost::asio::local::connect_pair(client_socket, server_socket);
-        server = std::make_unique<Server>(std::move(server_socket));
+        server = std::make_unique<Server>(std::make_unique<cm::SocketIoStream<Socket>>(std::move(server_socket)));
     }
 
     // Safely executes tests and guarantees graceful server shutdown even if assertions fail

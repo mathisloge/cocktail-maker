@@ -32,10 +32,4 @@ export class Dispenser
     virtual cobalt::promise<void> highlight(std::chrono::milliseconds duration) = 0;
 };
 
-export class DispenserEmptyError : public std::runtime_error
-{
-  public:
-    using runtime_error::runtime_error;
-};
-
 } // namespace cm

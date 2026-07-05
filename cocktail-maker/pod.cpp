@@ -99,13 +99,31 @@ auto retry_on_timeout(std::size_t max_retries, F f) -> decltype(f(std::chrono::m
     }
 }
 
-void process_nak(const InNak& nak)
+struct MessageEnvironment
+{
+    PodId pod_id = PodId{};
+    DispenserId dispenser_id = DispenserId{};
+    std::chrono::milliseconds timeout = 100ms;
+};
+
+MessageEnvironment dispenser_env(Pod* pod, DispenserId dispenser_id)
+{
+    return MessageEnvironment{.pod_id = pod->pod_id(), .dispenser_id = dispenser_id};
+}
+
+MessageEnvironment default_env(Pod* pod, std::chrono::milliseconds timeout = 100ms)
+{
+    return MessageEnvironment{.pod_id = pod->pod_id(), .timeout = timeout};
+}
+
+void process_nak(const InNak& nak, const MessageEnvironment& env)
 {
     switch (nak.field_errorCode().value()) {
     case proto::field::ErrorCodeCommon::ValueType::DispenserEmpty:
-        throw DispenserEmptyError{"Dispenser empty."}; // TODO: maybe this should contain the pod and dispenser id?
-    case proto::field::ErrorCodeCommon::ValueType::InvalidParameter:
+        throw DispenserEmptyError{env.pod_id, env.dispenser_id};
     case proto::field::ErrorCodeCommon::ValueType::DispenserNotFound:
+        // throw DispenserEmptyError{pod_id, dispenser_id};
+    case proto::field::ErrorCodeCommon::ValueType::InvalidParameter:
     case proto::field::ErrorCodeCommon::ValueType::UnsupportedInCurrentState:
     case proto::field::ErrorCodeCommon::ValueType::HardwareFault:
     case proto::field::ErrorCodeCommon::ValueType::Busy:
@@ -118,43 +136,44 @@ void process_nak(const InNak& nak)
 }
 
 template <typename TxMsg>
-auto send_with_ack(AsyncMachineProtocolServer& server, TxMsg tx_msg, std::chrono::milliseconds timeout = 100ms)
+auto send_with_ack(AsyncMachineProtocolServer& server, TxMsg tx_msg, const MessageEnvironment env)
     -> cobalt::promise<TransactionId::ValueType>
 {
     const auto transaction_id = server.generate_new_transaction_id();
 
     // register queue at first
-    auto rx_action = server.async_receive<InAck, InNak>(transaction_id, timeout);
+    auto rx_action = server.async_receive<InAck, InNak>(transaction_id, env.timeout);
 
     co_await server.async_send(std::move(tx_msg), transaction_id);
     const auto nak_or_ack = co_await rx_action;
     if (std::holds_alternative<InNak>(nak_or_ack)) {
-        process_nak(std::get<InNak>(nak_or_ack));
+        process_nak(std::get<InNak>(nak_or_ack), env);
     }
     co_return transaction_id;
 }
 
 template <typename RxMsg, typename TxMsg>
-auto send_and_receive(AsyncMachineProtocolServer& server, TxMsg tx_msg, std::chrono::milliseconds timeout = 100ms)
-    -> cobalt::promise<RxMsg>
+auto send_and_receive(AsyncMachineProtocolServer& server, TxMsg tx_msg, const MessageEnvironment env) -> cobalt::promise<RxMsg>
 {
     const auto transaction_id = server.generate_new_transaction_id();
 
     // register queue at first
-    auto rx_action = server.async_receive<RxMsg>(transaction_id, timeout);
+    auto rx_action = server.async_receive<RxMsg>(transaction_id, env.timeout);
 
     co_await server.async_send(std::move(tx_msg), transaction_id);
     co_return co_await rx_action;
 }
 
 template <typename RxMsg, typename TxMsg>
-auto send_action_with_response(AsyncMachineProtocolServer& server, TxMsg tx_msg, std::chrono::milliseconds action_timeout)
-    -> cobalt::promise<RxMsg>
+auto send_action_with_response(AsyncMachineProtocolServer& server,
+                               TxMsg tx_msg,
+                               std::chrono::milliseconds action_timeout,
+                               const MessageEnvironment env) -> cobalt::promise<RxMsg>
 {
-    const auto transaction_id = co_await send_with_ack(server, std::move(tx_msg));
+    const auto transaction_id = co_await send_with_ack(server, std::move(tx_msg), env);
     const auto nak_or_action = co_await server.async_receive<RxMsg, InNak>(transaction_id, action_timeout);
     if (std::holds_alternative<InNak>(nak_or_action)) {
-        process_nak(std::get<InNak>(nak_or_action));
+        process_nak(std::get<InNak>(nak_or_action), env);
     }
     co_return std::get<RxMsg>(nak_or_action);
 }
@@ -190,7 +209,8 @@ std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> Pod::create_di
 
 cobalt::promise<PodInfo> Pod::aquire_device_info(std::chrono::milliseconds timeout)
 {
-    InDeviceInfoResponse msg = co_await send_and_receive<InDeviceInfoResponse>(server_, OutDeviceInfoRequest{}, timeout);
+    InDeviceInfoResponse msg =
+        co_await send_and_receive<InDeviceInfoResponse>(server_, OutDeviceInfoRequest{}, default_env(this, timeout));
     co_return PodInfo{
         .id = PodId{msg.field_deviceName().getValue()},
         .firmware_version =
@@ -209,14 +229,14 @@ cobalt::promise<void> Pod::load_cell_calibrate_with_ref_weight(const DispenserId
     auto tx = OutLoadCellCalibrateWithRefWeight{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
     tx.field_gram().setValue(grams.numerical_value_in(units::si::gram));
-    co_await send_with_ack(server_, std::move(tx), 500ms);
+    co_await send_with_ack(server_, std::move(tx), dispenser_env(this, dispenser_id));
 }
 
 cobalt::promise<void> Pod::load_cell_tare(DispenserId dispenser_id)
 {
     auto tx = OutLoadCellTare{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
-    co_await send_with_ack(server_, std::move(tx), 500ms);
+    co_await send_with_ack(server_, std::move(tx), dispenser_env(this, dispenser_id));
 }
 
 cobalt::promise<units::Litre> Pod::dispense(DispenserId dispenser_id, units::Litre volume)
@@ -225,7 +245,8 @@ cobalt::promise<units::Litre> Pod::dispense(DispenserId dispenser_id, units::Lit
     tx.field_dispenserId().setValue(dispenser_id.raw());
     tx.field_millilitre().setValue(volume.numerical_value_in(units::milli_litre));
 
-    const InDispenseFinished finish_result = co_await send_action_with_response<InDispenseFinished>(server_, std::move(tx), 30s);
+    const InDispenseFinished finish_result =
+        co_await send_action_with_response<InDispenseFinished>(server_, std::move(tx), 30s, dispenser_env(this, dispenser_id));
     co_return (finish_result.field_millilitre().value() * units::milli_litre);
 }
 
@@ -235,8 +256,8 @@ cobalt::promise<units::Litre> Pod::pump_calibrate(const DispenserId dispenser_id
     tx.field_dispenserId().setValue(dispenser_id.raw());
     tx.field_pumpStep().setValue(steps);
 
-    const InPumpFinishedCalibrationResponse finish_result =
-        co_await send_action_with_response<InPumpFinishedCalibrationResponse>(server_, std::move(tx), (steps * 2ms) + 100ms);
+    const InPumpFinishedCalibrationResponse finish_result = co_await send_action_with_response<InPumpFinishedCalibrationResponse>(
+        server_, std::move(tx), (steps * 2ms) + 100ms, dispenser_env(this, dispenser_id));
     co_return finish_result.field_millilitre().value() * units::milli_litre;
 }
 
@@ -246,12 +267,12 @@ cobalt::promise<void> Pod::highlight_dispenser(DispenserId dispenser_id, std::ch
     tx.field_dispenserId().setValue(dispenser_id.raw());
     tx.field_ledEffect().setValue(proto::field::LedEffectVal::Highlight);
     tx.field_milliseconds().setValue(duration.count());
-    co_await send_with_ack(server_, std::move(tx), 100ms);
+    co_await send_with_ack(server_, std::move(tx), dispenser_env(this, dispenser_id));
 }
 
 cobalt::task<void> Pod::force_safe_state()
 {
-    co_await send_with_ack(server_, OutEmergencyStop{}, 100ms);
+    co_await send_with_ack(server_, OutEmergencyStop{}, default_env(this));
 }
 
 cobalt::task<void> Pod::monitor_device()
@@ -307,9 +328,16 @@ cobalt::task<void> Pod::keep_alive()
     co_await device_ready_;
     asio::steady_timer timer{server_.get_executor()};
     while (cs.cancelled() == asio::cancellation_type::none) {
-        co_await send_and_receive<InPong>(server_, OutPing{}, 1s);
+        co_await send_and_receive<InPong>(server_, OutPing{}, default_env(this, 1s));
         timer.expires_after(2s);
         co_await timer.async_wait(cobalt::use_op);
     }
+}
+
+DispenserEmptyError::DispenserEmptyError(PodId pod_id, DispenserId dispenser_id)
+    : runtime_error{std::format("Dispenser '{}' of Pod '{}' is empty", pod_id, dispenser_id)}
+    , pod_id_{pod_id}
+    , dispenser_id_{dispenser_id}
+{
 }
 } // namespace cm

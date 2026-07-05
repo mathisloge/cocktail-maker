@@ -27,6 +27,16 @@ export class PodReceiveError : public std::runtime_error
     }
 };
 
+export class DispenserEmptyError : public std::runtime_error
+{
+  public:
+    DispenserEmptyError(PodId pod_id, DispenserId dispenser_id);
+
+  private:
+    PodId pod_id_;
+    DispenserId dispenser_id_;
+};
+
 export class IPod
 {
   public:

@@ -6,6 +6,7 @@ module;
 #include <boost/cobalt/detached.hpp>
 #include <boost/cobalt/spawn.hpp>
 #include <slint.h>
+#include <spdlog/spdlog.h>
 #include "app-window.h"
 
 export module cm.gui:process_context_bridge;
@@ -149,13 +150,13 @@ export class ProcessContextBridge
             else {
                 // TODO: Add RecipeNotFoundError
                 display_ui_error(std::runtime_error{"Could not find recipe"}, ui_, station_config_, ingredient_store_);
-                log::error(logger_, "Could not find a recipe {}", recipe_to_create.name.data());
+                SPDLOG_LOGGER_ERROR(logger_, "Could not find a recipe {}", recipe_to_create.name.data());
             }
         });
 
         ui_->global<StationStateContext>().on_navigated_to([this](Page from, [[maybe_unused]] Page to) {
             if (from == Page::MixPage) {
-                log::info(logger_, "Cancelling recipe processing...");
+                SPDLOG_LOGGER_INFO(logger_, "Cancelling recipe processing...");
                 boost::asio::post(executor_, [this]() { active_cancel_signal_.emit(boost::asio::cancellation_type::all); });
             }
         });
@@ -166,7 +167,7 @@ export class ProcessContextBridge
     {
         using Clock = std::chrono::steady_clock;
 
-        log::debug(logger_, "Create {} with boost factor '{}' and target volume '{}'", recipe, boost, target_volume);
+        SPDLOG_LOGGER_DEBUG(logger_, "Create {} with boost factor '{}' and target volume '{}'", recipe, boost, target_volume);
         const auto start_tp = Clock::now();
         recipe.commands = scale_recipe(recipe.commands, recipe.nominal_serving_volume, target_volume);
         recipe.commands = boost_recipe(recipe.commands, boost, ingredient_store_);
@@ -175,23 +176,23 @@ export class ProcessContextBridge
         try {
             co_await execute_commands(std::move(recipe.commands), std::move(command_executer));
             const auto duration = std::chrono::duration_cast<std::chrono::seconds>(Clock::now() - start_tp);
-            log::debug(logger_, "Finished {} in '{}'", recipe, duration);
+            SPDLOG_LOGGER_DEBUG(logger_, "Finished {} in '{}'", recipe, duration);
             display_ui_success(duration);
         }
         catch (const boost::system::system_error& ex) {
             if (ex.code() == boost::asio::error::operation_aborted) {
-                log::info(logger_, "Recipe processing cancelled");
+                SPDLOG_LOGGER_INFO(logger_, "Recipe processing cancelled");
                 cobalt::spawn(executor_, pod_registry_.force_safe_state_all_pods(), boost::asio::detached);
                 co_return; // clean exit, no UI error
             }
-            log::error(logger_, "System error while processing recipe: {}", ex.what());
+            SPDLOG_LOGGER_ERROR(logger_, "System error while processing recipe: {}", ex.what());
             display_ui_error(ex, ui_, station_config_, ingredient_store_);
         }
         catch (const DispenserEmptyError& ex) {
             display_ui_error(ex, ui_, station_config_, ingredient_store_);
         }
         catch (const std::exception& ex) {
-            log::error(logger_, "Unknown error while processing recipe: {}", ex.what());
+            SPDLOG_LOGGER_ERROR(logger_, "Unknown error while processing recipe: {}", ex.what());
             display_ui_error(ex, ui_, station_config_, ingredient_store_);
         }
     }

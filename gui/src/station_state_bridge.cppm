@@ -3,6 +3,7 @@ module;
 #include <boost/asio/post.hpp>
 #include <boost/cobalt/detached.hpp>
 #include <slint.h>
+#include <spdlog/spdlog.h>
 #include "app-window.h"
 
 export module cm.gui:station_state_bridge;
@@ -243,14 +244,14 @@ class StationStateBridge : public StationState, public std::enable_shared_from_t
         log::Logger logger_{log::create_or_get("station_state_bridge")};
         auto dispenser = pod_registry.dispenser_of_pod(pod_id, dispenser_id);
         if (not dispenser.has_value()) {
-            log::error{logger_, "Could not find a dispenser with id {} or pod with id {}", dispenser_id, pod_id};
+            SPDLOG_LOGGER_ERROR(logger_, "Could not find a dispenser with id {} or pod with id {}", dispenser_id, pod_id);
             co_return;
         }
         try {
             co_await (*dispenser)->highlight(std::chrono::seconds{2});
         }
         catch (const std::exception& err) {
-            log::error{logger_, "Error while highlighting: {}", err.what()};
+            SPDLOG_LOGGER_ERROR(logger_, "Error while highlighting: {}", err.what());
         }
     }
 
@@ -270,7 +271,8 @@ PodStateImpl::~PodStateImpl()
         }
     }
     catch (const std::exception& ex) {
-        log::error{log::create_or_get("pod_state"), "Could not invoke station state remove pod action. Reason: {}", ex.what()};
+        SPDLOG_LOGGER_ERROR(
+            log::create_or_get("pod_state"), "Could not invoke station state remove pod action. Reason: {}", ex.what());
     }
 }
 

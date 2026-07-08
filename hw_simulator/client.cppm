@@ -8,6 +8,7 @@ module;
 #include <proto/input/AllMessages.h>
 #include <proto/input/ClientInputMessages.h>
 #include <proto/options/ClientDefaultOptions.h>
+#include <spdlog/spdlog.h>
 
 export module cm.sim:client;
 import std;
@@ -87,7 +88,7 @@ class Client
             co_await boost::cobalt::race(read_loop(), write_loop());
         }
         catch (const boost::system::system_error& e) {
-            log::error{logger_, "I/O loops terminated: {}", e.what()};
+            SPDLOG_LOGGER_ERROR(logger_, "I/O loops terminated: {}", e.what());
         }
     }
 
@@ -133,7 +134,7 @@ class Client
 
     void handle(Message& msg)
     {
-        log::warn(logger_, "Got unexpected message '{}'", msg.name());
+        SPDLOG_LOGGER_WARN(logger_, "Got unexpected message '{}'", msg.name());
     }
 
   private:
@@ -217,7 +218,7 @@ class Client
   private:
     auto async_send(auto msg, const TransactionId::ValueType transaction_id) -> cobalt::promise<void>
     {
-        log::trace(logger_, "Schedule send {} with transaction id '{}'", msg.name(), transaction_id);
+        SPDLOG_LOGGER_TRACE(logger_, "Schedule send {} with transaction id '{}'", msg.name(), transaction_id);
         ClientFrame frame;
         std::vector<std::uint8_t> output;
 
@@ -259,7 +260,7 @@ class Client
                                            asio::cancel_after(std::chrono::milliseconds(500), asio::as_tuple(asio::deferred)));
             }
             catch (const boost::system::system_error& e) {
-                log::error{logger_, "Write aborted: {}", e.what()};
+                SPDLOG_LOGGER_ERROR(logger_, "Write aborted: {}", e.what());
                 break;
             }
         }
@@ -291,7 +292,7 @@ class Client
         while (true) {
             if (valid_bytes == rx_buffer.size()) {
                 if (rx_buffer.size() >= kMaxBufferSize) {
-                    log::error{logger_, "Fatal: Buffer limit exceeded. Dropping connection to prevent OOM."};
+                    SPDLOG_LOGGER_ERROR(logger_, "Fatal: Buffer limit exceeded. Dropping connection to prevent OOM.");
                     co_return;
                 }
                 rx_buffer.resize(rx_buffer.size() * 2);
@@ -301,7 +302,7 @@ class Client
                 asio::buffer(rx_buffer.data() + valid_bytes, rx_buffer.size() - valid_bytes), asio::as_tuple(cobalt::use_op));
 
             if (ec) {
-                log::debug(logger_, "Could not read from stream. Returning from read-loop. Reason: {}", ec.message());
+                SPDLOG_LOGGER_DEBUG(logger_, "Could not read from stream. Returning from read-loop. Reason: {}", ec.message());
                 co_return;
             }
 

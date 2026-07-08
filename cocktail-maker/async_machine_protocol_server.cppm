@@ -13,6 +13,7 @@ module;
 #include <proto/input/AllMessages.h>
 #include <proto/input/ServerInputMessages.h>
 #include <proto/options/ServerDefaultOptions.h>
+#include <spdlog/spdlog.h>
 
 export module cm:async_machine_protocol_server;
 
@@ -236,7 +237,7 @@ auto AsyncMachineProtocolServer::async_send(Message msg, TransactionId::ValueTyp
     // write_iter has been advanced, check that it reached end of the allocated buffer.
     ASSERT(output.size() == static_cast<std::size_t>(std::distance(output.data(), write_iter)));
 
-    log::trace(logger_, "Schedule message {} with transaction id '{}'", msg.name(), transaction_id);
+    SPDLOG_LOGGER_TRACE(logger_, "Schedule message {} with transaction id '{}'", msg.name(), transaction_id);
     co_await write_queue_.write(std::move(output));
     co_return;
 }

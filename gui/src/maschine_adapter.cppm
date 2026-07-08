@@ -3,6 +3,7 @@ module;
 #include <boost/asio/steady_timer.hpp>
 #include <boost/cobalt.hpp>
 #include <slint.h>
+#include <spdlog/spdlog.h>
 #include "app-window.h"
 
 export module cm.gui:machine_adapter;
@@ -35,7 +36,7 @@ export class MachineAdapter : public cm::BasicCommandExecuter
     cobalt::promise<void> execute_command(ManualCommand command) override
     {
         auto logger = log::create_or_get("recipe");
-        log::debug(logger, "Opening UI manual command popup for '{}'", command.instruction);
+        SPDLOG_LOGGER_DEBUG(logger, "Opening UI manual command popup for '{}'", command.instruction);
         co_await async_show_manual_command_popup(ui_, std::move(command));
         co_return;
     }
@@ -43,7 +44,7 @@ export class MachineAdapter : public cm::BasicCommandExecuter
     cobalt::promise<void> execute_command(DispenseCommand command) override
     {
         auto logger = log::create_or_get("recipe");
-        log::debug{logger, "Process dispense command {}", command.ingredient};
+        SPDLOG_LOGGER_DEBUG(logger, "Process dispense command {}", command.ingredient);
 
         auto dispatcher = create_dispenser_for_ingredient(pod_registry_, station_config_, command.ingredient);
 
@@ -60,7 +61,7 @@ export class MachineAdapter : public cm::BasicCommandExecuter
         catch (const DispenserEmptyError&) {
             // Pod ran out mid-pour. Assume whatever was left (+-5ml sensor tolerance)
             // got dispensed before it failed.
-            log::debug{logger, "Dispense failed: pod ran empty. Refilling and continuing..."};
+            SPDLOG_LOGGER_DEBUG(logger, "Dispense failed: pod ran empty. Refilling and continuing...");
             dispensed = 0 * units::milli_litre;
             needs_refill = true;
         }
@@ -72,13 +73,13 @@ export class MachineAdapter : public cm::BasicCommandExecuter
             co_await dispatcher->dispense(command.volume - dispensed);
         }
 
-        log::debug{logger, "Finished dispense command {}", command.ingredient};
+        SPDLOG_LOGGER_DEBUG(logger, "Finished dispense command {}", command.ingredient);
     }
 
     void update_command_status(cm::CommandId id, cm::CommandStatus status) override
     {
         auto logger = log::create_or_get("recipe");
-        log::debug(logger, "Updating command '{}' status to '{}'", id, static_cast<int>(status));
+        SPDLOG_LOGGER_DEBUG(logger, "Updating command '{}' status to '{}'", id, static_cast<int>(status));
 
         ui_->run_in_ui_thread([id, status, ui = ui_]() {
             auto selected = ui->ui->global<RecipeContext>().get_active_recipe();

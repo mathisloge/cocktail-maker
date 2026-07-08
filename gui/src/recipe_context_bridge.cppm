@@ -3,6 +3,7 @@ module;
 #include <boost/asio/post.hpp>
 #include <boost/cobalt/detached.hpp>
 #include <slint.h>
+#include <spdlog/spdlog.h>
 #include "app-window.h"
 
 export module cm.gui:recipe_context_bridge;
@@ -45,11 +46,11 @@ export class RecipeContextBridge
             [this](const int boost_percentage) { boost_recipe_callback(boost_percentage); });
         ui->global<cm::gui::RecipeContext>().on_assign_ingredient_to_dispenser(
             [this](const cm::gui::Pod& pod, const cm::gui::Dispenser& dispenser, slint::SharedString ingredient_id) {
-                cm::log::trace(logger_,
-                               "Assign ingredient '{}' to pod '{}' and dispenser '{}'",
-                               ingredient_id.data(),
-                               pod.id.data(),
-                               dispenser.id);
+                SPDLOG_LOGGER_TRACE(logger_,
+                                    "Assign ingredient '{}' to pod '{}' and dispenser '{}'",
+                                    ingredient_id.data(),
+                                    pod.id.data(),
+                                    dispenser.id);
                 boost::asio::post(executor_, [&station_config = station_config_, pod, dispenser, ingredient_id]() {
                     station_config.update_dispenser_ingredient_mapping(
                         cm::IngredientId{ingredient_id.data()},
@@ -65,11 +66,11 @@ export class RecipeContextBridge
         const auto active_ui_recipe = ui_->global<RecipeContext>().get_active_recipe();
         auto opt_recipe = recipe_store_.find_by_id(RecipeId{active_ui_recipe.id.data()});
         if (not opt_recipe.has_value()) {
-            log::error(logger_, "Could not find a recipe with id '{}'", active_ui_recipe.id);
+            SPDLOG_LOGGER_ERROR(logger_, "Could not find a recipe with id '{}'", active_ui_recipe.id);
             return;
         }
         auto recipe = opt_recipe.value();
-        log::trace(logger_, "boosting {} by {}.", recipe, boost);
+        SPDLOG_LOGGER_TRACE(logger_, "boosting {} by {}.", recipe, boost);
         recipe.commands = cm::boost_recipe(recipe.commands, boost, ingredient_store_);
 
         ui_->global<RecipeContext>().set_active_recipe(transform(recipe, ingredient_store_));

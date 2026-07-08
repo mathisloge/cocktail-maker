@@ -1,4 +1,5 @@
 #include <boost/cobalt.hpp>
+#include <spdlog/spdlog.h>
 #include "app-window.h"
 
 import std;
@@ -14,7 +15,7 @@ boost::cobalt::detached my_task2(std::unique_ptr<cm::PodDiscovery> pod_discovery
 {
     auto logger = cm::log::create_or_get("main");
     co_await cm::discover_and_run_pods(std::move(pod_discovery), station_state, pod_registry);
-    cm::log::debug(logger, "simulated pod manager ended.");
+    SPDLOG_LOGGER_DEBUG(logger, "simulated pod manager ended.");
 }
 
 int main(int argc, char** argv)
@@ -31,7 +32,7 @@ int main(int argc, char** argv)
     ui_station_state_context.set_log_entries(ui_log_sink->model());
 
     auto logger = cm::log::create_or_get("main");
-    cm::log::info(logger, "Setup application...");
+    SPDLOG_LOGGER_INFO(logger, "Setup application...");
 
     const auto recipe_db_path = std::filesystem::path{"/Users/neleschoenrock/Desktop/MathisCode/cocktail-maker/db/recipes"};
 
@@ -90,14 +91,14 @@ int main(int argc, char** argv)
 
         ctx.run();
 
-        cm::log::info(logger, "Async context finished.");
+        SPDLOG_LOGGER_INFO(logger, "Async context finished.");
     });
 
-    cm::log::info(*logger, "Run application...");
+    SPDLOG_LOGGER_INFO(logger, "Run application...");
     ui->run();
-    cm::log::info(*logger, "Application quit. Stopping async context...");
+    SPDLOG_LOGGER_INFO(logger, "Application quit. Stopping async context...");
     ctx.stop();
     cobalt_thread.join();
-    cm::log::info(*logger, "Async context joined. Finished.");
+    SPDLOG_LOGGER_INFO(logger, "Async context joined. Finished.");
     return 0;
 }

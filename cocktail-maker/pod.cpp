@@ -6,6 +6,7 @@ module;
 #include <boost/cobalt/task.hpp>
 #include <proto/field/ErrorCodeCommon.h>
 #include <proto/field/LedEffectCommon.h>
+#include <spdlog/spdlog.h>
 
 module cm:pod_impl;
 import std;
@@ -26,27 +27,27 @@ DispenserPodImpl::DispenserPodImpl(std::weak_ptr<IPod> pod, DispenserId dispense
 
 cobalt::promise<units::Litre> DispenserPodImpl::dispense(units::Litre volume)
 {
-    log::debug(logger_, "Start dispense of {}.", volume);
+    SPDLOG_LOGGER_DEBUG(logger_, "Start dispense of {}.", volume);
     const auto measured_volume = co_await pod()->dispense(dispenser_id_, volume);
-    log::debug(logger_, "Finished dispensing of {}. Dispensed: {}.", volume, measured_volume);
+    SPDLOG_LOGGER_DEBUG(logger_, "Finished dispensing of {}. Dispensed: {}.", volume, measured_volume);
     co_return measured_volume;
 }
 
 cobalt::promise<void> DispenserPodImpl::load_cell_calibrate_with_ref_weight(units::Grams grams)
 {
-    log::debug(logger_, "Set load cell ref weight to {}.", grams);
+    SPDLOG_LOGGER_DEBUG(logger_, "Set load cell ref weight to {}.", grams);
     co_await pod()->load_cell_calibrate_with_ref_weight(dispenser_id_, grams);
 }
 
 cobalt::promise<void> DispenserPodImpl::load_cell_tare()
 {
-    log::debug(logger_, "load cell TARE.");
+    SPDLOG_LOGGER_DEBUG(logger_, "load cell TARE.");
     co_await pod()->load_cell_tare(dispenser_id_);
 }
 
 cobalt::promise<void> DispenserPodImpl::highlight(std::chrono::milliseconds duration)
 {
-    log::debug(logger_, "Highlight for {}.", duration);
+    SPDLOG_LOGGER_DEBUG(logger_, "Highlight for {}.", duration);
     co_await pod()->highlight_dispenser(id(), duration);
 }
 
@@ -71,7 +72,7 @@ Pump::Pump(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
 
 cobalt::promise<units::Litre> Pump::calibrate(units::Steps steps)
 {
-    log::debug(logger_, "Start calibration with {}.", steps);
+    SPDLOG_LOGGER_DEBUG(logger_, "Start calibration with {}.", steps);
     co_return co_await pod()->pump_calibrate(id(), steps);
 }
 
@@ -283,7 +284,7 @@ cobalt::task<void> Pod::monitor_device()
 
         ~Cleanup()
         {
-            log::debug(p_.logger_, "monitor device loop finished.");
+            SPDLOG_LOGGER_DEBUG(p_.logger_, "monitor device loop finished.");
             p_.device_ready_ = false;
             p_.state_->update_state(PodState::ConnectionState::disconnected);
         }
@@ -293,7 +294,7 @@ cobalt::task<void> Pod::monitor_device()
     state_->update_state(PodState::ConnectionState::connecting);
     const auto pod_info = co_await retry_on_timeout(5, [this](auto timeout) { return aquire_device_info(timeout); });
     state_->update_info(pod_info);
-    log::info(logger_, "Device '{}' is ready.", pod_info.id);
+    SPDLOG_LOGGER_INFO(logger_, "Device '{}' is ready.", pod_info.id);
     state_->update_state(PodState::ConnectionState::connected);
     device_ready_ = true;
 

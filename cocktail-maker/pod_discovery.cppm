@@ -1,5 +1,6 @@
 module;
 #include <boost/cobalt.hpp>
+#include <spdlog/spdlog.h>
 
 export module cm:pod_discovery;
 
@@ -21,7 +22,7 @@ export class PodDiscovery
 cobalt::promise<void> run_pod(std::shared_ptr<IPod> pod, std::unique_ptr<PodState> pod_state, PodRegistry& pod_registry)
 {
     auto logger{log::create_or_get("pod_discovery")};
-    log::info(logger, "New pod discovered. Running it now...");
+    SPDLOG_LOGGER_INFO(logger, "New pod discovered. Running it now...");
 
     struct EntryGuard
     {
@@ -63,8 +64,8 @@ export cobalt::task<void> discover_and_run_pods(std::unique_ptr<PodDiscovery> po
                                   }
                               }
 
-                              log::warn(logger, "Pod discovery finished.");
+                              SPDLOG_LOGGER_WARN(logger, "Pod discovery finished.");
                           });
-    log::debug(logger, "Pod manager exiting now.");
+    SPDLOG_LOGGER_DEBUG(logger, "Pod manager exiting now.");
 }
 } // namespace cm

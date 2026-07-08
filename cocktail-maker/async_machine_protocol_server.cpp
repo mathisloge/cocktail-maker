@@ -4,6 +4,7 @@ module;
 #include <comms/ErrorStatus.h>
 #include <libassert/assert-macros.hpp>
 #include <proto/MsgId.h>
+#include <spdlog/spdlog.h>
 
 module cm:async_machine_protocol_server_impl;
 import std;
@@ -43,7 +44,7 @@ AsyncMachineProtocolServer::~AsyncMachineProtocolServer()
         shutdown_channels();
     }
     catch (const std::exception& ex) {
-        log::error{logger_, "Error while descructing the server: {}", ex.what()};
+        SPDLOG_LOGGER_ERROR(logger_, "Error while descructing the server: {}", ex.what());
     }
 }
 
@@ -66,7 +67,7 @@ cobalt::task<void> AsyncMachineProtocolServer::run()
         co_await boost::cobalt::race(read_loop(), write_loop());
     }
     catch (const boost::system::system_error& e) {
-        log::error{logger_, "I/O loops terminated: {}", e.what()};
+        SPDLOG_LOGGER_ERROR(logger_, "I/O loops terminated: {}", e.what());
     }
     is_running_ = false;
     shutdown_channels();
@@ -132,7 +133,7 @@ cobalt::task<void> AsyncMachineProtocolServer::write_loop()
             co_await stream_->async_write(asio::buffer(data), std::chrono::milliseconds(500));
         }
         catch (const boost::system::system_error& e) {
-            log::error{logger_, "Write aborted: {}", e.what()};
+            SPDLOG_LOGGER_ERROR(logger_, "Write aborted: {}", e.what());
             break;
         }
     }
@@ -166,7 +167,7 @@ cobalt::task<void> AsyncMachineProtocolServer::read_loop()
     while (true) {
         if (valid_bytes == rx_buffer.size()) {
             if (rx_buffer.size() >= kMaxBufferSize) {
-                log::error{logger_, "Fatal: Buffer limit exceeded. Dropping connection to prevent OOM."};
+                SPDLOG_LOGGER_ERROR(logger_, "Fatal: Buffer limit exceeded. Dropping connection to prevent OOM.");
                 co_return;
             }
             rx_buffer.resize(rx_buffer.size() * 2);
@@ -176,7 +177,7 @@ cobalt::task<void> AsyncMachineProtocolServer::read_loop()
             co_await stream_->async_read(asio::buffer(rx_buffer.data() + valid_bytes, rx_buffer.size() - valid_bytes));
 
         if (ec) {
-            log::error(logger_, "Could not read from stream. Returning from read-loop. Reason: {}", ec.message());
+            SPDLOG_LOGGER_ERROR(logger_, "Could not read from stream. Returning from read-loop. Reason: {}", ec.message());
             co_return;
         }
 
@@ -204,7 +205,7 @@ cobalt::task<void> AsyncMachineProtocolServer::read_loop()
             }
             const auto transaction_id = std::get<TransactionId>(msg->transportFields()).value();
 
-            log::trace(logger_, "Received message '{}' with transaction id '{}'", msg->name(), transaction_id);
+            SPDLOG_LOGGER_TRACE(logger_, "Received message '{}' with transaction id '{}'", msg->name(), transaction_id);
 
             const auto rx_it = dispatch_map_.find(transaction_id);
             if (rx_it != dispatch_map_.end()) {
@@ -214,10 +215,10 @@ cobalt::task<void> AsyncMachineProtocolServer::read_loop()
                     co_await chan->write(std::move(msg));
                 }
                 catch (const boost::system::system_error& write_error) {
-                    log::warn{logger_,
-                              "Dispatch to channel of transaction id '{}' failed with: {}",
-                              transaction_id,
-                              write_error.what()};
+                    SPDLOG_LOGGER_WARN(logger_,
+                                       "Dispatch to channel of transaction id '{}' failed with: {}",
+                                       transaction_id,
+                                       write_error.what());
                 }
             }
             else {
@@ -230,11 +231,11 @@ cobalt::task<void> AsyncMachineProtocolServer::read_loop()
                         co_await sub_it->second->write(std::move(msg));
                     }
                     catch (...) {
-                        log::warn{logger_, "Failed to route event '{}' to its subscriber.", msg->name()};
+                        SPDLOG_LOGGER_WARN(logger_, "Failed to route event '{}' to its subscriber.", msg->name());
                     }
                 }
                 else {
-                    log::debug(logger_, "Discarding unhandled message '{}'.", msg->name());
+                    SPDLOG_LOGGER_DEBUG(logger_, "Discarding unhandled message '{}'.", msg->name());
                 }
             }
 

@@ -1,5 +1,5 @@
 module;
-
+#include <spdlog/spdlog.h>
 export module cm:station_config;
 
 import std;
@@ -28,13 +28,13 @@ export class StationConfig final
 
     void update_dispenser_ingredient_mapping(IngredientId ingredient_id, PodDispenser pod_dispenser_pair)
     {
-        log::debug(logger_,
-                   "Pod '{}', Dispenser '{}' maps to ingredient '{}'",
-                   pod_dispenser_pair.pod_id,
-                   pod_dispenser_pair.dispenser_id,
-                   ingredient_id);
+        SPDLOG_LOGGER_DEBUG(logger_,
+                            "Pod '{}', Dispenser '{}' maps to ingredient '{}'",
+                            pod_dispenser_pair.pod_id,
+                            pod_dispenser_pair.dispenser_id,
+                            ingredient_id);
         if (not ingredient_store_.find_by_id(ingredient_id).has_value()) {
-            log::error(logger_, "Could not find ingredient '{}'.", ingredient_id);
+            SPDLOG_LOGGER_ERROR(logger_, "Could not find ingredient '{}'.", ingredient_id);
             // question: throw exception here and bring it to the ui? Maybe with toasts?
             return;
         }

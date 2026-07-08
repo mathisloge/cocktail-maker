@@ -168,45 +168,4 @@ export void add_sink(spdlog::sink_ptr sink)
 {
     LoggingContext::instance().add_sink(std::move(sink));
 }
-
-// Usage:
-//   cm::log::info(logger, "hello {}", name);
-//   cm::log::info(*logger_ptr, "hello {}", name);   // deref shared_ptr
-//   cm::log::info(logger_ptr, "hello {}", name);    // shared_ptr overload
-
-#define CM_LOG_STRUCT(StructName, SpdlogLevel)                                                                                   \
-    export template <typename... Args>                                                                                           \
-    struct StructName                                                                                                            \
-    {                                                                                                                            \
-        /* logger& overload */                                                                                                   \
-        StructName(spdlog::logger& logger,                                                                                       \
-                   spdlog::format_string_t<Args...> fmt,                                                                         \
-                   Args&&... args,                                                                                               \
-                   std::source_location loc = std::source_location::current())                                                   \
-        {                                                                                                                        \
-            detail::log_impl(logger, loc, SpdlogLevel, fmt, std::forward<Args>(args)...);                                        \
-        }                                                                                                                        \
-        /* shared_ptr<logger> overload */                                                                                        \
-        StructName(const Logger& logger,                                                                                         \
-                   spdlog::format_string_t<Args...> fmt,                                                                         \
-                   Args&&... args,                                                                                               \
-                   std::source_location loc = std::source_location::current())                                                   \
-        {                                                                                                                        \
-            detail::log_impl(*logger, loc, SpdlogLevel, fmt, std::forward<Args>(args)...);                                       \
-        }                                                                                                                        \
-    };                                                                                                                           \
-    template <typename... Args>                                                                                                  \
-    StructName(spdlog::logger&, spdlog::format_string_t<Args...>, Args&&...) -> StructName<Args...>;                             \
-    template <typename... Args>                                                                                                  \
-    StructName(const Logger&, spdlog::format_string_t<Args...>, Args&&...)->StructName<Args...>
-
-CM_LOG_STRUCT(trace, spdlog::level::trace);
-CM_LOG_STRUCT(debug, spdlog::level::debug);
-CM_LOG_STRUCT(info, spdlog::level::info);
-CM_LOG_STRUCT(warn, spdlog::level::warn);
-CM_LOG_STRUCT(error, spdlog::level::err);
-CM_LOG_STRUCT(critical, spdlog::level::critical);
-
-#undef CM_LOG_STRUCT
-
 } // namespace cm::log

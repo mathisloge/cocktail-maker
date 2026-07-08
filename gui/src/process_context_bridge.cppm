@@ -18,16 +18,112 @@ import :recipe_adapter;
 import :machine_adapter;
 
 namespace cm::gui {
+enum class ErrorItemCategory
+{
+    Ingredient,
+    Unknown
+};
+
+slint::SharedString to_slint_string(ErrorItemCategory category)
+{
+    switch (category) {
+    case ErrorItemCategory::Ingredient:
+        return "I";
+    case ErrorItemCategory::Unknown:
+        return "U";
+    }
+    return "U";
+}
+
+struct ErrorPageData
+{
+    slint::SharedString title;
+    slint::SharedString description;
+    ErrorItemCategory item_category = ErrorItemCategory::Unknown;
+    slint::SharedString item_name;
+    slint::SharedString item_details;
+};
+
+namespace error_page {
+ErrorPageData make(const DispenserEmptyError& ex,
+                   const cm::StationConfig& station_config,
+                   const IngredientStore& ingredient_store)
+{
+    const auto dispenser = PodDispenser{ex.pod_id(), ex.dispenser_id()};
+
+    const std::expected<Ingredient, std::out_of_range> ingredient =
+        station_config.find_ingredient_by_dispenser(dispenser).and_then(
+            [&](IngredientId id) -> std::expected<Ingredient, std::out_of_range> {
+                if (auto opt = ingredient_store.find_by_id(id); opt.has_value()) {
+                    return std::move(opt).value();
+                }
+                return std::unexpected(std::out_of_range{"Konnte Ingredient für Behälter nicht finden"});
+            });
+
+    const auto item_details = std::format("Bitte Behälter '{}' von Pod '{}' befüllen", ex.dispenser_id(), ex.pod_id());
+
+    if (!ingredient.has_value()) {
+        // Dispenser->ingredient mapping missing or ingredient not in store -
+        // still report the dispenser-empty error, just without a friendly name.
+        return ErrorPageData{
+            .title = "Behälter leer!",
+            .description = "Bitte auffüllen.",
+            .item_category = ErrorItemCategory::Unknown,
+            .item_name = "Unbekannte Zutat",
+            .item_details = item_details.c_str(),
+        };
+    }
+
+    return ErrorPageData{
+        .title = "Behälter leer!",
+        .description = "Bitte auffüllen.",
+        .item_category = ErrorItemCategory::Ingredient,
+        .item_name = ingredient->display_name.c_str(),
+        .item_details = item_details.c_str(),
+    };
+}
+
+// Fallback for any exception without a dedicated overload above.
+ErrorPageData make(const std::exception& ex, const cm::StationConfig&, const IngredientStore&)
+{
+    return ErrorPageData{
+        .title = "Unbekannter Fehler!",
+        .description = ex.what(),
+        .item_category = ErrorItemCategory::Unknown,
+        .item_name = "Unbekannt",
+        .item_details = "Fehler",
+    };
+}
+
+} // namespace error_page
+
+void display_ui_error(const std::derived_from<std::exception> auto& ex,
+                      slint::ComponentHandle<AppWindow> ui,
+                      const cm::StationConfig& station_config,
+                      const IngredientStore& ingredient_store)
+{
+    auto data = error_page::make(ex, station_config, ingredient_store);
+
+    slint::invoke_from_event_loop([ui, data = std::move(data)]() mutable {
+        auto& process_ctx = ui->global<ProcessContext>();
+        process_ctx.set_error_title(std::move(data.title));
+        process_ctx.set_error_description(std::move(data.description));
+        process_ctx.set_error_item_category(to_slint_string(data.item_category));
+        process_ctx.set_error_item_name(std::move(data.item_name));
+        process_ctx.set_error_item_details(std::move(data.item_details));
+        ui->global<StationStateContext>().invoke_navigate_to(Page::MixErrorPage);
+    });
+}
 
 export class ProcessContextBridge
 {
   public:
     explicit ProcessContextBridge(boost::asio::any_io_executor executor,
                                   slint::ComponentHandle<AppWindow> ui,
-                                  RecipeStore& recipe_store,
-                                  IngredientStore& ingredient_store,
-                                  cm::StationConfig& station_config,
-                                  PodRegistry& pod_registry)
+                                  const RecipeStore& recipe_store,
+                                  const IngredientStore& ingredient_store,
+                                  const cm::StationConfig& station_config,
+                                  const PodRegistry& pod_registry)
         : executor_{std::move(executor)}
         , ui_{std::move(ui)}
         , recipe_store_{recipe_store}
@@ -52,7 +148,7 @@ export class ProcessContextBridge
             }
             else {
                 // TODO: Add RecipeNotFoundError
-                display_ui_error(std::runtime_error{"Could not find recipe"});
+                display_ui_error(std::runtime_error{"Could not find recipe"}, ui_, station_config_, ingredient_store_);
                 log::error(logger_, "Could not find a recipe {}", recipe_to_create.name.data());
             }
         });
@@ -89,11 +185,14 @@ export class ProcessContextBridge
                 co_return; // clean exit, no UI error
             }
             log::error(logger_, "System error while processing recipe: {}", ex.what());
-            display_ui_error(ex);
+            display_ui_error(ex, ui_, station_config_, ingredient_store_);
+        }
+        catch (const DispenserEmptyError& ex) {
+            display_ui_error(ex, ui_, station_config_, ingredient_store_);
         }
         catch (const std::exception& ex) {
             log::error(logger_, "Unknown error while processing recipe: {}", ex.what());
-            display_ui_error(ex);
+            display_ui_error(ex, ui_, station_config_, ingredient_store_);
         }
     }
 
@@ -103,20 +202,6 @@ export class ProcessContextBridge
             auto ui_recipe = ui->global<RecipeContext>().get_active_recipe();
             ui_recipe.commands = transform(recipe.commands, ingredient_store);
             ui->global<RecipeContext>().set_active_recipe(ui_recipe);
-        });
-    }
-
-    void display_ui_error(const std::exception& ex) const
-    {
-        auto error_desc = slint::SharedString{ex.what()};
-        slint::invoke_from_event_loop([ui = ui_, error_desc = std::move(error_desc)]() {
-            const auto& process_ctx = ui->global<ProcessContext>();
-            process_ctx.set_error_title("Unbekannter Fehler");
-            process_ctx.set_error_description(std::move(error_desc));
-            process_ctx.set_error_item_category("U");
-            process_ctx.set_error_item_name("Unbekannt");
-            process_ctx.set_error_item_details("");
-            ui->global<StationStateContext>().invoke_navigate_to(Page::MixErrorPage);
         });
     }
 
@@ -133,10 +218,10 @@ export class ProcessContextBridge
     log::Logger logger_{log::create_or_get("ui")};
     boost::asio::any_io_executor executor_;
     slint::ComponentHandle<AppWindow> ui_;
-    PodRegistry& pod_registry_;
-    RecipeStore& recipe_store_;
-    IngredientStore& ingredient_store_;
-    cm::StationConfig& station_config_;
+    const PodRegistry& pod_registry_;
+    const RecipeStore& recipe_store_;
+    const IngredientStore& ingredient_store_;
+    const cm::StationConfig& station_config_;
     boost::asio::cancellation_signal active_cancel_signal_;
 };
 } // namespace cm::gui

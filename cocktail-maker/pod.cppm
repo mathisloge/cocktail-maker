@@ -32,6 +32,16 @@ export class DispenserEmptyError : public std::runtime_error
   public:
     DispenserEmptyError(PodId pod_id, DispenserId dispenser_id);
 
+    PodId pod_id() const
+    {
+        return pod_id_;
+    }
+
+    DispenserId dispenser_id() const
+    {
+        return dispenser_id_;
+    }
+
   private:
     PodId pod_id_;
     DispenserId dispenser_id_;

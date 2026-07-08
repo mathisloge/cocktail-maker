@@ -53,6 +53,18 @@ export class StationConfig final
         return it->second;
     }
 
+    std::expected<IngredientId, std::out_of_range> find_ingredient_by_dispenser(PodDispenser pod_dispenser) const
+    {
+        auto it =
+            std::ranges::find_if(ingredient_dispenser_mapping_, [&](const auto& entry) { return entry.second == pod_dispenser; });
+
+        if (it == ingredient_dispenser_mapping_.end()) {
+            return std::unexpected(std::out_of_range("No ingredient found for the given pod/dispenser combination"));
+        }
+
+        return it->first;
+    }
+
   private:
     log::Logger logger_{log::create_or_get("station_config")};
     const IngredientStore& ingredient_store_;

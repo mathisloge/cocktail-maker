@@ -43,20 +43,22 @@ TEST_CASE("RecipeStore construction", "[RecipeStore]")
 {
     SECTION("empty store has count of zero")
     {
-        RecipeStore store{{}};
+        RecipeStore store{};
         CHECK(store.recipe_count() == 0);
     }
 
     SECTION("store reports correct count for non-empty input")
     {
-        RecipeStore store{three_recipes()};
+        RecipeStore store{};
+        store.init_recipes(three_recipes());
         CHECK(store.recipe_count() == 3);
     }
 
     SECTION("ids are assigned")
     {
         const auto recipes = three_recipes();
-        RecipeStore store{recipes};
+        RecipeStore store{};
+        store.init_recipes(recipes);
         for (std::size_t i = 0; i < store.recipe_count(); ++i) {
             auto&& ref = recipes.at(i);
             auto recipe = store.find_by_id(ref.id);
@@ -67,7 +69,8 @@ TEST_CASE("RecipeStore construction", "[RecipeStore]")
 
     SECTION("command ids are assigned sequentially starting from 0")
     {
-        RecipeStore store{{make_recipe("Quattro Frommagi", "4 Käse", 4)}};
+        RecipeStore store{};
+        store.init_recipes({make_recipe("Quattro Frommagi", "4 Käse", 4)});
         auto recipe = store.find_by_id(RecipeId{"Quattro Frommagi"});
         REQUIRE(recipe.has_value());
         REQUIRE(recipe->commands.size() == 4);
@@ -82,7 +85,8 @@ TEST_CASE("RecipeStore construction", "[RecipeStore]")
 
     SECTION("recipe data is preserved after construction")
     {
-        RecipeStore store{{make_recipe("Pasta Carbonara", "Classic Roman pasta")}};
+        RecipeStore store{};
+        store.init_recipes({make_recipe("Pasta Carbonara", "Classic Roman pasta")});
         auto recipe = store.find_by_id(RecipeId{"Pasta Carbonara"});
         REQUIRE(recipe.has_value());
         CHECK(recipe->id == RecipeId{"Pasta Carbonara"});
@@ -97,7 +101,8 @@ TEST_CASE("RecipeStore construction", "[RecipeStore]")
 
 TEST_CASE("RecipeStore::find_by_id", "[RecipeStore]")
 {
-    RecipeStore store{three_recipes()};
+    RecipeStore store{};
+    store.init_recipes(three_recipes());
 
     SECTION("returns recipe for valid id")
     {
@@ -113,7 +118,7 @@ TEST_CASE("RecipeStore::find_by_id", "[RecipeStore]")
 
     SECTION("returns nullopt on empty store")
     {
-        RecipeStore empty{{}};
+        RecipeStore empty{};
         CHECK_FALSE(empty.find_by_id(RecipeId{"Is there someone?"}).has_value());
     }
 }
@@ -124,7 +129,8 @@ TEST_CASE("RecipeStore::find_by_id", "[RecipeStore]")
 
 TEST_CASE("RecipeStore::find_by_index", "[RecipeStore]")
 {
-    RecipeStore store{three_recipes()};
+    RecipeStore store{};
+    store.init_recipes(three_recipes());
 
     SECTION("returns recipe at valid index")
     {
@@ -159,7 +165,7 @@ TEST_CASE("RecipeStore::find_by_index", "[RecipeStore]")
 
     SECTION("returns nullopt on empty store")
     {
-        RecipeStore empty{{}};
+        RecipeStore empty{};
         CHECK_FALSE(empty.find_by_index(0).has_value());
     }
 }

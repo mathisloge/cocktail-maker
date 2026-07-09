@@ -20,11 +20,13 @@ constexpr auto kBiggerEps = 1e-9;
 auto make_store() -> IngredientStore
 {
     IngredientStore store;
-    store.add({IngredientId{"rum"}, "Dark Rum", IngredientType::alcohol, BoostCategory::boostable});
-    store.add({IngredientId{"vodka"}, "Vodka", IngredientType::alcohol, BoostCategory::boostable});
-    store.add({IngredientId{"cola"}, "Cola", IngredientType::soda, BoostCategory::reducible});
-    store.add({IngredientId{"juice"}, "Orange Juice", IngredientType::juice, BoostCategory::reducible});
-    store.add({IngredientId{"mint"}, "Mint Leaves", IngredientType::other, BoostCategory::fixed});
+    store.init_ingredients({
+        {IngredientId{"rum"}, "Dark Rum", IngredientType::alcohol, BoostCategory::boostable},
+        {IngredientId{"vodka"}, "Vodka", IngredientType::alcohol, BoostCategory::boostable},
+        {IngredientId{"cola"}, "Cola", IngredientType::soda, BoostCategory::reducible},
+        {IngredientId{"juice"}, "Orange Juice", IngredientType::juice, BoostCategory::reducible},
+        {IngredientId{"mint"}, "Mint Leaves", IngredientType::other, BoostCategory::fixed},
+    });
     return store;
 }
 

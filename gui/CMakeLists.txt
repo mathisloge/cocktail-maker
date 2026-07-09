@@ -25,6 +25,8 @@ target_sources(
                 src/recipe_context_bridge.cppm
                 src/process_context_bridge.cppm
                 src/glass_context_bridge.cppm
+                src/gui_application.cppm
+                src/gui_application.cpp
 )
 
 if(BUILD_TESTING)
@@ -52,3 +54,7 @@ endif()
 add_executable(cocktail-maker src/main.cpp)
 add_sanitizers(cocktail-maker)
 target_link_libraries(cocktail-maker PRIVATE cm::gui cocktail-maker-simulator)
+    target_compile_definitions(
+        cocktail-maker
+        PRIVATE DEBUG_LOCAL_DB_DIR="${PROJECT_SOURCE_DIR}/db"
+    )

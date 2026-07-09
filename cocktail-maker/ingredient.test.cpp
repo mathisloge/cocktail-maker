@@ -21,44 +21,6 @@ Ingredient make_ingredient(IngredientId id,
 
 } // namespace
 
-TEST_CASE("IngredientStore::add returns true when ingredient is new", "[IngredientStore][add]")
-{
-    IngredientStore store;
-    const auto ingredient = make_ingredient(IngredientId{"rum-white"});
-    CHECK(store.add(ingredient));
-}
-
-TEST_CASE("IngredientStore::add returns false for a duplicate id", "[IngredientStore][add]")
-{
-    IngredientStore store;
-    const auto ingredient = make_ingredient(IngredientId{"rum-white"});
-    REQUIRE(store.add(ingredient));
-
-    // Second insertion with the same id must fail.
-    CHECK_FALSE(store.add(ingredient));
-}
-
-TEST_CASE("IngredientStore::add does not overwrite existing ingredient on duplicate id", "[IngredientStore][add]")
-{
-    IngredientStore store;
-    REQUIRE(store.add(make_ingredient(IngredientId{"lime-juice"}, "Lime Juice", IngredientType::juice)));
-
-    // Attempt to overwrite with a different display_name.
-    REQUIRE_FALSE(store.add(make_ingredient(IngredientId{"lime-juice"}, "OVERWRITTEN", IngredientType::other)));
-
-    const auto result = store.find_by_id(IngredientId{"lime-juice"});
-    REQUIRE(result.has_value());
-    CHECK(result->display_name == "Lime Juice");
-}
-
-TEST_CASE("IngredientStore::add accepts multiple distinct ingredients", "[IngredientStore][add]")
-{
-    IngredientStore store;
-    CHECK(store.add(make_ingredient(IngredientId{"rum-white"})));
-    CHECK(store.add(make_ingredient(IngredientId{"lime-juice"})));
-    CHECK(store.add(make_ingredient(IngredientId{"simple-syrup"})));
-}
-
 TEST_CASE("IngredientStore::find_by_id returns nullopt for unknown id", "[IngredientStore][find_by_id]")
 {
     IngredientStore store;
@@ -74,7 +36,7 @@ TEST_CASE("IngredientStore::find_by_id returns the correct ingredient after add"
         .type = IngredientType::syrup,
         .boost_category = BoostCategory::reducible,
     };
-    REQUIRE(store.add(expected));
+    store.init_ingredients({expected});
 
     const auto result = store.find_by_id(IngredientId{"grenadine"});
     REQUIRE(result.has_value());
@@ -87,9 +49,11 @@ TEST_CASE("IngredientStore::find_by_id returns the correct ingredient after add"
 TEST_CASE("IngredientStore::find_by_id can retrieve each of several stored ingredients", "[IngredientStore][find_by_id]")
 {
     IngredientStore store;
-    REQUIRE(store.add(make_ingredient(IngredientId{"vodka"}, "Vodka", IngredientType::alcohol, BoostCategory::boostable)));
-    REQUIRE(store.add(make_ingredient(IngredientId{"tonic"}, "Tonic Water", IngredientType::soda, BoostCategory::reducible)));
-    REQUIRE(store.add(make_ingredient(IngredientId{"mint"}, "Mint Leaves", IngredientType::other, BoostCategory::fixed)));
+    store.init_ingredients({
+        make_ingredient(IngredientId{"vodka"}, "Vodka", IngredientType::alcohol, BoostCategory::boostable),
+        make_ingredient(IngredientId{"tonic"}, "Tonic Water", IngredientType::soda, BoostCategory::reducible),
+        make_ingredient(IngredientId{"mint"}, "Mint Leaves", IngredientType::other, BoostCategory::fixed),
+    });
 
     CHECK(store.find_by_id(IngredientId{"vodka"})->display_name == "Vodka");
     CHECK(store.find_by_id(IngredientId{"tonic"})->display_name == "Tonic Water");
@@ -99,7 +63,7 @@ TEST_CASE("IngredientStore::find_by_id can retrieve each of several stored ingre
 TEST_CASE("IngredientStore::find_by_id returns a copy, not a reference", "[IngredientStore][find_by_id]")
 {
     IngredientStore store;
-    REQUIRE(store.add(make_ingredient(IngredientId{"angostura"}, "Angostura Bitters", IngredientType::bitters)));
+    store.init_ingredients({make_ingredient(IngredientId{"angostura"}, "Angostura Bitters", IngredientType::bitters)});
 
     auto copy = store.find_by_id(IngredientId{"angostura"});
     REQUIRE(copy.has_value());
@@ -126,9 +90,11 @@ TEST_CASE("IngredientStore::ingredients returns all ingredient ids", "[Ingredien
     const auto id2 = IngredientId{"lime-juice"};
     const auto id3 = IngredientId{"simple-syrup"};
 
-    REQUIRE(store.add(make_ingredient(id1)));
-    REQUIRE(store.add(make_ingredient(id2)));
-    REQUIRE(store.add(make_ingredient(id3)));
+    store.init_ingredients({
+        make_ingredient(id1),
+        make_ingredient(id2),
+        make_ingredient(id3),
+    });
 
     const auto result = store.ingredients();
     REQUIRE(result.size() == 3);
@@ -144,7 +110,7 @@ TEST_CASE("IngredientStore::ingredients returns all ingredient ids", "[Ingredien
 TEST_CASE("IngredientStore preserves all IngredientType values", "[IngredientStore][round-trip]")
 {
     using IT = IngredientType;
-    constexpr std::pair<IngredientId, IT> cases[] = {
+    constexpr std::pair<IngredientId, IT> kCases[] = {
         {IngredientId{"a"}, IT::alcohol},
         {IngredientId{"j"}, IT::juice},
         {IngredientId{"s"}, IT::syrup},
@@ -157,11 +123,13 @@ TEST_CASE("IngredientStore preserves all IngredientType values", "[IngredientSto
     };
 
     IngredientStore store;
-    for (const auto& [id, type] : cases) {
-        REQUIRE(store.add(make_ingredient(id, id.raw(), type)));
+    std::vector<Ingredient> ingredients;
+    for (const auto& [id, type] : kCases) {
+        ingredients.emplace_back(make_ingredient(id, id.raw(), type));
     }
+    store.init_ingredients(std::move(ingredients));
 
-    for (const auto& [id, type] : cases) {
+    for (const auto& [id, type] : kCases) {
         const auto result = store.find_by_id(id);
         REQUIRE(result.has_value());
         CHECK(result->type == type);
@@ -171,18 +139,20 @@ TEST_CASE("IngredientStore preserves all IngredientType values", "[IngredientSto
 TEST_CASE("IngredientStore preserves all BoostCategory values", "[IngredientStore][round-trip]")
 {
     using BC = BoostCategory;
-    constexpr std::pair<IngredientId, BC> cases[] = {
+    constexpr std::pair<IngredientId, BC> kCases[] = {
         {IngredientId{"fixed-id"}, BC::fixed},
         {IngredientId{"boost-id"}, BC::boostable},
         {IngredientId{"reduce-id"}, BC::reducible},
     };
 
     IngredientStore store;
-    for (const auto& [id, bc] : cases) {
-        REQUIRE(store.add(make_ingredient(id, id.raw(), IngredientType::other, bc)));
+    std::vector<Ingredient> ingredients;
+    for (const auto& [id, bc] : kCases) {
+        ingredients.emplace_back(make_ingredient(id, id.raw(), IngredientType::other, bc));
     }
+    store.init_ingredients(std::move(ingredients));
 
-    for (const auto& [id, bc] : cases) {
+    for (const auto& [id, bc] : kCases) {
         const auto result = store.find_by_id(id);
         REQUIRE(result.has_value());
         CHECK(result->boost_category == bc);

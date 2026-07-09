@@ -187,6 +187,10 @@ export class GlassContextBridge
     GlassContextBridge(slint::ComponentHandle<AppWindow> ui)
         : ui_{std::move(ui)}
     {
+    }
+
+    void init()
+    {
         store_->init_from_dir("");
         register_ui_callbacks();
     }
@@ -200,7 +204,7 @@ export class GlassContextBridge
 
   private:
     slint::ComponentHandle<AppWindow> ui_;
-    std::shared_ptr<GlassStore> store_ = std::make_shared<GlassStore>();
+    std::shared_ptr<GlassStore> store_ = std::make_shared<GlassStore>(); // TODO: move store into application
     std::shared_ptr<GlassListModel> glasses_ = std::make_shared<GlassListModel>();
 };
 

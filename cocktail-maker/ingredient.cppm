@@ -1,8 +1,10 @@
 module;
+#include <libassert/assert-macros.hpp>
 
 export module cm:ingredient;
 import std;
 import cm.core;
+import libassert;
 
 export namespace cm {
 
@@ -119,10 +121,13 @@ class IngredientStore
   public:
     virtual ~IngredientStore() = default;
 
-    virtual bool add(Ingredient ingredient)
+    virtual void init_ingredients(std::vector<Ingredient> ingredients)
     {
-        const auto [_, emplaced] = ingredients_.emplace(ingredient.id, std::move(ingredient));
-        return emplaced;
+        ingredients_.clear();
+        for (auto&& i : ingredients) {
+            const auto [_, emplaced] = ingredients_.emplace(i.id, std::move(i));
+            ASSERT(emplaced);
+        }
     }
 
     std::optional<Ingredient> find_by_id(const IngredientId& ingredient_id) const

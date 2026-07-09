@@ -9,3 +9,4 @@ export import :dispenser_calibration_bridge;
 export import :recipe_context_bridge;
 export import :process_context_bridge;
 export import :glass_context_bridge;
+export import :gui_application;

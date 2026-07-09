@@ -132,6 +132,10 @@ export class ProcessContextBridge
         , station_config_{station_config}
         , pod_registry_{pod_registry}
     {
+    }
+
+    void init()
+    {
         ui_->global<ProcessContext>().on_process_active_recipe([this]() {
             const auto recipe_to_create = ui_->global<RecipeContext>().get_active_recipe();
             const auto boost = ui_->global<ProcessContext>().get_boost() * units::percent;

@@ -48,19 +48,19 @@ cobalt::promise<void> run_pod(std::shared_ptr<IPod> pod, std::unique_ptr<PodStat
 }
 
 export cobalt::task<void> discover_and_run_pods(std::unique_ptr<PodDiscovery> pod_discovery,
-                                                StationState& station_state,
+                                                std::shared_ptr<StationState> station_state,
                                                 PodRegistry& pod_registry)
 {
     auto logger{log::create_or_get("pod_discovery")};
     co_await cobalt::with(cobalt::wait_group{},
-                          [logger, pod_discovery = std::move(pod_discovery), &station_state, &pod_registry](
+                          [logger, pod_discovery = std::move(pod_discovery), station_state, &pod_registry](
                               cobalt::wait_group& pod_sessions) -> cobalt::promise<void> {
                               auto discover_pod = pod_discovery->discover();
                               BOOST_COBALT_FOR(auto pod, discover_pod)
                               {
                                   if (pod != nullptr) {
                                       pod_sessions.push_back(
-                                          run_pod(std::move(pod), station_state.create_pod_state(), pod_registry));
+                                          run_pod(std::move(pod), station_state->create_pod_state(), pod_registry));
                                   }
                               }
 

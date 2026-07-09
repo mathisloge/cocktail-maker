@@ -62,9 +62,9 @@ class Client
     std::array<units::Litre, (kNumPumps + kNumValves)> dispenser_volume_;
 
   public:
-    Client(TSocket socket, std::string name, Version firmware_version)
+    Client(auto executor, std::string name, Version firmware_version)
         : logger_{log::create_or_get(std::format("SimPod_{}", name))}
-        , stream_{std::move(socket)}
+        , stream_{std::move(executor)}
     {
         for (auto&& d : dispenser_volume_) {
             d = 500 * units::milli_litre;
@@ -82,7 +82,7 @@ class Client
         return stream_;
     }
 
-    cobalt::detached run()
+    cobalt::task<void> run()
     {
         try {
             co_await boost::cobalt::race(read_loop(), write_loop());

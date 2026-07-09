@@ -16,3 +16,4 @@ export import :pod;
 export import :station_state;
 export import :station_config;
 export import :serial;
+export import :application;

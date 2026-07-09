@@ -22,14 +22,18 @@ export class RecipeContextBridge
   public:
     explicit RecipeContextBridge(boost::asio::any_io_executor executor,
                                  slint::ComponentHandle<AppWindow> ui,
-                                 RecipeStore& recipe_store,
-                                 IngredientStore& ingredient_store,
+                                 const RecipeStore& recipe_store,
+                                 const IngredientStore& ingredient_store,
                                  cm::StationConfig& station_config)
         : executor_{std::move(executor)}
         , ui_{std::move(ui)}
         , recipe_store_{recipe_store}
         , ingredient_store_{ingredient_store}
         , station_config_{station_config}
+    {
+    }
+
+    void init()
     {
         {
             const auto ingredients = ingredient_store_.ingredients();
@@ -44,7 +48,7 @@ export class RecipeContextBridge
         ui_->global<RecipeContext>().set_recipes(std::make_shared<RecipeModel>(recipe_store_, ingredient_store_));
         ui_->global<RecipeContext>().on_boost_active_recipe(
             [this](const int boost_percentage) { boost_recipe_callback(boost_percentage); });
-        ui->global<cm::gui::RecipeContext>().on_assign_ingredient_to_dispenser(
+        ui_->global<cm::gui::RecipeContext>().on_assign_ingredient_to_dispenser(
             [this](const cm::gui::Pod& pod, const cm::gui::Dispenser& dispenser, slint::SharedString ingredient_id) {
                 SPDLOG_LOGGER_TRACE(logger_,
                                     "Assign ingredient '{}' to pod '{}' and dispenser '{}'",
@@ -80,8 +84,8 @@ export class RecipeContextBridge
     log::Logger logger_{log::create_or_get("ui")};
     boost::asio::any_io_executor executor_;
     slint::ComponentHandle<AppWindow> ui_;
-    RecipeStore& recipe_store_;
-    IngredientStore& ingredient_store_;
+    const RecipeStore& recipe_store_;
+    const IngredientStore& ingredient_store_;
     cm::StationConfig& station_config_;
 };
 } // namespace cm::gui

@@ -23,10 +23,14 @@ export class DispenserCalibrationBridge
   public:
     explicit DispenserCalibrationBridge(asio::any_io_executor executor,
                                         slint::ComponentHandle<AppWindow> ui,
-                                        PodRegistry& pod_registry)
+                                        const PodRegistry& pod_registry)
         : executor_{std::move(executor)}
         , ui_{std::move(ui)}
         , pod_registry_{pod_registry}
+    {
+    }
+
+    void init()
     {
         ui_->global<DispenserCalibrationContext>().on_calibrate_load_cell_ref_weight(
             [this](gui::Pod pod, gui::Dispenser dispenser, int grams) {
@@ -163,6 +167,6 @@ export class DispenserCalibrationBridge
   private:
     asio::any_io_executor executor_;
     slint::ComponentHandle<AppWindow> ui_;
-    PodRegistry& pod_registry_;
+    const PodRegistry& pod_registry_;
 };
 } // namespace cm::gui

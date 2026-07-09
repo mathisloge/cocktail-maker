@@ -83,10 +83,10 @@ constexpr void assign_unique_command_ids(Recipe& recipe)
 
 } // namespace
 
-export class RecipeStore
+export class RecipeStore final
 {
   public:
-    explicit RecipeStore(std::vector<Recipe> recipes)
+    void init_recipes(std::vector<Recipe> recipes)
     {
         for (auto&& r : recipes) {
             assign_unique_command_ids(r);

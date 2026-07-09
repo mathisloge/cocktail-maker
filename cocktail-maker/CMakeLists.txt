@@ -31,6 +31,8 @@ target_sources(
                 station_state.cppm
                 serial.cppm
                 serial.cpp
+                application.cppm
+                application.cpp
 )
 
 if(BUILD_TESTING)

@@ -21,9 +21,12 @@ target_sources(
                 src/maschine_adapter.cppm
                 src/ui_log_sink.cppm
                 src/station_state_bridge.cppm
+                src/station_state_bridge.cpp
                 src/dispenser_calibration_bridge.cppm
+                src/dispenser_calibration_bridge.cpp
                 src/recipe_context_bridge.cppm
                 src/process_context_bridge.cppm
+                src/process_context_bridge.cpp
                 src/glass_context_bridge.cppm
                 src/gui_application.cppm
                 src/gui_application.cpp

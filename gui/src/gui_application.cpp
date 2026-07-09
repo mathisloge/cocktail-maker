@@ -20,7 +20,8 @@ GuiApplication::GuiApplication()
     ui_station_state_context.set_log_entries(ui_log_sink->model());
 }
 
-void GuiApplication::init(const std::filesystem::path& db_dir) {
+void GuiApplication::init(const std::filesystem::path& db_dir)
+{
     Application::init(db_dir);
     dispenser_calibration_bridge_.init();
     recipe_context_bridge_.init();

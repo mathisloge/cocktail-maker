@@ -85,13 +85,13 @@ and in-app text are written in English.
 
 #### Backend (C++)
 
-- **C++ Modules** for compilation units, including module partitions (e.g. `cm:recipe_scale`)
+- **C++ Modules** for compilation units (`.cppm` for module interface (partition) units `.cpp` for module implementation partition units and `.test.cpp` for TU test files)
 - **Boost.Asio / Boost.Cobalt** for asynchronous I/O and coroutines
 - **mp-units** for physical quantities and unit-safe arithmetic
 - **libassert** for expressive runtime assertions
 - **Catch2** for testing
 - **spdlog** for logging, with a custom sink that feeds a ring-buffer `slint::Model<LogEntry>`
-  for on-device log display (bidirectional `LogLevel` ↔ `spdlog::level` mapping)
+  for on-device log display.
 - Strong domain types throughout: `PodId`, `DispenserId`, `IngredientId`, `RecipeId`
 
 #### Frontend (Slint)
@@ -99,7 +99,7 @@ and in-app text are written in English.
 - A centralized **design color system** — no theme switching, single dark art-deco aesthetic
 - Shared components should go into components and never depend on the globals except Layout and Palette.
 - `global` singletons used idiomatically to avoid prop-drilling; purely presentational
-  components read directly from globals
+  components read directly from globals (pages and admin sections).
 
 
 ### Pod (Embedded)

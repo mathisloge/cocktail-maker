@@ -75,6 +75,8 @@ Compound names always place the entity name first — `StationManager`, `PodDesc
 entity-first compound naming; Slint files/components use kebab-case. All code comments
 and in-app text are written in English.
 
+See [docs/naming-conventions.md](docs/naming-conventions.md).
+
 ---
 
 ## Technology Stack

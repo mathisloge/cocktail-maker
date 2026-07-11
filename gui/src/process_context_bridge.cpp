@@ -155,8 +155,8 @@ void ProcessContextBridge::init()
         }
     });
 
-    ui_->global<StationStateContext>().on_navigated_to([this](Page from, [[maybe_unused]] Page to) {
-        if (from == Page::MixPage) {
+    ui_->global<StationStateContext>().on_navigated_to([this](Page from, Page to) {
+        if (from == Page::MixPage and to != Page::MixSuccessPage) {
             SPDLOG_LOGGER_INFO(logger_, "Cancelling recipe processing...");
             boost::asio::post(executor_, [this]() { active_cancel_signal_.emit(boost::asio::cancellation_type::all); });
         }
@@ -178,7 +178,7 @@ cobalt::task<void> ProcessContextBridge::async_process_recipe(Recipe recipe,
     try {
         co_await execute_commands(std::move(recipe.commands), std::move(command_executer));
         const auto duration = std::chrono::duration_cast<std::chrono::seconds>(Clock::now() - start_tp);
-        SPDLOG_LOGGER_DEBUG(logger_, "Finished {} in '{}'", recipe, duration);
+        SPDLOG_LOGGER_INFO(logger_, "Finished {} in '{}'"., recipe, duration);
         display_ui_success(duration);
     }
     catch (const boost::system::system_error& ex) {

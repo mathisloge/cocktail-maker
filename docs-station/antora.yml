@@ -1,0 +1,6 @@
+name: station
+version: ~
+title: Station
+start_page: index.adoc
+nav:
+- modules/ROOT/nav.adoc

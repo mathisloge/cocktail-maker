@@ -5,8 +5,10 @@
   "devDependencies": {
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
-    "conventional-changelog-conventionalcommits": "^9.1.0",
-    "semantic-release": "^24.2.7"
+    "antora": "3.1.15",
+    "asciidoctor-kroki": "^0.18.1",
+    "conventional-changelog-conventionalcommits": "^10.2.1",
+    "semantic-release": "^25.0.6"
   },
   "release": {
     "repositoryUrl": "https://github.com/mathisloge/cocktail-maker.git",
@@ -23,12 +25,6 @@
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
       "@semantic-release/npm",
-      [
-        "@semantic-release/exec",
-        {
-          "prepareCmd": "poetry version ${nextRelease.version}"
-        }
-      ],
       [
         "@semantic-release/git",
         {

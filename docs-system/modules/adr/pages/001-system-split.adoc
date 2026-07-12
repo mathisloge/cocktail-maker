@@ -1,0 +1,31 @@
+= Use PostgreSQL
+// Define your variables here
+:adr-status: Accepted
+:adr-date: 2026-07-12
+:adr-authors: {gh}mathisloge[@mathisloge]
+// :adr-superseded-by: xref:0005-use-mysql.adoc[ADR 0005]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+We need a robust relational database to store our transactional data. The data has a highly structured schema and requires ACID compliance. 
+
+== Decision
+
+We will use PostgreSQL as our primary datastore.
+
+
+[mermaid]
+....
+graph TD;
+    A[Order Service] -->|Events| B(Kafka);
+    B --> C[Billing Service];
+    C --> D[(Billing DB)];
+....
+
+== Consequences
+
+* **Good:** High reliability and standard SQL support.
+* **Good:** Free and open source.
+* **Bad:** Requires specialized tuning for high-concurrency write loads.

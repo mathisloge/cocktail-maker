@@ -1,0 +1,18 @@
+site:
+  title: Sir-Mix-A-Lot Docs
+  start_page: system::index.adoc
+content:
+  sources:
+  - url: .
+    branches: HEAD
+    start_path: docs-system
+  - url: .
+    branches: HEAD
+    start_path: docs-station
+asciidoc:
+  extensions:
+    - 'asciidoctor-kroki'
+ui:
+  bundle:
+    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
+    snapshot: true

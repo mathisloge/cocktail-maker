@@ -16,7 +16,7 @@ import {
     HorizontalBox,
     Slider,
 } from "std-widgets.slint";
-import { Palette } from "palette.slint";
+import { Palette, Layout } from "palette.slint";
 import {
     Page,
     RecipeView,
@@ -87,11 +87,12 @@ export component AppWindow inherits Window {
     }
     if device_ready && boot_screen_confirmed: VerticalLayout {
         Rectangle {
-            height: 50px;
+            height: Layout.touch-height;
             Button {
                 secondary: true;
-                text: "← Back";
-                x: 20px;
+                text: "← Zurück";
+                x: 0px;
+                width: 120px;
                 visible: StationStateContext.active-screen != Page.cocktail-list-page && StationStateContext.active-screen != Page.finished-page;
                 clicked => {
                     operation_canceled();

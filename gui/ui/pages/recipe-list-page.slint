@@ -2,6 +2,8 @@ import { ScrollView } from "std-widgets.slint";
 import { RecipeCard } from "../components.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
 import { Page } from "page.slint";
+import { Palette } from "../palette.slint";
+
 export component RecipeListPage inherits Page {
     callback recipe-selected();
 
@@ -14,7 +16,18 @@ export component RecipeListPage inherits Page {
             for recipe[index] in RecipeContext.recipes: RecipeCard {
                 row: index / 3;
                 col: Math.mod(index, 3);
+                width: (root.width - 2 * parent.padding - 2 * parent.spacing) / 3;
+                height: self.width;
                 recipe: recipe;
+                /**
+                https://github.com/slint-ui/slint/issues/12440
+                opacity: root.mounted ? 1 : 0;
+                animate opacity {
+                    delay: index * 50ms;
+                    duration: Palette.mount-animation-duration;
+                    easing: Palette.mount-animation-easing;
+                }
+                **/
                 clicked => {
                     RecipeContext.active-recipe = recipe;
                     root.recipe-selected()

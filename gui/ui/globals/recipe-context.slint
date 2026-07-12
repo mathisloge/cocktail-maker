@@ -7,8 +7,33 @@ import {
     DispenserType,
 } from "./../data.slint";
 export global RecipeContext {
-    in-out property <[RecipeView]> recipes;
-    in-out property <RecipeView> active-recipe: {name: "Mojito", image: @image-url("../../../db/recipes/mojito.png")};
+    in-out property <[RecipeView]> recipes: [
+        {
+            name: "Mojito",
+            tag_line: ["FRESH"],
+            description: "Lorem Ipsum...",
+            image: @image-url("../../../db/recipes/mojito.png")
+        },
+        {
+            name: "Mojito",
+            tag_line: ["FRESH"],
+            description: "Lorem Ipsum...",
+            image: @image-url("../../../db/recipes/mojito.png")
+        },
+        {
+            name: "Mojito",
+            tag_line: ["FRESH"],
+            description: "Lorem Ipsum...",
+            image: @image-url("../../../db/recipes/mojito.png")
+        },
+        {
+            name: "Mojito",
+            tag_line: ["FRESH"],
+            description: "Lorem Ipsum...",
+            image: @image-url("../../../db/recipes/mojito.png")
+        }
+    ];
+    in-out property <RecipeView> active-recipe: { name: "Mojito", image: @image-url("../../../db/recipes/mojito.png") };
     in-out property <[string]> ingredient-ids: /* example data */ ["vodka", "orange_juice", "test2"];
 
     callback assign-ingredient-to-dispenser(Pod, Dispenser, string/* ingredient-id */);

@@ -1,0 +1,18 @@
+{
+    "$schema": "../glass-schema.json",
+    "id": "margarita",
+    "display_name": "Margarita Glas",
+    "common_volumes_ml": [
+        250,
+        300,
+        350
+    ],
+    "icon": {
+        "viewbox_width": 100,
+        "viewbox_height": 180,
+        "outline": "M 5 20 L 50 75 L 95 20 M 50 75 L 50 145 M 20 158 Q 50 166 80 158",
+        "rim": [
+            "M 5 20 Q 50 30 95 20"
+        ]
+    }
+}

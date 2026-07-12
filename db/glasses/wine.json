@@ -1,0 +1,22 @@
+{
+    "$schema": "../glass-schema.json",
+    "id": "wine",
+    "display_name": "Weinglas",
+    "common_volumes_ml": [
+        300,
+        350,
+        400,
+        450,
+        500,
+        550,
+        600
+    ],
+    "icon": {
+        "viewbox_width": 100,
+        "viewbox_height": 180,
+        "outline": "M 15 30 Q 15 20 25 20 L 75 20 Q 85 20 85 30 Q 85 70 50 100 Q 15 70 15 30 M 50 100 L 50 150 M 25 158 Q 50 166 75 158",
+        "rim": [
+            "M 15 30 L 85 30"
+        ]
+    }
+}

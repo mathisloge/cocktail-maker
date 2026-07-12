@@ -13,7 +13,7 @@ include::partial$adr-header.adoc[]
 
 == Context
 
-We need a robust relational database to store our transactional data. The data has a highly structured schema and requires ACID compliance. 
+We need a robust relational database to store our transactional data. The data has a highly structured schema and requires ACID compliance.
 
 == Decision
 

@@ -2,6 +2,11 @@ add_library(cocktail-maker-core STATIC)
 add_library(cm::core ALIAS cocktail-maker-core)
 add_sanitizers(cocktail-maker-core)
 target_compile_features(cocktail-maker-core PUBLIC cxx_std_26)
+set_target_properties(
+    cocktail-maker-core
+    PROPERTIES CXX_MODULE_STD ON CXX_SCAN_FOR_MODULES ON
+)
+
 target_compile_definitions(
     cocktail-maker-core
     PUBLIC SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG

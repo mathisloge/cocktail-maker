@@ -2,6 +2,10 @@ add_library(cocktail-maker-gui STATIC)
 add_library(cm::gui ALIAS cocktail-maker-gui)
 add_sanitizers(cocktail-maker-gui)
 target_compile_features(cocktail-maker-gui PUBLIC cxx_std_26)
+set_target_properties(
+    cocktail-maker-gui
+    PROPERTIES CXX_MODULE_STD ON CXX_SCAN_FOR_MODULES ON
+)
 target_link_libraries(cocktail-maker-gui PUBLIC Slint::Slint cm::lib)
 slint_target_sources(cocktail-maker-gui
   ui/app-window.slint NAMESPACE cm::gui

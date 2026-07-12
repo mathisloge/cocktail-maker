@@ -2,6 +2,10 @@ add_library(cocktail-maker-lib STATIC)
 add_library(cm::lib ALIAS cocktail-maker-lib)
 add_sanitizers(cocktail-maker-lib)
 target_compile_features(cocktail-maker-lib PUBLIC cxx_std_26)
+set_target_properties(
+    cocktail-maker-lib
+    PROPERTIES CXX_MODULE_STD ON CXX_SCAN_FOR_MODULES ON
+)
 
 target_link_libraries(cocktail-maker-lib PUBLIC cm::core)
 

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+# wait for https://gitlab.kitware.com/cmake/cmake/-/work_items/27930 before upgrading to cmake 4.4.x
 cmake_minimum_required(VERSION 4.3)
 file(READ "${CMAKE_SOURCE_DIR}/package.json" PACKAGE_JSON)
 string(JSON PACKAGE_JSON_PROJECT_VERSION GET "${PACKAGE_JSON}" version)
@@ -13,7 +14,6 @@ string(
 )
 
 set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
-set(CMAKE_CXX_MODULE_STD ON)
 
 project(cocktail-maker VERSION ${BASE_VERSION} LANGUAGES CXX)
 cmake_policy(SET CMP0167 NEW)
@@ -33,8 +33,8 @@ include(FindPkgConfig)
 include(GetGitRevisionDescription)
 include(CPM)
 
+
 set(CMAKE_CXX_STANDARD 26)
-set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime")
 
 get_git_head_revision(git_branch git_sha)

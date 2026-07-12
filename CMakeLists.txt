@@ -33,7 +33,6 @@ include(FindPkgConfig)
 include(GetGitRevisionDescription)
 include(CPM)
 
-
 set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime")
 

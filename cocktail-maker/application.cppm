@@ -29,7 +29,7 @@ export class Application
     IngredientStore ingredient_store_;
     RecipeStore recipe_store_;
     PodRegistry pod_registry_;
-    StationConfig station_config_{ingredient_store_};
+    StationConfig station_config_{ingredient_store_, "./station_config.json"};
 
   private:
     boost::asio::io_context execution_context_;

@@ -29,6 +29,7 @@ target_sources(
                 src/dispenser_calibration_bridge.cppm
                 src/dispenser_calibration_bridge.cpp
                 src/recipe_context_bridge.cppm
+                src/recipe_context_bridge.cpp
                 src/process_context_bridge.cppm
                 src/process_context_bridge.cpp
                 src/glass_context_bridge.cppm

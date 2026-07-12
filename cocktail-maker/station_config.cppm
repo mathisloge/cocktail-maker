@@ -21,9 +21,15 @@ export struct PodDispenser
 export class StationConfig final
 {
   public:
-    explicit StationConfig(const IngredientStore& ingredient_store)
+    explicit StationConfig(const IngredientStore& ingredient_store, std::filesystem::path db_file)
         : ingredient_store_{ingredient_store}
+        , db_file_{std::move(db_file)}
     {
+    }
+
+    void init()
+    {
+        // TODO: load from file
     }
 
     void update_dispenser_ingredient_mapping(IngredientId ingredient_id, PodDispenser pod_dispenser_pair)
@@ -41,6 +47,7 @@ export class StationConfig final
         // allow unknown pod->dispenser pair for now, as the config file will be loaded later on before anything is
         // discovered/connected.
         ingredient_dispenser_mapping_.insert_or_assign(std::move(ingredient_id), std::move(pod_dispenser_pair));
+        save_config_to_file();
     }
 
     std::expected<PodDispenser, std::out_of_range> find_dispenser_for_ingredient(IngredientId ingredient_id) const
@@ -66,8 +73,14 @@ export class StationConfig final
     }
 
   private:
+    void save_config_to_file() const
+    {
+    }
+
+  private:
     log::Logger logger_{log::create_or_get("station_config")};
     const IngredientStore& ingredient_store_;
+    const std::filesystem::path db_file_;
     std::unordered_map<IngredientId, PodDispenser> ingredient_dispenser_mapping_;
 };
 } // namespace cm

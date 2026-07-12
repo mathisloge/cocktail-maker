@@ -1,0 +1,37 @@
+{
+    "$schema": "../recipe-schema.json",
+    "name": "Moscow Mule",
+    "tags": [
+        "Klassisch",
+        "Erfrischend",
+        "Longdrink"
+    ],
+    "description": "Der Moscow Mule zählt zu den beliebtesten Longdrinks weltweit. Hier treffen Ingweraromen auf eine fruchtig-würzige Zitrusnote und eine angenehme Süße.",
+    "nominal_serving_volume": 230,
+    "steps": [
+        {
+            "kind": "parallel",
+            "steps": [
+                {
+                    "kind": "dispense",
+                    "ingredient": "vodka",
+                    "volume": 40
+                },
+                {
+                    "kind": "dispense",
+                    "ingredient": "lime_juice",
+                    "volume": 10
+                }
+            ]
+        },
+        {
+            "kind": "dispense",
+            "ingredient": "ginger_beer",
+            "volume": 150
+        },
+        {
+            "kind": "manual",
+            "text": "2 Eiswürfel"
+        }
+    ]
+}

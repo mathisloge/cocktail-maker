@@ -1,0 +1,37 @@
+{
+    "$schema": "../recipe-schema.json",
+    "name": "Virgin Sunrise",
+    "tags": [
+        "Antialkoholisch",
+        "Fruchtig",
+        "Longdrink"
+    ],
+    "description": "Der Virgin Sunrise ist ein leuchtend bunter Mocktail aus Orangensaft, Maracuja und einem Hauch Grenadine, der mit seinem sanften Farbverlauf sofort Sommerlaune aufkommen lässt. Fruchtig, süß und vollkommen alkoholfrei – der perfekte Genuss für jede Gelegenheit.",
+    "nominal_serving_volume": 250,
+    "steps": [
+        {
+            "kind": "parallel",
+            "steps": [
+                {
+                    "kind": "dispense",
+                    "ingredient": "orange_juice",
+                    "volume": 120
+                },
+                {
+                    "kind": "dispense",
+                    "ingredient": "maracuja_juice",
+                    "volume": 80
+                }
+            ]
+        },
+        {
+            "kind": "dispense",
+            "ingredient": "grenadine",
+            "volume": 20
+        },
+        {
+            "kind": "manual",
+            "text": "2 Eiswürfel"
+        }
+    ]
+}

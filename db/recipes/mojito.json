@@ -2,7 +2,9 @@
     "$schema": "../recipe-schema.json",
     "name": "Mojito",
     "tags": [
-        "classic"
+        "Klassisch",
+        "Erfrischend",
+        "Longdrink"
     ],
     "description": "Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, Zucker und Soda – perfekt für den Sommer.",
     "nominal_serving_volume": 250,
@@ -13,17 +15,17 @@
                 {
                     "kind": "dispense",
                     "ingredient": "bacardi",
-                    "volume": 89
+                    "volume": 50
+                },
+                {
+                    "kind": "dispense",
+                    "ingredient": "soda",
+                    "volume": 140
                 },
                 {
                     "kind": "dispense",
                     "ingredient": "lime_juice",
                     "volume": 30
-                },
-                {
-                    "kind": "dispense",
-                    "ingredient": "soda",
-                    "volume": 120
                 }
             ]
         },

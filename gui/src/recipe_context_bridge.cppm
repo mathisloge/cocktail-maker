@@ -22,7 +22,7 @@ export class RecipeContextBridge
     void init();
 
   private:
-    void boost_recipe_callback(const int boost_percentage);
+    void boost_recipe_callback(int boost_percentage);
 
   private:
     log::Logger logger_{log::create_or_get("ui")};

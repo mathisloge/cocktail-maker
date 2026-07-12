@@ -1,0 +1,32 @@
+{
+    "$schema": "../recipe-schema.json",
+    "name": "Screwdriver",
+    "tags": [
+        "Klassisch",
+        "Erfrischend",
+        "Longdrink"
+    ],
+    "description": "Der Screwdriver ist ein erfrischender Cocktail aus Vodka und Orangensaft, der durch seine einfache Zubereitung und fruchtige Note besticht.",
+    "nominal_serving_volume": 250,
+    "steps": [
+        {
+            "kind": "parallel",
+            "steps": [
+                {
+                    "kind": "dispense",
+                    "ingredient": "vodka",
+                    "volume": 50
+                },
+                {
+                    "kind": "dispense",
+                    "ingredient": "orange_juice",
+                    "volume": 170
+                }
+            ]
+        },
+        {
+            "kind": "manual",
+            "text": "2 Eiswürfel"
+        }
+    ]
+}

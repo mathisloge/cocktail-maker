@@ -1,5 +1,7 @@
 = Quality Goals
 
+To ensure the machine operates safely and reliably in real-world scenarios, all architectural and design decisions are evaluated against the following strict quality criteria. 
+Safety and reliability are the primary drivers for both hardware separation and software state management.
 
 [cols="1,4", options="header"]
 |===

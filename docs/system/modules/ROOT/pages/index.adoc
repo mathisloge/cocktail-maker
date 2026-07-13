@@ -1,1 +1,12 @@
 = System Design
+
+== Introduction and Goals
+
+This document describes the system architecture and design principles of the Cocktail Machine. 
+The system is a fully automated, mechatronic beverage dispenser designed to mix cocktails from various raw ingredients (spirits, juices, syrups) precisely and reliably based on predefined recipes.
+
+A defining characteristic of this project is its highly modular architecture. 
+Instead of a monolithic design, the system is strictly divided into a central orchestration unit and autonomous dispensing modules. 
+This approach abstracts the complexity of fluid management and hardware control from the user interface, resulting in a highly scalable and maintainable system.
+
+This documentation serves as the central reference point for hardware design, software development, protocol definition, and future maintenance.

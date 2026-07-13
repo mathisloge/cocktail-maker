@@ -1,10 +1,6 @@
 = Naming Conventions
 
-== Overview
-
-The cocktail machine system consists of two distinct hardware entities with well-defined roles.
-Each entity has a canonical name that is used consistently across hardware documentation,
-software identifiers, protocol definitions, and API boundaries.
+To ensure consistency across hardware documentation, software identifiers, protocol definitions, and API boundaries, the system relies on two distinct hardware entities with well-defined roles. Each entity has a canonical name.
 
 == Station
 
@@ -58,18 +54,22 @@ PodDescriptor                   // static metadata (capabilities, slot count)
 
 == Relationship
 
-[source,text]
-----
-┌─────────────────────────────────┐
-│             Station             │
-│  (Raspberry Pi + Display + UI)  │
-│                                 │
-│   ┌─────────┐   ┌─────────┐     │
-│   │  Pod 0  │   │  Pod 1  │ ... │
-│   │ (USB)   │   │ (USB)   │     │
-│   └─────────┘   └─────────┘     │
-└─────────────────────────────────┘
-----
+[mermaid, target="station-pod-container", format="svg"]
+....
+flowchart LR
+
+    subgraph Pods["Pods"]
+        direction TB
+        Pod0["Pod 0"]
+        Pod1["Pod 1"]
+        PodN["Pod N"]
+
+    end
+    subgraph Station["Station"]
+        direction TB
+        Platform["Raspberry Pi + Display + UI"]
+    end
+....
 
 The Station maintains a registry of connected Pods. Each Pod is an independent device,
 while the Station is the sole initiator of communication.

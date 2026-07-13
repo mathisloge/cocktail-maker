@@ -5,10 +5,10 @@ content:
   sources:
   - url: .
     branches: HEAD
-    start_path: docs-system
+    start_path: docs/system
   - url: .
     branches: HEAD
-    start_path: docs-station
+    start_path: docs/station
 asciidoc:
   extensions:
     - 'asciidoctor-kroki'

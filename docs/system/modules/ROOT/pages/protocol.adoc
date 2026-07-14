@@ -1,0 +1,3 @@
+# Protocol
+
+Schema and generated code repository: https://github.com/mathisloge/cocktail-maker-protocol/

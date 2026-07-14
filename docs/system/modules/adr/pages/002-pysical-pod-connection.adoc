@@ -1,0 +1,45 @@
+= ADR-002: Physical Pod Connection
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-07-14
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:0005-use-xyz.adoc[ADR 0005]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+Following the Station/Pod split (xref:adr:001-system-split.adoc[ADR-001]), the Station and every Pod need a physical/electrical interface over which the communication protocol can be carried.
+Pods must be connectable and removable by an operator without special tools, must each be individually addressable, and the interface must be cheap and widely supported on both the Raspberry Pi (Station) and low-cost microcontrollers (Pods).
+
+== Decision
+
+We will use USB, specifically the USB CDC (Communications Device Class), as the physical/electrical transport between the Station and each Pod.
+Each Pod enumerates as its own USB CDC device when connected.
+
+== Alternatives Considered
+
+=== CAN
+
+CAN is a differential, multi-drop bus widely used in automotive and industrial systems, offering robust, deterministic communication and longer cable runs than USB without a hub.
+
+Rejected: the Raspberry Pi has no native CAN interface, so the Station would need an additional CAN controller/transceiver, adding cost and complexity on the Station side as well as the Pod side.
+CAN also has no native hot-plug/enumeration mechanism equivalent to USB, so Pod presence detection and identification would need to be built as a custom layer on top of the protocol.
+
+=== Ethernet (LAN)
+
+Ethernet offers higher bandwidth and longer cable runs than USB, and is a well-understood, widely supported networking standard.
+
+Rejected: each Pod would need its own Ethernet PHY and RJ45 connector, and connecting more than one Pod would require a network switch, adding cost and BOM complexity disproportionate to the low bandwidth that simple dispensing commands and status messages actually require.
+IP-based addressing also requires additional configuration (static IPs or DHCP) to achieve the same per-Pod identification that USB provides natively through enumeration.
+
+== Consequences
+
+* **Good:** USB CDC is natively supported on Linux (Raspberry Pi) and on most microcontrollers with an on-chip USB peripheral, requiring no custom drivers.
+* **Good:** USB enumeration provides hot-plug detection for free, allowing Pods to be connected or removed without additional wiring or a custom presence-detection mechanism.
+* **Good:** Each Pod's USB device identity can be used as the basis for assigning its Pod identifier, simplifying addressing.
+* **Bad:** USB cable length is limited (typically a few meters without active extension/hubs), which constrains the physical layout of Pods relative to the Station.
+* **Bad:** USB is host-centric and point-to-point per port; connecting more Pods than the Station has native ports requires a USB hub, adding a component and a potential point of failure.
+* **Bad:** Unlike a shared multi-drop bus (e.g. RS-485, CAN), USB does not scale to large Pod counts without additional hubs, and total bandwidth is shared across all connected Pods.

@@ -1,0 +1,21 @@
+// This partial reads page attributes from the ADR and formats them perfectly.
+[cols="1h,3"]
+|===
+| Status | {adr-status}
+| Date | {adr-date}
+| Author(s) | {adr-authors}
+|===
+
+ifeval::["{adr-status}" == "Deprecated"]
+[WARNING]
+====
+This decision has been deprecated and is no longer active.
+====
+endif::[]
+
+ifeval::["{adr-status}" == "Superseded"]
+[WARNING]
+====
+This decision has been superseded by {adr-superseded-by}.
+====
+endif::[]

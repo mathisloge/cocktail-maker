@@ -1,0 +1,116 @@
+= Naming Conventions
+
+To ensure consistency across hardware documentation, software identifiers, protocol definitions, and API boundaries, the system relies on two distinct hardware entities with well-defined roles. Each entity has a canonical name.
+
+== Station
+
+The *Station* is the central unit of the system. It houses the Raspberry Pi, the user-facing
+display, and the glass placement area. It acts as the orchestrator of the entire machine by
+running the main application, hosting the UI, managing connected Pods, and coordinating
+dispensing sequences.
+
+There is exactly *one Station* per machine.
+
+.Responsibilities
+* Runs the host application (UI, recipe logic, and session management)
+* Maintains USB connections to all Pods
+* Sends dispensing commands and receives status updates and events from Pods
+* Owns the domain model (recipes, ingredients, and calibration state)
+
+.Usage in code
+[source,cpp]
+----
+class Station { ... };          // top-level application context
+StationConfig                   // configuration struct
+StationStatus                   // runtime state
+----
+
+== Pod
+
+A *Pod* is a self-contained dispensing module. Each Pod holds one or more bottles and
+contains the embedded controller, stepper motors, servos, valves, and load cells required
+to autonomously measure and dispense its ingredients.
+
+A Pod exposes a USB CDC interface and communicates with the Station using the defined
+serial protocol.
+
+A machine can contain *one or more Pods*, each identified by a unique `PodId` assigned
+when the Pod connects to the Station.
+
+.Responsibilities
+* Controls its actuators (steppers, servos, and valves) on command
+* Reports weight measurements from its load cells
+* Responds to Station requests using the request-response protocol
+* Emits events, such as calibration completion or error conditions
+
+.Usage in code
+[source,cpp]
+----
+class Pod { ... };              // represents one connected Pod
+PodId                           // strong type for pod identity
+PodStatus                       // runtime state
+PodDescriptor                   // static metadata (capabilities, slot count)
+----
+
+== Relationship
+
+[mermaid, target="station-pod-container", format="svg"]
+....
+flowchart LR
+
+    subgraph Pods["Pods"]
+        direction TB
+        Pod0["Pod 0"]
+        Pod1["Pod 1"]
+        PodN["Pod N"]
+
+    end
+    subgraph Station["Station"]
+        direction TB
+        Platform["Raspberry Pi + Display + UI"]
+    end
+....
+
+The Station maintains a registry of connected Pods. Each Pod is an independent device,
+while the Station is the sole initiator of communication.
+
+== Naming Rules
+
+[cols="1,1,1",options="header"]
+|===
+|Context
+|Station
+|Pod
+
+|C++ class
+|`Station`
+|`Pod`
+
+|Configuration / types
+|`StationConfig`
+|`PodConfig`, `PodId`
+
+|Protocol prefix
+|`station_`
+|`pod_`
+
+|Source files
+|`station.cpp`, `station.h`
+|`pod.cpp`, `pod.h`
+
+|Log tag
+|`[station]`
+|`[pod:<id>]`
+|===
+
+Compound names always place the entity name first.
+
+.Examples
+* `StationManager`
+* `PodDescriptor`
+* `PodCalibrationState`
+
+Do *not* reverse the order:
+
+* `ManagerStation`
+* `DescriptorPod`

@@ -1,0 +1,72 @@
+= ADR-001: Decentralized Hardware Architecture (Station + Pods)
+:adr-status: Accepted
+:adr-date: 2026-05-01
+:adr-authors: {gh}mathisloge[@mathisloge]
+// :adr-superseded-by: xref:0005-use-mysql.adoc[ADR 0005]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+In the first version of the cocktail machine, everything was controlled directly by the Raspberry Pi.
+Even though it ran a Linux-RT kernel, explicit step modulation for the stepper motors still led to stalls and increased mechanical stress on the pumps, since step pulses were generated centrally and were subject to timing jitter.
+
+Furthermore, the number of GPIOs available on the Raspberry Pi is limited.
+Additional GPIO expanders were required to drive the growing number of steppers, valves, and load cells, which added I/O latency and further degraded step timing accuracy.
+
+== Decision
+
+We split the hardware into a single Station and one or more Pods.
+Each Pod is a self-contained module with its own embedded controller board, driving its connected stepper pumps, valves, and load cells locally and in real time.
+A Pod is controlled by the Station through a defined, hardware-independent request–response protocol.
+The Station no longer generates step pulses or reads load cells directly; it acts purely as the orchestrator, sending high-level dispensing commands to Pods and consuming their status/event reports.
+
+The choice of physical/electrical interface between Station and Pods (e.g. USB, RS-485, CAN) is intentionally out of scope for this ADR and is addressed separately.
+
+== Related Quality Goals
+
+This decision directly supports the following quality goals:
+
+[cols="1,4", options="header"]
+|===
+| Quality Goal | Relation to this Decision
+
+| *Reliability*
+| Moving stepper control and load-cell readout onto each Pod's own controller removes the step pulse jitter and stalls previously caused by centralized, non-deterministic timing on the Station.
+Eliminating this failure mode directly supports unattended, long-term operation.
+
+| *Maintainability*
+| Because a Pod is a self-contained, physically independent module, it can be inspected, recalibrated, or swapped out as a single unit without the operator needing to access or understand the Station's internals.
+This keeps servicing within reach of an operator without deep technical expertise.
+|===
+
+== Alternatives Considered
+
+=== Single embedded controller for the entire machine
+
+One controller board would drive the Raspberry Pi's display/UI as well as all steppers, valves, and load cells across all ingredient slots directly, with no separate Pod controllers.
+
+Rejected: a single controller forces a trade-off between UI responsiveness and real-time actuator control on the same device, which was the exact problem observed in the first version — undermining *Usability*.
+It also ties every ingredient slot to one fixed board, making Pods hard-wired rather than physically and electrically independent, modular units — undermining *Maintainability*.
+
+== Consequences
+
+=== Positive
+
+* Step timing and motor control are now handled locally on each Pod's own controller, decoupled from the Station's scheduling.
+This removes the stalls and pump stress caused by centrally generated step pulses.
+* The Raspberry Pi's limited GPIO count is no longer a constraint, since Pods no longer need to be wired directly to Station GPIOs.
+GPIO expanders are no longer needed.
+* The Station is freed from hard real-time obligations, since time-critical actuator control now happens on the Pods rather than on the Station itself, allowing the Station to focus on a fast, responsive UI.
+* The system becomes horizontally scalable: additional ingredients can be added by connecting additional Pods, without redesigning the Station or its wiring.
+* Pods can be developed, bench-tested, and replaced independently of the Station, improving maintainability and enabling isolated testing of a single module.
+* The Station/Pod split gives a clean, well-defined domain boundary that simplifies reasoning about failure domains and responsibilities across the machine.
+* Decoupling the protocol from the physical interface keeps this decision independent of, and reusable across, whichever transport is ultimately chosen.
+
+=== Negative
+
+* Bill-of-materials and per-unit cost increase, since every Pod requires its own controller board and power regulation, instead of sharing the Raspberry Pi's I/O.
+* A dedicated Station↔Pod protocol must be designed, versioned, and documented, including message framing, timeouts, and error/event semantics; this protocol becomes a long-term maintenance surface in its own right.
+* Each Pod now carries its own embedded controller that must be programmed and maintained independently, increasing the number of components that can fail or need updates across the machine.
+* Fault diagnosis becomes a distributed-systems problem: a fault may originate in the Station, the protocol, the inter-device transport, or an individual Pod, requiring correlated diagnostics across devices rather than a single control point.
+* Pod identification and enumeration must be handled at runtime (assigning identity to each Pod and detecting connect/disconnect events), which the Station-only design did not need to consider.

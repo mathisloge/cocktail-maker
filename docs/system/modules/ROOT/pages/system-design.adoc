@@ -1,0 +1,191 @@
+= System Design
+
+This chapter provides a high-level overview of the Cocktail Machine.
+It defines the system boundaries, illustrates the core functional blocks, and documents the fundamental architectural decisions that shaped the design before diving into specific hardware or software implementations.
+
+== System Context
+
+The system context describes the Cocktail Machine as a "black box" and identifies all external actors and systems that interact with it.
+
+[plantuml, target="system-context", format="svg"]
+....
+!include <C4/C4_Context>
+
+' Define Actors & Systems
+Person(user, "User (Guest)", "A guest who wants to order and receive a drink intuitively.")
+Person(operator, "Operator (Staff)", "Responsible for refilling, cleaning, and calibrating.")
+
+System(machine, "Cocktail Machine", "Automated mechatronic beverage dispenser based on Station/Pod architecture.")
+
+System_Ext(power_grid, "Power Grid", "External 230V AC mains wall outlet.")
+System_Ext(ingredients, "Raw Ingredients", "Physical bottles containing spirits, juices, and syrups.")
+
+' Define Relationships
+Rel(user, machine, "Selects recipe & orders drink from")
+Rel(machine, user, "Dispenses cocktail to")
+
+Rel(operator, machine, "Refills, cleans & calibrates")
+
+Rel(power_grid, machine, "Supplies 230V AC energy to")
+Rel(ingredients, machine, "Supplies fluids to")
+
+SHOW_LEGEND()
+....
+
+* **User (Guest):** Interacts with the system purely to order and receive drinks. Requires zero technical knowledge.
+* **Operator (Staff):** Responsible for refilling ingredients, executing cleaning cycles, and calibrating pods.
+Interacts with a dedicated admin UI.
+* **Power & Ingredients:** The physical inputs required for operation.
+
+=== Conceptual Building Blocks
+
+Zooming into the machine, the system is partitioned into three functional domains.
+[plantuml, target="conceptual-blocks", format="svg"]
+....
+!include <C4/C4_Container>
+skinparam wrapWidth 200
+skinparam maxMessageSize 150
+
+' External references from Context Level
+Person(user, "User", "Guest")
+Person(operator, "Operator", "Staff/Owner")
+System_Ext(power_grid, "Power Grid", "Wall outlet")
+System_Ext(ingredients, "Raw Ingredients", "Bottles")
+
+System_Boundary(machine_boundary, "Cocktail Machine") {
+
+    Container(station, "Station", "Raspberry Pi, Touchscreen, C++/Slint", "Orchestrates the entire system. Runs the UI, manages recipes, and handles pod state.")
+
+    Container(pod, "Pod(s)", "MCU, Steppers, Load Cells, Valves", "Autonomous hardware module. Dispenses exact ingredient amounts and reports back.")
+
+    Container(power_management, "Power Management Unit", "Internally transforms external 230V AC to safe 5V/12V/24V DC levels.")
+}
+
+' Actor Relationships
+Rel(user, station, "Interacts with UI to order drinks")
+
+Rel(operator, station, "Uses maintenance UI (calibration, cleaning cycles)")
+Rel(operator, pod, "Performs physical maintenance (tube swaps, refilling)")
+Rel(operator, ingredients, "Replaces empty bottles")
+
+' Power Flow
+Rel(power_grid, power_management, "Supplies 230V AC")
+Rel(power_management, station, "Distributes 5V DC")
+Rel(power_management, pod, "Distributes 12V/24V DC")
+
+' Fluid & Logic Flow
+Rel(station, pod, "Sends dispense commands & reads status", "USB CDC")
+Rel(ingredients, pod, "Drawn into tubing via pumps")
+
+SHOW_LEGEND()
+....
+
+* **Station:** Handles all high-level logic and user interactions. Both the Guest UI and the Operator Maintenance UI are hosted here.
+* **Pod(s):** Handle the low-level, real-time hardware execution. A Pod receives a command, executes it autonomously by driving its actuators, and reports back. Operators interact physically with Pods for maintenance.
+* **Power Management Unit:** The internal bridge between the external power grid and the low-voltage electronics.
+
+The split of the Station and Pod's is decided in xref:adr:001-system-split.adoc[]
+
+=== Key Technology Decisions
+
+The following technology choices are established at the system level and are assumed as given in the Station, Pod, and Protocol software architecture documents that build on this chapter.
+Only the decision itself is stated here.
+The rationale and alternatives considered are documented in the referenced ADR.
+
+* **Physical Transport:** Station and Pods communicate over USB, using the USB CDC device class — decided in xref:adr:002-pysical-pod-connection.adoc[ADR-002].
+* **Pod Embedded OS:** Pods run on Zephyr RTOS with C++ application support enabled — decided in xref:adr:005-embedded-os.adoc[ADR-005].
+* **Protocol Codegen:** The Station–Pod protocol schema and its generated C++ code are produced using commsdsl (CommsChampion Tools) — decided in xref:adr:006-protocol-serialization.adoc[ADR-006].
+
+These three decisions are interdependent: the protocol code generated via commsdsl (xref:adr:006-protocol-serialization.adoc[ADR-006]) targets plain, freestanding C++, which is what makes it usable unmodified on both the Station and on Zephyr-based Pods (xref:adr:005-embedded-os.adoc[ADR-005]), over the USB CDC transport established in xref:adr:002-pysical-pod-connection.adoc[ADR-002].
+The Station, Pod, and Protocol software architecture documents build directly on this combination rather than re-deriving it.
+
+== Cross-Cutting Concepts
+
+Some concerns affect both the Station and every Pod and are therefore defined once, here, rather than repeated in the Station or Pod software architecture documents.
+
+=== Station–Pod Communication Protocol
+
+The Station and every Pod communicate through a request–response protocol.
+The Station is the sole initiator of communication.
+A Pod never sends unsolicited commands.
+Every Pod is addressed by a unique identifier assigned at connection time, allowing the Station to route commands to a specific Pod and to attribute status and events back to their origin.
+This request–response model, including the Station's role as sole initiator, is decided in xref:adr:003-protocol-communication.adoc[ADR-003].
+
+The protocol distinguishes three conceptual message categories:
+
+* **Commands** — issued by the Station to trigger an action on a Pod, e.g. dispense a given volume.
+* **Status queries** — issued by the Station to poll a Pod's current state, e.g. connected, idle, dispensing, fault.
+* **Events** — emitted by a Pod in response to a command or an internal condition, e.g. dispensing completed, calibration done, error raised.
+
+This document defines the protocol's role and message categories at a conceptual level.
+The exact wire format, framing, and versioning strategy are defined in xref:protocol.adoc[]
+
+=== Physical Transport
+
+The Station and Pods are physically connected via USB, using the USB CDC class to carry the protocol described above.
+This choice keeps each Pod a self-contained, hot-pluggable unit that can be connected, removed, or replaced without rewiring the Station.
+
+The detailed rationale, trade-offs, and alternatives considered (CAN, Ethernet) behind this interface choice are out of scope for this document and are captured separately in xref:adr:002-pysical-pod-connection.adoc[ADR-002], since the Station/Pod split (xref:adr:001-system-split.adoc[ADR-001]) was decided independently of the transport used to realize it.
+
+=== Power Architecture
+
+All electrical energy for the machine originates from a single external 230V AC mains connection and is distributed internally as follows:
+
+[plantuml, target="power-architecture", format="svg"]
+....
+!include <C4/C4_Component>
+skinparam wrapWidth 200
+
+Component(inlet, "IEC C14 Inlet", "230V AC entry point")
+Component(main_switch, "Main Switch", "Manual mains disconnect")
+Component(fi_ls, "RCD/Circuit Breaker", "Residual current + overcurrent protection")
+Component(smps, "SMPS", "230V AC -> 24V DC")
+Component(dcdc, "DC/DC Converter", "24V DC -> 5V DC")
+
+Component(actuators, "Pumps, Valves, Steppers", "24V DC consumers")
+Component(rpi, "Raspberry Pi", "5V DC consumer")
+
+Rel(inlet, main_switch, "230V AC")
+Rel(main_switch, fi_ls, "230V AC")
+Rel(fi_ls, smps, "230V AC")
+Rel(smps, actuators, "24V DC")
+Rel(smps, dcdc, "24V DC")
+Rel(dcdc, rpi, "5V DC")
+
+note right of fi_ls
+  A continuous protective earth (PE)
+  conductor runs through every stage,
+  independent of the voltage domain.
+end note
+....
+
+The main switch provides a single, clearly labeled point at which an operator can fully disconnect the machine from mains power.
+The RCD/circuit breaker protects against both residual current faults and overcurrent conditions before any DC conversion takes place.
+A continuous protective earth (PE) conductor is maintained across all stages, from the inlet through to the Station and every Pod.
+The detailed rationale for this power architecture is documented in xref:adr:004-power-architecture.adoc[ADR-004].
+
+=== Safety Concept
+
+The power and protocol design directly support the *Human Safety* and *Food Safety* quality goals:
+
+[cols="1,3", options="header"]
+|===
+| Measure | Supports
+
+| Main switch as a single manual disconnect point
+| Human Safety
+
+| RCD/circuit breaker on the AC input stage
+| Human Safety
+
+| Continuous PE conductor across all stages
+| Human Safety
+
+| Food-safe materials on all user-contact parts and flow paths
+| Food Safety
+|===
+
+=== Domain Terminology
+
+Station, Pod, and their related terms follow a single, canonical naming convention used consistently across hardware documentation, protocol definitions, and both software architecture documents.
+This convention is not repeated here -- see xref:naming-conventions.adoc[].

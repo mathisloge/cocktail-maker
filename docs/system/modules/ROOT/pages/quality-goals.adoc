@@ -1,0 +1,27 @@
+= Quality Goals
+
+To ensure the machine operates safely and reliably in real-world scenarios, all architectural and design decisions are evaluated against the following strict quality criteria.
+Safety and reliability are the primary drivers for both hardware separation and software state management.
+
+[cols="1,4", options="header"]
+|===
+| Quality Goal | Description
+
+| *Human Safety*
+| No mechanism, electrical fault, or software bug may endanger a user.
+
+| *Food Safety*
+| All user-contact parts and flow paths use food-safe materials.
+
+| *Reliability*
+| The machine must run unattended for long stretches without failure.
+
+| *Maintainability*
+| Operator can service, refill, and calibrate without deep expertise.
+
+| *Usability*
+| Users with no instructions can order and receive a drink intuitively.
+
+|===
+
+Continue with xref:system-design.adoc[].

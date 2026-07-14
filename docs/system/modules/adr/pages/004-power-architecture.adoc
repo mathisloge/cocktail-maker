@@ -1,0 +1,28 @@
+= ADR-004: Power Architecture
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-07-14
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:0005-use-xyz.adoc[ADR 0005]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+The machine draws power from a single external 230V AC mains connection and must safely distribute it to multiple internal voltage domains: the Raspberry Pi (Station) and the pumps, valves, and stepper motors (Pods).
+The power design must support the *Human Safety* quality goal by providing a clearly labeled disconnect point, protection against residual current and overcurrent faults, and a continuous protective earth (PE) conductor.
+
+== Decision
+
+We will use a single-chain power architecture: an IEC C14 inlet feeds a main switch (manual mains disconnect), followed by a residual current and overcurrent protection device, followed by an SMPS that converts 230V AC to 24V DC.
+The 24V DC rail directly powers pumps, valves, and stepper motors, and is further stepped down via a DC/DC converter to 5V DC for the Raspberry Pi.
+A continuous PE conductor runs through every stage, independent of the voltage domain.
+
+== Consequences
+
+* **Good:** A single main switch gives the operator one clearly labeled point to fully disconnect the machine from mains power, directly supporting *Human Safety*.
+* **Good:** A single, linear power chain keeps the internal wiring simple to document and verify, supporting *Maintainability*.
+* **Bad:** The single SMPS is a single point of failure for the entire machine; if it fails, both the Station and all Pods lose power simultaneously, working against *Reliability*.
+* **Bad:** All Pods share the same 24V DC rail, requiring careful current budgeting and fusing as more Pods are added, which limits scaling without revisiting the power design.

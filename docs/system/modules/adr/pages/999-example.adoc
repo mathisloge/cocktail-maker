@@ -1,0 +1,24 @@
+= Use PostgreSQL
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-07-12
+:adr-authors: {gh}janedoe[@janedoe], {gh}johnsmith[@johnsmith]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:0005-use-xyz.adoc[ADR 0005]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+We need a robust relational database to store our transactional data. The data has a highly structured schema and requires ACID compliance.
+
+== Decision
+
+We will use PostgreSQL as our primary datastore.
+
+== Consequences
+
+* **Good:** High reliability and standard SQL support.
+* **Good:** Free and open source.
+* **Bad:** Requires specialized tuning for high-concurrency write loads.

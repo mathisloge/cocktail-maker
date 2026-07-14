@@ -1,6 +1,12 @@
 * xref:index.adoc[]
 * xref:naming-conventions.adoc[]
 * xref:quality-goals.adoc[]
+* xref:system-design.adoc[]
 
 .ADRs
 * xref:adr:001-system-split.adoc[]
+* xref:adr:002-pysical-pod-connection.adoc[]
+* xref:adr:003-protocol-communication.adoc[]
+* xref:adr:004-power-architecture.adoc[]
+* xref:adr:005-embedded-os.adoc[]
+* xref:adr:006-protocol-serialization.adoc[]

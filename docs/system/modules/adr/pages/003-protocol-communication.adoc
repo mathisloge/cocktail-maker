@@ -1,0 +1,28 @@
+= ADR-003: Protocol Communication Model
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-07-14
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:0005-use-xyz.adoc[ADR 0005]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+With the Station acting as orchestrator and each Pod as an autonomous dispensing module (xref:adr:001-system-split.adoc[ADR-001]), we need a communication model between them.
+Dispensing is a safety- and food-safety-relevant action, so it must always be traceable to an explicit, single point of control, and the interaction pattern must be simple enough to implement reliably on constrained Pod microcontrollers.
+
+== Decision
+
+We will use a request–response protocol model in which the Station is the sole initiator of all communication.
+A Pod never sends unsolicited commands and never triggers dispensing or actuator movement on its own; it only acts in response to a request from the Station, and reports status and events back as responses within that model.
+
+== Consequences
+
+* **Good:** A single point of control (the Station) makes it straightforward to reason about when and why a Pod acts, which directly supports the *Human Safety* and *Food Safety* quality goals.
+* **Good:** Pods do not need to arbitrate between multiple initiators or handle concurrent, conflicting commands, simplifying their firmware.
+* **Good:** The interaction pattern is simple to implement and test in isolation, since each exchange is a single request followed by one or more responses.
+* **Bad:** A Pod cannot proactively push time-critical events (e.g. a fault) the instant they occur; the Station must poll, which introduces latency bounded by the polling interval.
+* **Bad:** The Station becomes a single point of failure for observability: if the Station stalls or crashes, no Pod status or event can be retrieved until it recovers.

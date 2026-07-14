@@ -1,6 +1,4 @@
 = Use PostgreSQL
-Jane Doe <jane.doe@example.com>; John Smith <john.smith@example.com>
-// Authors in the first line
 // Fill in the variables
 // one-of: Proposed, Accepted, Deprecated, Superseded
 :adr-status: Accepted

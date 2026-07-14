@@ -1,0 +1,46 @@
+= ADR-005: Embedded OS/Platform for Pods
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-07-14
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:0005-use-xyz.adoc[ADR 0005]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+Each Pod (xref:adr:001-system-split.adoc[ADR-001]) runs its own embedded controller, driving steppers, valves, and load cells in real time and communicating with the Station over USB CDC (xref:adr:002-pysical-pod-connection.adoc[ADR-002]).
+We need a firmware platform for the Pod controller that provides real-time-capable actuator control, a USB CDC device stack, and hardware abstraction that lets the same application code run across different Pod hardware revisions without a rewrite.
+The Station side of the codebase is written in C++, and existing libraries such as mp-units are already relied on for unit-safe arithmetic; reusing that language and those libraries on the Pod side is preferable to introducing a second language and toolchain to maintain.
+
+== Decision
+
+We will use Zephyr RTOS as the embedded OS/platform for Pods, built with its C++ application support enabled.
+
+== Alternatives Considered
+
+=== FreeRTOS
+
+FreeRTOS provides a lightweight, widely used real-time scheduler with a small footprint.
+
+Rejected: FreeRTOS itself is only a scheduler; peripheral drivers and hardware abstraction are left to vendor SDKs or hand-written board support, which differ per microcontroller family.
+Reusing the same application code across different Pod hardware would require re-implementing or re-integrating a driver layer for each board, undermining the hardware-independence we want.
+C++ support is also not first-class; it typically requires manual setup for static constructors, heap allocation, and toolchain flags before it behaves as expected.
+
+=== Bare-metal (no OS)
+
+A bare-metal firmware would talk to registers and vendor HALs directly, with no scheduler or OS abstraction layer at all.
+
+Rejected: this gives maximal control and the smallest footprint, but every driver, the USB CDC device stack, and any scheduling/state-machine logic would need to be hand-rolled per board from scratch.
+
+== Consequences
+
+* **Good:** Zephyr's devicetree-based hardware abstraction and broad driver support allow the same Pod application code to run across different microcontrollers and board revisions, requiring only devicetree/board-level changes rather than application rewrites.
+* **Good:** Zephyr includes a native USB CDC ACM device stack, directly supporting the transport without hand-written USB drivers.
+* **Good:** Zephyr's C++ support lets the Pod firmware use C++ and existing libraries (e.g. mp-units), keeping a single language and toolchain across the whole codebase instead of splitting into C for Pods and C++ for the Station.
+* **Good:** Zephyr is an active, upstream-maintained project with broad SoC/vendor support, reducing long-term vendor lock-in risk compared to a vendor-specific SDK.
+* **Bad:** Zephyr has a larger memory/flash footprint than a bare-metal or FreeRTOS-only build, which constrains the choice of microcontroller to one with sufficient resources.
+* **Bad:** Zephyr's build system and configuration model (devicetree, Kconfig, west) carry a steeper initial learning curve than a minimal bare-metal setup.
+* **Bad:** while present and usable, C++ support in Zephyr is less mature than its native C ecosystem; some subsystems and third-party modules still assume C, occasionally requiring additional integration glue.

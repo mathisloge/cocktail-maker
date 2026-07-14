@@ -1,6 +1,6 @@
 = Quality Goals
 
-To ensure the machine operates safely and reliably in real-world scenarios, all architectural and design decisions are evaluated against the following strict quality criteria. 
+To ensure the machine operates safely and reliably in real-world scenarios, all architectural and design decisions are evaluated against the following strict quality criteria.
 Safety and reliability are the primary drivers for both hardware separation and software state management.
 
 [cols="1,4", options="header"]
@@ -23,3 +23,5 @@ Safety and reliability are the primary drivers for both hardware separation and 
 | Users with no instructions can order and receive a drink intuitively.
 
 |===
+
+Continue with xref:system-design.adoc[].

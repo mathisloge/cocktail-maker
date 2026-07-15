@@ -1,10 +1,18 @@
 import { LogEntry, LogLevel } from "../data.slint";
 import { Palette } from "../palette.slint";
 import { SmallText } from "./small-text.slint";
+
+component Seperator inherits SmallText {
+    text: "│";
+    font-size: 18pt;
+    letter-spacing: 0px;
+    color: Palette.border;
+    vertical-alignment: center;
+    horizontal-stretch: 0;
+}
+
 component LogRow inherits Rectangle {
     in property <LogEntry> entry;
-
-    height: 26px;
     background: transparent;
 
     Rectangle {
@@ -20,20 +28,11 @@ component LogRow inherits Rectangle {
         spacing: 0;
         SmallText {
             text: root.entry.time-stamp;
-            font-size: 5.5pt;
             letter-spacing: 0.8px;
             vertical-alignment: center;
-            overflow: elide;
         }
 
-        SmallText {
-            text: "│";
-            font-size: 6pt;
-            letter-spacing: 0px;
-            color: Palette.border;
-            vertical-alignment: center;
-            horizontal-stretch: 0;
-        }
+        Seperator { }
 
         SmallText {
             width: 44px;
@@ -45,7 +44,6 @@ component LogRow inherits Rectangle {
                 : root.entry.level == LogLevel.err ? "ERROR"
                 : root.entry.level == LogLevel.critical ? "CRIT"
                 : "INFO";
-            font-size: 5.5pt;
             letter-spacing: 1.5px;
             vertical-alignment: center;
             color: root.entry.level == LogLevel.trace ? Palette.log-trace
@@ -57,14 +55,16 @@ component LogRow inherits Rectangle {
                 : Palette.log-info;
         }
 
+        Seperator { }
+
         SmallText {
-            text: "│";
-            font-size: 6pt;
-            letter-spacing: 0px;
-            color: Palette.border;
+            text: root.entry.component;
+            letter-spacing: 0.8px;
             vertical-alignment: center;
-            horizontal-stretch: 0;
+            overflow: clip;
         }
+
+        Seperator { }
 
         Rectangle {
             width: 12px;
@@ -74,7 +74,6 @@ component LogRow inherits Rectangle {
 
         SmallText {
             text: root.entry.message;
-            font-size: 5.5pt;
             letter-spacing: 0.8px;
             vertical-alignment: center;
             overflow: elide;
@@ -85,14 +84,50 @@ component LogRow inherits Rectangle {
 }
 
 export component SystemLog inherits Flickable {
-    in property <[LogEntry]> log-entries;
+    in property <[LogEntry]> log-entries: [
+        {
+            time_stamp: "2025-07-10 10:10:10.00000",
+            level: LogLevel.trace,
+            component: "some-longer-component",
+            message:"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
+        },
+        {
+            time_stamp: "2025-07-10 10:10:10.00000",
+            level: LogLevel.debug,
+            component: "some-longer-component",
+            message:"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
+        },
+        {
+            time_stamp: "2025-07-10 10:10:10.00000",
+            level: LogLevel.info,
+            component: "some-longer-component",
+            message:"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
+        },
+        {
+            time_stamp: "2025-07-10 10:10:10.00000",
+            level: LogLevel.warn,
+            component: "some-longer-component",
+            message:"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
+        },
+        {
+            time_stamp: "2025-07-10 10:10:10.00000",
+            level: LogLevel.err,
+            component: "some-longer-component",
+            message:"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
+        },
+        {
+            time_stamp: "2025-07-10 10:10:10.00000",
+            level: LogLevel.critical,
+            component: "some-longer-component",
+            message:"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
+        }
+    ];
 
     viewport-height: log-content.preferred-height;
 
     log-content := VerticalLayout {
         padding-top: 8px;
         padding-bottom: 8px;
-        spacing: 0;
         alignment: start;
 
         for entry in root.log-entries: LogRow {

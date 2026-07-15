@@ -77,6 +77,7 @@ class UiLogSink : public spdlog::sinks::base_sink<Mutex>
         return LogEntry{
             .time_stamp = slint::SharedString{formatted_time.c_str()},
             .level = static_cast<LogLevel>(msg.level),
+            .component = slint::SharedString{msg.logger_name},
             .message = slint::SharedString{msg.payload},
         };
     }

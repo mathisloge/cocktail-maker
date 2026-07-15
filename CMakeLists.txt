@@ -64,7 +64,7 @@ cpmaddpackage(
 cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite )
 cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_USE_STD_FORMAT ON")
 #cpmaddpackage(URI "gh:CLIUtils/CLI11@2.6.2" OPTIONS "CLI11_PRECOMPILED ON")
-cpmaddpackage(URI "gh:mathisloge/mp-units#4db272b28adb8d22621836927f2f5759364fedf0" SOURCE_SUBDIR src
+cpmaddpackage(URI "gh:mathisloge/mp-units#1a2a7fe243228556cbc26a27603839f6be0fe97b" SOURCE_SUBDIR src
 )
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
 cpmaddpackage(URI "gh:simdjson/simdjson@4.6.4" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF")

@@ -16,17 +16,13 @@ export struct DialogResult
 {
 };
 
-// Caller is responsible for transforming a domain command into whatever
-// UiCommand type invoke_open_manual_command_popup() expects (see
-// MachineAdapter::execute_command(ManualCommand) for the canonical example).
-// This function only knows how to drive the dialog lifecycle + cancellation.
-export template <typename UiCommand, typename CompletionToken = cobalt::use_op_t>
+export template <typename CompletionToken = cobalt::use_op_t>
 auto async_show_manual_command_popup(slint::ComponentHandle<AppWindow> ui,
-                                     UiCommand ui_command,
+                                     gui::Command ui_command,
                                      CompletionToken token = cobalt::use_op)
 {
     return asio::async_initiate<CompletionToken, void(boost::system::error_code, DialogResult)>(
-        [](auto handler, slint::ComponentHandle<AppWindow> ui, UiCommand ui_command) {
+        [](auto handler, slint::ComponentHandle<AppWindow> ui, gui::Command ui_command) {
             using Handler = decltype(handler);
 
             struct SharedState

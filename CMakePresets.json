@@ -79,8 +79,8 @@
                 "BUILD_TESTING": true,
                 "SANITIZE_ADDRESS": true,
                 "SANITIZE_UNDEFINED": true,
-                "CMAKE_C_COMPILER": "gcc-14",
-                "CMAKE_CXX_COMPILER": "g++-14"
+                "CMAKE_C_COMPILER": "gcc-16",
+                "CMAKE_CXX_COMPILER": "g++-16"
             }
         }
     ],

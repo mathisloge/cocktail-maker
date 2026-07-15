@@ -115,3 +115,11 @@ See [docs/naming-conventions.md](docs/naming-conventions.md).
 
 - Based on **comms**
 - https://github.com/mathisloge/cocktail-maker-protocol
+
+# Generate Documentation
+
+In the project root run the following commands:
+
+1. Run `npm install`
+2. Run `npx antora antora-playbook.yml` 
+3. Run `npx http-server build/site -c-1`

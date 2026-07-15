@@ -6,7 +6,7 @@ set_target_properties(
     cocktail-maker-gui
     PROPERTIES CXX_MODULE_STD ON CXX_SCAN_FOR_MODULES ON
 )
-target_link_libraries(cocktail-maker-gui PUBLIC Slint::Slint cm::lib)
+target_link_libraries(cocktail-maker-gui PUBLIC Slint::Slint cm::lib Boost::hash2)
 slint_target_sources(cocktail-maker-gui
   ui/app-window.slint NAMESPACE cm::gui
 )
@@ -35,6 +35,7 @@ target_sources(
                 src/glass_context_bridge.cppm
                 src/gui_application.cppm
                 src/gui_application.cpp
+                src/operator_auth.cppm
 )
 
 if(BUILD_TESTING)
@@ -56,6 +57,7 @@ if(BUILD_TESTING)
             src/recipe_adapter.test.cpp
             src/async_ui.test.cpp
             src/station_state_bridge.test.cpp
+            src/operator_auth.test.cpp
     )
 endif()
 

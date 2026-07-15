@@ -2,8 +2,8 @@ module;
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/post.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/cobalt/spawn.hpp>
-#include <boost/cobalt/task.hpp>
 #include <slint.h>
 #include <spdlog/spdlog.h>
 #include "app-window.h"
@@ -14,6 +14,7 @@ import std;
 import cm.core;
 import cm;
 import :station_state_bridge;
+import :operator_auth;
 
 namespace cm::gui {
 
@@ -162,11 +163,19 @@ class PodUiModel : public slint::Model<gui::Pod>
     std::vector<gui::Pod> pods_;
 };
 
+constexpr std::string kSalt = "static";
+
 StationStateBridge::StationStateBridge(slint::ComponentHandle<AppWindow> ui,
                                        const PodRegistry& pod_registry,
                                        boost::asio::any_io_executor executor)
     : ui_{std::move(ui)}
     , pod_model_{std::make_shared<PodUiModel>()}
+    , operator_auth_{OperatorAuthConfig{
+          .pin_hash = hash_pin("000000", kSalt),
+          .salt = kSalt,
+          .max_attempts = 3,
+          .lockout_duration = std::chrono::seconds{10},
+      }}
 {
     ui_->global<StationStateContext>().set_pods(pod_model_);
     ui_->global<StationStateContext>().on_highlight_dispenser(
@@ -176,6 +185,9 @@ StationStateBridge::StationStateBridge(slint::ComponentHandle<AppWindow> ui,
                 async_highlight_dispenser(pod_registry, PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}),
                 boost::asio::detached);
         });
+    ui_->global<StationStateContext>().on_navigate_to([this](Page target) { on_navigate_to(target); });
+    ui_->global<StationStateContext>().on_submit_operator_pin(
+        [this, executor](slint::SharedString pin) { on_submit_operator_pin(pin, executor); });
 }
 
 std::unique_ptr<PodState> StationStateBridge::create_pod_state()
@@ -250,6 +262,66 @@ boost::cobalt::task<void> async_highlight_dispenser(const PodRegistry& pod_regis
     catch (const std::exception& err) {
         SPDLOG_LOGGER_ERROR(logger, "Error while highlighting: {}", err.what());
     }
+}
+
+void StationStateBridge::on_navigate_to(const Page target)
+{
+    if (target == Page::AdminAreaPage && !operator_authenticated_) {
+        SPDLOG_LOGGER_WARN(logger_, "Requested maintenance access denied. Operator not authenticated.");
+        return;
+    }
+    if (target != Page::AdminAreaPage) {
+        operator_authenticated_ = false; // relock on leaving admin area
+    }
+    const Page previous = ui_->global<StationStateContext>().get_active_screen();
+    ui_->global<StationStateContext>().set_active_screen(target);
+    ui_->global<StationStateContext>().invoke_navigated_to(previous, target);
+}
+
+void StationStateBridge::on_submit_operator_pin(const slint::SharedString& pin, boost::asio::any_io_executor executor)
+{
+    const auto now = std::chrono::steady_clock::now();
+    operator_authenticated_ = operator_auth_.verify(std::string{pin}, now);
+    const bool locked_out = operator_auth_.is_locked_out(now);
+
+    const auto& ctx = ui_->global<StationStateContext>();
+    ctx.set_operator_locked_out(operator_auth_.is_locked_out(now));
+    ctx.set_operator_remaining_attempts(operator_auth_.remaining_attempts());
+    ctx.set_operator_lockout_seconds_remaining(static_cast<int>(operator_auth_.lockout_remaining(now).count()));
+    if (operator_authenticated_) {
+        ui_->invoke_close_operator_pin_popup();
+        on_navigate_to(Page::AdminAreaPage);
+    }
+    else {
+        SPDLOG_LOGGER_WARN(
+            logger_, "Entered wrong operator pin {}. Remaining: {}", pin.data(), operator_auth_.remaining_attempts());
+    }
+    if (locked_out) {
+        boost::cobalt::spawn(executor, async_handle_operator_lockout(), boost::asio::detached);
+    }
+}
+
+boost::cobalt::task<void> StationStateBridge::async_handle_operator_lockout()
+{
+    SPDLOG_LOGGER_DEBUG(logger_, "Starting operator lockout timeout.");
+    for (auto now = std::chrono::steady_clock::now(); operator_auth_.is_locked_out(now); now = std::chrono::steady_clock::now()) {
+        boost::asio::steady_timer timer{co_await boost::cobalt::this_coro::executor};
+        timer.expires_after(std::chrono::seconds{1});
+        co_await timer.async_wait(boost::cobalt::use_op);
+        slint::invoke_from_event_loop([this]() {
+            const auto now = std::chrono::steady_clock::now();
+            const auto& ctx = ui_->global<StationStateContext>();
+            ctx.set_operator_lockout_seconds_remaining(static_cast<int>(operator_auth_.lockout_remaining(now).count()));
+        });
+    }
+    slint::invoke_from_event_loop([this]() {
+        const auto now = std::chrono::steady_clock::now();
+        const auto& ctx = ui_->global<StationStateContext>();
+        ctx.set_operator_locked_out(operator_auth_.is_locked_out(now));
+        ctx.set_operator_remaining_attempts(operator_auth_.remaining_attempts());
+        ctx.set_operator_lockout_seconds_remaining(static_cast<int>(operator_auth_.lockout_remaining(now).count()));
+    });
+    SPDLOG_LOGGER_DEBUG(logger_, "Finished operator lockout timeout.");
 }
 
 PodStateImpl::~PodStateImpl()

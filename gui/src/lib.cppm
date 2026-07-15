@@ -10,3 +10,4 @@ export import :recipe_context_bridge;
 export import :process_context_bridge;
 export import :glass_context_bridge;
 export import :gui_application;
+export import :operator_auth;

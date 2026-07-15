@@ -36,13 +36,16 @@ import {
     MixSuccessPage,
     MixGlassSelectionPage,
 } from "pages.slint";
-import { ManualCommandPopup } from "popups.slint";
+import { ManualCommandPopup, OperatorPinPopup } from "popups.slint";
 import { AdminArea } from "admin-area.slint";
 import { StationStateContext } from "./globals/station-state-context.slint";
 import { ProcessContext } from "./globals/process-context.slint";
 import { GlassContext } from "globals/glass-context.slint";
 
+
 export component AppWindow inherits Window {
+    preferred-width: 1280px;
+    preferred-height: 720px;
     private property <bool> device_ready: StationStateContext.station-ready;
     private property <bool> boot_screen_confirmed: false;
     private property <Command> popup_command;
@@ -67,6 +70,19 @@ export component AppWindow inherits Window {
         StationStateContext.navigate-to(Page.cocktail-list-page);
     }
 
+    public function open-operator-pin-popup() {
+        operator_pin_popup.show();
+    }
+
+    public function close-operator-pin-popup() {
+        operator_pin_popup.close();
+    }
+
+    operator_pin_popup := OperatorPinPopup {
+        width: root.width;
+        height: root.height;
+    }
+
     popup := ManualCommandPopup {
         width: root.width;
         height: root.height;
@@ -76,8 +92,6 @@ export component AppWindow inherits Window {
         }
     }
 
-    preferred-width: 1280px;
-    preferred-height: 720px;
     background: Palette.background;
     if !device_ready || !boot_screen_confirmed: BootScreen {
         is-loading: !device_ready;
@@ -100,7 +114,7 @@ export component AppWindow inherits Window {
             }
 
             Text {
-                text: "Sir Mix-A-Lot";
+                text: StationStateContext.station-name;
                 font-size: 20pt;
                 font-weight: FontWeight.extra-bold;
                 letter-spacing: 0.38rem;
@@ -108,6 +122,26 @@ export component AppWindow inherits Window {
 
                 horizontal-alignment: TextHorizontalAlignment.center;
                 vertical-alignment: TextVerticalAlignment.center;
+
+                TouchArea {
+                    long-press-timer := Timer {
+                        interval: 4s;
+                        running: false;
+                        triggered => {
+                            self.running = false;
+                            root.open-operator-pin-popup();
+                        }
+                    }
+
+                    pointer-event(event) => {
+                        if (event.kind == PointerEventKind.down) {
+                            long-press-timer.running = true;
+                        }
+                        if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
+                            long-press-timer.running = false;
+                        }
+                    }
+                }
             }
         }
 

@@ -1,0 +1,145 @@
+// popups.slint (Ergänzung, analog ManualCommandPopup)
+import { VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { Palette, Layout } from "../palette.slint";
+import { Button, MediumText } from "../components.slint";
+import { StationStateContext } from "../globals/station-state-context.slint";
+
+component PopupContent {
+    callback close();
+    private property <string> entered-pin: "";
+    private property <int> pin-length: 0;
+    private property <length> button-width: 90px;
+
+    public function reset() {
+        entered-pin = "";
+        pin-length = 0;
+    }
+
+    function push-digit(digit: string) {
+        if (pin-length < 6) {
+            entered-pin += digit;
+            pin-length += 1;
+        }
+    }
+
+    Rectangle {
+        background: Palette.background;
+        border-width: 2px;
+        border-color: Palette.border;
+        border-radius: 8px;
+
+        VerticalBox {
+            padding: 24px;
+            spacing: 16px;
+
+            MediumText {
+                text: "Wartungszugriff";
+                primary: true;
+                horizontal-alignment: center;
+            }
+
+            HorizontalLayout {
+                alignment: center;
+                spacing: 12px;
+                for i in 6: Rectangle {
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 8px;
+                    background: i < pin-length ? Palette.accent : Palette.background;
+                    border-width: 1px;
+                    border-color: Palette.border;
+                }
+            }
+
+            if StationStateContext.operator-locked-out: Text {
+                text: "Gesperrt. Bitte in \{StationStateContext.operator-lockout-seconds-remaining}s erneut versuchen.";
+                color: Palette.text-error;
+                horizontal-alignment: center;
+            }
+
+            if !StationStateContext.operator-locked-out && StationStateContext.operator-remaining-attempts < 5: Text {
+                text: "\{StationStateContext.operator-remaining-attempts} Versuche übrig.";
+                color: Palette.text-secondary;
+                horizontal-alignment: center;
+            }
+
+            HorizontalBox {
+                for digit in [1, 2, 3]: Button {
+                    width: button-width;
+                    text: "\{digit}";
+                    enabled: !StationStateContext.operator-locked-out;
+                    clicked => { push-digit("\{digit}"); }
+                }
+            }
+
+            HorizontalBox {
+                for digit in [4, 5, 6]: Button {
+                    width: button-width;
+                    text: "\{digit}";
+                    enabled: !StationStateContext.operator-locked-out;
+                    clicked => { push-digit("\{digit}"); }
+                }
+            }
+
+            HorizontalBox {
+                for digit in [7, 8, 9]: Button {
+                    width: button-width;
+                    text: "\{digit}";
+                    enabled: !StationStateContext.operator-locked-out;
+                    clicked => { push-digit("\{digit}"); }
+                }
+            }
+
+            HorizontalBox {
+                Button {
+                    width: button-width;
+                    text: "Clear";
+                    secondary: true;
+                    clicked => { reset(); }
+                }
+
+                Button {
+                    width: button-width;
+                    text: "0";
+                    enabled: !StationStateContext.operator-locked-out;
+                    clicked => { push-digit("0"); }
+                }
+
+                Button {
+                    width: button-width;
+                    text: "OK";
+                    enabled: !StationStateContext.operator-locked-out && pin-length > 0;
+                    clicked => {
+                        StationStateContext.submit-operator-pin(entered-pin);
+                        reset();
+                    }
+                }
+            }
+
+            Button {
+                text: "Cancel";
+                secondary: true;
+                clicked => {
+                    reset();
+                    root.close();
+                }
+            }
+        }
+    }
+}
+
+export component OperatorPinPopup inherits PopupWindow {
+    close-policy: PopupClosePolicy.no-auto-close;
+    changed is-open => {
+        content.reset();
+    }
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: rgba(10, 8, 6, 0.88);
+    }
+
+    content := PopupContent {
+        close => { root.close(); }
+    }
+}

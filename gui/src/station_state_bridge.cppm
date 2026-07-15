@@ -1,11 +1,14 @@
 module;
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/cobalt/task.hpp>
 #include "app-window.h"
 
 export module cm.gui:station_state_bridge;
 
 import std;
+import cm.core;
 import cm;
+import :operator_auth;
 
 namespace cm::gui {
 class PodStateImpl;
@@ -28,11 +31,17 @@ export class StationStateBridge : public StationState, public std::enable_shared
     std::optional<PodStateImpl*> find_pod(const PodStateImpl* pod);
 
     void update_pod_model(const PodStateImpl& pod);
+    void on_navigate_to(Page target);
+    void on_submit_operator_pin(const slint::SharedString& pin, boost::asio::any_io_executor executor);
+    boost::cobalt::task<void> async_handle_operator_lockout();
 
   private:
+    log::Logger logger_{log::create_or_get("station_state_bridge")};
     slint::ComponentHandle<AppWindow> ui_;
     std::vector<PodStateImpl*> pods_;
     std::shared_ptr<PodUiModel> pod_model_;
+    OperatorAuth operator_auth_;
+    bool operator_authenticated_{false};
 };
 
 } // namespace cm::gui

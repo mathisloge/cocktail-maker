@@ -45,7 +45,7 @@ add_compile_options(-fno-aligned-allocation)
 
 find_package(Sanitizers REQUIRED)
 set(BOOST_VERSION "1.91.0-1")
-set(BOOST_INCLUDE_LIBRARIES "cobalt;asio")
+set(BOOST_INCLUDE_LIBRARIES "asio\\\\;cobalt\\\\;hash2")
 cpmaddpackage(
   NAME Boost
   VERSION "${BOOST_VERSION}"

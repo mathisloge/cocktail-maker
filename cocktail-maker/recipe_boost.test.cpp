@@ -4,7 +4,6 @@
 import std;
 import cm;
 import cm.core;
-import mp_units;
 
 using namespace cm;
 using Catch::Matchers::WithinAbs;

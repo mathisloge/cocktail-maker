@@ -12,7 +12,6 @@ module cm.gui:dispenser_calibration_bridge_impl;
 import std;
 import cm;
 import cm.core;
-import mp_units;
 import libassert;
 import :dispenser_calibration_bridge;
 

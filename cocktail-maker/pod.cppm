@@ -6,7 +6,6 @@ module;
 export module cm:pod;
 
 import std;
-import mp_units;
 import cm.core;
 import :pod_types;
 import :station_state;

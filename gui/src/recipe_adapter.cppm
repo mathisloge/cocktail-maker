@@ -4,7 +4,6 @@ module;
 
 export module cm.gui:recipe_adapter;
 import std;
-import mp_units;
 import cm;
 import cm.core;
 

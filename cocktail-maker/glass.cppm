@@ -1,8 +1,6 @@
 module;
-
 export module cm:glass;
 import std;
-import mp_units;
 import cm.core;
 
 namespace cm {

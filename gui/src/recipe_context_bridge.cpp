@@ -9,7 +9,6 @@ module;
 module cm.gui:recipe_context_bridge_impl;
 
 import std;
-import mp_units;
 import cm.core;
 import cm;
 import :recipe_adapter;

@@ -12,7 +12,6 @@ module;
 
 export module cm.sim:client;
 import std;
-import mp_units;
 import cm.core;
 import cm;
 

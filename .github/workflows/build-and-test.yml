@@ -15,7 +15,7 @@ jobs:
   test-linux:
     name: Build & Test (GCC 16)
     runs-on: ubuntu-latest
-    
+
     container:
       image: gcc:16
 
@@ -24,15 +24,15 @@ jobs:
         uses: actions/checkout@v7
         with:
           # Required by GetGitRevisionDescription CMake module
-          fetch-depth: 0 
+          fetch-depth: 0
 
       - name: Install System Dependencies
         run: |
           apt-get update
-          
+
           # Install Ninja and the graphical dependencies required by Slint
           apt-get install -y ninja-build libfontconfig1-dev libxkbcommon-dev libx11-xcb-dev libwayland-dev
-          
+
           # Fix ownership check errors when checking out code via actions/checkout inside a container
           git config --global --add safe.directory $GITHUB_WORKSPACE
           git config --global init.defaultBranch main
@@ -41,7 +41,7 @@ jobs:
         run: |
           # Install rustup with the minimal profile to speed up CI, automatically accepting defaults (-y)
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-          
+
           # Add the cargo binary directory to the GitHub Actions PATH for subsequent steps
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 

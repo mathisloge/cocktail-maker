@@ -4,7 +4,6 @@ module;
 export module cm:recipe_scale;
 import std;
 import libassert;
-import mp_units;
 import cm.core;
 import :recipe;
 import :ingredient;

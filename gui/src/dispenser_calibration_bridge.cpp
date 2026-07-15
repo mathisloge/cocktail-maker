@@ -5,6 +5,7 @@ module;
 #include <boost/cobalt/spawn.hpp>
 #include <boost/cobalt/task.hpp>
 #include <libassert/assert-macros.hpp>
+#include <mp-units/systems/si/units.h>
 #include "app-window.h"
 
 module cm.gui:dispenser_calibration_bridge_impl;

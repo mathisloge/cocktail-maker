@@ -1,5 +1,6 @@
 module;
 #include <libassert/assert-macros.hpp>
+#include <mp-units/systems/si/units.h>
 #include <slint.h>
 #include "app-window.h"
 

@@ -2,6 +2,7 @@ module;
 #include <boost/asio.hpp>
 #include <boost/cobalt.hpp>
 #include <comms/process.h>
+#include <mp-units/systems/si/units.h>
 #include <proto/FrameInterface.h>
 #include <proto/dispatch/DispatchClientInputMessage.h>
 #include <proto/frame/Frame.h>

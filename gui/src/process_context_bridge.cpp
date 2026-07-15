@@ -5,6 +5,7 @@ module;
 #include <boost/asio/post.hpp>
 #include <boost/cobalt/detached.hpp>
 #include <boost/cobalt/spawn.hpp>
+#include <mp-units/systems/si/units.h>
 #include <slint.h>
 #include <spdlog/spdlog.h>
 #include "app-window.h"

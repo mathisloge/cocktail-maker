@@ -1,12 +1,8 @@
 module;
-#include <mp-units/bits/core_gmf.h>
-export module cm.core:units;
-import std;
-
-// create our own c++ unit module as the mp-units module fails to compile with gcc-16
-#define MP_UNITS_IN_MODULE_INTERFACE
 #include <mp-units/core.h>
 #include <mp-units/systems/si/units.h>
+export module cm.core:units;
+import std;
 
 export namespace cm::units {
 using namespace mp_units;

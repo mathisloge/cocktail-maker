@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <mp-units/systems/si/units.h>
 #include <slint.h>
 #include "app-window.h"
 

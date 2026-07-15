@@ -4,6 +4,7 @@ module;
 #include <boost/cobalt/promise.hpp>
 #include <boost/cobalt/race.hpp>
 #include <boost/cobalt/task.hpp>
+#include <mp-units/systems/si/units.h>
 #include <proto/field/ErrorCodeCommon.h>
 #include <proto/field/LedEffectCommon.h>
 #include <spdlog/spdlog.h>

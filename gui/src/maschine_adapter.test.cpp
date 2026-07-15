@@ -2,6 +2,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/cobalt.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <mp-units/systems/si/units.h>
 #include <slint.h>
 #include "app-window.h"
 

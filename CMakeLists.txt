@@ -40,8 +40,10 @@ get_git_head_revision(git_branch git_sha)
 message(STATUS "Project git sha: ${git_sha}")
 message(STATUS "Project git branch: ${git_branch}")
 
-# llvm import-std workaround
-add_compile_options(-fno-aligned-allocation)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # llvm import-std workaround
+    add_compile_options(-fno-aligned-allocation)
+endif()
 
 find_package(Sanitizers REQUIRED)
 set(BOOST_VERSION "1.91.0-1")

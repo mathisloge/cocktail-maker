@@ -1,0 +1,45 @@
+name: Linux CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+# Concurrency group to cancel outdated CI runs on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-linux:
+    name: Build & Test (GCC 16)
+    runs-on: ubuntu-latest
+    
+    container:
+      image: gcc:16
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          # Required by GetGitRevisionDescription CMake module
+          fetch-depth: 0 
+
+      - name: Install System Dependencies
+        run: |
+          apt-get update
+          
+          # Install Ninja and the graphical dependencies required by Slint
+          apt-get install -y ninja-build libfontconfig1-dev libxkbcommon-dev libx11-xcb-dev libwayland-dev
+          
+          # Fix ownership check errors when checking out code via actions/checkout inside a container
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          git config --global init.defaultBranch main
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Run CMake Workflow
+        # Automatically runs configure, build, and test steps defined in the preset
+        run: cmake --workflow --preset ci-linux

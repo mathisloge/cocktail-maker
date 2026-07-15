@@ -67,6 +67,21 @@
             "cacheVariables": {
                 "BUILD_TESTING": false
             }
+        },
+        {
+            "name": "ci-linux",
+            "displayName": "Linux CI",
+            "inherits": [
+                "common",
+                "debug-build"
+            ],
+            "cacheVariables": {
+                "BUILD_TESTING": true,
+                "SANITIZE_ADDRESS": true,
+                "SANITIZE_UNDEFINED": true,
+                "CMAKE_C_COMPILER": "gcc-14",
+                "CMAKE_CXX_COMPILER": "g++-14"
+            }
         }
     ],
     "buildPresets": [
@@ -77,12 +92,27 @@
         {
             "name": "production",
             "configurePreset": "production"
+        },
+        {
+            "name": "ci-linux",
+            "configurePreset": "ci-linux"
         }
     ],
     "testPresets": [
         {
             "name": "developer",
             "configurePreset": "developer",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "ignore",
+                "stopOnFailure": true
+            }
+        },
+        {
+            "name": "ci-linux",
+            "configurePreset": "ci-linux",
             "output": {
                 "outputOnFailure": true
             },
@@ -116,6 +146,23 @@
                 {
                     "type": "package",
                     "name": "production"
+                }
+            ]
+        },
+        {
+            "name": "ci-linux",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "ci-linux"
+                },
+                {
+                    "type": "build",
+                    "name": "ci-linux"
+                },
+                {
+                    "type": "test",
+                    "name": "ci-linux"
                 }
             ]
         }

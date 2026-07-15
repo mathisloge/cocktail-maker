@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: gcc:16
+      image: gcc:latest
 
     steps:
       - name: Checkout Repository

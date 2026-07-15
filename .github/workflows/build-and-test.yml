@@ -31,7 +31,7 @@ jobs:
           apt-get update
 
           # Install Ninja and the graphical dependencies required by Slint
-          apt-get install -y ninja-build libfontconfig1-dev libxkbcommon-dev libx11-xcb-dev libwayland-dev
+          apt-get install -y ninja-build libudev-dev libfontconfig1-dev libxkbcommon-dev libx11-xcb-dev libwayland-dev
 
           # Fix ownership check errors when checking out code via actions/checkout inside a container
           git config --global --add safe.directory $GITHUB_WORKSPACE

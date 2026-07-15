@@ -6,6 +6,7 @@ firmware, host application, UI/UX and mechanical/electrical design.
 
 
 See https://mathisloge.github.io/cocktail-maker/ how this machine is build. 
+
 ---
 
 ## Vision

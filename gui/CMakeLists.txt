@@ -6,7 +6,10 @@ set_target_properties(
     cocktail-maker-gui
     PROPERTIES CXX_MODULE_STD ON CXX_SCAN_FOR_MODULES ON
 )
-target_link_libraries(cocktail-maker-gui PUBLIC Slint::Slint cm::lib Boost::hash2)
+target_link_libraries(
+    cocktail-maker-gui
+    PUBLIC Slint::Slint cm::lib Boost::hash2
+)
 slint_target_sources(cocktail-maker-gui
   ui/app-window.slint NAMESPACE cm::gui
 )

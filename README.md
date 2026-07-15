@@ -1,11 +1,11 @@
 # Sir-Mix-A-Lot
 
-**An autonomous cocktail dispensing machine, built for commercial rental in Germany.**
-
 Sir-Mix-A-Lot is a full-stack hardware/software project: a self-contained kiosk that mixes and
 pours cocktails unattended, designed to be reliable and food-safe. The project is developed end to end — embedded
 firmware, host application, UI/UX and mechanical/electrical design.
 
+
+See https://mathisloge.github.io/cocktail-maker/ how this machine is build. 
 ---
 
 ## Vision

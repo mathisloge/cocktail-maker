@@ -1,5 +1,5 @@
 module;
-#include <boost/cobalt.hpp>
+#include <boost/cobalt/promise.hpp>
 
 export module cm:dispenser;
 import std;

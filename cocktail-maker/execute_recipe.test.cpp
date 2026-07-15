@@ -1,4 +1,3 @@
-#include <boost/asio/steady_timer.hpp>
 #include <boost/cobalt.hpp>
 #include <catch2/catch_test_macros.hpp>
 import cm;
@@ -10,12 +9,12 @@ namespace {
 class MachineAdapterMock : public BasicCommandExecuter
 {
   public:
-    cobalt::promise<void> execute_command(ManualCommand command) override
+    cobalt::task<void> execute_command(ManualCommand command) override
     {
         co_return;
     }
 
-    cobalt::promise<void> execute_command(DispenseCommand command) override
+    cobalt::task<void> execute_command(DispenseCommand command) override
     {
         co_return;
     }

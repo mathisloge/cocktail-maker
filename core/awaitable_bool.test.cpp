@@ -1,6 +1,6 @@
-#include <boost/asio/post.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/cobalt.hpp>
+#include <boost/cobalt/join.hpp>
+#include <boost/cobalt/run.hpp>
+#include <boost/cobalt/task.hpp>
 #include <catch2/catch_test_macros.hpp>
 import cm.core;
 

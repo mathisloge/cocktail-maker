@@ -61,6 +61,7 @@ if(BUILD_TESTING)
             src/async_ui.test.cpp
             src/station_state_bridge.test.cpp
             src/operator_auth.test.cpp
+            src/maschine_adapter.test.cpp
     )
 endif()
 

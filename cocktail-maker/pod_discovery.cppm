@@ -1,5 +1,9 @@
 module;
-#include <boost/cobalt.hpp>
+#include <boost/cobalt/async_for.hpp>
+#include <boost/cobalt/generator.hpp>
+#include <boost/cobalt/task.hpp>
+#include <boost/cobalt/wait_group.hpp>
+#include <boost/cobalt/with.hpp>
 #include <spdlog/spdlog.h>
 
 export module cm:pod_discovery;

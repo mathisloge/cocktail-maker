@@ -1,6 +1,11 @@
 module;
-#include <boost/asio.hpp>
-#include <boost/cobalt.hpp>
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/steady_timer.hpp>
+#include <boost/cobalt/channel.hpp>
+#include <boost/cobalt/promise.hpp>
+#include <boost/cobalt/race.hpp>
+#include <boost/cobalt/task.hpp>
 #include <comms/ErrorStatus.h>
 #include <libassert/assert-macros.hpp>
 #include <proto/MsgId.h>

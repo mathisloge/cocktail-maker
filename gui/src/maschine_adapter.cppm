@@ -1,7 +1,5 @@
 module;
-#include <boost/asio.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/cobalt.hpp>
+#include <boost/cobalt/task.hpp>
 #include <slint.h>
 #include <spdlog/spdlog.h>
 #include "app-window.h"
@@ -10,6 +8,7 @@ export module cm.gui:machine_adapter;
 import std;
 import cm;
 import :async_ui;
+import :recipe_adapter;
 
 namespace cm::gui {
 
@@ -18,7 +17,8 @@ namespace cobalt = boost::cobalt;
 
 export class MachineAdapter : public cm::BasicCommandExecuter
 {
-    std::shared_ptr<SlintAsyncAdapter> ui_;
+    slint::ComponentHandle<AppWindow> ui_;
+    const IngredientStore& ingredient_store_;
     const PodRegistry& pod_registry_;
     const StationConfig& station_config_;
 
@@ -27,21 +27,29 @@ export class MachineAdapter : public cm::BasicCommandExecuter
                             const IngredientStore& ingredient_store,
                             const PodRegistry& pod_registry,
                             const StationConfig& station_config)
-        : ui_{std::make_shared<SlintAsyncAdapter>(std::move(ui), ingredient_store)}
+        : ui_{std::move(ui)}
+        , ingredient_store_{ingredient_store}
         , pod_registry_{pod_registry}
         , station_config_{station_config}
     {
     }
 
-    cobalt::promise<void> execute_command(ManualCommand command) override
+    cobalt::task<void> execute_command(ManualCommand command) override
     {
         auto logger = log::create_or_get("recipe");
         SPDLOG_LOGGER_DEBUG(logger, "Opening UI manual command popup for '{}'", command.instruction);
-        co_await async_show_manual_command_popup(ui_, std::move(command));
+
+        auto wrapped_command = cm::Command{std::move(command)};
+        auto ui_command = transform_command(wrapped_command, ingredient_store_);
+        if (not ui_command.has_value()) {
+            throw std::runtime_error("Command cannot be transformed into a ManualCommand");
+        }
+
+        co_await async_show_manual_command_popup(ui_, std::move(*ui_command));
         co_return;
     }
 
-    cobalt::promise<void> execute_command(DispenseCommand command) override
+    cobalt::task<void> execute_command(DispenseCommand command) override
     {
         auto logger = log::create_or_get("recipe");
         SPDLOG_LOGGER_DEBUG(logger, "Process dispense command {}", command.ingredient);
@@ -81,8 +89,8 @@ export class MachineAdapter : public cm::BasicCommandExecuter
         auto logger = log::create_or_get("recipe");
         SPDLOG_LOGGER_DEBUG(logger, "Updating command '{}' status to '{}'", id, static_cast<int>(status));
 
-        ui_->run_in_ui_thread([id, status, ui = ui_]() {
-            auto selected = ui->ui->global<RecipeContext>().get_active_recipe();
+        slint::invoke_from_event_loop([id, status, ui = ui_]() {
+            auto selected = ui->global<RecipeContext>().get_active_recipe();
             for (int i = 0; i < selected.commands->row_count(); i++) {
                 auto cmd = selected.commands->row_data(i);
                 if (cmd.has_value() and cmd->id == id.raw()) {
@@ -99,7 +107,7 @@ export class MachineAdapter : public cm::BasicCommandExecuter
                     }();
                     cmd->status = ui_status;
                     selected.commands->set_row_data(i, *cmd);
-                    ui->ui->global<RecipeContext>().set_active_recipe(selected);
+                    ui->global<RecipeContext>().set_active_recipe(selected);
                     return;
                 }
             }

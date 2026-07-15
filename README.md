@@ -5,7 +5,7 @@ pours cocktails unattended, designed to be reliable and food-safe. The project i
 firmware, host application, UI/UX and mechanical/electrical design.
 
 
-See https://mathisloge.github.io/cocktail-maker/ how this machine is build. 
+See https://mathisloge.github.io/cocktail-maker/ how this machine is build.
 
 ---
 
@@ -121,5 +121,5 @@ See [docs/naming-conventions.md](docs/naming-conventions.md).
 In the project root run the following commands:
 
 1. Run `npm install`
-2. Run `npx antora antora-playbook.yml` 
+2. Run `npx antora antora-playbook.yml`
 3. Run `npx http-server build/site -c-1`

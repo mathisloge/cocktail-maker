@@ -1,6 +1,4 @@
 module;
-#include <boost/cobalt.hpp>
-
 export module cm:pod_dispatcher;
 
 import std;
@@ -8,8 +6,6 @@ import cm.core;
 import :station_config;
 import :pod_registry;
 import :recipe;
-
-namespace cobalt = boost::cobalt;
 
 namespace cm {
 

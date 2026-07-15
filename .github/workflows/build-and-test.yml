@@ -37,6 +37,14 @@ jobs:
           git config --global --add safe.directory $GITHUB_WORKSPACE
           git config --global init.defaultBranch main
 
+      - name: Install Rust Toolchain
+        run: |
+          # Install rustup with the minimal profile to speed up CI, automatically accepting defaults (-y)
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          
+          # Add the cargo binary directory to the GitHub Actions PATH for subsequent steps
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
       - name: Setup CMake
         uses: lukka/get-cmake@latest
 

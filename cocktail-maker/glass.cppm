@@ -1,8 +1,7 @@
 module;
-
+#include <mp-units/systems/si/units.h>
 export module cm:glass;
 import std;
-import mp_units;
 import cm.core;
 
 namespace cm {

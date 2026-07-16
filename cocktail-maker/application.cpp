@@ -3,6 +3,7 @@ module;
 #include <boost/asio/detached.hpp>
 #include <boost/cobalt/spawn.hpp>
 #include <boost/cobalt/task.hpp>
+#include <mp-units/systems/si/units.h>
 #include <spdlog/spdlog.h>
 
 module cm:application_impl;

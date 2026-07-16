@@ -2,6 +2,7 @@ module;
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/cobalt/detached.hpp>
+#include <mp-units/systems/si/units.h>
 #include <slint.h>
 #include <spdlog/spdlog.h>
 #include "app-window.h"
@@ -9,7 +10,6 @@ module;
 module cm.gui:recipe_context_bridge_impl;
 
 import std;
-import mp_units;
 import cm.core;
 import cm;
 import :recipe_adapter;

@@ -1,10 +1,11 @@
 module;
 #include <libassert/assert-macros.hpp>
+#include <mp-units/math.h>
+#include <mp-units/systems/si/units.h>
 
 export module cm:recipe_boost;
 import std;
 import libassert;
-import mp_units;
 import cm.core;
 import :ingredient;
 import :recipe;

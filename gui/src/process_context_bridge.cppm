@@ -7,7 +7,6 @@ module;
 export module cm.gui:process_context_bridge;
 
 import std;
-import mp_units;
 import cm.core;
 import cm;
 

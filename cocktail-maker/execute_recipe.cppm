@@ -5,7 +5,6 @@ module;
 export module cm:execute_recipe;
 import std;
 import cm.core;
-import mp_units;
 import :ingredient;
 import :recipe;
 

@@ -40,8 +40,10 @@ get_git_head_revision(git_branch git_sha)
 message(STATUS "Project git sha: ${git_sha}")
 message(STATUS "Project git branch: ${git_branch}")
 
-# llvm import-std workaround
-add_compile_options(-fno-aligned-allocation)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # llvm import-std workaround
+    add_compile_options(-fno-aligned-allocation)
+endif()
 
 find_package(Sanitizers REQUIRED)
 set(BOOST_VERSION "1.91.0-1")
@@ -61,15 +63,14 @@ cpmaddpackage(
 
 cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite )
 cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_USE_STD_FORMAT ON")
-cpmaddpackage(URI "gh:CLIUtils/CLI11@2.6.2" OPTIONS "CLI11_PRECOMPILED ON")
-cpmaddpackage(URI "gh:mpusz/mp-units#8df25adeefc73931ff3a1da52804e5c7a061e2d1" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
-)
+#cpmaddpackage(URI "gh:CLIUtils/CLI11@2.6.2" OPTIONS "CLI11_PRECOMPILED ON")
+cpmaddpackage(URI "gh:mpusz/mp-units#a9a49ba92f8f31da380adc179a84dd3d567845bc" SOURCE_SUBDIR src)
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
 cpmaddpackage(URI "gh:simdjson/simdjson@4.6.4" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF")
 cpmaddpackage(
   NAME Slint
   GIT_REPOSITORY https://github.com/slint-ui/slint.git
-  GIT_TAG 2447c697327e7f87c5044af229e0be6c18608fcc
+  GIT_TAG 15776ab28a77daaeba7d8ae8b07b8c0790231ada
   SOURCE_SUBDIR api/cpp
 )
 cpmaddpackage(URI "gh:commschamp/comms@5.5.2" NAME LibComms)

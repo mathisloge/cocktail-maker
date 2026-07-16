@@ -1,12 +1,12 @@
 module;
 #include <libassert/assert-macros.hpp>
+#include <mp-units/systems/si/units.h>
 #include <slint.h>
 #include "app-window.h"
 
 export module cm.gui:glass_context_bridge;
 
 import std;
-import mp_units;
 import libassert;
 import cm.core;
 import cm;

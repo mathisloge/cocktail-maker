@@ -1,5 +1,7 @@
 module;
 #include <boost/cobalt/task.hpp>
+#include <mp-units/math.h>
+#include <mp-units/systems/si/units.h>
 #include <slint.h>
 #include <spdlog/spdlog.h>
 #include "app-window.h"

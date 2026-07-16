@@ -1,10 +1,10 @@
 module;
+#include <mp-units/systems/si/units.h>
 #include <slint.h>
 #include "app-window.h"
 
 export module cm.gui:recipe_adapter;
 import std;
-import mp_units;
 import cm;
 import cm.core;
 

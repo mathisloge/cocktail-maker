@@ -18,7 +18,6 @@ target_link_libraries(
         mp-units::mp-units
         spdlog::spdlog
         simdjson::simdjson
-        Boost::asio
         Boost::cobalt
         libassert::assert
         proto
@@ -31,9 +30,7 @@ target_sources(
             FILES
                 lib.cppm
                 any_io_stream.cppm
-                any_io_stream.cpp
                 awaitable_bool.cppm
-                awaitable_bool.cpp
                 comms_adapter.cppm
                 logging.cppm
                 overloaded.cppm

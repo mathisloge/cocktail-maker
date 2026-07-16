@@ -1,11 +1,14 @@
 module;
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/as_tuple.hpp>
+#include <boost/asio/awaitable.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/cancel_after.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/cobalt/op.hpp>
 #include <boost/cobalt/task.hpp>
-#include <boost/system/error_code.hpp>
 
 export module cm.core:any_io_stream;
-
 import std;
 
 namespace cm {
@@ -29,12 +32,32 @@ class SocketIoStream : public AnyIoStream
     TSocket socket_;
 
   public:
-    SocketIoStream(TSocket socket);
+    SocketIoStream(TSocket socket)
+        : socket_{std::move(socket)}
+    {
+    }
 
-    boost::cobalt::task<std::tuple<boost::system::error_code, int>> async_read(asio::mutable_buffer buffer) override;
-    boost::cobalt::task<void> async_write(asio::const_buffer buffer, std::chrono::milliseconds timeout) override;
-    boost::system::error_code close() override;
-    boost::asio::any_io_executor get_executor() override;
+    boost::cobalt::task<std::tuple<boost::system::error_code, int>> async_read(asio::mutable_buffer buffer) override
+    {
+        co_return co_await socket_.async_read_some(std::move(buffer), asio::as_tuple(boost::cobalt::use_op));
+    }
+
+    boost::cobalt::task<void> async_write(asio::const_buffer buffer, std::chrono::milliseconds timeout) override
+    {
+        co_await asio::async_write(socket_, std::move(buffer), asio::cancel_after(timeout, asio::as_tuple(asio::deferred)));
+    }
+
+    boost::system::error_code close() override
+    {
+        boost::system::error_code ec;
+        socket_.close(ec);
+        return ec;
+    }
+
+    boost::asio::any_io_executor get_executor() override
+    {
+        return socket_.get_executor();
+    }
 };
 
 } // namespace cm

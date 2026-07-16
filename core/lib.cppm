@@ -8,6 +8,7 @@ module;
 
 
 export module cm.core;
+export import :asio;
 export import :logging;
 export import :units;
 export import :comms_adapter;

@@ -1,6 +1,4 @@
-#include <boost/cobalt/join.hpp>
-#include <boost/cobalt/run.hpp>
-#include <boost/cobalt/task.hpp>
+#include <boost/cobalt.hpp>
 #include <catch2/catch_test_macros.hpp>
 import cm.core;
 

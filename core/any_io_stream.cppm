@@ -1,15 +1,8 @@
 module;
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/as_tuple.hpp>
-#include <boost/asio/awaitable.hpp>
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/cancel_after.hpp>
-#include <boost/asio/write.hpp>
-#include <boost/cobalt/op.hpp>
-#include <boost/cobalt/task.hpp>
 
 export module cm.core:any_io_stream;
 import std;
+import :asio;
 
 namespace cm {
 namespace asio = boost::asio;
@@ -39,12 +32,12 @@ class SocketIoStream : public AnyIoStream
 
     boost::cobalt::task<std::tuple<boost::system::error_code, int>> async_read(asio::mutable_buffer buffer) override
     {
-        co_return co_await socket_.async_read_some(std::move(buffer), asio::as_tuple(boost::cobalt::use_op));
+        co_return co_await socket_.async_read_some(std::move(buffer), asio::as_tuple(exec::use_op));
     }
 
     boost::cobalt::task<void> async_write(asio::const_buffer buffer, std::chrono::milliseconds timeout) override
     {
-        co_await asio::async_write(socket_, std::move(buffer), asio::cancel_after(timeout, asio::as_tuple(asio::deferred)));
+        co_await asio::async_write(socket_, std::move(buffer), asio::cancel_after(timeout, asio::as_tuple(exec::deferred)));
     }
 
     boost::system::error_code close() override

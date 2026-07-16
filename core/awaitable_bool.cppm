@@ -1,12 +1,10 @@
 module;
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/post.hpp>
 
 export module cm.core:awaitable_bool;
 import std;
+import :asio;
 
 namespace asio = boost::asio;
-
 namespace cm {
 export class AwaitableBool
 {

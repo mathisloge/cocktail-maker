@@ -14,7 +14,7 @@
             "steps": [
                 {
                     "kind": "dispense",
-                    "ingredient": "bacardi",
+                    "ingredient": "white_rum",
                     "volume": 50
                 },
                 {

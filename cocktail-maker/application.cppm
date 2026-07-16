@@ -10,6 +10,7 @@ import :pod_discovery;
 import :pod_registry;
 import :ingredient;
 import :recipe;
+import :glass;
 import :station_config;
 import :station_state;
 
@@ -26,6 +27,7 @@ export class Application
     void run(std::shared_ptr<StationState> station_state, std::unique_ptr<PodDiscovery> pod_discovery);
 
   protected:
+    GlassStore glass_store_;
     IngredientStore ingredient_store_;
     RecipeStore recipe_store_;
     PodRegistry pod_registry_;

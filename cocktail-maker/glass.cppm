@@ -31,45 +31,15 @@ export std::vector<Glass> load_glasses_from_dir(std::filesystem::path dir);
 export class GlassStore
 {
   public:
-    void init_from_dir(std::filesystem::path dir);
+    void init_glasses(std::vector<Glass> glasses);
 
-    const std::unordered_map<GlassId, Glass>& glasses() const
-    {
-        return glasses_;
-    }
+    [[nodiscard]] const std::unordered_map<GlassId, Glass>& glasses() const;
+
+    bool add_active_volume(const GlassId& id, units::Litre volume);
+
+    bool remove_active_volume(const GlassId& id, units::Litre volume);
 
   private:
     std::unordered_map<GlassId, Glass> glasses_;
 };
-
-void GlassStore::init_from_dir(std::filesystem::path dir)
-{
-    glasses_.clear();
-    for (auto&& glass : load_glasses_from_dir(std::move(dir))) {
-        auto id = glass.id;
-        glasses_.emplace(std::move(id), std::move(glass));
-    }
-}
-
-std::vector<Glass> load_glasses_from_dir(std::filesystem::path dir)
-{
-    // TODO: load from filesystem
-    return {{
-        .id = GlassId{"highball"},
-        .display_name = "Highball Glas",
-        .common_volumes =
-            {
-                300 * units::milli_litre,
-                350 * units::milli_litre,
-                400 * units::milli_litre,
-            },
-        .icon =
-            GlassIconData{
-                .viewbox_width = 100,
-                .viewbox_height = 180,
-                .outline = "M 22 18 L 22 158 Q 22 162 26 162 L 74 162 Q 78 162 78 158 L 78 18",
-                .rim = {"M 18 18 L 82 18", "M 22 26 L 78 26"},
-            },
-    }};
-}
 } // namespace cm

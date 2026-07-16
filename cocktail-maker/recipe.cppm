@@ -42,79 +42,18 @@ export struct Recipe
     friend struct std::formatter<Recipe>;
 };
 
-// TODO: implement simdjson loading with reflection
-std::vector<Recipe> load_from_disk(const std::filesystem::path& path, const IngredientStore& ingredient_store);
-
-namespace {
-template <typename T>
-struct is_variant : std::false_type
-{
-};
-
-template <typename... Ts>
-struct is_variant<std::variant<Ts...>> : std::true_type
-{
-};
-
-template <typename T>
-inline constexpr bool is_variant_v = is_variant<std::remove_cvref_t<T>>::value;
-
-constexpr void assign_unique_command_ids(Recipe& recipe)
-{
-    CommandId next_id{1};
-    auto visitor = [&next_id](this auto const& self, auto& node) -> void {
-        // Does this node have a command_id? Assign Id.
-        if constexpr (requires { node.id; }) {
-            node.id = next_id++;
-        }
-        // Matches Command and the top-level variants in Commands.
-        else if constexpr (is_variant_v<decltype(node)>) {
-            std::visit(self, node);
-        }
-        // Matches Commands and ParallelCommand (which are std::vector under the hood).
-        else if constexpr (std::ranges::range<decltype(node)>) {
-            for (auto& child : node) {
-                self(child); // Recursively process children
-            }
-        }
-    };
-    visitor(recipe.commands);
-}
-
-} // namespace
+std::vector<Recipe> load_recipes_from_dir(const std::filesystem::path& path, const IngredientStore& ingredient_store);
 
 export class RecipeStore final
 {
   public:
-    void init_recipes(std::vector<Recipe> recipes)
-    {
-        for (auto&& r : recipes) {
-            assign_unique_command_ids(r);
-            recipes_.emplace_back(std::move(r));
-        }
-    }
+    void init_recipes(std::vector<Recipe> recipes);
 
-    std::optional<Recipe> find_by_id(RecipeId id) const
-    {
-        auto it = std::ranges::find(recipes_, id, &Recipe::id);
-        if (it == recipes_.end()) {
-            return std::nullopt;
-        }
-        return *it;
-    }
+    std::optional<Recipe> find_by_id(RecipeId id) const;
 
-    std::optional<Recipe> find_by_index(int index) const
-    {
-        if (recipe_count() <= index or index < 0) {
-            return std::nullopt;
-        }
-        return recipes_.at(index);
-    }
+    std::optional<Recipe> find_by_index(int index) const;
 
-    std::size_t recipe_count() const
-    {
-        return recipes_.size();
-    }
+    std::size_t recipe_count() const;
 
   private:
     std::vector<Recipe> recipes_;

@@ -169,7 +169,7 @@ cobalt::task<void> ProcessContextBridge::async_process_recipe(Recipe recipe,
 {
     using Clock = std::chrono::steady_clock;
 
-    SPDLOG_LOGGER_DEBUG(logger_, "Create {} with boost factor '{}' and target volume '{}'", recipe, boost, target_volume);
+    SPDLOG_LOGGER_INFO(logger_, "Create {} with boost factor '{}' and target volume '{}'", recipe, boost, target_volume);
     const auto start_tp = Clock::now();
     recipe.commands = scale_recipe(recipe.commands, recipe.nominal_serving_volume, target_volume);
     recipe.commands = boost_recipe(recipe.commands, boost, ingredient_store_);

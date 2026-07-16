@@ -21,7 +21,7 @@ export class GuiApplication : public Application
     slint::ComponentHandle<AppWindow> ui_ = cm::gui::AppWindow::create();
     DispenserCalibrationBridge dispenser_calibration_bridge_{get_executor(), ui_, pod_registry_};
     RecipeContextBridge recipe_context_bridge_{get_executor(), ui_, recipe_store_, ingredient_store_, station_config_};
-    GlassContextBridge glass_context_bridge_{ui_};
+    GlassContextBridge glass_context_bridge_{ui_, glass_store_};
     ProcessContextBridge process_context_bridge_{
         get_executor(), ui_, recipe_store_, ingredient_store_, station_config_, pod_registry_};
 };

@@ -50,7 +50,7 @@ auto transform(const cm::GlassIconData& icon) -> gui::GlassIconData
     };
 }
 
-export class VolumeModel : public slint::Model<slint::SharedString>
+class VolumeModel : public slint::Model<slint::SharedString>
 {
   public:
     explicit VolumeModel(std::vector<units::Litre> volumes)
@@ -98,7 +98,7 @@ export class VolumeModel : public slint::Model<slint::SharedString>
     std::vector<units::Litre> volumes_;
 };
 
-export class GlassListModel : public slint::Model<GlassDescriptor>
+class GlassListModel : public slint::Model<GlassDescriptor>
 {
   public:
     size_t row_count() const override
@@ -184,14 +184,14 @@ export class GlassListModel : public slint::Model<GlassDescriptor>
 export class GlassContextBridge
 {
   public:
-    GlassContextBridge(slint::ComponentHandle<AppWindow> ui)
+    GlassContextBridge(slint::ComponentHandle<AppWindow> ui, GlassStore& store)
         : ui_{std::move(ui)}
+        , store_{store}
     {
     }
 
     void init()
     {
-        store_->init_from_dir("");
         register_ui_callbacks();
     }
 
@@ -204,7 +204,7 @@ export class GlassContextBridge
 
   private:
     slint::ComponentHandle<AppWindow> ui_;
-    std::shared_ptr<GlassStore> store_ = std::make_shared<GlassStore>(); // TODO: move store into application
+    GlassStore& store_;
     std::shared_ptr<GlassListModel> glasses_ = std::make_shared<GlassListModel>();
 };
 
@@ -220,32 +220,44 @@ void GlassContextBridge::register_ui_callbacks()
         std::bind(&GlassContextBridge::on_ui_remove_glass_volume, this, std::placeholders::_1, std::placeholders::_2));
 }
 
-void GlassContextBridge::on_ui_add_glass(slint::SharedString glass_id)
+void GlassContextBridge::on_ui_add_glass(const slint::SharedString glass_id)
 {
-    auto it = store_->glasses().find(GlassId{glass_id});
-    if (it == store_->glasses().end()) {
+    const GlassId id{glass_id};
+    const auto it = store_.glasses().find(id);
+    if (it == store_.glasses().end()) {
         return;
     }
     glasses_->add(it->first, it->second);
 }
 
-void GlassContextBridge::on_ui_remove_glass(slint::SharedString glass_id)
+void GlassContextBridge::on_ui_remove_glass(const slint::SharedString glass_id)
 {
     glasses_->remove(GlassId{glass_id});
 }
 
-void GlassContextBridge::on_ui_add_glass_volume(slint::SharedString glass_id, int volume_ml)
+void GlassContextBridge::on_ui_add_glass_volume(const slint::SharedString glass_id, const int volume_ml)
 {
-    if (auto volumes = glasses_->volume_model(GlassId{glass_id})) {
-        volumes->add(to_litre(volume_ml));
+    const GlassId id{glass_id};
+    const units::Litre volume = to_litre(volume_ml);
+
+    const bool store_updated = store_.add_active_volume(id, volume);
+    if (store_updated) {
+        if (auto volumes = glasses_->volume_model(id)) {
+            volumes->add(volume);
+        }
     }
 }
 
-void GlassContextBridge::on_ui_remove_glass_volume(slint::SharedString glass_id, int volume_ml)
+void GlassContextBridge::on_ui_remove_glass_volume(const slint::SharedString glass_id, const int volume_ml)
 {
-    if (auto volumes = glasses_->volume_model(GlassId{glass_id})) {
-        volumes->remove(to_litre(volume_ml));
+    const GlassId id{glass_id};
+    const units::Litre volume = to_litre(volume_ml);
+
+    const bool store_updated = store_.remove_active_volume(id, volume);
+    if (store_updated) {
+        if (auto volumes = glasses_->volume_model(id)) {
+            volumes->remove(volume);
+        }
     }
 }
-
 } // namespace cm::gui

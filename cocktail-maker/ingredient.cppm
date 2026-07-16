@@ -1,10 +1,7 @@
 module;
-#include <libassert/assert-macros.hpp>
-
 export module cm:ingredient;
 import std;
 import cm.core;
-import libassert;
 
 export namespace cm {
 
@@ -116,35 +113,18 @@ struct Ingredient
     BoostCategory boost_category{};
 };
 
+std::vector<Ingredient> load_ingredients_from_dir(std::filesystem::path dir);
+
 class IngredientStore
 {
   public:
     virtual ~IngredientStore() = default;
 
-    virtual void init_ingredients(std::vector<Ingredient> ingredients)
-    {
-        ingredients_.clear();
-        for (auto&& i : ingredients) {
-            const auto [_, emplaced] = ingredients_.emplace(i.id, std::move(i));
-            ASSERT(emplaced);
-        }
-    }
+    virtual void init_ingredients(std::vector<Ingredient> ingredients);
 
-    std::optional<Ingredient> find_by_id(const IngredientId& ingredient_id) const
-    {
-        const auto it = ingredients_.find(ingredient_id);
-        return (it != ingredients_.end()) ? std::optional{it->second} : std::nullopt;
-    }
+    std::optional<Ingredient> find_by_id(const IngredientId& ingredient_id) const;
 
-    std::vector<IngredientId> ingredients() const
-    {
-        std::vector<IngredientId> result;
-        result.reserve(ingredients_.size());
-        for (const auto& [id, _] : ingredients_) {
-            result.emplace_back(id);
-        }
-        return result;
-    }
+    std::vector<IngredientId> ingredients() const;
 
   private:
     std::unordered_map<IngredientId, Ingredient> ingredients_;

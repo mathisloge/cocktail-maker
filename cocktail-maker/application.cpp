@@ -19,38 +19,12 @@ Application::~Application()
 
 void Application::init(const std::filesystem::path& db_dir)
 {
+    const auto glass_db_path = db_dir / "glasses";
+    const auto ingredients_db_path = db_dir / "ingredients";
     const auto recipe_db_path = db_dir / "recipes";
-    ingredient_store_.init_ingredients({cm::Ingredient{.id = cm::IngredientId{"test"},
-                                                       .display_name = "Test Ingredient",
-                                                       .type = cm::IngredientType::other,
-                                                       .boost_category = cm::BoostCategory::boostable},
-                                        cm::Ingredient{.id = cm::IngredientId{"test2"},
-                                                       .display_name = "Test Ingredient2",
-                                                       .type = cm::IngredientType::other,
-                                                       .boost_category = cm::BoostCategory::reducible}});
-
-    std::vector<cm::Recipe> recipes;
-    for (int i = 0; i < 10; i++) {
-        recipes.emplace_back(cm::Recipe{
-            .id = cm::RecipeId{std::format("mojito_{}", i)},
-            .display_name = "Mojito",
-            .description = "Der Mojito ist ein erfrischender Cocktail aus Rum, Minze, Limette, Zucker und Soda – perfekt für "
-                           "den Sommer.",
-            .tags = {std::string{"classic"}},
-            .image_path = recipe_db_path / "mojito.png",
-            .nominal_serving_volume = 250 * cm::units::milli_litre,
-            .commands =
-                {
-                    cm::DispenseCommand{.ingredient = cm::IngredientId{"test"}, .volume = (75 * cm::units::milli_litre)},
-                    cm::ManualCommand{.instruction = "Help me"},
-                    cm::ParallelCommand{
-                        cm::DispenseCommand{.ingredient = cm::IngredientId{"test"}, .volume = (100 * cm::units::milli_litre)},
-                        cm::DispenseCommand{.ingredient = cm::IngredientId{"test2"}, .volume = (50 * cm::units::milli_litre)},
-                    },
-                },
-        });
-    }
-    recipe_store_.init_recipes(std::move(recipes));
+    glass_store_.init_glasses(load_glasses_from_dir(glass_db_path));
+    ingredient_store_.init_ingredients(load_ingredients_from_dir(ingredients_db_path));
+    recipe_store_.init_recipes(load_recipes_from_dir(recipe_db_path, ingredient_store_));
 }
 
 void Application::run(std::shared_ptr<StationState> station_state, std::unique_ptr<PodDiscovery> pod_discovery)

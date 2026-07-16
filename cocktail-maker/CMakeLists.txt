@@ -7,7 +7,11 @@ set_target_properties(
     PROPERTIES CXX_MODULE_STD ON CXX_SCAN_FOR_MODULES ON
 )
 
-target_link_libraries(cocktail-maker-lib PUBLIC cm::core)
+target_link_libraries(
+    cocktail-maker-lib
+    PUBLIC cm::core
+    PRIVATE simdjson::simdjson
+)
 
 target_sources(
     cocktail-maker-lib
@@ -19,7 +23,9 @@ target_sources(
                 dispenser.cppm
                 execute_recipe.cppm
                 glass.cppm
+                glass.cpp
                 ingredient.cppm
+                ingredient.cpp
                 lib.cppm
                 pod_discovery.cppm
                 pod_types.cppm
@@ -31,6 +37,7 @@ target_sources(
                 recipe_boost.cppm
                 recipe_scale.cppm
                 recipe.cppm
+                recipe.cpp
                 station_config.cppm
                 station_state.cppm
                 serial.cppm

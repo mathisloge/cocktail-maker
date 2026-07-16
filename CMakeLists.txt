@@ -45,6 +45,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_compile_options(-fno-aligned-allocation)
 endif()
 
+add_compile_definitions(BOOST_ASIO_HAS_INLINE_VARIABLES=1 BOOST_ASIO_INLINE_VARIABLE=inline)
+
 find_package(Sanitizers REQUIRED)
 set(BOOST_VERSION "1.91.0-1")
 set(BOOST_INCLUDE_LIBRARIES "asio\\\\;cobalt\\\\;hash2")

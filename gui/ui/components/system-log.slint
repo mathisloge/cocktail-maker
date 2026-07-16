@@ -79,6 +79,16 @@ component LogRow inherits Rectangle {
             overflow: elide;
             color: root.entry.level == LogLevel.err || root.entry.level == LogLevel.critical ? Palette.boost-positive-text
                 : Palette.text-primary;
+
+            Tooltip {
+                Text {
+                    text: root.entry.message;
+                    wrap: word-wrap;
+                    width: 300px;
+                    font-size: 12pt;
+                    horizontal-alignment: start;
+                }
+            }
         }
     }
 }

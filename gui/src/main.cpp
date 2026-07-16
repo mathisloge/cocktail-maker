@@ -11,7 +11,12 @@ int main(int argc, char** argv)
 
     auto logger = cm::log::create_or_get("main");
     SPDLOG_LOGGER_INFO(logger, "Setup application...");
-    app.init(DEBUG_LOCAL_DB_DIR);
+    try {
+        app.init(DEBUG_LOCAL_DB_DIR);
+    }
+    catch (const std::exception& ex) {
+        SPDLOG_LOGGER_CRITICAL(logger, "Could not initialize application. Error: {}", ex.what());
+    }
 
     SPDLOG_LOGGER_INFO(logger, "Run application...");
     app.run(std::make_unique<cm::sim::SimulatedPodDiscovery>());

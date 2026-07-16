@@ -2,7 +2,7 @@ import { LogEntry, LogLevel } from "../data.slint";
 import { Palette } from "../palette.slint";
 import { SmallText } from "./small-text.slint";
 
-component Seperator inherits SmallText {
+component Separator inherits SmallText {
     text: "│";
     font-size: 18pt;
     letter-spacing: 0px;
@@ -32,7 +32,7 @@ component LogRow inherits Rectangle {
             vertical-alignment: center;
         }
 
-        Seperator { }
+        Separator { }
 
         SmallText {
             width: 44px;
@@ -55,7 +55,7 @@ component LogRow inherits Rectangle {
                 : Palette.log-info;
         }
 
-        Seperator { }
+        Separator { }
 
         SmallText {
             text: root.entry.component;
@@ -64,7 +64,7 @@ component LogRow inherits Rectangle {
             overflow: clip;
         }
 
-        Seperator { }
+        Separator { }
 
         Rectangle {
             width: 12px;

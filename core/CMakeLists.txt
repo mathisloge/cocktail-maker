@@ -29,7 +29,6 @@ target_sources(
         FILE_SET CXX_MODULES
             FILES
                 lib.cppm
-                asio.cppm
                 any_io_stream.cppm
                 awaitable_bool.cppm
                 comms_adapter.cppm

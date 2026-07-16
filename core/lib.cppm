@@ -3,7 +3,6 @@ module;
 #include <mp-units/systems/si/units.h>
 
 export module cm.core;
-export import :asio;
 export import :logging;
 export import :units;
 export import :comms_adapter;

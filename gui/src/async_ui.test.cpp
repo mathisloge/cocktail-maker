@@ -20,12 +20,19 @@ inline void flush_slint_events()
     slint::invoke_from_event_loop([]() { slint::quit_event_loop(); });
     slint::run_event_loop(slint::EventLoopMode::RunUntilQuit);
 }
-
+struct SlintFlusher
+{
+    ~SlintFlusher()
+    {
+        flush_slint_events();
+    }
+};
 } // namespace
 
 TEST_CASE("async_show_manual_command_popup - opens and resolves on confirm", "[gui][async_ui]")
 {
     auto ui = cm::gui::AppWindow::create();
+    SlintFlusher f;
     cm::IngredientStore ingredient_store;
 
     // Caller (here: the test, mirroring MachineAdapter) does the transform.
@@ -64,6 +71,7 @@ TEST_CASE("async_show_manual_command_popup - opens and resolves on confirm", "[g
 TEST_CASE("async_show_manual_command_popup - cancellation closes the popup", "[gui][async_ui]")
 {
     auto ui = cm::gui::AppWindow::create();
+    SlintFlusher f;
     cm::IngredientStore ingredient_store;
 
     auto wrapped = cm::Command{cm::ManualCommand{.instruction = "Refill ingredient"}};

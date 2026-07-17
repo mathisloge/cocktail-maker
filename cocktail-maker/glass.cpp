@@ -1,6 +1,5 @@
 module;
-#include <simdjson/builder.h>
-#include <simdjson/ondemand.h>
+#include <simdjson.h>
 #include <spdlog/spdlog.h>
 
 module cm:glass_impl;

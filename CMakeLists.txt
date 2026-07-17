@@ -76,6 +76,8 @@ cpmaddpackage(URI "gh:commschamp/comms@5.5.2" NAME LibComms)
 cpmaddpackage(URI "gh:mathisloge/cocktail-maker-protocol#main" SOURCE_SUBDIR generated
 )
 cpmaddpackage(URI "gh:jeremy-rifkin/libassert@2.2.1")
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(libudev IMPORTED_TARGET libudev)
 
 if(BUILD_TESTING)
     cpmaddpackage("gh:catchorg/Catch2@3.15.1")

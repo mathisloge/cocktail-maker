@@ -1,7 +1,5 @@
 module;
-#include <simdjson/builder.h>
-#include <simdjson/ondemand.h>
-#include <simdjson/padded_string-inl.h>
+#include <simdjson.h>
 #include <spdlog/spdlog.h>
 
 module cm:station_config_impl;

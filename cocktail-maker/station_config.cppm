@@ -1,5 +1,4 @@
 module;
-#include <spdlog/spdlog.h>
 export module cm:station_config;
 
 import std;

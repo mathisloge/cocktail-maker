@@ -1,5 +1,7 @@
 module;
+#include <boost/asio/append.hpp>
 #include <boost/asio/async_result.hpp>
+#include <boost/asio/post.hpp>
 #include <boost/cobalt/op.hpp>
 #include <slint.h>
 #include "app-window.h"
@@ -63,8 +65,8 @@ auto async_show_manual_command_popup(slint::ComponentHandle<AppWindow> ui,
                             st->work_guard.reset();
                             lock.unlock();
 
-                            asio::post(w.get_executor(),
-                                       [h = std::move(h), w]() mutable { h(asio::error::operation_aborted, DialogResult{}); });
+                            auto ex = w.get_executor();
+                            asio::post(ex, asio::append(std::move(h), asio::error::operation_aborted, DialogResult{}));
                         }
                     }
                 });
@@ -85,8 +87,8 @@ auto async_show_manual_command_popup(slint::ComponentHandle<AppWindow> ui,
                         state->work_guard.reset();
                         lock.unlock();
 
-                        asio::post(w.get_executor(),
-                                   [h = std::move(h), w]() mutable { h(boost::system::error_code{}, DialogResult{}); });
+                        auto ex = w.get_executor();
+                        asio::post(ex, asio::append(std::move(h), boost::system::error_code{}, DialogResult{}));
                     }
                 });
             });

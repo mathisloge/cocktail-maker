@@ -26,25 +26,16 @@ jobs:
       - name: Install System Dependencies & LLVM 22
         run: |
           sudo apt-get update
-          
-          # Install dependencies required by the LLVM script and Slint
-          sudo apt-get install -y lsb-release wget software-properties-common gnupg \
-            ninja-build libudev-dev libfontconfig1-dev libxkbcommon-dev \
-            libx11-xcb-dev libwayland-dev
+          # Install dependencies
+          sudo apt-get install -y libudev-dev libx11-xcb-dev libwayland-dev
 
-          # Download and run the official LLVM installation script for version 22
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 22
-          
-          # Explicitly install LLD 22 and libc++ 22 dependencies
-          sudo apt-get install -y clang-22 lld-22 libc++-22-dev libc++abi-22-dev
+      - name: Setup LLVM
+        uses: ZhongRuoyu/setup-llvm@v0
+        with:
+          llvm-version: 22
 
-      - name: Install Rust Toolchain
-        run: |
-          # Install rustup with the minimal profile to speed up CI
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: Setup CMake
         uses: lukka/get-cmake@latest

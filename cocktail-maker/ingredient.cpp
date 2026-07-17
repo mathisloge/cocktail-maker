@@ -1,8 +1,6 @@
 module;
 #include <libassert/assert-macros.hpp>
-#include <simdjson/builder.h>
-#include <simdjson/ondemand.h>
-#include <simdjson/padded_string-inl.h>
+#include <simdjson.h>
 
 module cm:ingredient_impl;
 import std;

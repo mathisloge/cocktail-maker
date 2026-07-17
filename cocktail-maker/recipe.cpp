@@ -1,7 +1,5 @@
 module;
-#include <simdjson/builder.h>
-#include <simdjson/ondemand.h>
-#include <simdjson/padded_string.h>
+#include <simdjson.h>
 
 module cm:recipe_impl;
 import std;

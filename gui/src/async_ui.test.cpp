@@ -21,6 +21,7 @@ inline void flush_slint_events()
     slint::invoke_from_event_loop([]() { slint::quit_event_loop(); });
     slint::run_event_loop(slint::EventLoopMode::RunUntilQuit);
 }
+
 struct SlintFlusher
 {
     ~SlintFlusher()
@@ -46,8 +47,7 @@ TEST_CASE("async_show_manual_command_popup - opens and resolves on confirm", "[g
     boost::system::error_code captured_ec;
 
     auto coro = [&]() -> boost::cobalt::task<void> {
-        auto [ec, result] =
-            co_await cm::gui::async_show_manual_command_popup(ui, *ui_command, boost::asio::as_tuple(boost::asio::deferred));
+        auto [ec, result] = co_await cm::gui::async_show_manual_command_popup(ui, *ui_command);
         captured_ec = ec;
         completed = true;
     };
@@ -85,16 +85,14 @@ TEST_CASE("async_show_manual_command_popup - cancellation closes the popup", "[g
     boost::asio::cancellation_signal cancel_signal;
 
     auto coro = [&]() -> boost::cobalt::task<void> {
-        auto [ec, result] = co_await cm::gui::async_show_manual_command_popup(
-            ui,
-            *ui_command,
-            boost::asio::as_tuple(boost::asio::bind_cancellation_slot(cancel_signal.slot(), boost::asio::deferred)));
+        auto [ec, result] = co_await cm::gui::async_show_manual_command_popup(ui, *ui_command);
         captured_ec = ec;
         completed = true;
     };
 
     // Spawn with use_future to guarantee completion tracking
-    std::future<void> fut = boost::cobalt::spawn(ctx, coro(), boost::asio::use_future);
+    std::future<void> fut =
+        boost::cobalt::spawn(ctx, coro(), boost::asio::bind_cancellation_slot(cancel_signal.slot(), boost::asio::use_future));
 
     ctx.poll();
     flush_slint_events();

@@ -1,8 +1,7 @@
 module;
-#include <boost/asio/async_result.hpp>
+#include <boost/asio/cancellation_type.hpp>
 #include <boost/asio/post.hpp>
-#include <boost/asio/deferred.hpp>
-#include <boost/cobalt/op.hpp>
+#include <boost/cobalt.hpp> // this_thread::get_executor, cobalt::executor, cobalt::unique_handle
 #include <slint.h>
 #include "app-window.h"
 
@@ -18,87 +17,129 @@ export struct DialogResult
 {
 };
 
-export template <typename CompletionToken = asio::deferred_t>
-auto async_show_manual_command_popup(slint::ComponentHandle<AppWindow> ui,
-                                     gui::Command ui_command,
-                                     CompletionToken token = asio::deferred)
+export class ManualCommandPopupAwaiter
 {
-    return asio::async_initiate<CompletionToken, void(boost::system::error_code, DialogResult)>(
-        [](auto handler, slint::ComponentHandle<AppWindow> ui, gui::Command ui_command) {
-            using Handler = decltype(handler);
+  public:
+    ManualCommandPopupAwaiter(slint::ComponentHandle<AppWindow> ui, gui::Command ui_command)
+        : ui_command_(std::move(ui_command))
+        , shared_(std::make_shared<Shared>(std::move(ui)))
+    {
+    }
 
-            struct SharedState
-            {
-                std::mutex mutex;
-                std::optional<Handler> handler;
-                std::optional<asio::executor_work_guard<asio::any_io_executor>> work_guard;
-                slint::ComponentHandle<AppWindow> ui;
+    bool await_ready() const noexcept
+    {
+        return false;
+    }
 
-                SharedState(Handler h, asio::any_io_executor ex, slint::ComponentHandle<AppWindow> u)
-                    : handler(std::move(h))
-                    , work_guard(asio::make_work_guard(ex))
-                    , ui(std::move(u))
-                {
-                }
-            };
+    template <typename Promise>
+    void await_suspend(std::coroutine_handle<Promise> h)
+    {
+        // Executor the awaiting coroutine lives on (thread A). We must hop
+        // back onto this before resuming it - never resume from slint thread.
+        if constexpr (requires { h.promise().get_executor(); }) {
+            shared_->executor = h.promise().get_executor();
+        }
+        else {
+            shared_->executor = cobalt::this_thread::get_executor();
+        }
 
-            auto exec = asio::get_associated_executor(handler);
-            auto slot = asio::get_associated_cancellation_slot(handler);
-            auto state = std::make_shared<SharedState>(std::move(handler), exec, ui);
+        // Publish the handle before anything can possibly complete us.
+        // Sequenced-before the slot.assign() below on this same thread,
+        // so no synchronization is needed for this specific store.
+        shared_->handle.store(h.address(), std::memory_order_release);
 
-            // register cancellation
+        // Wire cancellation straight from the awaiting promise.
+        if constexpr (requires { h.promise().get_cancellation_slot(); }) {
+            auto slot = h.promise().get_cancellation_slot();
             if (slot.is_connected()) {
-                slot.assign([weak_state = std::weak_ptr<SharedState>(state)](asio::cancellation_type type) {
+                slot.assign([shared = std::weak_ptr(shared_)](asio::cancellation_type type) {
                     if (type == asio::cancellation_type::none) {
                         return;
                     }
-
-                    if (auto st = weak_state.lock()) {
-                        slint::invoke_from_event_loop([ui = st->ui]() { ui->invoke_close_manual_command_popup(); });
-
-                        std::unique_lock<std::mutex> lock(st->mutex);
-                        if (st->handler) {
-                            auto h = std::move(*(st->handler));
-                            st->handler.reset();
-
-                            auto w = std::move(*(st->work_guard));
-                            st->work_guard.reset();
-                            lock.unlock();
-
-                            // Use a bare lambda to sever the allocator tie and std::move to consume the handler state
-                            asio::post(w.get_executor(), [h = std::move(h), ec = asio::error::operation_aborted]() mutable {
-                                std::move(h)(ec, DialogResult{});
-                            });
-                        }
+                    if (auto st = shared.lock()) {
+                        complete(st, asio::error::operation_aborted, DialogResult{});
                     }
                 });
             }
+        }
 
-            slint::invoke_from_event_loop([state, ui_command = std::move(ui_command)]() mutable {
-                state->ui->invoke_open_manual_command_popup(std::move(ui_command));
+        // Open the popup on the Slint thread.
+        slint::invoke_from_event_loop([shared = shared_, cmd = std::move(ui_command_)]() mutable {
+            {
+                std::lock_guard lock(shared->mutex);
+                if (shared->completed) {
+                    return; // already cancelled before we got here - don't open at all
+                }
+            }
+            shared->ui->invoke_open_manual_command_popup(std::move(cmd));
+            shared->ui->on_manual_command_confirmed(
+                [shared]() mutable { complete(shared, boost::system::error_code{}, DialogResult{}); });
+        });
+    }
 
-                state->ui->on_manual_command_confirmed([state]() {
-                    state->ui->invoke_close_manual_command_popup();
+    std::tuple<boost::system::error_code, DialogResult> await_resume()
+    {
+        return {shared_->ec, shared_->result};
+    }
 
-                    std::unique_lock<std::mutex> lock(state->mutex);
-                    if (state->handler) {
-                        auto h = std::move(*(state->handler));
-                        state->handler.reset();
+  private:
+    struct Shared
+    {
+        explicit Shared(slint::ComponentHandle<AppWindow> ui_)
+            : ui(std::move(ui_))
+        {
+        }
 
-                        auto w = std::move(*(state->work_guard));
-                        state->work_guard.reset();
-                        lock.unlock();
+        std::mutex mutex;
+        bool completed = false;
+        std::atomic<void*> handle{nullptr};
+        cobalt::executor executor;
+        slint::ComponentHandle<AppWindow> ui;
+        boost::system::error_code ec;
+        DialogResult result;
+    };
 
-                        // Use a bare lambda to sever the allocator tie and std::move to consume the handler state
-                        asio::post(w.get_executor(), [h = std::move(h), ec = boost::system::error_code{}]() mutable {
-                            std::move(h)(ec, DialogResult{});
-                        });
-                    }
-                });
-            });
-        },
-        token,
-        std::move(ui),
-        std::move(ui_command));
+    // Thread-safe "whoever gets here first wins" completion.
+    // Called either from thread A (cancellation) or slint thread (confirm) -
+    // the mutex guarantees exactly one of them ever proceeds past the guard.
+    static void complete(const std::shared_ptr<Shared>& shared, boost::system::error_code ec, DialogResult result)
+    {
+        void* addr = nullptr;
+        {
+            std::lock_guard lock(shared->mutex);
+            if (shared->completed) {
+                return;
+            }
+            shared->completed = true;
+            shared->ec = ec;
+            shared->result = std::move(result);
+            addr = shared->handle.exchange(nullptr, std::memory_order_acq_rel);
+        }
+
+        // Always tear down the popup and drop the on_manual_command_confirmed
+        // closure's shared_ptr on the Slint thread, no matter which path
+        // completed us - otherwise `shared` (and the ui handle) stays pinned
+        // alive by that closure indefinitely.
+        slint::invoke_from_event_loop([ui = shared->ui]() mutable {
+            ui->invoke_close_manual_command_popup();
+            ui->on_manual_command_confirmed([]() {});
+        });
+
+        // Hop back onto thread A and resume there. unique_handle owns the
+        // coroutine handle until it's actually resumed (or destroys the
+        // frame if it never gets posted, e.g. on an exception here).
+        if (addr != nullptr) {
+            boost::asio::post(shared->executor, cobalt::unique_handle<void>::from_address(addr));
+        }
+    }
+
+    gui::Command ui_command_;
+    std::shared_ptr<Shared> shared_;
+};
+
+export ManualCommandPopupAwaiter async_show_manual_command_popup(slint::ComponentHandle<AppWindow> ui, gui::Command ui_command)
+{
+    return ManualCommandPopupAwaiter{std::move(ui), std::move(ui_command)};
 }
+
 } // namespace cm::gui

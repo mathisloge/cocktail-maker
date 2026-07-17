@@ -62,7 +62,8 @@
             "cacheVariables": {
                 "BUILD_TESTING": true,
                 "SANITIZE_ADDRESS": true,
-                "SANITIZE_UNDEFINED": true
+                "SANITIZE_UNDEFINED": true,
+                "SANITIZE_THREAD": false
             }
         },
         {

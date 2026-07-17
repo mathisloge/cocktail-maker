@@ -1,8 +1,8 @@
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/bind_cancellation_slot.hpp>
 #include <boost/asio/cancellation_signal.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/use_future.hpp>
 #include <boost/cobalt.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_all.hpp>
@@ -37,7 +37,6 @@ TEST_CASE("async_show_manual_command_popup - opens and resolves on confirm", "[g
     bool completed = false;
     boost::system::error_code captured_ec;
 
-    // Store the lambda in a named variable so it outlives the coroutine execution
     auto coro = [&]() -> boost::cobalt::task<void> {
         auto [ec, result] =
             co_await cm::gui::async_show_manual_command_popup(ui, *ui_command, boost::asio::as_tuple(boost::cobalt::use_op));
@@ -45,7 +44,7 @@ TEST_CASE("async_show_manual_command_popup - opens and resolves on confirm", "[g
         completed = true;
     };
 
-    boost::cobalt::spawn(ctx, coro(), boost::asio::detached);
+    std::future<void> fut = boost::cobalt::spawn(ctx, coro(), boost::asio::use_future);
 
     ctx.poll();           // drives to first co_await -> queues popup-open onto Slint's loop
     flush_slint_events(); // opens popup, wires on_manual_command_confirmed()
@@ -54,6 +53,9 @@ TEST_CASE("async_show_manual_command_popup - opens and resolves on confirm", "[g
     flush_slint_events();
 
     ctx.run();
+
+    // Block until the coroutine frame is fully cleaned up
+    fut.get();
 
     REQUIRE(completed);
     REQUIRE_FALSE(captured_ec);
@@ -82,14 +84,19 @@ TEST_CASE("async_show_manual_command_popup - cancellation closes the popup", "[g
         completed = true;
     };
 
-    boost::cobalt::spawn(ctx, coro(), boost::asio::detached);
+    // Spawn with use_future to guarantee completion tracking
+    std::future<void> fut = boost::cobalt::spawn(ctx, coro(), boost::asio::use_future);
 
     ctx.poll();
     flush_slint_events();
 
     cancel_signal.emit(boost::asio::cancellation_type::terminal);
     flush_slint_events(); // runs the invoke_close_manual_command_popup() closure
+
     ctx.run();
+
+    // Block until the coroutine frame is fully cleaned up
+    fut.get();
 
     REQUIRE(completed);
     REQUIRE(captured_ec == boost::asio::error::operation_aborted);

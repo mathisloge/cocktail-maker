@@ -1,5 +1,4 @@
 module;
-#include <boost/asio/append.hpp>
 #include <boost/asio/async_result.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/cobalt/op.hpp>
@@ -65,8 +64,10 @@ auto async_show_manual_command_popup(slint::ComponentHandle<AppWindow> ui,
                             st->work_guard.reset();
                             lock.unlock();
 
-                            auto ex = w.get_executor();
-                            asio::post(ex, asio::append(std::move(h), asio::error::operation_aborted, DialogResult{}));
+                            // Use a bare lambda to sever the allocator tie and std::move to consume the handler state
+                            asio::post(w.get_executor(), [h = std::move(h), ec = asio::error::operation_aborted]() mutable {
+                                std::move(h)(ec, DialogResult{});
+                            });
                         }
                     }
                 });
@@ -87,8 +88,10 @@ auto async_show_manual_command_popup(slint::ComponentHandle<AppWindow> ui,
                         state->work_guard.reset();
                         lock.unlock();
 
-                        auto ex = w.get_executor();
-                        asio::post(ex, asio::append(std::move(h), boost::system::error_code{}, DialogResult{}));
+                        // Use a bare lambda to sever the allocator tie and std::move to consume the handler state
+                        asio::post(w.get_executor(), [h = std::move(h), ec = boost::system::error_code{}]() mutable {
+                            std::move(h)(ec, DialogResult{});
+                        });
                     }
                 });
             });

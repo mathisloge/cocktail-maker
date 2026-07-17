@@ -25,6 +25,7 @@ void Application::init(const std::filesystem::path& db_dir)
     glass_store_.init_glasses(load_glasses_from_dir(glass_db_path));
     ingredient_store_.init_ingredients(load_ingredients_from_dir(ingredients_db_path));
     recipe_store_.init_recipes(load_recipes_from_dir(recipe_db_path, ingredient_store_));
+    station_config_.init();
 }
 
 void Application::run(std::shared_ptr<StationState> station_state, std::unique_ptr<PodDiscovery> pod_discovery)

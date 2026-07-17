@@ -67,19 +67,20 @@ class LoggingContext
         auto sink = std::make_shared<spdlog::sinks::stdout_color_sink_st>();
         sink->set_level(lvl);
         sink->set_pattern(pattern);
-        sinks_.emplace_back(std::move(sink));
+        add_sink(std::move(sink));
     }
 
     void add_file_sink(const std::string& filename, Level lvl = level::trace, bool truncate = false)
     {
         auto sink = std::make_shared<spdlog::sinks::basic_file_sink_st>(filename, truncate);
         sink->set_level(lvl);
-        sinks_.emplace_back(std::move(sink));
+        add_sink(std::move(sink));
     }
 
     void add_sink(spdlog::sink_ptr sink)
     {
-        sinks_.emplace_back(std::move(sink));
+        sinks_.emplace_back(sink);
+        spdlog::apply_all([sink](Logger logger) { logger->sinks().emplace_back(sink); });
     }
 
     void add_rotating_file_sink(const std::string& filename,
@@ -89,7 +90,7 @@ class LoggingContext
     {
         auto sink = std::make_shared<spdlog::sinks::rotating_file_sink_st>(filename, max_bytes, max_files);
         sink->set_level(lvl);
-        sinks_.emplace_back(std::move(sink));
+        add_sink(std::move(sink));
     }
 
     void set_level(Level lvl)

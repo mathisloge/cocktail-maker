@@ -220,7 +220,7 @@ void GlassContextBridge::register_ui_callbacks()
         std::bind(&GlassContextBridge::on_ui_remove_glass_volume, this, std::placeholders::_1, std::placeholders::_2));
 
     auto available_glasses_model = std::make_shared<slint::VectorModel<slint::SharedString>>();
-    for(auto&& g : store_.glasses()) {
+    for (auto&& g : store_.glasses()) {
         available_glasses_model->push_back(g.second.id.raw().c_str());
     }
     ctx.set_available_glasses(std::move(available_glasses_model));

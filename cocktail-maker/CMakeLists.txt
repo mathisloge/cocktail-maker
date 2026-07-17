@@ -39,6 +39,7 @@ target_sources(
                 recipe.cppm
                 recipe.cpp
                 station_config.cppm
+                station_config.cpp
                 station_state.cppm
                 serial.cppm
                 serial.cpp

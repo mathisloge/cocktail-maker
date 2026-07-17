@@ -45,7 +45,6 @@ constexpr void assign_unique_command_ids(Recipe& recipe)
     visitor(recipe.commands);
 }
 
-
 void RecipeStore::init_recipes(std::vector<Recipe> recipes)
 {
     for (auto&& r : recipes) {

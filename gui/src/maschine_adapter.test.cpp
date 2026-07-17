@@ -1,5 +1,6 @@
 #include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/use_future.hpp>
 #include <boost/cobalt.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <slint.h>
@@ -31,20 +32,22 @@ TEST_CASE("MachineAdapter - manual command opens and resolves through the popup"
     boost::asio::io_context ctx;
     bool completed = false;
 
-    auto coro = [&]() -> boost::cobalt::task<void> {
+    auto run_test = [&]() -> boost::cobalt::task<void> {
         co_await adapter.execute_command(cm::ManualCommand{.instruction = "Prime pump"});
         completed = true;
     };
 
-    boost::cobalt::spawn(ctx, coro(), boost::asio::detached);
+    std::future<void> fut = boost::cobalt::spawn(ctx, run_test(), boost::asio::use_future);
 
-    ctx.poll();
-    flush_slint_events();
+    ctx.poll();           // Drives up to the `co_await` suspend point
+    flush_slint_events(); // Slint handles the open request
 
-    ui->invoke_manual_command_confirmed();
-    flush_slint_events();
+    ui->invoke_manual_command_confirmed(); // Simulate user confirmation
+    flush_slint_events();                  // Post the manual_command completion
 
     ctx.run();
+
+    fut.get();
 
     REQUIRE(completed);
 }

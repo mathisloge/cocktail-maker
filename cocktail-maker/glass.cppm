@@ -2,7 +2,6 @@ module;
 
 export module cm:glass;
 import std;
-import mp_units;
 import cm.core;
 
 namespace cm {
@@ -27,6 +26,8 @@ export struct Glass
 };
 
 export std::vector<Glass> load_glasses_from_dir(std::filesystem::path dir);
+export void save_glass_active_volumes(const std::unordered_map<GlassId, Glass>& glasses);
+export void load_glass_active_volumes(std::unordered_map<GlassId, Glass>& glasses);
 
 export class GlassStore
 {

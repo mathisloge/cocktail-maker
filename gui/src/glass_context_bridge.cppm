@@ -211,6 +211,12 @@ export class GlassContextBridge
 void GlassContextBridge::register_ui_callbacks()
 {
     auto&& ctx = ui_->global<GlassContext>();
+
+    for (auto&& g : store_.glasses()) {
+        if (not g.second.active_volumes.empty()) {
+            glasses_->add(g.second.id, g.second);
+        }
+    }
     ctx.set_glasses(glasses_);
     ctx.on_add_glass(std::bind(&GlassContextBridge::on_ui_add_glass, this, std::placeholders::_1));
     ctx.on_remove_glass(std::bind(&GlassContextBridge::on_ui_remove_glass, this, std::placeholders::_1));

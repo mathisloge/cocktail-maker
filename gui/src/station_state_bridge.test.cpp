@@ -118,6 +118,18 @@ TEST_CASE("StationStateBridge - Readiness Status and Multiple Pods", "[gui][Stat
     auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, ctx.get_executor());
     auto model = bridge->pod_model();
 
+    // RAII guard: Local variables are destroyed in reverse order of declaration.
+    // When a SECTION finishes, `pod` (section) is destructed first (pushing cleanup tasks to Slint).
+    // Then this `flusher` is destructed, running those pending tasks and freeing the captured
+    // `shared_ptr<StationStateBridge>`, allowing `bridge` and `ui` to be cleanly destroyed.
+    struct SlintFlusher
+    {
+        ~SlintFlusher()
+        {
+            flush_slint_events();
+        }
+    } flusher;
+
     SECTION("Device readiness becomes true only when ALL pods are fully connected")
     {
         auto pod1 = bridge->create_pod_state();

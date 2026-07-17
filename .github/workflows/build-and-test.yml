@@ -23,11 +23,10 @@ jobs:
           # Required by GetGitRevisionDescription CMake module
           fetch-depth: 0
 
-      - name: Install System Dependencies
-        run: |
-          sudo apt-get update
-          # Install dependencies
-          sudo apt-get install -y libudev-dev libx11-xcb-dev libwayland-dev libfontconfig1-dev
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libudev-dev libx11-xcb-dev libwayland-dev libfontconfig1-dev ccache
+          version: 1.0
 
       - name: Setup LLVM
         uses: ZhongRuoyu/setup-llvm@v0
@@ -42,6 +41,11 @@ jobs:
         with:
           cmakeVersion: "~4.3.0" # cmake 4.4.0 has issues with modules
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ matrix.os }}
+          create-symlink: true
 
       - name: Run CMake Workflow
         run: cmake --workflow --preset ci-linux

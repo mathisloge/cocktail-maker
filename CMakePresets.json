@@ -24,6 +24,14 @@
             }
         },
         {
+            "name": "ccache",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+                "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
+            }
+        },
+        {
             "name": "release-build",
             "hidden": true,
             "cacheVariables": {
@@ -73,7 +81,8 @@
             "displayName": "Linux CI",
             "inherits": [
                 "common",
-                "debug-build"
+                "debug-build",
+                "ccache"
             ],
             "cacheVariables": {
                 "BUILD_TESTING": true,

@@ -10,8 +10,9 @@ set_target_properties(
 target_link_libraries(
     cocktail-maker-lib
     PUBLIC cm::core
-    PRIVATE simdjson::simdjson 
-    $<$<TARGET_EXISTS:PkgConfig::libudev>:PkgConfig::libudev>
+    PRIVATE
+        simdjson::simdjson
+        $<$<TARGET_EXISTS:PkgConfig::libudev>:PkgConfig::libudev>
 )
 
 target_sources(

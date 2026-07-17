@@ -2,17 +2,11 @@ add_library(generated-ui STATIC)
 add_library(cm::ui ALIAS generated-ui)
 add_sanitizers(generated-ui)
 target_compile_features(generated-ui PUBLIC cxx_std_26)
-target_link_libraries(
-    generated-ui
-    PUBLIC Slint::Slint
-)
+target_link_libraries(generated-ui PUBLIC Slint::Slint)
 slint_target_sources(generated-ui
   ui/app-window.slint NAMESPACE cm::gui
 )
-target_include_directories(
-    generated-ui
-    PUBLIC "${CMAKE_CURRENT_BINARY_DIR}"
-)
+target_include_directories(generated-ui PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 
 add_library(cocktail-maker-gui STATIC)
 add_library(cm::gui ALIAS cocktail-maker-gui)
@@ -22,10 +16,7 @@ set_target_properties(
     cocktail-maker-gui
     PROPERTIES CXX_MODULE_STD ON CXX_SCAN_FOR_MODULES ON
 )
-target_link_libraries(
-    cocktail-maker-gui
-    PUBLIC cm::ui cm::lib Boost::hash2
-)
+target_link_libraries(cocktail-maker-gui PUBLIC cm::ui cm::lib Boost::hash2)
 target_sources(
     cocktail-maker-gui
     PUBLIC

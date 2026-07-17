@@ -15,6 +15,9 @@ jobs:
   test-linux:
     name: Build & Test (Clang 22 / libc++)
     runs-on: ubuntu-latest
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
 
     steps:
       - name: Checkout Repository
@@ -25,7 +28,7 @@ jobs:
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: libudev-dev libx11-xcb-dev libwayland-dev libfontconfig1-dev ccache xvfb libxkbcommon-x11-0
+          packages: libudev-dev libx11-xcb-dev libwayland-dev libfontconfig1-dev sccache xvfb libxkbcommon-x11-0
           version: 1.0
 
       - name: Setup LLVM
@@ -35,17 +38,18 @@ jobs:
 
       - name: Setup Rust
         run: rustup toolchain install stable --profile minimal
-      - uses: Swatinem/rust-cache@v2
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.10
 
       - name: Setup CMake
         uses: lukka/get-cmake@latest
         with:
           cmakeVersion: "~4.3.0" # cmake 4.4.0 has issues with modules
 
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          create-symlink: true
-
       - name: Run CMake Workflow
         run: xvfb-run -a cmake --workflow --preset ci-linux
+
+      - name: Run sccache stat for check
+        shell: bash
+        run: ${SCCACHE_PATH} --show-stats

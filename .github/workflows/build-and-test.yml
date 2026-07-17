@@ -23,7 +23,7 @@ jobs:
           # Required by GetGitRevisionDescription CMake module
           fetch-depth: 0
 
-      - name: Install System Dependencies & LLVM 22
+      - name: Install System Dependencies
         run: |
           sudo apt-get update
           # Install dependencies

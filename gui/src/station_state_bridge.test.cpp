@@ -8,6 +8,7 @@ import std;
 import cm;
 import cm.gui;
 
+namespace {
 // Helper to flush Slint's event loop queue.
 inline void flush_slint_events()
 {
@@ -15,12 +16,26 @@ inline void flush_slint_events()
     slint::run_event_loop(slint::EventLoopMode::RunUntilQuit);
 }
 
+// RAII guard: Local variables are destroyed in reverse order of declaration.
+// When a SECTION finishes, `pod` (section) is destructed first (pushing cleanup tasks to Slint).
+// Then this `flusher` is destructed, running those pending tasks and freeing the captured
+// `shared_ptr<StationStateBridge>`, allowing `bridge` and `ui` to be cleanly destroyed.
+struct SlintFlusher
+{
+    ~SlintFlusher()
+    {
+        flush_slint_events();
+    }
+};
+} // namespace
+
 TEST_CASE("StationStateBridge - Initialization", "[gui][StationStateBridge]")
 {
     boost::asio::io_context ctx;
     auto ui = cm::gui::AppWindow::create();
     cm::PodRegistry pod_registry;
     auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, ctx.get_executor());
+    SlintFlusher flusher;
 
     SECTION("Pod UI model is created and initially empty")
     {
@@ -40,6 +55,7 @@ TEST_CASE("StationStateBridge - Pod Lifecycle", "[gui][StationStateBridge]")
     cm::PodRegistry pod_registry;
     auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, ctx.get_executor());
     auto model = bridge->pod_model();
+    SlintFlusher flusher;
 
     SECTION("Creating a pod defers model addition during the Discovery Phase (empty ID)")
     {
@@ -118,17 +134,7 @@ TEST_CASE("StationStateBridge - Readiness Status and Multiple Pods", "[gui][Stat
     auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, ctx.get_executor());
     auto model = bridge->pod_model();
 
-    // RAII guard: Local variables are destroyed in reverse order of declaration.
-    // When a SECTION finishes, `pod` (section) is destructed first (pushing cleanup tasks to Slint).
-    // Then this `flusher` is destructed, running those pending tasks and freeing the captured
-    // `shared_ptr<StationStateBridge>`, allowing `bridge` and `ui` to be cleanly destroyed.
-    struct SlintFlusher
-    {
-        ~SlintFlusher()
-        {
-            flush_slint_events();
-        }
-    } flusher;
+    SlintFlusher flusher;
 
     SECTION("Device readiness becomes true only when ALL pods are fully connected")
     {

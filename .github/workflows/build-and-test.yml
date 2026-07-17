@@ -28,7 +28,7 @@ jobs:
 
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: libudev-dev libx11-xcb-dev libwayland-dev libfontconfig1-dev sccache xvfb libxkbcommon-x11-0
+          packages: libudev-dev libx11-xcb-dev libwayland-dev libfontconfig1-dev xvfb libxkbcommon-x11-0
           version: 1.0
 
       - name: Setup LLVM

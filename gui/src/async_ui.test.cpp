@@ -1,6 +1,7 @@
 #include <boost/asio/as_tuple.hpp>
 #include <boost/asio/bind_cancellation_slot.hpp>
 #include <boost/asio/cancellation_signal.hpp>
+#include <boost/asio/deferred.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/cobalt.hpp>
@@ -46,7 +47,7 @@ TEST_CASE("async_show_manual_command_popup - opens and resolves on confirm", "[g
 
     auto coro = [&]() -> boost::cobalt::task<void> {
         auto [ec, result] =
-            co_await cm::gui::async_show_manual_command_popup(ui, *ui_command, boost::asio::as_tuple(boost::cobalt::use_op));
+            co_await cm::gui::async_show_manual_command_popup(ui, *ui_command, boost::asio::as_tuple(boost::asio::deferred));
         captured_ec = ec;
         completed = true;
     };
@@ -87,7 +88,7 @@ TEST_CASE("async_show_manual_command_popup - cancellation closes the popup", "[g
         auto [ec, result] = co_await cm::gui::async_show_manual_command_popup(
             ui,
             *ui_command,
-            boost::asio::as_tuple(boost::asio::bind_cancellation_slot(cancel_signal.slot(), boost::cobalt::use_op)));
+            boost::asio::as_tuple(boost::asio::bind_cancellation_slot(cancel_signal.slot(), boost::asio::deferred)));
         captured_ec = ec;
         completed = true;
     };

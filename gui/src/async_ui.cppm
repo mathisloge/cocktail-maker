@@ -1,6 +1,7 @@
 module;
 #include <boost/asio/async_result.hpp>
 #include <boost/asio/post.hpp>
+#include <boost/asio/deferred.hpp>
 #include <boost/cobalt/op.hpp>
 #include <slint.h>
 #include "app-window.h"
@@ -17,10 +18,10 @@ export struct DialogResult
 {
 };
 
-export template <typename CompletionToken = cobalt::use_op_t>
+export template <typename CompletionToken = asio::deferred_t>
 auto async_show_manual_command_popup(slint::ComponentHandle<AppWindow> ui,
                                      gui::Command ui_command,
-                                     CompletionToken token = cobalt::use_op)
+                                     CompletionToken token = asio::deferred)
 {
     return asio::async_initiate<CompletionToken, void(boost::system::error_code, DialogResult)>(
         [](auto handler, slint::ComponentHandle<AppWindow> ui, gui::Command ui_command) {

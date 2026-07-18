@@ -26,6 +26,9 @@ in
   });
 
   spdlog = (prev.spdlog.override { stdenv = llvmStdenv; }).overrideAttrs (old: {
+    cmakeFlags = (old.cmakeFlags or [ ]) ++ [
+      "-DSPDLOG_USE_STD_FORMAT=ON"
+    ];
     doCheck = false;
   });
 

@@ -63,10 +63,11 @@ rec {
       rev = "main";
       hash = "sha256-qKadWeS0rFaMJ/5uftJHlMD3E8ykyBtC1gqlsXPnASw=";
     };
-    cmakeDir = "generated";
 
     # Propagate libcomms so find_package(LibComms) resolves during compilation
     propagatedBuildInputs = [ libcomms ];
+
+    postUnpack = "sourceRoot=\${sourceRoot}/generated";
   };
 
   slint-cpp = llvmStdenv.mkDerivation rec {

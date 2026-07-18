@@ -40,7 +40,7 @@ in
       owner = "commschamp";
       repo = "comms";
       rev = "v${version}";
-      hash = "sha256-0g6nCis0Z491PypG2o/P32XoE/SyyB9eWfM88P7uO/I="; # Replace with valid hash
+      hash = "sha256-U0KTpj3H+GcjiAPfKTl4h8MDZIZ3zZmQr6TpCdMk3bg=";
     };
   };
 

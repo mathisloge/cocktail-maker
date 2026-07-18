@@ -21,7 +21,7 @@ pkgs.mkShell.override { stdenv = llvmStdenv; } {
 
   buildInputs = [
     pkgs.udev
-    pkgs.boost182
+    pkgs.boost190
     deps.gsl-lite
     deps.spdlog
     deps.cli11

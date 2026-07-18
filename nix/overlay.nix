@@ -5,7 +5,7 @@ let
   cmake_4_3 = prev.cmake_4_3;
 
   # Resolve the latest LLVM toolchain from unstable
-  llvm = prev.llvmPackages_latest;
+  llvm = prev.llvmPackages_21;
 
   # Define LLVM stdenv using the pre-wrapped Clang configuration
   llvmStdenv = prev.overrideCC prev.stdenv llvm.clangUseLLVM;

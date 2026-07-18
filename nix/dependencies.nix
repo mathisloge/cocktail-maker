@@ -29,7 +29,7 @@ in
       owner = "jeremy-rifkin";
       repo = "libassert";
       rev = "v${version}";
-      hash = "sha256-1g6nCis0Z491PypG2o/P32XoE/SyyB9eWfM88P7uO/I="; # Replace with valid hash
+      hash = "sha256-ognudQ3NgpYxiDEucbIRWYQPs0XLRUQwg1eMxJm+aPs=";
     };
   };
 

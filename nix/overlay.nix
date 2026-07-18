@@ -6,7 +6,7 @@ let
     version = "4.3.0";
     src = prev.fetchurl {
       url = "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}.tar.gz";
-      hash = "sha256-RCH+fF7kGg0u33gA8T1XoA0z+6yO+M2wWwO7mK7g0D0="; # Replace with valid hash if changed
+      hash = "sha256-9Rs8cp+F2N3kapLAcdKCbqavt32FD0aJQSXefMUbqnc=";
     };
     doCheck = false; 
   });

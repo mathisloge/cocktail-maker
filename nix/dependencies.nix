@@ -9,7 +9,7 @@ in
 {
   mp-units = mkCppDerivation rec {
     pname = "mp-units";
-    version = "2.3.0-unstable";
+    version = "2.6.0-unstable";
     src = pkgs.fetchFromGitHub {
       owner = "mpusz";
       repo = "mp-units";
@@ -77,8 +77,8 @@ in
       cmake_4_3
       pkgs.ninja
       pkgs.rustPlatform.cargoSetupHook
-      pkgs.rustPlatform.rust.cargo
-      pkgs.rustPlatform.rust.rustc
+      pkgs.cargo
+      pkgs.rustc
       pkgs.pkg-config
     ];
 

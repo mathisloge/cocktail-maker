@@ -11,6 +11,7 @@ rec {
   mp-units = mkCppDerivation rec {
     pname = "mp-units";
     version = "2.6.0-unstable";
+    propagatedBuildInputs = [ pkgs.gsl-lite ];
     src = pkgs.fetchFromGitHub {
       owner = "mpusz";
       repo = "mp-units";

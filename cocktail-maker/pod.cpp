@@ -81,25 +81,6 @@ Valve::Valve(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
 {
 }
 
-template <typename F>
-auto retry_on_timeout(std::size_t max_retries, F f) -> decltype(f(std::chrono::milliseconds{}))
-{
-    size_t retries = 0;
-    std::chrono::milliseconds backoff_retry{100};
-    for (;;) {
-        try {
-            co_return co_await f(backoff_retry * (retries + 1));
-        }
-        catch (const TimeoutError&) {
-            // If we hit the max retry limit, rethrow the TimeoutError
-            if (retries >= max_retries) {
-                throw;
-            }
-            ++retries;
-        }
-    }
-}
-
 struct MessageEnvironment
 {
     PodId pod_id = PodId{};
@@ -292,7 +273,8 @@ cobalt::task<void> Pod::monitor_device()
 
     Cleanup c{*this};
     state_->update_state(PodState::ConnectionState::connecting);
-    const auto pod_info = co_await retry_on_timeout(5, [this](auto timeout) { return aquire_device_info(timeout); });
+    const auto pod_info = co_await retry_on_timeout(
+        5, [this](auto timeout) { return aquire_device_info(timeout); }, ExponentialBackoffPolicy{.maximum = 10s});
     state_->update_info(pod_info);
     SPDLOG_LOGGER_INFO(logger_, "Device '{}' is ready.", pod_info.id);
     state_->update_state(PodState::ConnectionState::connected);
@@ -308,7 +290,9 @@ cobalt::task<void> Pod::keep_alive()
     asio::steady_timer timer{server_.get_executor()};
     while (cs.cancelled() == asio::cancellation_type::none) {
         co_await retry_on_timeout(
-            3, [this](auto timeout) { return send_and_receive<InPong>(server_, OutPing{}, default_env(this, timeout)); });
+            3,
+            [this](auto timeout) { return send_and_receive<InPong>(server_, OutPing{}, default_env(this, timeout)); },
+            ExponentialBackoffPolicy{.maximum = 1s});
         timer.expires_after(2s);
         co_await timer.async_wait(cobalt::use_op);
     }

@@ -71,12 +71,6 @@ export class ProtocolError : public std::runtime_error
     comms::ErrorStatus error_status_;
 };
 
-export class TimeoutError : public std::runtime_error
-{
-  public:
-    using runtime_error::runtime_error;
-};
-
 export class AsyncMachineProtocolServer
 {
     static constexpr std::size_t kWriteQueueCapacity = 10;

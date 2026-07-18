@@ -36,6 +36,7 @@ target_sources(
                 overloaded.cppm
                 strong_type.cppm
                 units.cppm
+                retry.cppm
 )
 
 if(BUILD_TESTING)

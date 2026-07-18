@@ -15,8 +15,8 @@ pkgs.mkShell.override { stdenv = llvmStdenv; } {
     pkgs.sccache
     pkgs.clang-tools
     pkgs.lldb
-    pkgs.rustPlatform.rust.cargo
-    pkgs.rustPlatform.rust.rustc
+    pkgs.cargo
+    pkgs.rustc
   ];
 
   buildInputs = [
@@ -39,18 +39,18 @@ pkgs.mkShell.override { stdenv = llvmStdenv; } {
     export CXX=clang++
     export CXXFLAGS="-stdlib=libc++"
     export LDFLAGS="-stdlib=libc++ -fuse-ld=lld"
-
+    
     export CMAKE_C_COMPILER_LAUNCHER=sccache
     export CMAKE_CXX_COMPILER_LAUNCHER=sccache
     export RUSTC_WRAPPER=sccache
-
+    
     export SCCACHE_DIR="$(pwd)/.sccache"
     mkdir -p "$SCCACHE_DIR"
-
+    
     echo "========================================================="
     echo " Cocktail Maker C++26 Dev Environment (LLVM Clang + libc++)"
     echo " - CMake version: $(cmake --version | head -n 1)"
-    echo " - Compiler:      $(${CC} --version | head -n 1)"
+    echo " - Compiler:      $($CC --version | head -n 1)"
     echo " - sccache is active for C++ and Rust builds."
     echo "========================================================="
   '';

@@ -18,9 +18,11 @@ rec {
       rev = "8df25adeefc73931ff3a1da52804e5c7a061e2d1";
       hash = "sha256-oSovhu5yFR/XQQOI3N23zwyketQJ0BDVIEKG9VyayZQ=";
     };
+    cmakeDir = "src";
     cmakeFlags = [
       "-DMP_UNITS_BUILD_CXX_MODULES=ON"
       "-DMP_UNITS_BUILD_TESTS=OFF"
+      "-DCMAKE_CXX_STANDARD=26"
     ];
   };
 
@@ -61,11 +63,10 @@ rec {
       rev = "main";
       hash = "sha256-qKadWeS0rFaMJ/5uftJHlMD3E8ykyBtC1gqlsXPnASw=";
     };
-    
+    cmakeDir = "generated";
+
     # Propagate libcomms so find_package(LibComms) resolves during compilation
     propagatedBuildInputs = [ libcomms ];
-
-    postUnpack = "sourceRoot=\${sourceRoot}/generated";
   };
 
   slint-cpp = llvmStdenv.mkDerivation rec {

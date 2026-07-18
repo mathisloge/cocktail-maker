@@ -1,0 +1,13 @@
+import { SmallText } from "./small-text.slint";
+export component RecipeTags inherits HorizontalLayout {
+    in property <[string]> tags;
+    padding-top: 10px;
+    alignment: LayoutAlignment.start;
+    for t[i] in tags: SmallText {
+        text: t + ((i < (tags.length - 1)) ? " | " : "");
+        highlight: true;
+        horizontal-alignment: left;
+        wrap: TextWrap.no-wrap;
+        overflow: ((i < (tags.length - 1)) ? TextOverflow.clip : elide);
+    }
+}

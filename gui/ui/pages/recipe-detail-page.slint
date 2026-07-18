@@ -8,6 +8,7 @@ import {
     LargeText,
     MediumText,
     SmallText,
+    RecipeTags,
 } from "../components.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
 import { ProcessContext } from "../globals/process-context.slint";
@@ -48,11 +49,11 @@ export component RecipeDetailPage inherits Page {
             LargeText {
                 text: recipe.name;
                 primary: true;
+                wrap: word-wrap;
             }
 
-            SmallText {
-                text: recipe.tag-line[0];
-                highlight: true;
+            RecipeTags {
+                tags: recipe.tag-line;
             }
         }
     }

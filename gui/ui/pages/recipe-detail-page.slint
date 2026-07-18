@@ -9,6 +9,7 @@ import {
     MediumText,
     SmallText,
     RecipeTags,
+    BoostText,
 } from "../components.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
 import { ProcessContext } from "../globals/process-context.slint";
@@ -110,7 +111,7 @@ export component RecipeDetailPage inherits Page {
             }
 
             if recipe.is-boostable: MediumText {
-                text: "💪 Alkoholgehalt boosten";
+                text: "💪 Alkoholgehalt boosten (" + boost-value + "%)";
                 primary: true;
             }
 
@@ -122,8 +123,8 @@ export component RecipeDetailPage inherits Page {
                 }
 
                 booster := Slider {
-                    minimum: -100;
-                    maximum: 100;
+                    minimum: -80;
+                    maximum: 80;
                     value: root.boost-value;
 
                     changed(value) => {
@@ -137,6 +138,12 @@ export component RecipeDetailPage inherits Page {
                     color: Palette.boost-positive-text;
                 }
             }
+        }
+
+        if recipe.is-boostable: BoostText {
+            boost: root.boost-value;
+            horizontal-alignment: center;
+            primary: true;
         }
 
         Button {

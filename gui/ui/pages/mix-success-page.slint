@@ -4,6 +4,7 @@ import {
     CornerDeco,
     LargeText,
     Button,
+    BoostText,
 } from "../components.slint";
 import { Palette } from "../palette.slint";
 import { Page } from "page.slint";
@@ -51,33 +52,6 @@ export component MixSuccessPage inherits Page {
     private property <string> cocktail-name: RecipeContext.active-recipe.name;
     private property <duration> prep-time-seconds: ProcessContext.elapsed-time;
     private property <int> boost-value: ProcessContext.boost;
-
-    // codespell:ignore-begin
-    pure function get-boost-slogan(val: int) -> string {
-        if (val <= -100) {
-            return "0% Sprit, 100% Geschmack. Hau rein, der Kater hat heute frei!";
-        } else if (val <= -75) {
-            return "Spurenelemente von Alkohol. Reicht höchstens für 'nen Placebo-Pegel, aber der Vibe im Glas stimmt zu 100%!";
-        } else if (val <= -50) {
-            return "Halbgas! Geht runter wie Limo, aber behalt trotzdem dein Limit im Auge.";
-        } else if (val <= -25) {
-            return "Gute Mische, sanfter Flow. Ein Cocktail zum Genießen, nicht zum Eskalieren.";
-        } else if (val <= 0) { // Die goldene Mitte (alles zwischen -24 und 0)
-            return "Sauber ausbalanciert. Kickt genau richtig, also trink mit Stil und saug nicht alles auf einmal durch den Strohhalm.";
-        } else if (val <= 25) {
-            return "Da ist ordentlich Musik drin. Feuer frei, aber lass die Handbremse in Reichweite!";
-        } else if (val <= 50) {
-            return "Zieht dir direkt die Schuhe aus. Genieß es, aber bestell schon mal das Taxi.";
-        } else if (val <= 75) {
-            return "Achtung, Endgegner! Nippen, nicht kippen – sonst gute Nacht!";
-        } else {
-            // Alles über 75 (bis 100+)
-            return "Systemabsturz incoming! Purer Raketentreibstoff – R.I.P. an deine Leber, trink auf eigene Gefahr.";
-        }
-    }
-    // codespell:ignore-end
-
-    private property <string> boost-text: get-boost-slogan(root.boost-value);
     callback finish();
 
     Timer {
@@ -111,12 +85,11 @@ export component MixSuccessPage inherits Page {
             background: transparent;
         }
 
-        MediumText {
-            text: root.boost-text;
+        BoostText {
+            boost: root.boost-value;
             horizontal-alignment: center;
             opacity: root.mounted ? 1 : 0;
             primary: true;
-            wrap: word-wrap;
             animate opacity {
                 duration: Palette.mount-animation-duration;
                 easing: Palette.mount-animation-easing;

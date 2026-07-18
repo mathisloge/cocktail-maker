@@ -33,7 +33,11 @@ export global RecipeContext {
             image: @image-url("../../../db/recipes/mojito.png")
         }
     ];
-    in-out property <RecipeView> active-recipe: { name: "Passion Rum Cooler", image: @image-url("../../../db/recipes/mojito.png") };
+    in-out property <RecipeView> active-recipe: {
+        name: "Passion Rum Cooler",
+        image: @image-url("../../../db/recipes/mojito.png"),
+        is-boostable: true
+    };
     in-out property <[string]> ingredient-ids: /* example data */ ["vodka", "orange_juice", "test2"];
 
     callback assign-ingredient-to-dispenser(Pod, Dispenser, string/* ingredient-id */);

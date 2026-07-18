@@ -1,0 +1,31 @@
+import { MediumText } from "medium-text.slint";
+export component BoostText inherits MediumText {
+    in property <int> boost;
+    private property <string> boost-text: get-boost-slogan(boost);
+     // codespell:ignore-begin
+   pure function get-boost-slogan(val: int) -> string {
+        if (val < -75) {
+            return "0% Sprit, 100% Geschmack. Hau rein, der Kater hat heute frei!";
+        } else if (val < -62) {
+            return "Gerade genug Alkohol, um dabei zu sein – geschmacklich aber ganz vorne.";
+        } else if (val < -37) {
+            return "Halbgas! Geht runter wie Limo, aber behalt trotzdem dein Limit im Auge.";
+        } else if (val < -12) {
+            return "Gute Mische, sanfter Flow. Ein Cocktail zum Genießen, nicht zum Eskalieren.";
+        } else if (val <= 12) {
+            return "Sauber ausbalanciert. Kickt genau richtig, also trink mit Stil und saug nicht alles auf einmal durch den Strohhalm.";
+        } else if (val < 38) {
+            return "Da ist ordentlich Musik drin. Feuer frei, aber lass die Handbremse in Reichweite!";
+        } else if (val < 63) {
+            return "Zieht dir direkt die Schuhe aus. Genieß es, aber bestell schon mal das Taxi.";
+        } else if (val < 75) {
+            return "Achtung, Endgegner! Nippen, nicht kippen – sonst gute Nacht!";
+        } else {
+            return "Systemabsturz incoming! Purer Raketentreibstoff – R.I.P. an deine Leber, trink auf eigene Gefahr.";
+        }
+    }
+    // codespell:ignore-end
+
+    text: root.boost-text;
+    wrap: word-wrap;
+}

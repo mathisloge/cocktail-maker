@@ -51,7 +51,7 @@ in
       owner = "mathisloge";
       repo = "cocktail-maker-protocol";
       rev = "main";
-      hash = "sha256-5g6nCis0Z491PypG2o/P32XoE/SyyB9eWfM88P7uO/I="; # Replace with valid hash
+      hash = "sha256-qKadWeS0rFaMJ/5uftJHlMD3E8ykyBtC1gqlsXPnASw=";
     };
     postUnpack = "sourceRoot=\${sourceRoot}/generated";
   };

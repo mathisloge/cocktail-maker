@@ -67,9 +67,9 @@ in
       hash = "sha256-7g6nCis0Z491PypG2o/P32XoE/SyyB9eWfM88P7uO/I="; # Replace with valid hash
     };
 
-    cargoDeps = pkgs.rustPlatform.fetchCargoTarball {
+    cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
       inherit src;
-      name = "${pname}-${version}-cargo-deps";
+      name = "${pname}-${version}-cargo-vendor";
       hash = "sha256-3g6nCis0Z491PypG2o/P32XoE/SyyB9eWfM88P7uO/I="; # Replace with valid hash
     };
 
@@ -83,10 +83,10 @@ in
     ];
 
     buildInputs = [
-      pkgs.xorg.libX11
-      pkgs.xorg.libXcursor
-      pkgs.xorg.libXrandr
-      pkgs.xorg.libXi
+      pkgs.libx11
+      pkgs.libxcursor
+      pkgs.libxrandr
+      pkgs.libxi
       pkgs.libxkbcommon
       pkgs.fontconfig
     ];

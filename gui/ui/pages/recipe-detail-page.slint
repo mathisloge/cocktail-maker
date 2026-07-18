@@ -16,6 +16,7 @@ import { Page } from "page.slint";
 
 export component RecipeDetailPage inherits Page {
     private property <RecipeView> recipe: RecipeContext.active-recipe;
+    private property <int> boost-value: 0;
     callback process-recipe();
 
     sidebar := VerticalLayout {
@@ -104,16 +105,16 @@ export component RecipeDetailPage inherits Page {
                 }
             }
 
-            SeparatorText {
+            if recipe.is-boostable: SeparatorText {
                 text: "ALKOHOL BOOST:";
             }
 
-            MediumText {
+            if recipe.is-boostable: MediumText {
                 text: "💪 Alkoholgehalt boosten";
                 primary: true;
             }
 
-            HorizontalBox {
+            if recipe.is-boostable: HorizontalBox {
                 cross-axis-alignment: center;
                 SmallText {
                     text: "milde";
@@ -121,11 +122,12 @@ export component RecipeDetailPage inherits Page {
                 }
 
                 booster := Slider {
-                    minimum: -50;
-                    maximum: 50;
-                    value: 0;
+                    minimum: -100;
+                    maximum: 100;
+                    value: root.boost-value;
 
                     changed(value) => {
+                        boost-value = value;
                         RecipeContext.boost-active-recipe(value)
                     }
                 }
@@ -140,7 +142,7 @@ export component RecipeDetailPage inherits Page {
         Button {
             text: "Zubereiten →";
             clicked => {
-                ProcessContext.boost = booster.value;
+                ProcessContext.boost = root.boost-value;
                 root.process-recipe();
             }
         }

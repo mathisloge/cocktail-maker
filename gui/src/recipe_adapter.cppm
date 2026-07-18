@@ -75,6 +75,7 @@ export RecipeView transform(Recipe r, const cm::IngredientStore& ingredient_stor
         .description = slint::SharedString{r.description.c_str()},
         .image = slint::Image::load_from_path(r.image_path.c_str()),
         .commands = transform(r.commands, ingredient_store),
+        .is_boostable = is_recipe_boostable(r.commands, ingredient_store),
     };
 }
 

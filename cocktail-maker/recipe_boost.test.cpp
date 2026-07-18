@@ -348,3 +348,84 @@ TEST_CASE("boost: no reducible ingredients — negative boost is a no-op", "[boo
     CHECK_THAT(total_volume(result).numerical_value_in(units::milli_litre),
                WithinRel(total_volume(commands).numerical_value_in(units::milli_litre), kEps));
 }
+
+TEST_CASE("is_recipe_boostable: recipe with boostable and reducible ingredients is boostable", "[boost][is_recipe_boostable]")
+{
+    const auto store = make_store();
+
+    const Commands commands = {
+        dispense("rum", 40.0),
+        dispense("cola", 60.0),
+    };
+
+    CHECK(is_recipe_boostable(commands, store));
+}
+
+TEST_CASE("is_recipe_boostable: recipe with only boostable ingredients is not boostable", "[boost][is_recipe_boostable]")
+{
+    const auto store = make_store();
+
+    const Commands commands = {
+        dispense("rum", 40.0),
+        dispense("vodka", 20.0),
+    };
+
+    CHECK_FALSE(is_recipe_boostable(commands, store));
+}
+
+TEST_CASE("is_recipe_boostable: recipe with only reducible ingredients is not boostable", "[boost][is_recipe_boostable]")
+{
+    const auto store = make_store();
+
+    const Commands commands = {
+        dispense("cola", 40.0),
+        dispense("juice", 20.0),
+    };
+
+    CHECK_FALSE(is_recipe_boostable(commands, store));
+}
+
+TEST_CASE("is_recipe_boostable: fixed ingredients do not make a recipe boostable", "[boost][is_recipe_boostable]")
+{
+    const auto store = make_store();
+
+    SECTION("only fixed")
+    {
+        const Commands commands = {
+            dispense("mint", 5.0),
+        };
+
+        CHECK_FALSE(is_recipe_boostable(commands, store));
+    }
+
+    SECTION("boostable and fixed")
+    {
+        const Commands commands = {
+            dispense("rum", 40.0),
+            dispense("mint", 5.0),
+        };
+
+        CHECK_FALSE(is_recipe_boostable(commands, store));
+    }
+
+    SECTION("reducible and fixed")
+    {
+        const Commands commands = {
+            dispense("cola", 40.0),
+            dispense("mint", 5.0),
+        };
+
+        CHECK_FALSE(is_recipe_boostable(commands, store));
+    }
+
+    SECTION("boostable, reducible and fixed")
+    {
+        const Commands commands = {
+            dispense("rum", 40.0),
+            dispense("cola", 40.0),
+            dispense("mint", 5.0),
+        };
+
+        CHECK(is_recipe_boostable(commands, store));
+    }
+}

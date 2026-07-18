@@ -185,4 +185,44 @@ export [[nodiscard]] auto boost_recipe(const Commands& commands, units::Percent 
 
     return scale_commands(commands, scales, store);
 }
+
+export [[nodiscard]] auto is_recipe_boostable(const Commands& commands, const IngredientStore& store) -> bool
+{
+    struct BoostSummary
+    {
+        bool has_boostables{false};
+        bool has_reducables{false};
+    };
+
+    const auto summarize_boostables = [](BoostSummary acc, const Command& cmd, const IngredientStore& store) -> BoostSummary {
+        return std::visit(
+            [&](const auto& c) -> BoostSummary {
+                if (acc.has_boostables and acc.has_reducables) {
+                    return acc;
+                }
+                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, DispenseCommand>) {
+                    return store.find_by_id(c.ingredient)
+                        .transform([&](const Ingredient& ing) -> BoostSummary {
+                            switch (ing.boost_category) {
+                            case BoostCategory::boostable:
+                                return {true, acc.has_reducables};
+                            case BoostCategory::reducible:
+                                return {acc.has_boostables, true};
+                            case BoostCategory::fixed:
+                                return acc;
+                            }
+                            std::unreachable();
+                        })
+                        .value_or(acc);
+                }
+                return acc;
+            },
+            cmd);
+    };
+
+    const auto boostables = fold_commands(commands, BoostSummary{}, [&](BoostSummary acc, const Command& cmd) {
+        return summarize_boostables(std::move(acc), cmd, store);
+    });
+    return boostables.has_boostables and boostables.has_reducables;
+};
 } // namespace cm

@@ -20,9 +20,19 @@ import :machine_adapter;
 import :process_context_bridge;
 
 namespace cm::gui {
+class AbortError : public std::runtime_error
+{
+  public:
+    AbortError()
+        : runtime_error{"Prozess wurde abgebrochen."} // codespell:ignore
+    {
+    }
+};
+
 enum class ErrorItemCategory
 {
     Ingredient,
+    Abort,
     Unknown
 };
 
@@ -31,6 +41,8 @@ slint::SharedString to_slint_string(ErrorItemCategory category)
     switch (category) {
     case ErrorItemCategory::Ingredient:
         return "I";
+    case ErrorItemCategory::Abort:
+        return "A";
     case ErrorItemCategory::Unknown:
         return "U";
     }
@@ -83,6 +95,19 @@ ErrorPageData make(const DispenserEmptyError& ex,
         .item_name = ingredient->display_name.c_str(),
         .item_details = item_details.c_str(),
     };
+}
+
+ErrorPageData make(const AbortError& ex, const cm::StationConfig&, const IngredientStore&)
+{
+    // codespell:ignore-begin
+    return ErrorPageData{
+        .title = "Prozess abgebrochen!",
+        .description = ex.what(),
+        .item_category = ErrorItemCategory::Abort,
+        .item_name = "Nutzer",
+        .item_details = "Bitte neustarten.",
+    };
+    // codespell:ignore-end
 }
 
 // Fallback for any exception without a dedicated overload above.
@@ -153,6 +178,11 @@ void ProcessContextBridge::init()
             display_ui_error(std::runtime_error{"Could not find recipe"}, ui_, station_config_, ingredient_store_);
             SPDLOG_LOGGER_ERROR(logger_, "Could not find a recipe {}", recipe_to_create.name.data());
         }
+    });
+
+    ui_->global<ProcessContext>().on_abort([this]() {
+        SPDLOG_LOGGER_INFO(logger_, "Abort recipe processing...");
+        display_ui_error(AbortError{}, ui_, station_config_, ingredient_store_);
     });
 
     ui_->global<StationStateContext>().on_navigated_to([this](Page from, Page to) {

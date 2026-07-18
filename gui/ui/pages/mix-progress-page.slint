@@ -1,6 +1,6 @@
 
 import { Palette } from "../palette.slint";
-import { RecipeView, CommandStatus } from "../data.slint";
+import { RecipeView, CommandStatus, Page } from "../data.slint";
 import { ProgressIndicator, Spinner } from "std-widgets.slint";
 import {
     SeparatorText,
@@ -10,7 +10,9 @@ import {
     LargeText,
     GlassCard,
     Chip,
+    Button,
 } from "../components.slint";
+import { StationStateContext } from "../globals/station-state-context.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
 import { ProcessContext } from "../globals/process-context.slint";
 import { Page } from "page.slint";
@@ -89,6 +91,12 @@ export component MixProgressPage inherits Page {
                 for command in recipe.commands: CommandItem {
                     command: command;
                 }
+            }
+
+            Button {
+                text: "ABBRECHEN";
+                secondary: true;
+                clicked => { ProcessContext.abort(); }
             }
         }
     }

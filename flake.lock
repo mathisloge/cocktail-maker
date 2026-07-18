@@ -16,9 +16,26 @@
         "type": "github"
       }
     },
+    "nixpkgs-staging-next": {
+      "locked": {
+        "lastModified": 1784377134,
+        "narHash": "sha256-U9CPaKDuwvYp+jC3uSA9/Mnu489CiKff1+7S1ohPhD4=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "7c6100a02a541050cfbcea13ea19be5b4d754eaf",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "staging-next",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "nixpkgs": "nixpkgs",
+        "nixpkgs-staging-next": "nixpkgs-staging-next",
         "utils": "utils"
       }
     },

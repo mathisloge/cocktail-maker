@@ -64,7 +64,7 @@ in
       owner = "slint-ui";
       repo = "slint";
       rev = "a978809d37135b6d3abefb3f888baed7d1b41467";
-      hash = "sha256-7g6nCis0Z491PypG2o/P32XoE/SyyB9eWfM88P7uO/I="; # Replace with valid hash
+      hash = "sha256-9F4KbG2pfO2Nl6WUXiDTxmvfXwoaHyw8S79IWXc9kBA=";
     };
 
     cargoDeps = pkgs.rustPlatform.fetchCargoVendor {

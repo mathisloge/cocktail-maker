@@ -1,8 +1,8 @@
 {
     "version": 10,
     "cmakeMinimumRequired": {
-        "major": 3,
-        "minor": 31,
+        "major": 4,
+        "minor": 3,
         "patch": 0
     },
     "configurePresets": [
@@ -76,6 +76,21 @@
                 "SANITIZE_ADDRESS": true,
                 "SANITIZE_UNDEFINED": true,
                 "BUILD_SIMULATED": true
+            }
+        },
+        {
+            "name": "nix-dev",
+            "displayName": "Nix C++26 Development",
+            "description": "Environment optimized for compilation inside the Nix devShell",
+            "inherits": [
+                "nix-common",
+                "debug-build",
+                "sccache"
+            ],
+            "cacheVariables": {
+                "BUILD_TESTING": true,
+                "SANITIZE_ADDRESS": true,
+                "SANITIZE_UNDEFINED": true
             }
         },
         {

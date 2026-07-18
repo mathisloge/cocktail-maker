@@ -93,12 +93,6 @@ add_subdirectory(cocktail-maker)
 add_subdirectory(gui)
 add_subdirectory(hw_simulator)
 
-install(
-    FILES cmake/cocktail-maker.service
-    DESTINATION lib/systemd/system
-    RENAME cocktail-maker.service
-)
-
 set(CPACK_PACKAGE_NAME "cocktail-maker")
 set(CPACK_PACKAGE_CONTACT "Mathis Logemann <mathis@quite.rocks>")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "")

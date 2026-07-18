@@ -4,15 +4,23 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-staging-next.url = "github:NixOS/nixpkgs/staging-next";
     utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, utils }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-staging-next, utils }@inputs:
     utils.lib.eachDefaultSystem (system:
       let
+        # Resolve legacy package set from the staging-next branch
+        pkgsStagingNext = nixpkgs-staging-next.legacyPackages.${system};
+
         pkgs = import nixpkgs {
           inherit system;
           overlays = [
+            # Inject pre-patched cmake from staging-next directly as 'cmake_4_3'
+            (final: prev: {
+              cmake_4_3 = pkgsStagingNext.cmake;
+            })
             self.overlays.default
           ];
         };

@@ -1,21 +1,13 @@
 # nix/overlay.nix
 final: prev:
 let
-  # Pin Kitware CMake to exactly 4.3.0 to bypass upstream 4.4.x issues
-  cmake_4_3 = prev.cmake.overrideAttrs (old: rec {
-    version = "4.3.0";
-    src = prev.fetchurl {
-      url = "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}.tar.gz";
-      hash = "sha256-9Rs8cp+F2N3kapLAcdKCbqavt32FD0aJQSXefMUbqnc=";
-    };
-    doCheck = false; 
-  });
+  # Inherit the pre-patched CMake 4.3 package injected by flake.nix
+  cmake_4_3 = prev.cmake_4_3;
 
   # Resolve the latest LLVM toolchain from unstable
   llvm = prev.llvmPackages_latest;
 
   # Define LLVM stdenv using the pre-wrapped Clang configuration
-  # This uses LLVM bintools (LLD) and libc++ out of the box and avoids wrapper configuration errors
   llvmStdenv = prev.overrideCC prev.stdenv llvm.clangUseLLVM;
 
   # Use the provided Nixpkgs-native packages directly
@@ -33,7 +25,7 @@ let
   };
 in
 {
-  inherit cmake_4_3 llvmStdenv;
+  inherit llvmStdenv;
 
   # Merge native Nixpkgs dependencies with our custom packages
   cocktailMakerDeps = customDeps // {

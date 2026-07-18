@@ -51,7 +51,7 @@ boost::cobalt::generator<std::shared_ptr<IPod>> SerialPodDiscovery::discover()
 {
 #ifndef __linux__
     // On non-Linux systems, the generator exits immediately.
-    co_return {};
+    throw SerialInitializationException{};
 #else
 
     auto exec = co_await boost::cobalt::this_coro::executor;

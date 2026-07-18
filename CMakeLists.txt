@@ -19,6 +19,8 @@ project(cocktail-maker VERSION ${BASE_VERSION} LANGUAGES CXX)
 cmake_policy(SET CMP0167 NEW)
 message(STATUS "Project version: ${PROJECT_VERSION}")
 
+option(BUILD_SIMULATED "Use simulated pods" OFF)
+
 list(
     APPEND CMAKE_MODULE_PATH
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake"

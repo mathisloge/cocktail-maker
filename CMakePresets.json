@@ -63,7 +63,8 @@
                 "BUILD_TESTING": true,
                 "SANITIZE_ADDRESS": true,
                 "SANITIZE_UNDEFINED": true,
-                "SANITIZE_THREAD": false
+                "SANITIZE_THREAD": false,
+                "BUILD_SIMULATED": true
             }
         },
         {
@@ -89,6 +90,7 @@
                 "BUILD_TESTING": true,
                 "SANITIZE_ADDRESS": true,
                 "SANITIZE_UNDEFINED": true,
+                "BUILD_SIMULATED": true,
                 "CMAKE_C_COMPILER": "clang-22",
                 "CMAKE_CXX_COMPILER": "clang++-22",
                 "CMAKE_CXX_FLAGS": "-stdlib=libc++",

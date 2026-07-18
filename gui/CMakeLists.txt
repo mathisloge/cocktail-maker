@@ -68,7 +68,13 @@ endif()
 add_executable(cocktail-maker src/main.cpp)
 add_sanitizers(cocktail-maker)
 target_link_libraries(cocktail-maker PRIVATE cm::gui cocktail-maker-simulator)
-target_compile_definitions(
+target_include_directories(
     cocktail-maker
-    PRIVATE DEBUG_LOCAL_DB_DIR="${PROJECT_SOURCE_DIR}/db"
+    PRIVATE ${CMAKE_CURRENT_BINARY_DIR} @ONLY
+)
+configure_file(src/config.in.hpp config.hpp)
+
+file(
+    COPY "${PROJECT_SOURCE_DIR}/db"
+    DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}"
 )

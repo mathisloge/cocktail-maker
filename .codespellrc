@@ -1,2 +1,3 @@
 [codespell]
 ignore-multiline-regex = codespell:ignore-begin.*codespell:ignore-end
+skip = db/glasses/*,db/ingredients/*,db/recipes/*,package-lock.json

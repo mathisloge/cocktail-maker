@@ -2,9 +2,9 @@ name: Linux CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 # Concurrency group to cancel outdated CI runs on the same branch
 concurrency:
@@ -12,6 +12,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  format-source-code:
+    name: Format source code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+      - uses: pre-commit/action@v3.0.1
+      - uses: pre-commit-ci/lite-action@v1.1.0
+        if: always()
+
   test-linux:
     name: Build & Test (Clang 22 / libc++)
     runs-on: ubuntu-latest

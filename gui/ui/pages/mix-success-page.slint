@@ -9,9 +9,7 @@ import { Palette } from "../palette.slint";
 import { Page } from "page.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
 import { ProcessContext } from "../globals/process-context.slint";
-// ─────────────────────────────────────────────────────────────────────
-//  Small local helper — one compact order-summary stat
-// ─────────────────────────────────────────────────────────────────────
+
 component StatChip inherits Rectangle {
     in property <string> label;
     in property <string> value;
@@ -54,6 +52,7 @@ export component MixSuccessPage inherits Page {
     private property <duration> prep-time-seconds: ProcessContext.elapsed-time;
     private property <int> boost-value: ProcessContext.boost;
 
+    // codespell:ignore-begin
     pure function get-boost-slogan(val: int) -> string {
         if (val <= -100) {
             return "0% Sprit, 100% Geschmack. Hau rein, der Kater hat heute frei!";
@@ -76,6 +75,8 @@ export component MixSuccessPage inherits Page {
             return "Systemabsturz incoming! Purer Raketentreibstoff – R.I.P. an deine Leber, trink auf eigene Gefahr.";
         }
     }
+    // codespell:ignore-end
+
     private property <string> boost-text: get-boost-slogan(root.boost-value);
     callback finish();
 

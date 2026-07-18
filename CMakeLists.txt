@@ -61,28 +61,60 @@ cpmaddpackage(
     "BOOST_INCLUDE_LIBRARIES ${BOOST_INCLUDE_LIBRARIES}"
 )
 
-cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite )
-cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_USE_STD_FORMAT ON")
-cpmaddpackage(URI "gh:CLIUtils/CLI11@2.6.2" OPTIONS "CLI11_PRECOMPILED ON")
-cpmaddpackage(URI "gh:mpusz/mp-units#8df25adeefc73931ff3a1da52804e5c7a061e2d1" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
+cpmaddpackage(
+    NAME gsl-lite
+    VERSION 1.1.0
+    GITHUB_REPOSITORY gsl-lite/gsl-lite
+    FIND_PACKAGE_ARGUMENTS "CONFIG"
+)
+cpmaddpackage(
+    URI "gh:gabime/spdlog@1.17.0"
+    OPTIONS "SPDLOG_USE_STD_FORMAT ON"
+    FIND_PACKAGE_ARGUMENTS "CONFIG"
+)
+cpmaddpackage(
+    URI "gh:CLIUtils/CLI11@2.6.2"
+    OPTIONS "CLI11_PRECOMPILED ON"
+    FIND_PACKAGE_ARGUMENTS "CONFIG"
+)
+cpmaddpackage(
+    URI "gh:mpusz/mp-units#8df25adeefc73931ff3a1da52804e5c7a061e2d1"
+    SOURCE_SUBDIR src
+    OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
+    FIND_PACKAGE_ARGUMENTS "CONFIG"
 )
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
-cpmaddpackage(URI "gh:simdjson/simdjson@4.6.4" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF")
+cpmaddpackage(
+    URI "gh:simdjson/simdjson@4.6.4"
+    OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF"
+    FIND_PACKAGE_ARGUMENTS "CONFIG"
+)
 cpmaddpackage(
   NAME Slint
   GIT_REPOSITORY https://github.com/slint-ui/slint.git
   GIT_TAG a978809d37135b6d3abefb3f888baed7d1b41467
   SOURCE_SUBDIR api/cpp
+  FIND_PACKAGE_ARGUMENTS "CONFIG"
 )
-cpmaddpackage(URI "gh:commschamp/comms@5.5.2" NAME LibComms)
-cpmaddpackage(URI "gh:mathisloge/cocktail-maker-protocol#main" SOURCE_SUBDIR generated
+cpmaddpackage(
+    URI "gh:commschamp/comms@5.5.2"
+    NAME LibComms
+    FIND_PACKAGE_ARGUMENTS "CONFIG"
 )
-cpmaddpackage(URI "gh:jeremy-rifkin/libassert@2.2.1")
+cpmaddpackage(
+    URI "gh:mathisloge/cocktail-maker-protocol#main"
+    SOURCE_SUBDIR generated
+    FIND_PACKAGE_ARGUMENTS "CONFIG"
+)
+cpmaddpackage(
+    URI "gh:jeremy-rifkin/libassert@2.2.1"
+    FIND_PACKAGE_ARGUMENTS "CONFIG"
+)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(libudev IMPORTED_TARGET libudev)
 
 if(BUILD_TESTING)
-    cpmaddpackage("gh:catchorg/Catch2@3.15.1")
+    cpmaddpackage(URI "gh:catchorg/Catch2@3.15.1" FIND_PACKAGE_ARGUMENTS "CONFIG")
     list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
     include(CTest)
     include(Catch)
@@ -92,8 +124,3 @@ add_subdirectory(core)
 add_subdirectory(cocktail-maker)
 add_subdirectory(gui)
 add_subdirectory(hw_simulator)
-
-set(CPACK_PACKAGE_NAME "cocktail-maker")
-set(CPACK_PACKAGE_CONTACT "Mathis Logemann <mathis@quite.rocks>")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
-include(CPack)

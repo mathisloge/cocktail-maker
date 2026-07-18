@@ -13,7 +13,18 @@
             "generator": "Ninja",
             "installDir": "${sourceDir}/dist",
             "cacheVariables": {
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CPM_LOCAL_PACKAGES_ONLY": "OFF"
+            }
+        },
+        {
+            "name": "nix-common",
+            "hidden": true,
+            "inherits": [
+                "common"
+            ],
+            "cacheVariables": {
+                "CPM_LOCAL_PACKAGES_ONLY": "ON"
             }
         },
         {
@@ -53,7 +64,8 @@
         },
         {
             "name": "developer",
-            "displayName": "Developer",
+            "displayName": "Standard Developer Profile",
+            "description": "Non-Nix development fallback with CPM downloads enabled",
             "inherits": [
                 "common",
                 "debug-build",
@@ -63,15 +75,15 @@
                 "BUILD_TESTING": true,
                 "SANITIZE_ADDRESS": true,
                 "SANITIZE_UNDEFINED": true,
-                "SANITIZE_THREAD": false,
                 "BUILD_SIMULATED": true
             }
         },
         {
-            "name": "production",
-            "displayName": "Production build",
+            "name": "nix-prod",
+            "displayName": "Nix C++26 Production",
+            "description": "Clean, optimized release profile optimized for target packaging",
             "inherits": [
-                "common",
+                "nix-common",
                 "release-build"
             ],
             "cacheVariables": {
@@ -102,12 +114,16 @@
     ],
     "buildPresets": [
         {
-            "name": "developer",
-            "configurePreset": "developer"
+            "name": "nix-dev",
+            "configurePreset": "nix-dev"
         },
         {
-            "name": "production",
-            "configurePreset": "production"
+            "name": "nix-prod",
+            "configurePreset": "nix-prod"
+        },
+        {
+            "name": "developer",
+            "configurePreset": "developer"
         },
         {
             "name": "ci-linux",
@@ -115,6 +131,17 @@
         }
     ],
     "testPresets": [
+        {
+            "name": "nix-dev",
+            "configurePreset": "nix-dev",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "ignore",
+                "stopOnFailure": true
+            }
+        },
         {
             "name": "developer",
             "configurePreset": "developer",
@@ -138,30 +165,17 @@
             }
         }
     ],
-    "packagePresets": [
-        {
-            "name": "production",
-            "configurePreset": "production",
-            "generators": [
-                "DEB"
-            ]
-        }
-    ],
     "workflowPresets": [
         {
-            "name": "production",
+            "name": "nix-prod",
             "steps": [
                 {
                     "type": "configure",
-                    "name": "production"
+                    "name": "nix-prod"
                 },
                 {
                     "type": "build",
-                    "name": "production"
-                },
-                {
-                    "type": "package",
-                    "name": "production"
+                    "name": "nix-prod"
                 }
             ]
         },

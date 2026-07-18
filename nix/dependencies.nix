@@ -57,17 +57,14 @@ rec {
   cocktail-maker-protocol = mkCppDerivation rec {
     pname = "cocktail-maker-protocol";
     version = "main";
+    propagatedBuildInputs = [ libcomms ];
     src = pkgs.fetchFromGitHub {
       owner = "mathisloge";
       repo = "cocktail-maker-protocol";
       rev = "main";
       hash = "sha256-qKadWeS0rFaMJ/5uftJHlMD3E8ykyBtC1gqlsXPnASw=";
     };
-
-    # Propagate libcomms so find_package(LibComms) resolves during compilation
-    propagatedBuildInputs = [ libcomms ];
-
-    postUnpack = "sourceRoot=\${sourceRoot}/generated";
+    cmakeDir = "generated";
   };
 
   slint-cpp = llvmStdenv.mkDerivation rec {

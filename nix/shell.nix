@@ -2,7 +2,6 @@
 { pkgs
 , llvmStdenv
 , cmake_4_3
-, deps
 }:
 
 pkgs.mkShell.override { stdenv = llvmStdenv; } {
@@ -22,15 +21,15 @@ pkgs.mkShell.override { stdenv = llvmStdenv; } {
   buildInputs = [
     pkgs.udev
     pkgs.boost190
-    deps.gsl-lite
-    deps.spdlog
-    deps.cli11
-    deps.mp-units
-    deps.simdjson
-    deps.slint-cpp
-    deps.libcomms
-    deps.cocktail-maker-protocol
-    deps.libassert
+    pkgs.gsl-lite
+    pkgs.spdlog
+    pkgs.cli11
+    pkgs.mp-units
+    pkgs.simdjson
+    pkgs.slint-cpp
+    pkgs.libcomms
+    pkgs.cocktail-maker-protocol
+    pkgs.libassert
     pkgs.catch2_3
   ];
 

@@ -11,16 +11,17 @@
   outputs = { self, nixpkgs, nixpkgs-staging-next, utils }@inputs:
     utils.lib.eachDefaultSystem (system:
       let
-        # Resolve legacy package set from the staging-next branch
         pkgsStagingNext = nixpkgs-staging-next.legacyPackages.${system};
 
         pkgs = import nixpkgs {
           inherit system;
           overlays = [
-            # Inject pre-patched cmake from staging-next directly as 'cmake_4_3'
+            # Inject pre-patched cmake from staging-next
             (final: prev: {
               cmake_4_3 = pkgsStagingNext.cmake;
             })
+
+            # Main project overlay
             self.overlays.default
           ];
         };
@@ -29,14 +30,12 @@
         packages = {
           default = pkgs.cocktail-maker;
           cocktail-maker = pkgs.cocktail-maker;
-          cmake_4_3 = pkgs.cmake_4_3;
-        } // pkgs.cocktailMakerDeps;
+        };
 
         devShells.default = import ./nix/shell.nix {
           inherit pkgs;
           llvmStdenv = pkgs.llvmStdenv;
           cmake_4_3 = pkgs.cmake_4_3;
-          deps = pkgs.cocktailMakerDeps;
         };
 
         formatter = pkgs.nixpkgs-fmt;

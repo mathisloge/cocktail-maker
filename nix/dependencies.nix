@@ -26,12 +26,18 @@ rec {
   libassert = mkCppDerivation rec {
     pname = "libassert";
     version = "2.2.1";
+    propagatedBuildInputs = [ pkgs.cpptrace ];
     src = pkgs.fetchFromGitHub {
       owner = "jeremy-rifkin";
       repo = "libassert";
       rev = "v${version}";
       hash = "sha256-ognudQ3NgpYxiDEucbIRWYQPs0XLRUQwg1eMxJm+aPs=";
     };
+
+    # Configure CMake to search for external package instead of using FetchContent
+    cmakeFlags = [
+      "-DLIBASSERT_USE_EXTERNAL_CPPTRACE=ON"
+    ];
   };
 
   libcomms = mkCppDerivation rec {

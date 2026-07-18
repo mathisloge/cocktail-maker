@@ -138,7 +138,6 @@ class GlassListModel : public slint::Model<GlassDescriptor>
         }
     }
 
-    // Gibt das mutierbare VolumeModel für ein angezeigtes Glas zurück, oder nullptr.
     [[nodiscard]] std::shared_ptr<VolumeModel> volume_model(const GlassId& glass_id) const
     {
         if (auto index = find_index(glass_id)) {

@@ -193,7 +193,7 @@ PodId Pod::pod_id() const
 cobalt::task<void> Pod::run(std::unique_ptr<PodState> state)
 {
     state_ = std::move(state);
-    co_await cobalt::race(server_.run(), monitor_device(), keep_alive());
+    co_await cobalt::race(server_.run(), monitor_device());
 }
 
 std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> Pod::create_dispenser(DispenserId dispenser_id)
@@ -298,29 +298,7 @@ cobalt::task<void> Pod::monitor_device()
     state_->update_state(PodState::ConnectionState::connected);
     device_ready_ = true;
 
-    BOOST_COBALT_FOR(auto event, server_.async_receive_events<InPong>())
-    {
-        std::visit(detail::Overloaded{
-                       [](InPong msg) {},
-                       [](std::monostate) {},
-                   },
-                   std::move(event));
-    }
-
-    /*
-    Idee:
-    Dieser loop verarbeitet events und updated entsprechend die States der hardware.
-    ::pump() muss bspw. wissen, wann die pumpe auch wirklich fertig ist.
-    Wenn Ausnahmen/Fehler als Event rein kommen, muss dies hier entsprechend an die UI weiter geleitet werden.
-    Bspw:
-    * Behälter ist leer => UI Dialog auffüllen nach auffüllen Frage bleibt: Wird das Rezept dann abgebrochen oder die Routinen
-    dann einfach fortgesetzt?
-    * MotorStateUpdate kommt asynchron nach Pump-Ack rein, vllt. wäre statt bool awaitable ein state als awaitable? Quasi,
-    dass eine coroutine auf einen bestimmten wert warten kann und in anderen eine excpetion kommt? Bspw. finished wird
-    erwartet und MotorFailure kommt, sollte als cancellation genutzt werden.
-
-
-    */
+    co_await keep_alive();
 }
 
 cobalt::task<void> Pod::keep_alive()
@@ -329,7 +307,8 @@ cobalt::task<void> Pod::keep_alive()
     co_await device_ready_;
     asio::steady_timer timer{server_.get_executor()};
     while (cs.cancelled() == asio::cancellation_type::none) {
-        co_await send_and_receive<InPong>(server_, OutPing{}, default_env(this, 1s));
+        co_await retry_on_timeout(
+            3, [this](auto timeout) { return send_and_receive<InPong>(server_, OutPing{}, default_env(this, timeout)); });
         timer.expires_after(2s);
         co_await timer.async_wait(cobalt::use_op);
     }

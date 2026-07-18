@@ -344,35 +344,3 @@ TEST_CASE_METHOD(AsyncServerTestFixture,
         CHECK(std::get<TestRxMsg>(variant_res).transportField_transactionId().value() == kTestTransaction);
     });
 }
-
-// ---------------------------------------------------------------------------
-// async_receive_events<Msg> (unsolicited event generator)
-// ---------------------------------------------------------------------------
-
-TEST_CASE_METHOD(AsyncServerTestFixture,
-                 "AsyncMachineProtocolServer - Receive Multiple Events via Generator",
-                 "[receive_events][success]")
-{
-    run_test([this]() -> boost::cobalt::task<void> {
-        // Construct a buffer containing 3 consecutive messages
-        std::vector<uint8_t> buffer;
-        for (int i = 0; i < 3; ++i) {
-            auto frame_bytes = encode_message(TestRxMsg{}, kTestTransaction);
-            buffer.insert(buffer.end(), frame_bytes.begin(), frame_bytes.end());
-        }
-
-        // Create the event subscriber (Generator)
-        auto events = server->async_receive_events<TestRxMsg>();
-
-        // Blast all 3 messages over the socket
-        co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer), boost::cobalt::use_op);
-
-        // Await them in a loop
-        for (int i = 0; i < 3; ++i) {
-            auto ev = co_await events;
-            REQUIRE(std::holds_alternative<TestRxMsg>(ev));
-        }
-
-        CHECK(true);
-    });
-}

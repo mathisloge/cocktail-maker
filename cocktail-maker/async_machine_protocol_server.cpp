@@ -116,11 +116,6 @@ void AsyncMachineProtocolServer::shutdown_channels()
         chan->close();
     }
     dispatch_map_.clear();
-
-    for (auto&& [msg_id, chan] : event_dispatch_map_) {
-        chan->close();
-    }
-    event_dispatch_map_.clear();
 }
 
 cobalt::task<void> AsyncMachineProtocolServer::write_loop()
@@ -227,21 +222,7 @@ cobalt::task<void> AsyncMachineProtocolServer::read_loop()
                 }
             }
             else {
-                auto sub_it = event_dispatch_map_.find(msg->getId());
-
-                if (sub_it != event_dispatch_map_.end()) {
-                    try {
-                        //! TODO: duplicate the message for all interested listeners. Don't know if I need this yet.
-                        // Yields to the *first* local channel listening for this specific message.
-                        co_await sub_it->second->write(std::move(msg));
-                    }
-                    catch (...) {
-                        SPDLOG_LOGGER_WARN(logger_, "Failed to route event '{}' to its subscriber.", msg->name());
-                    }
-                }
-                else {
-                    SPDLOG_LOGGER_DEBUG(logger_, "Discarding unhandled message '{}'.", msg->name());
-                }
+                SPDLOG_LOGGER_WARN(logger_, "Discarding unhandled message '{}'.", msg->name());
             }
 
             consume_front(consumed);
@@ -252,34 +233,6 @@ cobalt::task<void> AsyncMachineProtocolServer::read_loop()
 AsyncMachineProtocolServer::CleanupGuard::~CleanupGuard()
 {
     client->dispatch_map_.erase(transaction_id);
-}
-
-AsyncMachineProtocolServer::EventSubscriptionGuard::EventSubscriptionGuard(AsyncMachineProtocolServer* s,
-                                                                           AsyncMachineProtocolServer::ChannelPtr c,
-                                                                           std::vector<proto::MsgId> i)
-    : server(s)
-    , channel(std::move(c))
-    , ids(std::move(i))
-{
-    for (auto id : ids) {
-        server->event_dispatch_map_.emplace(id, channel);
-    }
-}
-
-AsyncMachineProtocolServer::EventSubscriptionGuard::~EventSubscriptionGuard()
-{
-    // Erase specifically this channel's mappings to avoid unregistering parallel listeners
-    for (auto id : ids) {
-        auto range = server->event_dispatch_map_.equal_range(id);
-        for (auto it = range.first; it != range.second;) {
-            if (it->second == channel) {
-                it = server->event_dispatch_map_.erase(it);
-            }
-            else {
-                ++it;
-            }
-        }
-    }
 }
 
 } // namespace cm

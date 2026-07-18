@@ -81,7 +81,6 @@ export class AsyncMachineProtocolServer
 {
     static constexpr std::size_t kWriteQueueCapacity = 10;
     static constexpr std::size_t kResponseChannelCapacity = 1;
-    static constexpr std::size_t kEventChannelCapacity = 10;
 
     log::Logger logger_;
     std::unique_ptr<AnyIoStream> stream_;
@@ -89,7 +88,6 @@ export class AsyncMachineProtocolServer
     using ChannelPtr = std::shared_ptr<cobalt::channel<InFrame::MsgPtr>>;
     std::unordered_map<TransactionId::ValueType, ChannelPtr> dispatch_map_;
     TransactionId::ValueType transaction_id_counter_{0};
-    std::unordered_multimap<proto::MsgId, ChannelPtr> event_dispatch_map_;
     bool is_running_ = false;
 
   public:
@@ -117,9 +115,6 @@ export class AsyncMachineProtocolServer
     auto async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
         -> cobalt::promise<std::variant<ExpectedMsgs...>>;
 
-    template <typename... ExpectedEvents>
-    auto async_receive_events() -> cobalt::generator<std::variant<std::monostate, ExpectedEvents...>>;
-
     template <typename Message>
     auto async_send(Message msg, TransactionId::ValueType transaction_id) -> cobalt::promise<void>;
 
@@ -146,18 +141,6 @@ export class AsyncMachineProtocolServer
 
         ~CleanupGuard();
     };
-
-    // RAII guard to cleanly manage Subscriptions mapping locally
-    struct EventSubscriptionGuard
-    {
-        AsyncMachineProtocolServer* server;
-        ChannelPtr channel;
-        std::vector<proto::MsgId> ids;
-
-        EventSubscriptionGuard(AsyncMachineProtocolServer* s, ChannelPtr c, std::vector<proto::MsgId> i);
-
-        ~EventSubscriptionGuard();
-    };
 };
 
 template <typename ExpectedMsg>
@@ -173,44 +156,6 @@ auto AsyncMachineProtocolServer::async_receive(TransactionId::ValueType transact
     -> cobalt::promise<std::variant<ExpectedMsgs...>>
 {
     co_return co_await async_receive_impl<ExpectedMsgs...>(transaction_id, timeout);
-}
-
-template <typename... ExpectedEvents>
-auto AsyncMachineProtocolServer::async_receive_events() -> cobalt::generator<std::variant<std::monostate, ExpectedEvents...>>
-{
-    boost::asio::cancellation_state cs = co_await boost::asio::this_coro::cancellation_state;
-    auto channel = std::make_shared<cobalt::channel<InFrame::MsgPtr>>(kEventChannelCapacity);
-    EventSubscriptionGuard guard{this, channel, std::vector{static_cast<proto::MsgId>(ExpectedEvents::staticMsgId())...}};
-
-    co_await cobalt::this_coro::initial;
-    while (cs.cancelled() == boost::asio::cancellation_type::none) {
-        InFrame::MsgPtr msg;
-        try {
-            msg = co_await channel->read();
-        }
-        catch (...) {
-            break; // Server shut down or channel closed
-        }
-
-        std::optional<std::variant<std::monostate, ExpectedEvents...>> matched_event;
-
-        // Fold over the candidate types purely for the short-circuiting side effect;
-        // the resulting bool is not otherwise needed.
-        (void)([&]() -> bool {
-            if (msg->getId() == ExpectedEvents::staticMsgId()) {
-                if (auto* concrete_ptr = dynamic_cast<ExpectedEvents*>(msg.get())) {
-                    matched_event = std::move(*concrete_ptr);
-                    return true;
-                }
-            }
-            return false;
-        }() || ...);
-
-        if (matched_event.has_value()) {
-            co_yield std::move(*matched_event);
-        }
-    }
-    co_return {};
 }
 
 template <typename Message>

@@ -8,23 +8,21 @@ let
       url = "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}.tar.gz";
       hash = "sha256-RCH+fF7kGg0u33gA8T1XoA0z+6yO+M2wWwO7mK7g0D0="; # Replace with valid hash if changed
     };
-    doCheck = false;
+    doCheck = false; 
   });
 
   # Resolve the latest LLVM toolchain from unstable
   llvm = prev.llvmPackages_latest;
 
-  # Define LLVM stdenv using Clang, libc++, and lld
-  llvmStdenv = prev.overrideCC prev.stdenv (llvm.clangUseLLVM.override {
-    bintools = llvm.lld;
-    libcxx = llvm.libcxx;
-  });
+  # Define LLVM stdenv using the pre-wrapped Clang configuration
+  # This uses LLVM bintools (LLD) and libc++ out of the box and avoids wrapper configuration errors
+  llvmStdenv = prev.overrideCC prev.stdenv llvm.clangUseLLVM;
 
-  # 1. Use the provided Nixpkgs-native packages directly
+  # Use the provided Nixpkgs-native packages directly
   gsl-lite = prev.gsl-lite; # Header-only
   cli11 = prev.cli11;       # Header-only
 
-  # 2. Use Nixpkgs recipes, but override compiling with llvmStdenv for ABI consistency
+  # Use Nixpkgs recipes, but override compiling with llvmStdenv for ABI consistency
   spdlog = prev.spdlog.override { stdenv = llvmStdenv; };
   simdjson = prev.simdjson.override { stdenv = llvmStdenv; };
 

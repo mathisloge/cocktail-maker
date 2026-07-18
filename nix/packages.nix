@@ -22,7 +22,6 @@ llvmStdenv.mkDerivation rec {
   ];
 
   buildInputs = [
-    pkgs.udev
     pkgs.boost190
     deps.gsl-lite
     deps.spdlog
@@ -34,7 +33,7 @@ llvmStdenv.mkDerivation rec {
     deps.cocktail-maker-protocol
     deps.libassert
     pkgs.catch2_3
-  ];
+  ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.udev ];
 
   cmakeFlags = [
     "-DCPM_LOCAL_PACKAGES_ONLY=ON"

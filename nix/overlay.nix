@@ -26,14 +26,11 @@ in
   });
 
 spdlog = (prev.spdlog.override { stdenv = llvmStdenv; }).overrideAttrs (old: {
-    # Resolve mutual exclusivity by swapping SPDLOG_FMT_EXTERNAL=ON to OFF
-    # and appending SPDLOG_USE_STD_FORMAT=ON.
-    cmakeFlags = (map (flag: 
-      if flag == "-DSPDLOG_FMT_EXTERNAL=ON" 
-      then "-DSPDLOG_FMT_EXTERNAL=OFF" 
-      else flag
+    cmakeFlags = (builtins.filter (flag: 
+      builtins.match ".*(SPDLOG_FMT_EXTERNAL|SPDLOG_USE_STD_FORMAT).*" flag == null
     ) old.cmakeFlags) ++ [
-      "-DSPDLOG_USE_STD_FORMAT=ON"
+      "-DSPDLOG_FMT_EXTERNAL:BOOL=OFF"
+      "-DSPDLOG_USE_STD_FORMAT:BOOL=ON"
     ];
     doCheck = false;
   });

@@ -6,7 +6,8 @@ let
     nativeBuildInputs = (args.nativeBuildInputs or [ ]) ++ [ cmake_4_3 pkgs.ninja ];
   });
 in
-{
+
+rec {
   mp-units = mkCppDerivation rec {
     pname = "mp-units";
     version = "2.6.0-unstable";
@@ -53,6 +54,10 @@ in
       rev = "main";
       hash = "sha256-qKadWeS0rFaMJ/5uftJHlMD3E8ykyBtC1gqlsXPnASw=";
     };
+    
+    # Propagate libcomms so find_package(LibComms) resolves during compilation
+    propagatedBuildInputs = [ libcomms ];
+
     postUnpack = "sourceRoot=\${sourceRoot}/generated";
   };
 

@@ -25,13 +25,13 @@ repos:
         name: CMake linting
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v22.1.5
+    rev: v22.1.8
     hooks:
       - id: clang-format
         types_or: [c++, c, proto]
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.2
+    rev: v2.4.3
     hooks:
       - id: codespell
         exclude: ^(i18n|v2.md)
@@ -40,7 +40,7 @@ repos:
     hooks:
       - id: reuse-annotate
         name: reuse-annotate
-        entry: reuse annotate -l "GPL-3.0-or-later" --merge-copyrights --single-line -c "Mathis Logemann <mathis@quite.rocks>"
+        entry: reuse annotate -l "AGPL-3.0-or-later" --merge-copyrights --single-line -c "Mathis Logemann <mathis@quite.rocks>"
         additional_dependencies: ["reuse"]
         types_or: [c++, qml, proto, cmake, python, pyi]
         pass_filenames: true

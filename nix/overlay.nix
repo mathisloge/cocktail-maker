@@ -4,8 +4,8 @@ let
   # Inherit the pre-patched CMake 4.3 package injected by flake.nix
   cmake_4_3 = prev.cmake_4_3;
 
-  # Use llvmPackages_latest (resolves to LLVM 22), patched in flake.nix
-  llvm = prev.llvmPackages_latest;
+  # Use quite recent llvm
+  llvm = prev.llvmPackages_21;
 
   # Define LLVM stdenv using the pre-wrapped Clang configuration
   llvmStdenv = prev.overrideCC prev.stdenv llvm.clangUseLLVM;
@@ -26,12 +26,6 @@ in
   });
 
   spdlog = (prev.spdlog.override { stdenv = llvmStdenv; }).overrideAttrs (old: {
-    # Replace the default "-DSPDLOG_BUILD_TESTS=ON" flag with "OFF"
-    cmakeFlags = map (flag: 
-      if flag == "-DSPDLOG_BUILD_TESTS=ON" 
-      then "-DSPDLOG_BUILD_TESTS=OFF" 
-      else flag
-    ) old.cmakeFlags;
     doCheck = false;
   });
 

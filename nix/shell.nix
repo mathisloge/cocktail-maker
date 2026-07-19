@@ -8,6 +8,9 @@
 pkgs.mkShell.override { stdenv = llvmStdenv; } {
   name = "cocktail-maker-devshell";
 
+  # Disable fortify here as well so terminal builds of `std.cppm` succeed
+  hardeningDisable = [ "fortify" ];
+
   packages = [
     cmake_4_3
     pkgs.ninja
@@ -33,11 +36,13 @@ pkgs.mkShell.override { stdenv = llvmStdenv; } {
   shellHook = ''
     export CC=clang
     export CXX=clang++
-    export CXXFLAGS="-stdlib=libc++ -std=c++26"
+    
+    # Include $NIX_CFLAGS_COMPILE so local terminal module scanning works
+    export CXXFLAGS="-stdlib=libc++ -std=c++26 $NIX_CFLAGS_COMPILE"
     export LDFLAGS="-stdlib=libc++ -fuse-ld=lld"
     
     # Export compiler wrapper overrides to allow local module scans to resolve libc++.modules.json
-    export NIX_CFLAGS_COMPILE="-stdlib=libc++ -Wno-unused-command-line-argument -B${pkgs.llvmPackages_latest.libcxx}/lib -isystem ${pkgs.llvmPackages_latest.libcxx.dev}/include/c++/v1"
+    export NIX_CFLAGS_COMPILE="-stdlib=libc++ -Wno-unused-command-line-argument -B${pkgs.llvmPackages_latest.libcxx}/lib -isystem ${pkgs.llvmPackages_latest.libcxx.dev}/include/c++/v1 $NIX_CFLAGS_COMPILE"
 
     # Set up local cargo offline config inside the development shell
     mkdir -p .cargo

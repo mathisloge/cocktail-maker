@@ -38,6 +38,10 @@ llvmStdenv.mkDerivation {
     pkgs.fontconfig
   ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.udev ];
 
+  # Explicitly disable fortify-source. C++ Modules (import std;) cannot export 
+  # glibc's fortified static inline functions due to internal linkage rules.
+  hardeningDisable = [ "fortify" ];
+  
   cmakeFlags = [
     "-DBUILD_TESTING=ON"
     "-DCMAKE_CXX_STDLIB_MODULES_JSON=${pkgs.llvmPackages_22.libcxx}/lib/libc++.modules.json"
@@ -58,11 +62,11 @@ llvmStdenv.mkDerivation {
   ];
 
   preConfigure = ''
-    # Safely inject flags containing spaces directly into the CMake array 
-    # to prevent Bash from splitting them into invalid arguments.
+    # Nix populates NIX_CFLAGS_COMPILE with all -isystem paths for buildInputs (gsl-lite, cpptrace, etc).
+    # We explicitly pass them to CMake so the unwrapped clang-scan-deps tool can find the headers.
     cmakeFlagsArray+=(
-      "-DCMAKE_CXX_FLAGS=-std=c++26 -stdlib=libc++ -nostdinc++ -isystem ${libcxxDev}/include/c++/v1 -isystem ${libcDev}/include"
-      "-DCMAKE_C_FLAGS=-isystem ${libcDev}/include"
+      "-DCMAKE_CXX_FLAGS=-std=c++26 -stdlib=libc++ -nostdinc++ -isystem ${libcxxDev}/include/c++/v1 -isystem ${libcDev}/include $NIX_CFLAGS_COMPILE"
+      "-DCMAKE_C_FLAGS=-isystem ${libcDev}/include $NIX_CFLAGS_COMPILE"
     )
 
     # Set up completely offline cargo environment

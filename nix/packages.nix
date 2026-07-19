@@ -14,21 +14,17 @@ llvmStdenv.mkDerivation {
 
   src = pkgs.lib.cleanSource ../.;
 
-  # Registers Slint's vendor package so cargo builds can run offline
-  cargoDeps = deps.slint-cargo-vendor;
-
   nativeBuildInputs = [
     cmake_4_3
     pkgs.ninja
     pkgs.pkg-config
-    pkgs.rustPlatform.cargoSetupHook
     pkgs.cargo
     pkgs.rustc
+    pkgs.corrosion
   ];
 
-  # System/runtime libraries required for the final executable
   buildInputs = [
-    pkgs.cpptrace # Backtrace support for libassert
+    pkgs.cpptrace
     pkgs.libx11
     pkgs.libxcursor
     pkgs.libxrandr
@@ -39,11 +35,9 @@ llvmStdenv.mkDerivation {
 
   cmakeFlags = [
     "-DBUILD_TESTING=ON"
-    # Instructs the libassert subproject to use the system cpptrace library
     "-DLIBASSERT_USE_EXTERNAL_CPPTRACE=ON"
-
+    
     # CPM Local Source Overrides
-    # This prevents CPM from making network calls and compiles dependencies inline
     "-DCPM_Boost_SOURCE=${deps.boost-src}"
     "-DCPM_gsl-lite_SOURCE=${deps.gsl-lite-src}"
     "-DCPM_spdlog_SOURCE=${deps.spdlog-src}"
@@ -56,6 +50,12 @@ llvmStdenv.mkDerivation {
     "-DCPM_libassert_SOURCE=${deps.libassert-src}"
     "-DCPM_Catch2_SOURCE=${deps.catch2-src}"
   ];
+
+  preConfigure = ''
+    # Create the local cargo configuration and symlink the pre-baked offline registry
+    mkdir -p .cargo
+    ln -sf ${deps.slint-cargo-vendor}/config.toml .cargo/config.toml
+  '';
 
   enableParallelBuilding = true;
 }

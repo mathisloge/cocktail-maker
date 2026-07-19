@@ -16,6 +16,7 @@ pkgs.mkShell.override { stdenv = llvmStdenv; } {
     pkgs.lldb
     pkgs.cargo
     pkgs.rustc
+    pkgs.corrosion
   ];
 
   buildInputs = [
@@ -33,9 +34,12 @@ pkgs.mkShell.override { stdenv = llvmStdenv; } {
     export CXX=clang++
     export CXXFLAGS="-stdlib=libc++"
     export LDFLAGS="-stdlib=libc++ -fuse-ld=lld"
+
+    # Set up local cargo offline config inside the development shell
+    mkdir -p .cargo
+    ln -sf ${deps.slint-cargo-vendor}/config.toml .cargo/config.toml
     
-    # Export local source configurations to environment variables.
-    # CPM reads these automatically, allowing standard local compilations to run offline.
+    # Export local source configurations for offline CPM
     export CPM_Boost_SOURCE="${deps.boost-src}"
     export CPM_gsl_lite_SOURCE="${deps.gsl-lite-src}"
     export CPM_spdlog_SOURCE="${deps.spdlog-src}"
@@ -51,7 +55,7 @@ pkgs.mkShell.override { stdenv = llvmStdenv; } {
     echo "========================================================="
     echo " Cocktail Maker C++26 Dev Environment (LLVM Clang + libc++)"
     echo " - CMake version: $(cmake --version | head -n 1)"
-    echo " - Compiler:      $($CC --version | head -n 1)"
+    echo " - Compiler:      $(${CC} --version | head -n 1)"
     echo "========================================================="
   '';
 }

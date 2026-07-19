@@ -17,6 +17,8 @@ set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
 
 project(cocktail-maker VERSION ${BASE_VERSION} LANGUAGES CXX)
 cmake_policy(SET CMP0167 NEW)
+cmake_policy(SET CMP0067 NEW)
+set(CMAKE_CXX_STANDARD 26)
 message(STATUS "Project version: ${PROJECT_VERSION}")
 
 option(BUILD_SIMULATED "Use simulated pods" OFF)
@@ -35,7 +37,6 @@ include(FindPkgConfig)
 include(GetGitRevisionDescription)
 include(CPM)
 
-set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/runtime")
 
 get_git_head_revision(git_branch git_sha)
@@ -55,7 +56,6 @@ cpmaddpackage(
   URL_HASH SHA256=cc5dc5006ecbdf0051f90979be31b4eee5987d9ae14ae9fb9c03cfa43fa3cdad
   EXCLUDE_FROM_ALL ON
   SYSTEM ON
-  FIND_PACKAGE_ARGUMENTS "CONFIG"
   OPTIONS
     "BOOST_ENABLE_CMAKE ON"
     "BOOST_INCLUDE_LIBRARIES ${BOOST_INCLUDE_LIBRARIES}"
@@ -70,41 +70,34 @@ cpmaddpackage(
 cpmaddpackage(
     URI "gh:gabime/spdlog@1.17.0"
     OPTIONS "SPDLOG_USE_STD_FORMAT ON"
-    FIND_PACKAGE_ARGUMENTS "CONFIG"
 )
 cpmaddpackage(
     URI "gh:CLIUtils/CLI11@2.6.2"
     OPTIONS "CLI11_PRECOMPILED ON"
-    FIND_PACKAGE_ARGUMENTS "CONFIG"
 )
 cpmaddpackage(
     URI "gh:mpusz/mp-units#8df25adeefc73931ff3a1da52804e5c7a061e2d1"
     SOURCE_SUBDIR src
     OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
-    FIND_PACKAGE_ARGUMENTS "CONFIG"
 )
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
 cpmaddpackage(
     URI "gh:simdjson/simdjson@4.6.4"
     OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF"
-    FIND_PACKAGE_ARGUMENTS "CONFIG"
 )
 cpmaddpackage(
   NAME Slint
   GIT_REPOSITORY https://github.com/slint-ui/slint.git
   GIT_TAG a978809d37135b6d3abefb3f888baed7d1b41467
   SOURCE_SUBDIR api/cpp
-  FIND_PACKAGE_ARGUMENTS "CONFIG"
 )
 cpmaddpackage(
     URI "gh:commschamp/comms@5.5.2"
     NAME LibComms
-    FIND_PACKAGE_ARGUMENTS "CONFIG"
 )
 cpmaddpackage(
     URI "gh:mathisloge/cocktail-maker-protocol#main"
     SOURCE_SUBDIR generated
-    FIND_PACKAGE_ARGUMENTS "CONFIG"
 )
 cpmaddpackage(
     URI "gh:jeremy-rifkin/libassert@2.2.1"
@@ -114,7 +107,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(libudev IMPORTED_TARGET libudev)
 
 if(BUILD_TESTING)
-    cpmaddpackage(URI "gh:catchorg/Catch2@3.15.1" FIND_PACKAGE_ARGUMENTS "CONFIG")
+    cpmaddpackage(URI "gh:catchorg/Catch2@3.15.1")
     list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
     include(CTest)
     include(Catch)

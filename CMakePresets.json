@@ -13,8 +13,7 @@
             "generator": "Ninja",
             "installDir": "${sourceDir}/dist",
             "cacheVariables": {
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "CPM_LOCAL_PACKAGES_ONLY": "OFF"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
             }
         },
         {
@@ -24,7 +23,7 @@
                 "common"
             ],
             "cacheVariables": {
-                "CPM_LOCAL_PACKAGES_ONLY": "ON"
+                "CPM_USE_LOCAL_PACKAGES": "ON"
             }
         },
         {
@@ -84,8 +83,7 @@
             "description": "Environment optimized for compilation inside the Nix devShell",
             "inherits": [
                 "nix-common",
-                "debug-build",
-                "sccache"
+                "debug-build"
             ],
             "cacheVariables": {
                 "BUILD_TESTING": true,

@@ -18,6 +18,8 @@ in
 {
   inherit llvmStdenv;
 
+  gsl-lite = prev.gsl-lite;
+
   cocktailMakerDeps = customDeps;
 
   # Compile cocktail-maker, letting callPackage automatically resolve dependencies from final

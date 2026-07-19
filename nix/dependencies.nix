@@ -13,13 +13,6 @@ rec {
     hash = "sha256-lX4s/HyDIEhn7PNyCocFYhizTx6CSkSfmGCSU+eqOYw=";
   };
 
-  gsl-lite-src = fetchGithubSource {
-    owner = "gsl-lite";
-    repo = "gsl-lite";
-    rev = "v1.1.0";
-    hash = "sha256-lX4s/HyDIEhn7PNyCocFYhizTx6CSkSfmGCSU+eqOYw=";
-  };
-
   spdlog-src = fetchGithubSource {
     owner = "gabime";
     repo = "spdlog";

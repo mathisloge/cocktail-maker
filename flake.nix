@@ -16,12 +16,28 @@
         pkgs = import nixpkgs {
           inherit system;
           overlays = [
-            # Inject pre-patched cmake from staging-next
+            # 1. Workaround: Patch LLVM 22 compiler-rt-no-libc regression on aarch64 (Nixpkgs Issue #495155)
+            (final: prev: {
+              llvmPackages_22 = prev.llvmPackages_22 // {
+                compiler-rt-no-libc = prev.llvmPackages_22.compiler-rt-no-libc.overrideAttrs (old: {
+                  patches = (old.patches or []) ++ [
+                    (prev.fetchpatch {
+                      url = "https://github.com/llvm/llvm-project/commit/7b820b28353e788603e56698035db42bb3327713.patch";
+                      hash = "sha256-sBOkvrECfOHAUQ2JewQyTQ7QbSH1ZzsenUBgfqVa7Bc=";
+                      revert = true;
+                      stripLen = 1;
+                    })
+                  ];
+                });
+              };
+            })
+
+            # 2. Inject pre-patched cmake from staging-next
             (final: prev: {
               cmake_4_3 = pkgsStagingNext.cmake;
             })
 
-            # Main project overlay
+            # 3. Main project overlay
             self.overlays.default
           ];
         };
@@ -30,12 +46,14 @@
         packages = {
           default = pkgs.cocktail-maker;
           cocktail-maker = pkgs.cocktail-maker;
+          cmake_4_3 = pkgs.cmake_4_3;
         };
 
         devShells.default = import ./nix/shell.nix {
           inherit pkgs;
           llvmStdenv = pkgs.llvmStdenv;
           cmake_4_3 = pkgs.cmake_4_3;
+          deps = pkgs.cocktailMakerDeps;
         };
 
         formatter = pkgs.nixpkgs-fmt;

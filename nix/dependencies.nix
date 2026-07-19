@@ -1,117 +1,92 @@
 # nix/dependencies.nix
-{ pkgs, cmake_4_3, llvmStdenv }:
+{ pkgs }:
 
 let
-  mkCppDerivation = args: llvmStdenv.mkDerivation (args // {
-    nativeBuildInputs = (args.nativeBuildInputs or [ ]) ++ [ cmake_4_3 pkgs.ninja ];
-  });
+  fetchGithubSource = { owner, repo, rev, hash }: pkgs.fetchFromGitHub {
+    inherit owner repo rev hash;
+  };
 in
-
 rec {
-  mp-units = mkCppDerivation rec {
-    pname = "mp-units";
-    version = "2.6.0-unstable";
-    propagatedBuildInputs = [ pkgs.gsl-lite ];
-    src = pkgs.fetchFromGitHub {
-      owner = "mpusz";
-      repo = "mp-units";
-      rev = "8df25adeefc73931ff3a1da52804e5c7a061e2d1";
-      hash = "sha256-oSovhu5yFR/XQQOI3N23zwyketQJ0BDVIEKG9VyayZQ=";
-    };
-    preConfigure = ''
-      cd src
-    '';
-
-    cmakeFlags = [
-      "-DMP_UNITS_BUILD_CXX_MODULES=ON"
-      "-DMP_UNITS_BUILD_TESTS=OFF"
-      "-DCMAKE_CXX_STANDARD=26"
-    ];
+  # CPM overrides expect raw unpack source directories
+  boost-src = pkgs.fetchzip {
+    url = "https://github.com/boostorg/boost/releases/download/boost-1.91.0-1/boost-1.91.0-1-cmake.tar.xz";
+    hash = "sha256-lX4s/HyDIEhn7PNyCocFYhizTx6CSkSfmGCSU+eqOYw=";
   };
 
-  libassert = mkCppDerivation rec {
-    pname = "libassert";
-    version = "2.2.1";
-    propagatedBuildInputs = [ pkgs.cpptrace ];
-    src = pkgs.fetchFromGitHub {
-      owner = "jeremy-rifkin";
-      repo = "libassert";
-      rev = "v${version}";
-      hash = "sha256-ognudQ3NgpYxiDEucbIRWYQPs0XLRUQwg1eMxJm+aPs=";
-    };
-
-    # Configure CMake to search for external package instead of using FetchContent
-    cmakeFlags = [
-      "-DLIBASSERT_USE_EXTERNAL_CPPTRACE=ON"
-    ];
+  gsl-lite-src = fetchGithubSource {
+    owner = "gsl-lite";
+    repo = "gsl-lite";
+    rev = "v1.1.0";
+    hash = "sha256-lX4s/HyDIEhn7PNyCocFYhizTx6CSkSfmGCSU+eqOYw=";
   };
 
-  libcomms = mkCppDerivation rec {
-    pname = "libcomms";
-    version = "5.5.2";
-    src = pkgs.fetchFromGitHub {
-      owner = "commschamp";
-      repo = "comms";
-      rev = "v${version}";
-      hash = "sha256-U0KTpj3H+GcjiAPfKTl4h8MDZIZ3zZmQr6TpCdMk3bg=";
-    };
+  spdlog-src = fetchGithubSource {
+    owner = "gabime";
+    repo = "spdlog";
+    rev = "v1.17.0";
+    hash = "sha256-bL3hQmERXNwGmDoi7+wLv/TkppGhG6cO47k1iZvJGzY=";
   };
 
-  cocktail-maker-protocol = mkCppDerivation rec {
-    pname = "cocktail-maker-protocol";
-    version = "main";
-    propagatedBuildInputs = [ libcomms ];
-    src = pkgs.fetchFromGitHub {
-      owner = "mathisloge";
-      repo = "cocktail-maker-protocol";
-      rev = "main";
-      hash = "sha256-qKadWeS0rFaMJ/5uftJHlMD3E8ykyBtC1gqlsXPnASw=";
-    };
-    preConfigure = ''
-      cd generated
-    '';
-
+  cli11-src = fetchGithubSource {
+    owner = "CLIUtils";
+    repo = "CLI11";
+    rev = "v2.6.2";
+    hash = "sha256-TcOmx/qUK/w3mO0bDHX+TRxxMwJpaDFQBcpkQj3hz8A=";
   };
 
-  slint-cpp = llvmStdenv.mkDerivation rec {
-    pname = "slint-cpp";
-    version = "1.7.0-unstable";
+  mp-units-src = fetchGithubSource {
+    owner = "mpusz";
+    repo = "mp-units";
+    rev = "8df25adeefc73931ff3a1da52804e5c7a061e2d1";
+    hash = "sha256-oSovhu5yFR/XQQOI3N23zwyketQJ0BDVIEKG9VyayZQ=";
+  };
 
-    src = pkgs.fetchFromGitHub {
-      owner = "slint-ui";
-      repo = "slint";
-      rev = "a978809d37135b6d3abefb3f888baed7d1b41467";
-      hash = "sha256-9F4KbG2pfO2Nl6WUXiDTxmvfXwoaHyw8S79IWXc9kBA=";
-    };
+  simdjson-src = fetchGithubSource {
+    owner = "simdjson";
+    repo = "simdjson";
+    rev = "v4.6.4";
+    hash = "sha256-8oQzsR7DSaNTN9su1uI9tRQ9HvOwXShPwSrnQj8+lGM=";
+  };
 
-    cargoDeps = pkgs.rustPlatform.fetchCargoVendor {
-      inherit src;
-      name = "${pname}-${version}-cargo-vendor";
-      hash = "sha256-BApQGhoyWTLzv/jpcQHITgFboC9CYk+3UiMCkzpfJKo=";
-    };
+  slint-src = fetchGithubSource {
+    owner = "slint-ui";
+    repo = "slint";
+    rev = "a978809d37135b6d3abefb3f888baed7d1b41467";
+    hash = "sha256-9F4KbG2pfO2Nl6WUXiDTxmvfXwoaHyw8S79IWXc9kBA=";
+  };
 
-    nativeBuildInputs = [
-      cmake_4_3
-      pkgs.ninja
-      pkgs.rustPlatform.cargoSetupHook
-      pkgs.cargo
-      pkgs.rustc
-      pkgs.pkg-config
-    ];
+  # Local vendor archive so Slint's inline Rust compilation can run fully offline
+  slint-cargo-vendor = pkgs.rustPlatform.fetchCargoVendor {
+    src = slint-src;
+    name = "slint-cargo-vendor";
+    hash = "sha256-BApQGhoyWTLzv/jpcQHITgFboC9CYk+3UiMCkzpfJKo=";
+  };
 
-    buildInputs = [
-      pkgs.libx11
-      pkgs.libxcursor
-      pkgs.libxrandr
-      pkgs.libxi
-      pkgs.libxkbcommon
-      pkgs.fontconfig
-    ];
+  libcomms-src = fetchGithubSource {
+    owner = "commschamp";
+    repo = "comms";
+    rev = "v5.5.2";
+    hash = "sha256-U0KTpj3H+GcjiAPfKTl4h8MDZIZ3zZmQr6TpCdMk3bg=";
+  };
 
-    postUnpack = "sourceRoot=\${sourceRoot}/api/cpp";
+  cocktail-maker-protocol-src = fetchGithubSource {
+    owner = "mathisloge";
+    repo = "cocktail-maker-protocol";
+    rev = "main";
+    hash = "sha256-qKadWeS0rFaMJ/5uftJHlMD3E8ykyBtC1gqlsXPnASw=";
+  };
 
-    preConfigure = ''
-      export RUSTC_WRAPPER="sccache"
-    '';
+  libassert-src = fetchGithubSource {
+    owner = "jeremy-rifkin";
+    repo = "libassert";
+    rev = "v2.2.1";
+    hash = "sha256-ognudQ3NgpYxiDEucbIRWYQPs0XLRUQwg1eMxJm+aPs=";
+  };
+
+  catch2-src = fetchGithubSource {
+    owner = "catchorg";
+    repo = "Catch2";
+    rev = "v3.15.1";
+    hash = "sha256-JSMAlIDanPLzxhvFXeF3T5NQkj8Gye+bT92OjZS+XOs=";
   };
 }

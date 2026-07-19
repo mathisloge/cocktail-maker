@@ -2,6 +2,7 @@
 { pkgs
 , llvmStdenv
 , cmake_4_3
+, deps
 }:
 
 pkgs.mkShell.override { stdenv = llvmStdenv; } {
@@ -11,7 +12,6 @@ pkgs.mkShell.override { stdenv = llvmStdenv; } {
     cmake_4_3
     pkgs.ninja
     pkgs.pkg-config
-    pkgs.sccache
     pkgs.clang-tools
     pkgs.lldb
     pkgs.cargo
@@ -19,19 +19,14 @@ pkgs.mkShell.override { stdenv = llvmStdenv; } {
   ];
 
   buildInputs = [
-    pkgs.udev
-    pkgs.boost190
-    pkgs.gsl-lite
-    pkgs.spdlog
-    pkgs.cli11
-    pkgs.mp-units
-    pkgs.simdjson
-    pkgs.slint-cpp
-    pkgs.libcomms
-    pkgs.cocktail-maker-protocol
-    pkgs.libassert
-    pkgs.catch2_3
-  ];
+    pkgs.cpptrace
+    pkgs.libx11
+    pkgs.libxcursor
+    pkgs.libxrandr
+    pkgs.libxi
+    pkgs.libxkbcommon
+    pkgs.fontconfig
+  ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.udev ];
 
   shellHook = ''
     export CC=clang
@@ -39,18 +34,24 @@ pkgs.mkShell.override { stdenv = llvmStdenv; } {
     export CXXFLAGS="-stdlib=libc++"
     export LDFLAGS="-stdlib=libc++ -fuse-ld=lld"
     
-    export CMAKE_C_COMPILER_LAUNCHER=sccache
-    export CMAKE_CXX_COMPILER_LAUNCHER=sccache
-    export RUSTC_WRAPPER=sccache
-    
-    export SCCACHE_DIR="$(pwd)/.sccache"
-    mkdir -p "$SCCACHE_DIR"
+    # Export local source configurations to environment variables.
+    # CPM reads these automatically, allowing standard local compilations to run offline.
+    export CPM_Boost_SOURCE="${deps.boost-src}"
+    export CPM_gsl_lite_SOURCE="${deps.gsl-lite-src}"
+    export CPM_spdlog_SOURCE="${deps.spdlog-src}"
+    export CPM_CLI11_SOURCE="${deps.cli11-src}"
+    export CPM_mp-units_SOURCE="${deps.mp-units-src}"
+    export CPM_simdjson_SOURCE="${deps.simdjson-src}"
+    export CPM_Slint_SOURCE="${deps.slint-src}"
+    export CPM_LibComms_SOURCE="${deps.libcomms-src}"
+    export CPM_cocktail_maker_protocol_SOURCE="${deps.cocktail-maker-protocol-src}"
+    export CPM_libassert_SOURCE="${deps.libassert-src}"
+    export CPM_Catch2_SOURCE="${deps.catch2-src}"
     
     echo "========================================================="
     echo " Cocktail Maker C++26 Dev Environment (LLVM Clang + libc++)"
     echo " - CMake version: $(cmake --version | head -n 1)"
     echo " - Compiler:      $($CC --version | head -n 1)"
-    echo " - sccache is active for C++ and Rust builds."
     echo "========================================================="
   '';
 }

@@ -2,49 +2,60 @@
 { pkgs
 , llvmStdenv
 , cmake_4_3
+, deps
 }:
 
 let
   packageJson = builtins.fromJSON (builtins.readFile ../package.json);
 in
-llvmStdenv.mkDerivation rec {
+llvmStdenv.mkDerivation {
   pname = "cocktail-maker";
   version = packageJson.version;
 
   src = pkgs.lib.cleanSource ../.;
 
+  # Registers Slint's vendor package so cargo builds can run offline
+  cargoDeps = deps.slint-cargo-vendor;
+
   nativeBuildInputs = [
     cmake_4_3
     pkgs.ninja
     pkgs.pkg-config
-    pkgs.sccache
+    pkgs.rustPlatform.cargoSetupHook
+    pkgs.cargo
+    pkgs.rustc
   ];
 
+  # System/runtime libraries required for the final executable
   buildInputs = [
-    pkgs.boost190
-    pkgs.gsl-lite
-    pkgs.spdlog
-    pkgs.cli11
-    pkgs.mp-units
-    pkgs.simdjson
-    pkgs.slint-cpp
-    pkgs.libcomms
-    pkgs.cocktail-maker-protocol
-    pkgs.libassert
-    pkgs.catch2_3
+    pkgs.cpptrace # Backtrace support for libassert
+    pkgs.libx11
+    pkgs.libxcursor
+    pkgs.libxrandr
+    pkgs.libxi
+    pkgs.libxkbcommon
+    pkgs.fontconfig
   ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.udev ];
 
   cmakeFlags = [
-    "-DCPM_LOCAL_PACKAGES_ONLY=ON"
     "-DBUILD_TESTING=ON"
-    "-DCMAKE_C_COMPILER_LAUNCHER=sccache"
-    "-DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
-  ];
+    # Instructs the libassert subproject to use the system cpptrace library
+    "-DLIBASSERT_USE_EXTERNAL_CPPTRACE=ON"
 
-  preConfigure = ''
-    export RUSTC_WRAPPER="sccache"
-    export SCCACHE_DIR=$(pwd)/.sccache
-  '';
+    # CPM Local Source Overrides
+    # This prevents CPM from making network calls and compiles dependencies inline
+    "-DCPM_Boost_SOURCE=${deps.boost-src}"
+    "-DCPM_gsl-lite_SOURCE=${deps.gsl-lite-src}"
+    "-DCPM_spdlog_SOURCE=${deps.spdlog-src}"
+    "-DCPM_CLI11_SOURCE=${deps.cli11-src}"
+    "-DCPM_mp-units_SOURCE=${deps.mp-units-src}"
+    "-DCPM_simdjson_SOURCE=${deps.simdjson-src}"
+    "-DCPM_Slint_SOURCE=${deps.slint-src}"
+    "-DCPM_LibComms_SOURCE=${deps.libcomms-src}"
+    "-DCPM_cocktail-maker-protocol_SOURCE=${deps.cocktail-maker-protocol-src}"
+    "-DCPM_libassert_SOURCE=${deps.libassert-src}"
+    "-DCPM_Catch2_SOURCE=${deps.catch2-src}"
+  ];
 
   enableParallelBuilding = true;
 }

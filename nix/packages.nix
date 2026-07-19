@@ -7,6 +7,10 @@
 
 let
   packageJson = builtins.fromJSON (builtins.readFile ../package.json);
+  
+  # Resolve the exact Nix paths for the C and C++ standard library headers
+  libcxxDev = pkgs.llvmPackages_22.libcxx.dev;
+  libcDev = pkgs.stdenv.cc.libc.dev;
 in
 llvmStdenv.mkDerivation {
   pname = "cocktail-maker";
@@ -35,10 +39,9 @@ llvmStdenv.mkDerivation {
   ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.udev ];
 
   cmakeFlags = [
+    "-DBUILD_TESTING=ON"
     "-DCMAKE_CXX_STDLIB_MODULES_JSON=${pkgs.llvmPackages_22.libcxx}/lib/libc++.modules.json"
     "-DCPM_LOCAL_PACKAGES_ONLY=ON"
-  
-    "-DBUILD_TESTING=ON"
 
     # CPM Local Source Overrides
     "-DCPM_Boost_SOURCE=${deps.boost-src}"
@@ -55,9 +58,21 @@ llvmStdenv.mkDerivation {
   ];
 
   preConfigure = ''
-    # Create the local cargo configuration and symlink the pre-baked offline registry
-    mkdir -p .cargo
-    ln -sf ${deps.slint-cargo-vendor}/config.toml .cargo/config.toml
+    # Safely inject flags containing spaces directly into the CMake array 
+    # to prevent Bash from splitting them into invalid arguments.
+    cmakeFlagsArray+=(
+      "-DCMAKE_CXX_FLAGS=-std=c++26 -stdlib=libc++ -nostdinc++ -isystem ${libcxxDev}/include/c++/v1 -isystem ${libcDev}/include"
+      "-DCMAKE_C_FLAGS=-isystem ${libcDev}/include"
+    )
+
+    # Set up completely offline cargo environment
+    export CARGO_HOME="$TMPDIR/cargo-home"
+    mkdir -p "$CARGO_HOME"
+    
+    # Copy the offline registry config, make it writable, and replace the placeholder
+    cp ${deps.slint-cargo-vendor}/.cargo/config.toml "$CARGO_HOME/config.toml"
+    chmod u+w "$CARGO_HOME/config.toml"
+    sed -i "s|@vendor@|${deps.slint-cargo-vendor}|g" "$CARGO_HOME/config.toml"
   '';
 
   enableParallelBuilding = true;

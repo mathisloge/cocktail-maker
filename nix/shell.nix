@@ -33,14 +33,19 @@ pkgs.mkShell.override { stdenv = llvmStdenv; } {
   shellHook = ''
     export CC=clang
     export CXX=clang++
-    export CXXFLAGS="-stdlib=libc++"
+    export CXXFLAGS="-stdlib=libc++ -std=c++26"
     export LDFLAGS="-stdlib=libc++ -fuse-ld=lld"
+    
+    # Export compiler wrapper overrides to allow local module scans to resolve libc++.modules.json
+    export NIX_CFLAGS_COMPILE="-stdlib=libc++ -Wno-unused-command-line-argument -B${pkgs.llvmPackages_latest.libcxx}/lib -isystem ${pkgs.llvmPackages_latest.libcxx.dev}/include/c++/v1"
 
     # Set up local cargo offline config inside the development shell
     mkdir -p .cargo
-    ln -sf ${deps.slint-cargo-vendor}/config.toml .cargo/config.toml
-
-    # Export local source configurations for offline CPM
+    cp ${deps.slint-cargo-vendor}/.cargo/config.toml .cargo/config.toml
+    chmod u+w .cargo/config.toml
+    sed -i "s|@vendor@|${deps.slint-cargo-vendor}|g" .cargo/config.toml
+    
+    # Export local source configurations
     export CPM_Boost_SOURCE="${deps.boost-src}"
     export CPM_spdlog_SOURCE="${deps.spdlog-src}"
     export CPM_CLI11_SOURCE="${deps.cli11-src}"
@@ -51,6 +56,22 @@ pkgs.mkShell.override { stdenv = llvmStdenv; } {
     export CPM_cocktail_maker_protocol_SOURCE="${deps.cocktail-maker-protocol-src}"
     export CPM_libassert_SOURCE="${deps.libassert-src}"
     export CPM_Catch2_SOURCE="${deps.catch2-src}"
+
+    # Force local builds to emulate the same sandbox lookups
+    export CPM_USE_LOCAL_PACKAGES="ON"
+    export CPM_LOCAL_PACKAGES_ONLY="ON"
+
+    # Export global Boost settings to the terminal environment
+    export BOOST_ENABLE_CMAKE="ON"
+    export BOOST_INCLUDE_LIBRARIES="asio;cobalt;hash2"
+    
+    # Export global Boost version settings
+    export BOOST_VERSION="1.91.0-1"
+    export Boost_VERSION="1.91.0-1"
+    export CPM_Boost_VERSION="1.91.0-1"
+
+    # Configure C++ Modules standard library path dynamically for the Nix environment
+    export CMAKE_CXX_STDLIB_MODULES_JSON="${pkgs.llvmPackages_latest.libcxx}/lib/libc++.modules.json"
 
     echo "========================================================="
     echo " Cocktail Maker C++26 Dev Environment (LLVM Clang + libc++)"

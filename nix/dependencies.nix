@@ -10,7 +10,7 @@ rec {
   # CPM overrides expect raw unpack source directories
   boost-src = pkgs.fetchzip {
     url = "https://github.com/boostorg/boost/releases/download/boost-1.91.0-1/boost-1.91.0-1-cmake.tar.xz";
-    hash = "sha256-lX4s/HyDIEhn7PNyCocFYhizTx6CSkSfmGCSU+eqOYw=";
+    hash = "sha256-6+zdaZN/f6fOg4GJK+z+BbiWkKeFPsfVIk1BAVJrgTs=";
   };
 
   spdlog-src = fetchGithubSource {

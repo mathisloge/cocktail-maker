@@ -31,7 +31,7 @@ constexpr std::string_view to_string_view(ErrorStatus status) noexcept
 
 namespace std {
 
-export template <>
+template <>
 struct formatter<comms::ErrorStatus, char> : formatter<std::string_view>
 {
     constexpr auto parse(format_parse_context& ctx)
@@ -45,7 +45,7 @@ struct formatter<comms::ErrorStatus, char> : formatter<std::string_view>
     }
 };
 
-export template <>
+template <>
 struct formatter<proto::MsgId, char> : formatter<std::string_view>
 {
     constexpr auto parse(format_parse_context& ctx)

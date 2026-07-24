@@ -9,7 +9,7 @@ Identifiers and physical quantities that could otherwise be confused, such as a 
 a dispenser's, or a volume versus a plain number, are kept as distinct types throughout the domain
 model, so that mixing up two different kinds of value is a compile error rather than a runtime bug.
 Every physical quantity always carries its unit, removing an entire class of unit-conversion mistakes
-in a system where an incorrect quantity is a food-safety concern.
+in a system where an incorrect quantity is a food-safety concern. xref:adr:004-domain-type-safety.adoc[ADR-004].
 
 == Single-Executor Concurrency
 
@@ -52,4 +52,4 @@ A failure during a mix, such as a dispenser running out of ingredient, is transl
 guest-facing error screen naming the affected ingredient rather than a generic failure, and the guest
 is always returned to a known-good screen. This supports *Usability* alongside *Reliability*.
 
-Continue with xref:architecture-decisions.adoc[].
+Continue with xref:risks-and-technical-debt.adoc[].

@@ -1,7 +1,6 @@
 = Constraints
 
-This chapter lists constraints that the Station's architecture must work within. Decisions made
-freely inside those constraints are documented separately in xref:architecture-decisions.adoc[].
+This chapter lists constraints that the Station's architecture must work within.
 
 == Technical Constraints
 
@@ -34,6 +33,6 @@ code
 Domain terms and their naming across the Station's code follow the project-wide convention in
 xref:system::naming-conventions.adoc[]. Architecturally significant choices made while designing the
 Station are recorded as ADRs alongside the code, in the same style as the machine-wide ADRs, rather
-than left implicit. See xref:architecture-decisions.adoc[].
+than left implicit.
 
 Continue with xref:context-and-scope.adoc[].

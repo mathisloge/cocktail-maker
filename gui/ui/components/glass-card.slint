@@ -14,6 +14,10 @@ export component GlassCard inherits Rectangle {
     border-width: root.selected ? 2px : 1px;
     border-color: root.selected ? Palette.border-strong : (ta.pressed ? Palette.border-strong : Palette.border);
 
+    drop-shadow-color: Palette.shadow;
+    drop-shadow-blur: 8px;
+    drop-shadow-offset-y: 2px;
+
     animate background, border-color, border-width { duration: Palette.mount-animation-duration / 3; }
 
     VerticalLayout {

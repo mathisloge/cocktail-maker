@@ -15,6 +15,10 @@ export component RecipeCard inherits Rectangle {
     background: Palette.background-card;
     animate background, border-color { duration: 200ms; }
 
+    drop-shadow-color: Palette.shadow;
+    drop-shadow-blur: 10px;
+    drop-shadow-offset-y: 3px;
+
     preferred-width: 250px;
     height: self.width;
 

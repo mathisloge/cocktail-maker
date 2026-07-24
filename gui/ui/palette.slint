@@ -19,17 +19,21 @@ export global Palette {
 
     // ── Text ────────────────────────────────────────────
     in-out property <color> text-primary:        #f5eed8;
-    in-out property <color> text-secondary:      #c8913a;    // amber labels / tags
-    in-out property <color> text-muted:          #f5eed885;  // cream 52 % (descriptions)
+    in-out property <color> text-secondary:      #c8913a;    // amber, reserved for interactive/selected text
+    in-out property <color> text-label:          #d9cfae;    // muted warm neutral for static section labels
+    in-out property <color> text-muted:          #f5eed8ad;  // cream 68 % (descriptions, legible under glare)
     in-out property <color> text-on-accent:      #0a0806;    // dark text on amber button
     in-out property <color> text-error:          #c0392b;
     in-out property <color> text-success:        #5cad75;
 
-    // ── Boost slider ────────────────────────────────────
-    in-out property <color> boost-negative:      #2980b9;    // blue  (less alcohol)
-    in-out property <color> boost-positive:      #c0392b;    // red   (more alcohol)
-    in-out property <color> boost-negative-text: #70a8e0;    // lighter blue for amount display
-    in-out property <color> boost-positive-text: #e07070;    // lighter red  for amount display
+    // ── Boost slider (kept out of the amber/black/cream family on purpose) ─
+    in-out property <color> boost-negative:      #3d6f85;    // muted slate-teal (less alcohol)
+    in-out property <color> boost-positive:      #a8562f;    // terracotta/ember (more alcohol)
+    in-out property <color> boost-negative-text: #86aebd;    // lighter slate-teal for amount display
+    in-out property <color> boost-positive-text: #d99569;    // lighter terracotta for amount display
+
+    // ── Elevation ────────────────────────────────────────
+    in-out property <color> shadow:              #00000066;  // 40 % black, card/popup drop-shadow
 
     // ── Processing states ────────────────────────────────
     in-out property <color> status-waiting:      #f5eed885;

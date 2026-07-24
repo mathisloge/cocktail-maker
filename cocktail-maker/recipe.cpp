@@ -106,12 +106,8 @@ Recipe parse_recipe(simdjson::ondemand::document& doc,
 
     // Nominal Serving Volume (Optional, defaults to 0.0 Litres)
     double nominal_vol_ml = 0.0;
-    if (obj["nominal_serving_volume"].get(nominal_vol_ml) == simdjson::SUCCESS) {
-        recipe.nominal_serving_volume = nominal_vol_ml * units::milli_litre;
-    }
-    else {
-        recipe.nominal_serving_volume = nominal_vol_ml * units::milli_litre;
-    }
+    obj["nominal_serving_volume"].get(nominal_vol_ml);
+    recipe.nominal_serving_volume = nominal_vol_ml * units::milli_litre;
 
     // Steps (Required array)
     int next_command_id = 1;

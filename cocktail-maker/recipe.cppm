@@ -7,7 +7,7 @@ import :ingredient;
 
 namespace cm {
 
-export using RecipeId = strong_type<std::string, struct CommandIdTag, Comparable, Hashable, Formattable>;
+export using RecipeId = strong_type<std::string, struct RecipeIdTag, Comparable, Hashable, Formattable>;
 export using CommandId = strong_type<int, struct CommandIdTag, Incrementable, Decrementable, Comparable, Hashable, Formattable>;
 
 export struct DispenseCommand

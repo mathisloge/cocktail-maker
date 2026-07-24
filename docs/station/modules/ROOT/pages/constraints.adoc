@@ -1,0 +1,38 @@
+= Constraints
+
+This chapter lists constraints that the Station's architecture must work within.
+
+== Technical Constraints
+
+[cols="1,3", options="header"]
+|===
+| Constraint | Impact
+
+| Runs on a single Raspberry Pi with a touch display, as established in
+xref:system::system-design.adoc[]
+| Available CPU, GPU, and memory are limited compared to a desktop, and the UI must be fully operable
+by touch alone.
+
+| Pods are reachable only through the shared wire protocol over USB CDC
+(xref:system::protocol.adoc[], xref:system:adr:002-pysical-pod-connection.adoc[ADR-002])
+| The Station cannot assume any other channel to a Pod. All hardware control is mediated by that
+protocol.
+
+| The Station must remain the sole initiator of all communication with a Pod
+(xref:system:adr:003-protocol-communication.adoc[ADR-003])
+| The Station's architecture must not introduce any path for a Pod to act without an originating
+Station request.
+
+| Recipes, ingredients, and glasses are provided as data validated against a published schema, not as
+code
+| The Station must be able to load and act on this data without a rebuild whenever it changes.
+|===
+
+== Conventions
+
+Domain terms and their naming across the Station's code follow the project-wide convention in
+xref:system::naming-conventions.adoc[]. Architecturally significant choices made while designing the
+Station are recorded as ADRs alongside the code, in the same style as the machine-wide ADRs, rather
+than left implicit.
+
+Continue with xref:context-and-scope.adoc[].

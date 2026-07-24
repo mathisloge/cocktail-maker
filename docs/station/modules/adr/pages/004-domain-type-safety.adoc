@@ -1,0 +1,56 @@
+= ADR-004: Domain Type Safety (strong_type and mp-units)
+:adr-status: Accepted
+:adr-date: 2026-07-24
+:adr-authors: {gh}mathisloge[@mathisloge]
+
+include::partial$adr-header.adoc[]
+
+== Context
+The Station interacts with various hardware components and dispenses ingredients based on recipes.
+In the domain model, we deal with numerous identifiers (e.g., a Pod's identity versus a dispenser's identity) and physical quantities (e.g., volumes, mass, durations).
+Using plain primitive types (`int`, `std::string`, `double`) for these values makes them fundamentally indistinguishable to the C++ compiler.
+Accidentally passing a Pod ID to a function expecting a Dispenser ID, or a plain number of milliliters to a function expecting liters, would result in a successful compilation but a critical runtime bug.
+Because dispensing is a safety- and food-safety-relevant action (xref:system::quality-goals.adoc[]), an incorrect physical quantity (e.g., overdosing an ingredient) is a direct food-safety concern.
+Therefore, the domain model must enforce strict distinctions between different kinds of values.
+
+=== Decision Drivers
+* **Safety & Food Safety:** The system must categorically prevent unit-conversion mistakes and identifier mix-ups that could lead to incorrect dispensing or hardware commands.
+* **Compile-Time Verification:** Mixing up different domain concepts should be caught as a compile error, rather than discovered as a runtime bug during testing or operation.
+* **Domain Expressiveness:** Function signatures and data structures should explicitly document the domain concepts they require (e.g., `Volume` or `PodId`) rather than relying on variable naming conventions (e.g., `volume_ml` or `pod_id_int`).
+* **Technology Exploration:** Evaluating modern C++20 libraries designed for zero-overhead strong typing and dimensional analysis in a safety-critical context.
+
+== Decision
+We will enforce strict domain type safety throughout the system by implementing the following changes.
+
+1. Introducing a `strong_type` library to wrap identifiers (e.g., `PodId`, `DispenserId`) into distinct, strongly typed C++ structs instead of using plain `int` or `std::string`.
+2. Using the `mp-units` library to represent all physical quantities.
+
+Every physical quantity will carry its unit within the type system, ensuring dimensional safety.
+
+== Alternatives Considered
+
+=== Primitive Types with Naming Conventions
+Using primitive types like `int` and `double`, and relying on variable names (e.g., `int dispenser_id`, `double volume_ml`) to distinguish them.
+
+Rejected: This relies entirely on developer discipline.
+C++ allows implicit conversions between these types, meaning a simple typo or wrong argument order in a function call goes unnoticed by the compiler, risking severe food-safety and operational bugs.
+
+=== Standard C++ Type Aliases (`typedef` / `using`)
+Creating type aliases such as `using PodId = std::string;` and `using Volume = double;`.
+
+Rejected: C++ aliases do not provide any type safety; they are merely synonyms.
+The compiler will still happily accept a `PodId` where a `DispenserId` is expected.
+
+=== Custom Wrapper Classes for Physical Units
+Implementing our own lightweight struct wrappers for physical quantities (e.g., a `Volume` class that stores milliliters and overloads math operators).
+Rejected: Writing a robust unit system that correctly handles arithmetic across different dimensions (e.g., dividing volume by time to get a flow rate) is complex and error-prone.
+`mp-units` is a well-tested, C++20-native library proposed for standard standardization that already solves this comprehensively.
+
+== Consequences
+* **Good:** The compiler automatically prevents passing a `PodId` to a parameter expecting a `DispenserId`, eliminating an entire class of identity-confusion bugs by design.
+* **Good:** Unit conversions are handled automatically or validated at compile time, removing the risk of manual conversion math errors and significantly increasing confidence in food safety.
+* **Good:** The domain model becomes inherently self-documenting.
+Function signatures clearly express the exact physical dimensions and identifiers they require.
+* **Bad:** Interfacing with boundaries (like JSON serialization/deserialization, low-level hardware APIs, or database queries) requires writing boilerplate to wrap and unwrap the underlying primitive values.
+* **Bad:** Heavy template metaprogramming inherent in `mp-units` and strong typing can increase compile times and result in notoriously complex compiler error messages when type mismatches occur.
+* **Bad:** There is a steeper learning curve for developers accustomed to primitive types, as they must familiarize themselves with the `mp-units` syntax and the explicit casting rules of `strong_type`.

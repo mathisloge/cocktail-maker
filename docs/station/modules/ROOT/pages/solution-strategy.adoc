@@ -1,0 +1,28 @@
+= Solution Strategy
+
+This chapter summarizes the fundamental approaches that shape the Station's architecture. Each is
+elaborated in the chapters that follow.
+
+* *Technology:* the Station reuses the machine-wide choices established in
+  xref:system::system-design.adoc[], USB CDC transport and a shared, code-generated protocol, and
+  builds on top of them with C++26 modules, Slint for the UI, and Boost.Asio/Boost.Cobalt for
+  asynchronous execution.
+* *Decomposition:* domain logic, Pod communication, and UI presentation are kept as separate building
+  blocks connected only through explicit interfaces, so the guest- and operator-facing UI can change
+  independently of how Pods are discovered and addressed. See xref:building-blocks.adoc[].
+* *Safety and reliability:* a single Station-initiated request-response protocol, a single shared
+  execution context for all asynchronous work, and an explicit timeout on every Pod exchange together
+  keep it possible to reason about what the machine can be doing at any moment, and to always bring it
+  to a stop. See xref:cross-cutting-concepts.adoc[].
+* *Maintainability:* recipes, ingredients, glasses, and the ingredient-to-dispenser mapping are plain
+  data rather than code, so an operator or maintainer can add or adjust them without a rebuild. Module
+  boundaries mirror business concepts rather than technical layers alone.
+* *Usability:* a small, fixed set of guest-facing screens is driven by a single active-page model, and
+  the operator maintenance area is hidden behind a gesture and PIN so it never distracts a guest. See
+  xref:runtime-view.adoc[].
+* *Development without hardware:* Pod discovery is built behind one common interface with both a real,
+  serial-based implementation and a simulated one, selected at compile time, so most development and
+  CI can run the full guest and operator flows without any Pod physically attached. See
+  xref:deployment-view.adoc[].
+
+Continue with xref:building-blocks.adoc[].

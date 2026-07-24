@@ -1,0 +1,55 @@
+= Cross-Cutting Concepts
+
+This chapter defines concerns that affect several of the Station's building blocks at once, rather
+than belonging to any single one of them.
+
+== Domain Type Safety
+
+Identifiers and physical quantities that could otherwise be confused, such as a Pod's identity versus
+a dispenser's, or a volume versus a plain number, are kept as distinct types throughout the domain
+model, so that mixing up two different kinds of value is a compile error rather than a runtime bug.
+Every physical quantity always carries its unit, removing an entire class of unit-conversion mistakes
+in a system where an incorrect quantity is a food-safety concern. xref:adr:004-domain-type-safety.adoc[ADR-004].
+
+== Single-Executor Concurrency
+
+All Pod communication and recipe execution run as coroutines on one shared execution context rather
+than across multiple threads, so the domain and UI state they touch is never accessed from two places
+at once. Every exchange with a Pod carries an explicit timeout, so a Pod that stops responding cannot
+stall the Station indefinitely (xref:system::protocol.adoc[]). Related decision:
+xref:adr:003-asynchronous-execution-model.adoc[ADR-003].
+
+== UI/Domain Separation
+
+The user interface never owns domain or Pod state itself. A small set of dedicated components sits
+between the declarative UI and the Domain Model, each reflecting one part of the live state into the
+UI and translating user actions back into calls on the Domain Model, so the UI can be redesigned
+without touching domain logic and vice versa (xref:building-blocks.adoc[]). Related decision:
+xref:adr:001-ui-toolkit.adoc[ADR-001].
+
+== Configuration and Data as Files
+
+Recipes, ingredients, and glasses are plain data, validated against a published schema, rather than
+code, so they can be authored and changed without a rebuild. The Station's one piece of local
+configuration, which physical dispenser serves which ingredient, is likewise persisted as a plain
+file rather than requiring a database.
+
+== Operator Authentication
+
+The operator maintenance area is gated behind a PIN with attempt-based lockout, entered through a
+hidden gesture rather than a permanently visible control. This keeps it out of a guest's way while
+still requiring a deliberate, authenticated action before any calibration or configuration change.
+
+== Logging and Observability
+
+Application logging is captured centrally and made visible directly on the device, in the operator
+maintenance area, rather than requiring separate tooling. This lets an operator diagnose a problem
+without extra equipment, supporting the *Maintainability* goal in xref:system::quality-goals.adoc[].
+
+== Error Handling Toward the Guest
+
+A failure during a mix, such as a dispenser running out of ingredient, is translated into a
+guest-facing error screen naming the affected ingredient rather than a generic failure, and the guest
+is always returned to a known-good screen. This supports *Usability* alongside *Reliability*.
+
+Continue with xref:risks-and-technical-debt.adoc[].

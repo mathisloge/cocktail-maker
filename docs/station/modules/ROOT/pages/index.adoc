@@ -1,1 +1,48 @@
 = Station
+
+This document is the software architecture of the Station application, the host software that runs
+on the Raspberry Pi described in xref:system::system-design.adoc[]. It is written in the style of
+arc42. The machine-wide context, quality goals, naming conventions, and the Station-Pod wire protocol
+are defined once in the system documentation and referenced from here rather than repeated. See
+xref:system::index.adoc[], xref:system::quality-goals.adoc[], xref:system::naming-conventions.adoc[],
+and xref:system::protocol.adoc[].
+
+== Requirements Overview
+
+The Station is the machine's sole orchestrator. It hosts the guest-facing ordering interface and the
+operator's maintenance interface on the same touch display, owns the domain model (recipes,
+ingredients, glasses, and the ingredient-to-dispenser mapping), discovers and tracks connected Pods,
+and turns a selected recipe into a sequence of dispensing commands sent to those Pods.
+
+* Let a guest browse available recipes, select a glass, and start a mix without any instructions.
+* Turn a recipe into a sequence of dispensing actions, scaled to the chosen glass, and carry them out
+  by commanding the appropriate Pods.
+* Track which Pods are connected and reflect their live state to the UI.
+* Let an operator configure recipes' supporting data (ingredients, glasses, pod-to-ingredient
+  assignment) and calibrate a dispenser, gated behind authentication.
+
+== Quality Goals
+
+The quality goals driving the Station's architecture are the machine-wide goals defined in
+xref:system::quality-goals.adoc[]. xref:quality-requirements.adoc[] refines them into concrete
+scenarios for the Station application specifically.
+
+== Stakeholders
+
+[cols="1,3", options="header"]
+|===
+| Role | Expectation
+
+| Guest
+| Orders and receives a drink using only the touch screen, with no instructions needed.
+
+| Operator
+| Refills, cleans, calibrates, and configures recipes, ingredients, and glasses without needing deep
+technical expertise.
+
+| Station maintainer
+| Extends recipes, ingredients, glasses, and pod communication over time without destabilizing the
+safety-critical dispensing path.
+|===
+
+Continue with xref:constraints.adoc[].

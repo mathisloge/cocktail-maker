@@ -1,0 +1,31 @@
+= ADR-002: Source Organization & Compilation Model ({cpp}26 Modules)
+:adr-status: Accepted
+:adr-date: 2026-07-24
+:adr-authors: {gh}mathisloge[@mathisloge]
+
+include::partial$adr-header.adoc[]
+
+== Context
+The Station's {cpp} codebase is organized into several internal libraries with clear conceptual boundaries between them, foundations, domain model, Pod communication, and user interface, as described in xref:ROOT:building-blocks.adoc[].
+Those boundaries need to be enforced by the compiler rather than by convention alone, and the traditional {cpp} header pitfalls, repeatedly re-parsed headers and implementation detail leaking into every file that includes a header, should be avoided as the codebase grows.
+
+=== Decision Drivers
+* **Strong Encapsulation:** Enforce architectural boundaries between internal libraries via the compiler rather than by convention alone.
+* **Build Scalability:** Avoid the traditional {cpp} pitfalls of implementation details leaking into headers and repeated header re-parsing across translation units.
+* **Technology Exploration:** Since this is an experimental hobby project, a primary driver is the opportunity to evaluate emerging technologies like {cpp}26 modules in a low-risk environment.
+
+== Decision
+We will organize all first-party Station code as {cpp} modules rather than the traditional header-and-source-file split, with each internal library exposed as a single named module assembled from module interface and implementation partitions.
+
+== Alternatives Considered
+
+=== Traditional headers and source files
+Headers with include guards, split into declarations and definitions, are the long-established {cpp} approach and are supported by every {cpp} compiler and tool.
+Rejected: headers give no enforced separation between a library's public interface and its private implementation details, since anything in an included header is visible to every file that includes it.
+The same header content is also reparsed by the compiler once per translation unit that includes it, which becomes slower as the codebase grows.
+
+== Consequences
+* **Good:** each internal library's public interface is explicit and enforced by the compiler through module exports, rather than relying on developers to only use what a header's naming convention implies is public.
+* **Good:** avoids repeatedly reparsing the same declarations across translation units, compared to a large traditional header hierarchy.
+* **Bad:** {cpp} modules and their build-system support are still a comparatively new and evolving part of the {cpp} ecosystem, so the compiler and CMake versions the Station builds with are more tightly pinned than a traditional header-based project would need.
+* **Bad:** editor, IDE, and static-analysis tooling support for modules is less mature than for traditional headers, so some tooling may lag behind or require extra configuration.

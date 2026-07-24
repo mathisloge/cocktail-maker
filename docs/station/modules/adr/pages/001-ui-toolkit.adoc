@@ -1,0 +1,68 @@
+= ADR-001: UI Toolkit (Slint)
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-07-24
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:0005-use-xyz.adoc[ADR 0005]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+The Station runs a touch-only kiosk interface directly on the Raspberry Pi described in
+xref:system::system-design.adoc[], with no keyboard, mouse, or host desktop chrome, and a single
+custom-styled dark theme rather than the look of any host environment. The rest of the Station
+application is written in C++, so the UI toolkit needs to integrate with that codebase directly rather
+than through a separate process or a scripting-language bridge. The device has modest CPU and GPU
+resources compared to a desktop, so the toolkit's own runtime footprint matters.
+
+== Decision
+
+We will use Slint as the UI toolkit, with screens declared in Slint's own declarative UI language and
+bound to the C++ application through generated interfaces.
+
+== Alternatives Considered
+
+=== Qt/QML
+
+Qt with QML provides a mature, declarative UI framework with broad widget and styling support, and
+integrates natively with C++.
+
+Rejected: Qt's runtime and toolchain footprint is larger than needed for a single, fully custom-themed
+kiosk screen with no use for its wider widget set. Its licensing model also requires more upfront
+consideration for a fully custom, closed UI than Slint's does.
+
+=== Web-based UI
+
+A web UI would let the interface be built with familiar web technologies and run inside an embedded
+browser engine.
+
+Rejected: running a full browser engine on the target hardware carries a much larger memory and CPU
+footprint than a native toolkit, for a use case, a fixed kiosk screen, that has no need for a
+general-purpose browser.
+
+=== Immediate-mode or raw framebuffer UI
+
+Drawing the UI directly, for example with an immediate-mode GUI library or raw framebuffer access,
+would avoid a declarative UI framework entirely.
+
+Rejected: this shifts the cost of layout, styling, and state management onto hand-written C++ code.
+It works against keeping the visual design of the UI separate from, and independently changeable to,
+the application logic driving it.
+
+== Consequences
+
+* **Good:** Slint's native, lightweight runtime suits the Raspberry Pi's resources better than a full
+desktop or browser-based toolkit.
+* **Good:** UI screens are declared separately from application logic and bound to it through
+generated interfaces, so the visual design and the C++ domain and state code can change independently
+of each other.
+* **Good:** a single custom theme can be defined once and applied consistently, without fighting a
+host desktop's own styling.
+* **Bad:** Slint has a smaller ecosystem, community, and body of examples than Qt or web-based
+frameworks, so unfamiliar problems are more likely to require reading Slint's own documentation or
+source directly.
+* **Bad:** advanced UI capabilities that a mature framework provides out of the box may need to be
+built by hand if the Station's UI ever grows beyond what Slint provides directly.

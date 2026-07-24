@@ -1,0 +1,166 @@
+# Hardware
+
+The hardware architecture of the cocktail maker is designed with modularity and scalability in mind.
+It is divided into two primary subsystems: the central **Station** (acting as the brain and power distribution center) and expandable **Pods** (individual fluid dispensing modules).
+
+This split design allows you to seamlessly add more dispenser pods without needing to rewire or upgrade the core processing unit.
+
+Below is the schematic overview of the hardware components and their relationships:
+
+[d2, target="cocktail-maker-hardware", format="svg"]
+----
+# --- GLOBAL CONFIG & LAYOUT ---
+direction: down
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+# --- VISUAL CLASSES (STYLING) ---
+classes: {
+  power: {
+    style: {
+      fill: "#fff3cd"
+      stroke: "#ffc107"
+      stroke-width: 2
+    }
+  }
+  controller: {
+    style: {
+      fill: "#d1e7dd"
+      stroke: "#198754"
+      stroke-width: 2
+      border-radius: 4
+    }
+  }
+  actuator: {
+    style: {
+      fill: "#cfe2ff"
+      stroke: "#0d6efd"
+    }
+  }
+  sensor: {
+    style: {
+      fill: "#f8d7da"
+      stroke: "#dc3545"
+    }
+  }
+  fluid: {
+    shape: cylinder
+    style: {
+      fill: "#e2e3e5"
+      stroke: "#495057"
+      stroke-width: 2
+    }
+  }
+  mechanic: {
+    style: {
+      stroke: "#6c757d"
+      stroke-dash: 2
+    }
+  }
+}
+
+# --- STATION (MAIN CONTROL & POWER) ---
+station: Station (Main Control & Power) {
+  style.fill: "#f8f9fa"
+  style.stroke: "#adb5bd"
+
+  # Components
+  ac_in: "AC Mains Input\n(110V/230V AC)" { class: power }
+  switch: "Main Switch" {
+    shape: diamond
+    class: power
+  }
+  psu: "MeanWell NDR-120-24\n(120W | 24V | 5A)" { class: power }
+  step_down: "5V Step-Down" { class: power }
+
+  rpi: "Raspberry Pi 5" { class: controller }
+  display: "RPi Touch Display 2" { class: controller }
+
+  fluid_hub: "Station Fluid Hub\n(Manifold / Collection)" { class: fluid }
+
+  # Internal Station Wiring
+  ac_in -> switch: "AC"
+  switch -> psu: "AC"
+  psu -> step_down: "24V"
+  step_down -> rpi: "5V DC"
+  rpi -> display: "DSI Ribbon"
+}
+
+# --- POD 1 (EXPANDABLE UNIT) ---
+pod1: Pod 1 (Dispenser Module) {
+  style.fill: "#f8f9fa"
+  style.stroke: "#6c757d"
+  style.stroke-dash: 4
+
+  mcu: "BIGTREETECH\nOctopus V1.1" { class: controller }
+
+  # Logical grouping of peripherals per channel/dispenser
+  stepper_group: Stepper Drive Group {
+    style.stroke: "#0d6efd"
+    style.fill: "#f1f8ff"
+    driver: "TMC5160T\nDriver" { class: controller }
+    motor: "Nema17\nStepper Motor" { class: actuator }
+  }
+
+  weight_group: Weighing System {
+    style.stroke: "#dc3545"
+    style.fill: "#fff5f5"
+    hx711: "M5Stack Weight\n(HX711 I2C)" { class: sensor }
+    load_cell: "Load Cell" { class: sensor }
+  }
+
+  valve_group: Valve Control Group {
+    style.stroke: "#0d6efd"
+    style.fill: "#f1f8ff"
+    pca9685: "M5Stack Servo2\n(PCA9685 16-Ch)" { class: controller }
+    valve: "Pinch Valve\n(Servo Controlled)" { class: actuator }
+  }
+
+  dispenser: "Dispenser Unit\n(Fluid Output)" { class: fluid }
+
+  # Internal Pod Wiring (Direct node-to-node routing for clean layout)
+  mcu -> stepper_group.driver: "SPI / Step-Dir"
+  stepper_group.driver -> stepper_group.motor: "Motor Leads"
+
+  mcu -> weight_group.hx711: "I2C Bus"
+  weight_group.hx711 -> weight_group.load_cell: "E+ | E- | A+ | A-"
+
+  mcu -> valve_group.pca9685: "I2C Bus"
+  valve_group.pca9685 -> valve_group.valve: "3-Pin PWM\n(SIG, 5V, GND)"
+
+  # Mechanical & Physical Interactions at the Dispenser
+  stepper_group.motor -> dispenser: "Mechanical Drive" { class: mechanic }
+  valve_group.valve -> dispenser: "Opens / Closes Flow" { class: mechanic }
+  weight_group.load_cell -> dispenser: "Weighs Bottle / Glass" { class: mechanic }
+}
+
+# --- CROSS-CONTAINER CONNECTIONS ---
+
+# 1. Power (Orange, bold)
+station.psu -> pod1.mcu: "24V DC Power" {
+  style: {
+    stroke: "#d97706"
+    stroke-width: 3
+  }
+}
+
+# 2. Data (Blue, dashed)
+station.rpi -> pod1.mcu: "USB (Serial Data)" {
+  style: {
+    stroke: "#2563eb"
+    stroke-width: 2
+    stroke-dash: 5
+  }
+}
+
+# 3. Fluid / Tubing (Teal, bold)
+pod1.dispenser -> station.fluid_hub: "Fluid Tubing (Cocktail)" {
+  style: {
+    stroke: "#0d9488"
+    stroke-width: 4
+  }
+}
+----

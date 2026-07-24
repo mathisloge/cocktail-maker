@@ -1,0 +1,21 @@
+= Risks and Technical Debt
+
+This chapter lists known risks and technical debt in the Station's current architecture. Trade-offs
+already knowingly accepted when choosing its core technologies are documented as consequences of the
+corresponding decision instead: xref:adr:001-ui-toolkit.adoc[ADR-001],
+xref:adr:002-cpp-module-compilation-model.adoc[ADR-002], and
+xref:adr:003-asynchronous-execution-model.adoc[ADR-003].
+
+* *Working-directory-relative persistence:* both the read-only recipe/ingredient/glass data and the
+  read-write ingredient-to-dispenser mapping are located relative to the process's current working
+  directory rather than a fixed, installed location. Starting the Station from an unintended working
+  directory silently changes, or loses access to, its data instead of failing loudly.
+* *Simulated hardware ships in the same binary as production:* the compile-time switch between
+  simulated and real Pods only changes which code path runs. The simulator code itself is always
+  linked into every build, including the one shipped to a real machine. This has no functional effect
+  today, but the production binary does carry code that never executes on the actual device, and any
+  future change to the simulator must be validated against the production build as well.
+* *Single shared executor:* every Pod exchange and every UI-triggered action runs on one execution
+  context. A per-exchange timeout bounds any single exchange, but a very slow or misbehaving exchange
+  can still delay unrelated work until its own timeout elapses, since nothing runs in parallel to it
+  today.

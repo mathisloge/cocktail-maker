@@ -1,0 +1,61 @@
+= ADR-003: Asynchronous Execution Model (Boost.Asio + Boost.Cobalt Coroutines)
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-07-24
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:0005-use-xyz.adoc[ADR 0005]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+The Station must carry out many operations that take an unpredictable amount of time without blocking
+the guest- or operator-facing UI: communicating with several independently timed Pods at once, and
+driving a recipe as a sequence of dispensing actions, each waiting on its own Pod's acknowledgement
+and, for longer-running actions, a later completion event (xref:system::protocol.adoc[]). Dispensing
+is a safety- and food-safety-relevant action (xref:system::quality-goals.adoc[]), so the concurrency
+model needs to keep it easy to reason about which operations can run at the same time and what state
+they can affect, rather than opening the door to data races across freely spawned threads.
+
+== Decision
+
+We will run Pod communication and recipe execution as coroutines on a single shared Boost.Asio
+execution context, using Boost.Cobalt for coroutine-friendly building blocks such as awaitable results
+and channels.
+
+== Alternatives Considered
+
+=== Callback-based asynchronous I/O
+
+Boost.Asio can be used directly with completion-handler callbacks, without a coroutine layer on top.
+
+Rejected: the Station's communication patterns, a request followed by an acknowledgement and, for some
+commands, a later completion event, are naturally sequential. Expressing them as chained callbacks was
+judged harder to read and maintain than expressing the same sequence as a coroutine that suspends and
+resumes at each step.
+
+=== A thread per Pod
+
+Each connected Pod could be handled on its own dedicated thread, communicating with the rest of the
+Station through explicit synchronization.
+
+Rejected: this would require synchronizing access to shared domain and UI state from multiple threads.
+That adds a class of concurrency bugs, in a system where reasoning correctly about what can happen
+concurrently is a safety concern, that a single shared execution context avoids entirely.
+
+== Consequences
+
+* **Good:** the multi-step communication patterns used with Pods can be written as straight-line
+coroutine code that suspends and resumes at each step, rather than as chained callbacks.
+* **Good:** a single shared execution context means the domain and UI state that coroutines touch is
+never accessed from two places at once, removing an entire class of concurrency bugs.
+* **Good:** every pending exchange carries its own timeout, so a Pod that stops responding cannot
+block the execution context indefinitely, only the one exchange waiting on it.
+* **Bad:** Boost.Cobalt is a comparatively young and less widely used part of the Boost ecosystem than
+Boost.Asio itself, so fewer examples and less community experience exist to draw on.
+* **Bad:** debugging a suspended coroutine is less straightforward than stepping through a plain,
+straight-line function call.
+* **Bad:** because everything shares one execution context, a single slow or misbehaving exchange can
+still delay unrelated work until its own timeout elapses, since nothing else runs in parallel to it.

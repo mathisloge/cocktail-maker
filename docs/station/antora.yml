@@ -4,3 +4,7 @@ title: Station
 start_page: index.adoc
 nav:
 - modules/ROOT/nav.adoc
+asciidoc:
+  attributes:
+    # Creates a shortcut for GitHub profile links
+    gh: https://github.com/

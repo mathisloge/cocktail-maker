@@ -1,0 +1,77 @@
+= Runtime View
+
+This chapter walks through the Station's key scenarios at the level of its own building blocks
+(xref:building-blocks.adoc[]). The wire-level exchange with a Pod inside any of these scenarios
+follows the patterns defined in xref:system::protocol.adoc[] and is not repeated here.
+
+== A Pod Connects
+
+A Pod, physical or simulated, is discovered, assigned an identity, and queried for its device
+information before it becomes available for dispensing. The UI reflects the new connection as soon as
+it is known.
+
+[mermaid, target="runtime-pod-connects", format="svg"]
+....
+sequenceDiagram
+    participant PodComm as Pod Communication
+    participant Domain as Domain Model
+    participant UI
+
+    PodComm->>PodComm: Discover a Pod
+    PodComm->>Domain: Register Pod, query device info
+    Domain->>UI: Pod connected
+....
+
+== A Guest Mixes a Drink
+
+A guest browses the recipe catalog, selects a recipe and, if needed, a glass. The Station scales the
+recipe to the chosen volume and executes it as a sequence of dispensing actions against the owning
+Pods, reporting progress back to the guest until the mix succeeds or fails.
+
+[mermaid, target="runtime-guest-mixes", format="svg"]
+....
+sequenceDiagram
+    actor Guest
+    participant UI
+    participant Domain as Domain Model
+    participant PodComm as Pod Communication
+
+    Guest->>UI: Select recipe and glass, start mix
+    UI->>Domain: Start recipe execution
+    Domain->>Domain: Scale recipe to chosen glass
+    loop Each ingredient
+        Domain->>PodComm: Dispense ingredient
+        PodComm-->>Domain: Dispensed
+    end
+    Domain->>UI: Mix complete
+    UI->>Guest: Show success screen
+....
+
+If a dispenser is empty or the guest cancels partway through, the Station stops the remaining actions,
+brings every involved Pod into a safe state, and returns the guest to a known-good screen naming the
+affected ingredient rather than a generic failure.
+
+== An Operator Calibrates a Dispenser
+
+An operator authenticates, opens the maintenance area, and recalibrates a specific dispenser's load
+cell or pump. Each calibration step follows the Request/Acknowledgement/Event pattern from
+xref:system::protocol.adoc[], since calibration is a longer-running physical action.
+
+[mermaid, target="runtime-operator-calibrates", format="svg"]
+....
+sequenceDiagram
+    actor Operator
+    participant UI
+    participant Domain as Domain Model
+    participant PodComm as Pod Communication
+
+    Operator->>UI: Authenticate, open dispenser calibration
+    UI->>Domain: Start calibration for dispenser
+    Domain->>PodComm: Calibration command
+    PodComm-->>Domain: Acknowledged
+    Note over PodComm: Pod performs calibration
+    PodComm-->>Domain: Calibration finished
+    Domain->>UI: Show calibration result
+....
+
+Continue with xref:deployment-view.adoc[].

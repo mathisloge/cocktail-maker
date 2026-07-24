@@ -1,0 +1,41 @@
+= Deployment View
+
+The Station runs as a single, systemd-managed service on the machine's Raspberry Pi, restarted
+automatically if it fails, and started once the graphical session established by
+xref:system::system-design.adoc[]'s power-up sequence is available.
+
+[plantuml, target="station-deployment", format="svg"]
+....
+node "Raspberry Pi (Station)" {
+  artifact "cocktail-maker service" as app
+  folder "Working directory" {
+    file "Recipe, ingredient, and glass data" as data
+    file "Ingredient-to-dispenser mapping" as mapping
+  }
+}
+
+node "Pod" as pod1
+node "Pod" as pod2
+node "Pod (0..N)" as podN
+
+app --> data : reads at startup
+app --> mapping : reads and writes
+app --> pod1 : USB CDC
+app --> pod2 : USB CDC
+app --> podN : USB CDC
+....
+
+All data the Station persists, the recipe/ingredient/glass catalog and the ingredient-to-dispenser
+mapping, lives as plain files under the service's working directory rather than a database server.
+This keeps the deployment self-contained on a single device, at the cost of tying correct operation to
+the service always being started from the intended working directory. See
+xref:risks-and-technical-debt.adoc[].
+
+Two build configurations exist side by side from the same codebase. A development and CI
+configuration runs against simulated Pods, so the guest and operator flows and the test suite can run
+without any Pod physically attached. The production configuration, the one built and packaged for the
+Raspberry Pi, always talks to real Pods over USB. Which one a given build uses is fixed at compile
+time, not chosen at runtime, so a shipped build cannot end up running against simulated hardware by
+accident.
+
+Continue with xref:cross-cutting-concepts.adoc[].

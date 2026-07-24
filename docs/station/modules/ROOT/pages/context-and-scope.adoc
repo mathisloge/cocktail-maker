@@ -1,0 +1,55 @@
+= Context and Scope
+
+This chapter scopes the rest of this document to the Station application itself, one of the two
+building blocks introduced in xref:system::system-design.adoc[]. It defines who and what the Station
+exchanges information with, without repeating the machine-wide black-box view already covered there.
+
+== Business Context
+
+[plantuml, target="station-business-context", format="svg"]
+....
+!include <C4/C4_Context>
+
+Person(user, "Guest", "Orders and receives a drink.")
+Person(operator, "Operator", "Refills, cleans, calibrates, and configures the machine.")
+
+System(station, "Station", "Orchestrates recipes, ingredients, glasses, and Pods.")
+
+System_Ext(pods, "Pod(s)", "One or more autonomous dispensing modules.")
+
+Rel(user, station, "Selects a recipe and glass, starts a mix")
+Rel(station, user, "Shows recipes, mix progress, and results")
+Rel(operator, station, "Configures data, assigns dispensers, calibrates")
+Rel(station, pods, "Sends dispensing commands, reads status and events")
+
+SHOW_LEGEND()
+....
+
+The Guest and Operator both interact with the Station exclusively through its touch display. Every
+Pod is reached only through the wire protocol described in xref:system::protocol.adoc[]. Everything
+else in this document is scoped inside the "Station" box above.
+
+== Technical Context
+
+[cols="1,1,3", options="header"]
+|===
+| Interface | Partner | Nature
+
+| USB CDC serial
+| Each connected Pod
+| Bidirectional, Station-initiated request-response exchange (xref:system::protocol.adoc[]).
+
+| Local recipe/ingredient/glass data
+| Filesystem, read-only at runtime
+| Plain data files, validated against a published schema, loaded at startup.
+
+| Persisted ingredient-to-dispenser mapping
+| Filesystem, read and write
+| The one piece of Station-local configuration, changed by an operator and persisted across restarts.
+
+| Touch display
+| Guest and Operator
+| Sole input and output device. All interaction is touch-based, including operator PIN entry.
+|===
+
+Continue with xref:solution-strategy.adoc[].

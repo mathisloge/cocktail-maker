@@ -1,5 +1,11 @@
 # Hardware
 
+The hardware architecture of the cocktail maker is designed with modularity and scalability in mind.
+It is divided into two primary subsystems: the central **Station** (acting as the brain and power distribution center) and expandable **Pods** (individual fluid dispensing modules).
+
+This split design allows you to seamlessly add more dispenser pods without needing to rewire or upgrade the core processing unit.
+
+Below is the schematic overview of the hardware components and their relationships:
 
 [d2, target="cocktail-maker-hardware", format="svg"]
 ----

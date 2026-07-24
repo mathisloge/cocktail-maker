@@ -9,6 +9,7 @@ compile_commands.json
 node_modules/
 .qmlls.ini
 .DS_Store
+CLAUDE.md
 
 #####
 #

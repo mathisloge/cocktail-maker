@@ -1,6 +1,6 @@
 import { ScrollView, HorizontalBox, Slider } from "std-widgets.slint";
 import { RecipeView } from "../data.slint";
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import {
     CommandListItem,
     Button,
@@ -24,9 +24,9 @@ export component RecipeDetailPage inherits Page {
         x: 0;
         y: 0;
         width: 33%;
-        padding: 20px;
-        padding-bottom: 60px;
-        spacing: 60px;
+        padding: Layout.spacing-lg;
+        padding-bottom: Layout.spacing-xl * 1.5;
+        spacing: Layout.spacing-xl * 1.5;
         cross-axis-alignment: center;
         alignment: end;
         opacity: root.mounted ? 1 : 0;
@@ -45,7 +45,7 @@ export component RecipeDetailPage inherits Page {
         }
 
         VerticalLayout {
-            spacing: 10px;
+            spacing: Layout.spacing-sm;
             cross-axis-alignment: center;
             alignment: center;
             LargeText {
@@ -72,10 +72,10 @@ export component RecipeDetailPage inherits Page {
         x: split.x + split.width;
         y: 0;
         width: root.width - sidebar.width - split.width;
-        padding: 20px;
-        padding-top: 40px;
-        padding-bottom: 60px;
-        spacing: 15px;
+        padding: Layout.spacing-lg;
+        padding-top: Layout.spacing-xl;
+        padding-bottom: Layout.spacing-xl * 1.5;
+        spacing: Layout.spacing-md;
         alignment: LayoutAlignment.space-between;
         opacity: root.mounted ? 1 : 0;
         animate opacity {
@@ -98,7 +98,7 @@ export component RecipeDetailPage inherits Page {
             }
 
             GridLayout {
-                spacing: 10px;
+                spacing: Layout.spacing-sm;
                 for command[index] in recipe.commands: CommandListItem {
                     row: index / 2;
                     col: Math.mod(index, 2);
@@ -123,6 +123,7 @@ export component RecipeDetailPage inherits Page {
                 }
 
                 booster := Slider {
+                    height: Layout.touch-height-sm;
                     minimum: -80;
                     maximum: 80;
                     value: root.boost-value;

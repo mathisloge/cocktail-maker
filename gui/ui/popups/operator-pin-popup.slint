@@ -26,11 +26,11 @@ component PopupContent {
         background: Palette.background;
         border-width: 2px;
         border-color: Palette.border;
-        border-radius: 8px;
+        border-radius: Layout.radius-sm;
 
         VerticalBox {
-            padding: 24px;
-            spacing: 16px;
+            padding: Layout.spacing-lg;
+            spacing: Layout.spacing-md;
 
             MediumText {
                 text: "Wartungszugriff";
@@ -40,11 +40,11 @@ component PopupContent {
 
             HorizontalLayout {
                 alignment: center;
-                spacing: 12px;
+                spacing: Layout.spacing-md;
                 for i in 6: Rectangle {
                     width: 16px;
                     height: 16px;
-                    border-radius: 8px;
+                    border-radius: self.height / 2;
                     background: i < pin-length ? Palette.accent : Palette.background;
                     border-width: 1px;
                     border-color: Palette.border;
@@ -136,7 +136,7 @@ export component OperatorPinPopup inherits PopupWindow {
     Rectangle {
         width: 100%;
         height: 100%;
-        background: rgba(10, 8, 6, 0.88);
+        background: Palette.overlay-scrim;
     }
 
     content := PopupContent {

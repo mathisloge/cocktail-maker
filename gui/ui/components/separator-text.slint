@@ -1,9 +1,9 @@
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import { SmallText } from "./small-text.slint";
 export component SeparatorText {
     in property <string> text;
     HorizontalLayout {
-        spacing: 20px;
+        spacing: Layout.spacing-lg;
         cross-axis-alignment: center;
 
         SmallText {

@@ -6,7 +6,7 @@ export component Chip inherits Rectangle {
     callback clicked();
 
     height: Layout.touch-height;
-    min-width: 96px;
+    min-width: Layout.touch-height * 1.28;
     border-radius: self.height / 2;
     background: root.selected ? Palette.accent : transparent;
     border-width: 1px;

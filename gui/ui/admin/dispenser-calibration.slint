@@ -15,7 +15,7 @@ import {
     Dispenser,
     DispenserType,
 } from "../data.slint";
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import {
     DispenserCalibrationContext,
     CalibrationStepStatus,
@@ -25,7 +25,7 @@ component StatusDot inherits PulseDot {
     in property <CalibrationStepStatus> status;
     width: 14px;
     height: 14px;
-    border-radius: 7px;
+    border-radius: self.height / 2;
     background: root.status == CalibrationStepStatus.success ? Palette.log-info :
         root.status == CalibrationStepStatus.running ? Palette.log-debug :
         root.status == CalibrationStepStatus.error ? Palette.log-error :
@@ -59,17 +59,17 @@ component StepCard inherits Rectangle {
     }
 
     VerticalLayout {
-        padding: 16px;
-        spacing: 12px;
+        padding: Layout.spacing-md;
+        spacing: Layout.spacing-md;
 
         HorizontalLayout {
-            spacing: 10px;
+            spacing: Layout.spacing-sm;
             alignment: start;
 
             Rectangle {
                 width: 28px;
                 height: 28px;
-                border-radius: 14px;
+                border-radius: self.height / 2;
                 background: Palette.background-elevated;
 
                 Text {
@@ -88,7 +88,7 @@ component StepCard inherits Rectangle {
             }
 
             HorizontalBox {
-                spacing: 6px;
+                spacing: Layout.spacing-xs;
                 cross-axis-alignment: center;
                 StatusDot {
                     status: root.status;
@@ -127,8 +127,8 @@ component DispenserCalibrationContent inherits Rectangle {
         border-color: Palette.border-strong;
 
         VerticalBox {
-            padding: 24px;
-            spacing: 16px;
+            padding: Layout.spacing-lg;
+            spacing: Layout.spacing-md;
 
             HorizontalBox {
                 cross-axis-alignment: center;
@@ -148,7 +148,7 @@ component DispenserCalibrationContent inherits Rectangle {
                 vertical-stretch: 1;
 
                 VerticalLayout {
-                    spacing: 16px;
+                    spacing: Layout.spacing-md;
 
                     StepCard {
                         step-number: "1";
@@ -159,13 +159,13 @@ component DispenserCalibrationContent inherits Rectangle {
 
                         HorizontalBox {
                             cross-axis-alignment: center;
-                            spacing: 12px;
+                            spacing: Layout.spacing-md;
                             SmallText {
                                 text: "Gewicht (g):";
                             }
 
                             SpinBox {
-                                height: 48px;
+                                height: Layout.touch-height-sm;
                                 minimum: 1;
                                 maximum: 20000;
                                 value <=> root.reference-weight-g;
@@ -176,7 +176,7 @@ component DispenserCalibrationContent inherits Rectangle {
                         Button {
                             text: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.running
                                 ? "läuft..." : "Mit Referenzgewicht kalibrieren";
-                            height: 64px;
+                            height: Layout.touch-height;
                             enabled: DispenserCalibrationContext.state.load-cell-status != CalibrationStepStatus.running;
                             clicked => {
                                 DispenserCalibrationContext.calibrate-load-cell-ref-weight(
@@ -196,7 +196,7 @@ component DispenserCalibrationContent inherits Rectangle {
                         Button {
                             text: DispenserCalibrationContext.state.load-cell-tare-status == CalibrationStepStatus.running
                                 ? "läuft..." : "TARE";
-                            height: 64px;
+                            height: Layout.touch-height;
                             enabled: DispenserCalibrationContext.state.load-cell-tare-status != CalibrationStepStatus.running;
                             clicked => {
                                 DispenserCalibrationContext.load-cell-tare(
@@ -215,13 +215,13 @@ component DispenserCalibrationContent inherits Rectangle {
 
                         HorizontalBox {
                             cross-axis-alignment: center;
-                            spacing: 12px;
+                            spacing: Layout.spacing-md;
                             SmallText {
                                 text: "Schritte:";
                             }
 
                             SpinBox {
-                                height: 48px;
+                                height: Layout.touch-height-sm;
                                 minimum: 1;
                                 maximum: 20000;
                                 value <=> root.pump-test-steps;
@@ -232,7 +232,7 @@ component DispenserCalibrationContent inherits Rectangle {
                         Button {
                             text: DispenserCalibrationContext.state.pump-status == CalibrationStepStatus.running
                                 ? "läuft..." : "Pumptest starten";
-                            height: 64px;
+                            height: Layout.touch-height;
                             enabled: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.success
                                 && DispenserCalibrationContext.state.pump-status != CalibrationStepStatus.running;
                             clicked => {
@@ -268,7 +268,7 @@ export component DispenserCalibrationPopup inherits PopupWindow {
     Rectangle {
         width: 100%;
         height: 100%;
-        background: rgba(10, 8, 6, 0.88);
+        background: Palette.overlay-scrim;
     }
 
     DispenserCalibrationContent {

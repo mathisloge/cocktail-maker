@@ -1,10 +1,10 @@
 import { LogEntry, LogLevel } from "../data.slint";
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import { SmallText } from "./small-text.slint";
 
 component Separator inherits SmallText {
     text: "│";
-    font-size: 18pt;
+    font-size: Layout.font-size-lg;
     letter-spacing: 0px;
     color: Palette.border;
     vertical-alignment: center;
@@ -23,8 +23,8 @@ component LogRow inherits Rectangle {
 
     HorizontalLayout {
         alignment: LayoutAlignment.start;
-        padding-left: 20px;
-        padding-right: 20px;
+        padding-left: Layout.spacing-lg;
+        padding-right: Layout.spacing-lg;
         spacing: 0;
         SmallText {
             text: root.entry.time-stamp;
@@ -67,7 +67,7 @@ component LogRow inherits Rectangle {
         Separator { }
 
         Rectangle {
-            width: 12px;
+            width: Layout.spacing-md;
             horizontal-stretch: 0;
             background: transparent;
         }
@@ -85,7 +85,7 @@ component LogRow inherits Rectangle {
                     text: root.entry.message;
                     wrap: word-wrap;
                     width: 300px;
-                    font-size: 12pt;
+                    font-size: Layout.font-size-sm;
                     horizontal-alignment: start;
                 }
             }
@@ -136,8 +136,8 @@ export component SystemLog inherits Flickable {
     viewport-height: log-content.preferred-height;
 
     log-content := VerticalLayout {
-        padding-top: 8px;
-        padding-bottom: 8px;
+        padding-top: Layout.spacing-sm;
+        padding-bottom: Layout.spacing-sm;
         alignment: start;
 
         for entry in root.log-entries: LogRow {

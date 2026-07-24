@@ -6,7 +6,7 @@ import {
     Button,
     BoostText,
 } from "../components.slint";
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import { Page } from "page.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
 import { ProcessContext } from "../globals/process-context.slint";
@@ -21,16 +21,16 @@ component StatChip inherits Rectangle {
     border-color: Palette.border;
 
     VerticalLayout {
-        padding-top: 14px;
-        padding-bottom: 14px;
-        padding-left: 16px;
-        padding-right: 16px;
-        spacing: 6px;
+        padding-top: Layout.spacing-sm;
+        padding-bottom: Layout.spacing-sm;
+        padding-left: Layout.spacing-md;
+        padding-right: Layout.spacing-md;
+        spacing: Layout.spacing-xs;
         alignment: center;
 
         SmallText {
             text: root.label;
-            font-size: 6pt;
+            font-size: Layout.font-size-xs;
             letter-spacing: 2.5px;
             color: Palette.text-muted;
             horizontal-alignment: center;
@@ -40,7 +40,7 @@ component StatChip inherits Rectangle {
             text: root.value;
             font-italic: false;
             font-weight: FontWeight.semi-bold;
-            font-size: 13pt;
+            font-size: Layout.font-size-sm;
             color: root.value-color;
             horizontal-alignment: center;
         }
@@ -61,16 +61,16 @@ export component MixSuccessPage inherits Page {
     }
 
     VerticalLayout {
-        padding-top: 56px;
-        padding-bottom: 56px;
-        padding-left: 48px;
-        padding-right: 48px;
+        padding-top: Layout.spacing-xl * 1.4;
+        padding-bottom: Layout.spacing-xl * 1.4;
+        padding-left: Layout.spacing-xl * 1.2;
+        padding-right: Layout.spacing-xl * 1.2;
         spacing: 0;
         alignment: center;
 
         LargeText {
             text: root.cocktail-name;
-            font-size: 30pt;
+            font-size: Layout.font-size-xl;
             font-italic: true;
             opacity: root.mounted ? 1 : 0;
             animate opacity {
@@ -81,7 +81,7 @@ export component MixSuccessPage inherits Page {
         }
 
         Rectangle {
-            height: 10px;
+            height: Layout.spacing-sm;
             background: transparent;
         }
 
@@ -98,12 +98,12 @@ export component MixSuccessPage inherits Page {
         }
 
         Rectangle {
-            height: 30px;
+            height: Layout.spacing-lg;
             background: transparent;
         }
 
         VerticalLayout {
-            spacing: 10px;
+            spacing: Layout.spacing-sm;
             opacity: root.mounted ? 1 : 0;
             animate opacity {
                 duration: Palette.mount-animation-duration;
@@ -113,12 +113,12 @@ export component MixSuccessPage inherits Page {
 
             SmallText {
                 text: "ZUSAMMENFASSUNG";
-                font-size: 7pt;
+                font-size: Layout.font-size-xs;
                 letter-spacing: 3.5px;
             }
 
             HorizontalLayout {
-                spacing: 10px;
+                spacing: Layout.spacing-sm;
 
                 StatChip {
                     label: "BOOST";
@@ -139,12 +139,12 @@ export component MixSuccessPage inherits Page {
         }
 
         Rectangle {
-            height: 18px;
+            height: Layout.spacing-md;
             background: transparent;
         }
 
         VerticalLayout {
-            spacing: 7px;
+            spacing: Layout.spacing-sm;
             opacity: root.mounted ? 1 : 0;
             animate opacity {
                 duration: Palette.mount-animation-duration;
@@ -171,14 +171,14 @@ export component MixSuccessPage inherits Page {
 
             SmallText {
                 text: "ALLES ERFOLGREICH GEMIXT";
-                font-size: 6pt;
+                font-size: Layout.font-size-xs;
                 letter-spacing: 2px;
                 color: Palette.text-muted;
             }
         }
 
         Rectangle {
-            height: 36px;
+            height: Layout.spacing-xl;
             background: transparent;
         }
 

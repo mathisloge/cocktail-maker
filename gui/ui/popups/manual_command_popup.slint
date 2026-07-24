@@ -1,4 +1,4 @@
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import {
     Button,
     SmallText,
@@ -16,7 +16,7 @@ export component ManualCommandPopup inherits PopupWindow {
     Rectangle {
         width: 100%;
         height: 100%;
-        background: rgba(10, 8, 6, 0.88);
+        background: Palette.overlay-scrim;
     }
 
     Rectangle {
@@ -34,10 +34,10 @@ export component ManualCommandPopup inherits PopupWindow {
         }
 
         box-layout := VerticalLayout {
-            padding-top: 44px;
-            padding-left: 48px;
-            padding-bottom: 40px;
-            padding-right: 48px;
+            padding-top: Layout.spacing-xl;
+            padding-left: Layout.spacing-xl * 1.2;
+            padding-bottom: Layout.spacing-xl;
+            padding-right: Layout.spacing-xl * 1.2;
             spacing: 0;
             alignment: center;
 
@@ -49,7 +49,7 @@ export component ManualCommandPopup inherits PopupWindow {
             }
 
             Rectangle {
-                height: 28px;
+                height: Layout.spacing-lg;
                 background: transparent;
             }
 
@@ -59,7 +59,7 @@ export component ManualCommandPopup inherits PopupWindow {
             }
 
             Rectangle {
-                height: 6px;
+                height: Layout.spacing-xs;
                 background: transparent;
             }
 
@@ -69,13 +69,13 @@ export component ManualCommandPopup inherits PopupWindow {
             }
 
             Rectangle {
-                height: 24px;
+                height: Layout.spacing-lg;
                 background: transparent;
             }
 
             HorizontalLayout {
                 alignment: center;
-                spacing: 10px;
+                spacing: Layout.spacing-sm;
                 PulseDot { }
 
                 SmallText {
@@ -85,7 +85,7 @@ export component ManualCommandPopup inherits PopupWindow {
             }
 
             Rectangle {
-                height: 24px;
+                height: Layout.spacing-lg;
                 background: transparent;
             }
 

@@ -1,5 +1,5 @@
 
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import { RecipeView } from "../data.slint";
 import { MediumText } from "./medium-text.slint";
 import { RecipeTags } from "./recipe-tags.slint";
@@ -13,7 +13,7 @@ export component RecipeCard inherits Rectangle {
     border-color: Palette.border;
     border-width: 2px;
     background: Palette.background-card;
-    animate background { duration: 200ms; }
+    animate background, border-color { duration: 200ms; }
 
     preferred-width: 250px;
     height: self.width;
@@ -43,9 +43,9 @@ export component RecipeCard inherits Rectangle {
             background: Palette.background-elevated;
 
             VerticalLayout {
-                padding: 20px;
+                padding: Layout.spacing-lg;
                 MediumText {
-                    font-size: 20pt;
+                    font-size: Layout.font-size-lg;
                     font-weight: FontWeight.bold;
                     text: recipe.name;
                     primary: true;
@@ -59,9 +59,13 @@ export component RecipeCard inherits Rectangle {
     }
 
     states [
-        inactive when !ta.has-hover: {}
+        inactive when !ta.has-hover && !ta.pressed: {}
         active-hover when ta.has-hover: {
             root.background: @radial-gradient(circle, Palette.accent 0%, Palette.background-card 90%);
+        }
+        pressed when ta.pressed: {
+            root.background: @radial-gradient(circle, Palette.accent 0%, Palette.background-card 90%);
+            root.border-color: Palette.border-strong;
         }
     ]
 }

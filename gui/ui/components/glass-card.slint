@@ -1,5 +1,5 @@
 import { GlassDescriptor } from "../data.slint";
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import { GlassIcon } from "glass-icon.slint";
 import { MediumText } from "medium-text.slint";
 export component GlassCard inherits Rectangle {
@@ -9,16 +9,16 @@ export component GlassCard inherits Rectangle {
 
     width: 168px;
     height: 232px;
-    border-radius: 12px;
-    background: root.selected ? Palette.accent-dim : Palette.background-card;
+    border-radius: Layout.radius-md;
+    background: root.selected ? Palette.accent-dim : (ta.pressed ? Palette.background-elevated : Palette.background-card);
     border-width: root.selected ? 2px : 1px;
-    border-color: root.selected ? Palette.border-strong : Palette.border;
+    border-color: root.selected ? Palette.border-strong : (ta.pressed ? Palette.border-strong : Palette.border);
 
     animate background, border-color, border-width { duration: Palette.mount-animation-duration / 3; }
 
     VerticalLayout {
-        padding: 16px;
-        spacing: 8px;
+        padding: Layout.spacing-md;
+        spacing: Layout.spacing-sm;
         alignment: center;
         cross-axis-alignment: center;
 
@@ -39,7 +39,7 @@ export component GlassCard inherits Rectangle {
         }
     }
 
-    TouchArea {
+    ta := TouchArea {
         clicked => { root.clicked(); }
     }
 }

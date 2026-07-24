@@ -1,7 +1,8 @@
+import { Layout } from "../palette.slint";
 import { SmallText } from "./small-text.slint";
 export component RecipeTags inherits HorizontalLayout {
     in property <[string]> tags;
-    padding-top: 10px;
+    padding-top: Layout.spacing-sm;
     alignment: LayoutAlignment.start;
     for t[i] in tags: SmallText {
         text: t + ((i < (tags.length - 1)) ? " | " : "");

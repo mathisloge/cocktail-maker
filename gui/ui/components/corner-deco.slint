@@ -1,74 +1,79 @@
 import { Palette } from "../palette.slint";
 export component CornerDeco {
+    private property <length> inset: 14px;
+    private property <length> mark-length: 18px;
+    private property <length> mark-thickness: 1px;
+    private property <float> mark-opacity: 0.4;
+
     Rectangle {
-        x: 14px;
-        y: 14px;
-        width: 18px;
-        height: 1px;
+        x: root.inset;
+        y: root.inset;
+        width: root.mark-length;
+        height: root.mark-thickness;
         background: Palette.accent;
-        opacity: 0.4;
+        opacity: root.mark-opacity;
     }
 
     Rectangle {
-        x: 14px;
-        y: 14px;
-        width: 1px;
-        height: 18px;
+        x: root.inset;
+        y: root.inset;
+        width: root.mark-thickness;
+        height: root.mark-length;
         background: Palette.accent;
-        opacity: 0.4;
+        opacity: root.mark-opacity;
     }
 
     Rectangle {
-        x: parent.width - 33px;
-        y: 14px;
-        width: 18px;
-        height: 1px;
+        x: parent.width - root.inset - root.mark-length - root.mark-thickness;
+        y: root.inset;
+        width: root.mark-length;
+        height: root.mark-thickness;
         background: Palette.accent;
-        opacity: 0.4;
+        opacity: root.mark-opacity;
     }
 
     Rectangle {
-        x: parent.width - 15px;
-        y: 14px;
-        width: 1px;
-        height: 18px;
+        x: parent.width - root.inset - root.mark-thickness;
+        y: root.inset;
+        width: root.mark-thickness;
+        height: root.mark-length;
         background: Palette.accent;
-        opacity: 0.4;
+        opacity: root.mark-opacity;
     }
 
     Rectangle {
-        x: 14px;
-        y: parent.height - 15px;
-        width: 18px;
-        height: 1px;
+        x: root.inset;
+        y: parent.height - root.inset - root.mark-thickness;
+        width: root.mark-length;
+        height: root.mark-thickness;
         background: Palette.accent;
-        opacity: 0.4;
+        opacity: root.mark-opacity;
     }
 
     Rectangle {
-        x: 14px;
-        y: parent.height - 33px;
-        width: 1px;
-        height: 18px;
+        x: root.inset;
+        y: parent.height - root.inset - root.mark-length - root.mark-thickness;
+        width: root.mark-thickness;
+        height: root.mark-length;
         background: Palette.accent;
-        opacity: 0.4;
+        opacity: root.mark-opacity;
     }
 
     Rectangle {
-        x: parent.width - 33px;
-        y: parent.height - 15px;
-        width: 18px;
-        height: 1px;
+        x: parent.width - root.inset - root.mark-length - root.mark-thickness;
+        y: parent.height - root.inset - root.mark-thickness;
+        width: root.mark-length;
+        height: root.mark-thickness;
         background: Palette.accent;
-        opacity: 0.4;
+        opacity: root.mark-opacity;
     }
 
     Rectangle {
-        x: parent.width - 15px;
-        y: parent.height - 33px;
-        width: 1px;
-        height: 18px;
+        x: parent.width - root.inset - root.mark-thickness;
+        y: parent.height - root.inset - root.mark-length - root.mark-thickness;
+        width: root.mark-thickness;
+        height: root.mark-length;
         background: Palette.accent;
-        opacity: 0.4;
+        opacity: root.mark-opacity;
     }
 }

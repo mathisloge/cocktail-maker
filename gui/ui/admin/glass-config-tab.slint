@@ -23,6 +23,7 @@ export component GlassConfigTab inherits Rectangle {
             vertical-stretch: 0;
             glass-chooser := ComboBox {
                 width: 100px;
+                height: Layout.touch-height-sm;
                 model: GlassContext.available-glasses;
             }
 
@@ -37,7 +38,7 @@ export component GlassConfigTab inherits Rectangle {
         Flickable {
             height: 232px;
             glass-row := HorizontalLayout {
-                spacing: 16px;
+                spacing: Layout.spacing-md;
 
                 for descriptor[index] in GlassContext.glasses: GlassCard {
                     descriptor: descriptor;
@@ -47,8 +48,10 @@ export component GlassConfigTab inherits Rectangle {
                     }
 
                     Button {
-                        x: parent.width - self.width - 10px;
-                        y: 10px;
+                        x: parent.width - self.width - Layout.spacing-sm;
+                        y: Layout.spacing-sm;
+                        min-width: Layout.touch-height-sm;
+                        min-height: Layout.touch-height-sm;
                         text: "x";
                         clicked => {
                             GlassContext.remove-glass(descriptor.id);
@@ -62,6 +65,7 @@ export component GlassConfigTab inherits Rectangle {
             vertical-stretch: 0;
             volume-box := ComboBox {
                 width: 100px;
+                height: Layout.touch-height-sm;
                 model: selected-glass.common-volumes-ml;
             }
 
@@ -77,7 +81,7 @@ export component GlassConfigTab inherits Rectangle {
             height: Layout.touch-height;
 
             volume-row := HorizontalLayout {
-                spacing: 12px;
+                spacing: Layout.spacing-md;
 
                 for volume in selected-glass.active-volumes-ml: Chip {
                     width: 110px;

@@ -8,7 +8,7 @@ export component Button {
 
     callback clicked;
 
-    private property <brush> text-color: self.secondary ? Palette.text-secondary : #000;
+    private property <brush> text-color: self.secondary ? Palette.text-secondary : Palette.text-on-accent;
 
     min-width: max(32px, i-layout.min-width);
     min-height: max(Layout.touch-height, i-layout.min-height);
@@ -30,11 +30,11 @@ export component Button {
         pressed when root.pressed : {
             i-background.background: Palette.accent;
             i-border.border-color: Palette.border-strong;
-            root.text-color: #000;
+            root.text-color: Palette.text-on-accent;
         }
         hover when i-touch-area.has-hover : {
             i-background.background: Palette.accent-light;
-            root.text-color: #000;
+            root.text-color: Palette.text-on-accent;
         }
     ]
 
@@ -51,15 +51,15 @@ export component Button {
         }
 
         i-layout := HorizontalLayout {
-            padding-left: 12px;
-            padding-right: 12px;
-            padding-top: 5px;
-            padding-bottom: 5px;
-            spacing: 4px;
+            padding-left: Layout.spacing-md;
+            padding-right: Layout.spacing-md;
+            padding-top: Layout.spacing-xs;
+            padding-bottom: Layout.spacing-xs;
+            spacing: Layout.spacing-xs;
             alignment: center;
 
             if (root.text != ""): Text {
-                font-size: 12pt;
+                font-size: Layout.font-size-sm;
                 font-weight: FontWeight.normal;
                 horizontal-alignment: center;
                 vertical-alignment: center;

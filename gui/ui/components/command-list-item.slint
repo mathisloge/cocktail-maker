@@ -1,11 +1,11 @@
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import { Command } from "../data.slint";
 import { MediumText } from "medium-text.slint";
 
 export component CommandListItem {
     in property <Command> command;
     VerticalLayout {
-        spacing: 10px;
+        spacing: Layout.spacing-sm;
         HorizontalLayout {
             alignment: LayoutAlignment.space-between;
             MediumText {

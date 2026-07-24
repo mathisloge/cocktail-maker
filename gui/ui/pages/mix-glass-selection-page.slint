@@ -22,13 +22,13 @@ export component MixGlassSelectionPage inherits Page {
     background: Palette.background;
 
     VerticalLayout {
-        padding: 32px;
-        spacing: 24px;
+        padding: Layout.spacing-xl;
+        spacing: Layout.spacing-lg;
         cross-axis-alignment: center;
 
         VerticalLayout {
             alignment: center;
-            spacing: 2px;
+            spacing: Layout.spacing-xs;
 
             LargeText {
                 text: "Wähle dein Glas";
@@ -44,7 +44,7 @@ export component MixGlassSelectionPage inherits Page {
         Flickable {
             height: 232px;
             glass-row := HorizontalLayout {
-                spacing: 16px;
+                spacing: Layout.spacing-md;
 
                 for descriptor[index] in GlassContext.glasses: GlassCard {
                     descriptor: descriptor;
@@ -68,7 +68,7 @@ export component MixGlassSelectionPage inherits Page {
                 height: Layout.touch-height;
 
                 volume-row := HorizontalLayout {
-                    spacing: 12px;
+                    spacing: Layout.spacing-md;
 
                     for volume in ProcessContext.glass.active-volumes-ml: Chip {
                         width: 110px;

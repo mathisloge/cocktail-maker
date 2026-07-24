@@ -1,4 +1,4 @@
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import { Command, CommandStatus } from "../data.slint";
 import { Spinner } from "std-widgets.slint";
 import { MediumText } from "medium-text.slint";
@@ -13,7 +13,7 @@ export component CommandItem inherits Rectangle {
     HorizontalLayout {
         alignment: LayoutAlignment.space-between;
         cross-axis-alignment: center;
-        padding: 10px;
+        padding: Layout.spacing-sm;
         MediumText {
             text: command.text + " - " + command.value;
             primary: true;
@@ -24,7 +24,7 @@ export component CommandItem inherits Rectangle {
         }
 
         if command.status == CommandStatus.in-progress: Spinner {
-            height: 12pt;
+            height: Layout.font-size-sm;
             indeterminate: true;
         }
 

@@ -21,7 +21,7 @@ import {
     Ingredient,
 } from "../data.slint";
 import { DispenserCalibrationPopup } from "./dispenser-calibration.slint";
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import {
     DispenserCalibrationContext,
 } from "../globals/dispenser-calibration-context.slint";
@@ -118,7 +118,7 @@ export component PodConfigTab inherits Rectangle {
                     }
 
                     ComboBox {
-                        height: 40px;
+                        height: Layout.touch-height-sm;
                         model: RecipeContext.ingredient-ids;
                         selected(current-value) => {
                             RecipeContext.assign-ingredient-to-dispenser(active-pod, dispenser, current-value);
@@ -127,13 +127,13 @@ export component PodConfigTab inherits Rectangle {
 
                     Button {
                         text: "Identify";
-                        height: 40px;
+                        height: Layout.touch-height-sm;
                         clicked => { StationStateContext.highlight-dispenser(active-pod, dispenser); }
                     }
 
                     Button {
                         text: "Calibrate";
-                        height: 40px;
+                        height: Layout.touch-height-sm;
                         clicked => {
                             root.active-dispenser = dispenser;
                             DispenserCalibrationContext.reset-state();

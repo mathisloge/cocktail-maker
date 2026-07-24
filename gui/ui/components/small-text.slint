@@ -1,9 +1,9 @@
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 
 export component SmallText inherits Text {
     in property <bool> highlight: false;
     color: highlight ? Palette.text-secondary : Palette.text-muted;
-    font-size: 8pt;
+    font-size: Layout.font-size-xs;
     font-weight: FontWeight.normal;
     letter-spacing: 2pt;
     horizontal-alignment: center;

@@ -1,5 +1,5 @@
 
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import { RecipeView, CommandStatus, Page } from "../data.slint";
 import { ProgressIndicator, Spinner } from "std-widgets.slint";
 import {
@@ -25,14 +25,14 @@ export component MixProgressPage inherits Page {
             width: 33%;
             alignment: space-between;
             cross-axis-alignment: center;
-            padding: 20px;
-            padding-top: 40px;
+            padding: Layout.spacing-lg;
+            padding-top: Layout.spacing-xl;
             rowspan: 1;
 
             VerticalLayout {
                 alignment: start;
                 cross-axis-alignment: center;
-                spacing: 10px;
+                spacing: Layout.spacing-sm;
                 SmallText {
                     text: "WIRD ZUBEREITET";
                     letter-spacing: 2pt;
@@ -47,7 +47,7 @@ export component MixProgressPage inherits Page {
             }
 
             VerticalLayout {
-                spacing: 10px;
+                spacing: Layout.spacing-sm;
                 ProgressIndicator {
                     indeterminate: true;
                     height: 2px;
@@ -76,8 +76,8 @@ export component MixProgressPage inherits Page {
         }
 
         VerticalLayout {
-            padding: 40px;
-            spacing: 15px;
+            padding: Layout.spacing-xl;
+            spacing: Layout.spacing-md;
             alignment: LayoutAlignment.start;
             rowspan: 2;
 
@@ -86,7 +86,7 @@ export component MixProgressPage inherits Page {
             }
 
             VerticalLayout {
-                spacing: 10px;
+                spacing: Layout.spacing-sm;
 
                 for command in recipe.commands: CommandItem {
                     command: command;

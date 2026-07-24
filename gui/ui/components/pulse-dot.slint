@@ -3,7 +3,7 @@ export component PulseDot inherits Rectangle {
     in property <bool> pulse: true;
     width: 7px;
     height: 7px;
-    border-radius: 4px;
+    border-radius: self.height / 2;
     background: Palette.accent;
     opacity: 0.45;
     animate opacity {

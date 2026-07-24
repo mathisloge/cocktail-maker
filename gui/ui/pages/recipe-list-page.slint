@@ -2,17 +2,18 @@ import { ScrollView } from "std-widgets.slint";
 import { RecipeCard } from "../components.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
 import { Page } from "page.slint";
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 
 export component RecipeListPage inherits Page {
     callback recipe-selected();
 
     ScrollView {
         horizontal-scrollbar-policy: ScrollBarPolicy.always-off;
+        vertical-scrollbar-policy: ScrollBarPolicy.always-off;
 
         GridLayout {
-            padding: 10px;
-            spacing: 5px;
+            padding: Layout.spacing-sm;
+            spacing: Layout.spacing-xs;
             for recipe[index] in RecipeContext.recipes: RecipeCard {
                 row: index / 3;
                 col: Math.mod(index, 3);

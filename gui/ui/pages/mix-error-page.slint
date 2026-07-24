@@ -1,5 +1,5 @@
 
-import { Palette } from "../palette.slint";
+import { Palette, Layout } from "../palette.slint";
 import { ProcessContext } from "../globals/process-context.slint";
 import {
     SeparatorText,
@@ -29,14 +29,14 @@ component ErrorDetailRow inherits Rectangle {
 
     HorizontalLayout {
         padding: 0px;
-        spacing: 14px;
+        spacing: Layout.spacing-md;
 
         Rectangle {
             width: 30px;
             horizontal-stretch: 0;
             SmallText {
                 text: root.icon;
-                font-size: 14pt;
+                font-size: Layout.font-size-md;
                 letter-spacing: 0px;
                 vertical-alignment: center;
             }
@@ -44,18 +44,18 @@ component ErrorDetailRow inherits Rectangle {
 
         VerticalLayout {
             alignment: center;
-            spacing: 3px;
+            spacing: Layout.spacing-xs;
             MediumText {
                 text: root.label;
                 font-italic: false;
                 font-weight: FontWeight.semi-bold;
-                font-size: 11pt;
+                font-size: Layout.font-size-sm;
                 color: Palette.text-primary;
             }
 
             SmallText {
                 text: root.sub-label;
-                font-size: 6pt;
+                font-size: Layout.font-size-xs;
                 letter-spacing: 1.5px;
                 color: Palette.text-muted;
             }
@@ -72,10 +72,10 @@ component ErrorDetailRow inherits Rectangle {
             border-width: 1px;
             border-color: Palette.text-error;
             HorizontalLayout {
-                padding: 5px;
+                padding: Layout.spacing-xs;
                 SmallText {
                     text: "FAILED";
-                    font-size: 6pt;
+                    font-size: Layout.font-size-xs;
                     letter-spacing: 2px;
                     font-weight: FontWeight.semi-bold;
                     color: Palette.text-error;
@@ -142,7 +142,7 @@ export component MixErrorPage inherits Page {
                             height: 112px;
                             x: (parent.width - self.width) / 2;
                             y: (parent.height - self.height) / 2;
-                            border-radius: 56px;
+                            border-radius: self.height / 2;
                             border-width: root.pulse ? 1px : 3px;
                             border-color: root.pulse ? Palette.border : Palette.text-error;
                             background: Palette.background-elevated;
@@ -192,12 +192,12 @@ export component MixErrorPage inherits Page {
                 }
 
                 Rectangle {
-                    height: 28px;
+                    height: Layout.spacing-lg;
                     background: transparent;
                 }
 
                 VerticalLayout {
-                    spacing: 6px;
+                    spacing: Layout.spacing-sm;
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
                         duration: 400ms;
@@ -227,7 +227,7 @@ export component MixErrorPage inherits Page {
             background: Palette.background;
 
             VerticalLayout {
-                padding: 56px;
+                padding: Layout.spacing-xl * 1.4;
                 spacing: 0;
                 alignment: center;
 
@@ -241,7 +241,7 @@ export component MixErrorPage inherits Page {
                 }
 
                 Rectangle {
-                    height: 10px;
+                    height: Layout.spacing-sm;
                     background: transparent;
                 }
 
@@ -258,13 +258,13 @@ export component MixErrorPage inherits Page {
                 }
 
                 Rectangle {
-                    height: 28px;
+                    height: Layout.spacing-lg;
                     background: transparent;
                 }
 
                 // ── Failed-at-step detail ─────────────────────
                 if root.failed-ingredient-name != "": VerticalLayout {
-                    spacing: 10px;
+                    spacing: Layout.spacing-sm;
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
                         duration: 400ms;
@@ -283,7 +283,7 @@ export component MixErrorPage inherits Page {
                 }
 
                 Rectangle {
-                    height: 54px;
+                    height: Layout.spacing-xl;
                     background: transparent;
                 }
 

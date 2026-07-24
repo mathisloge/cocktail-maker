@@ -3,6 +3,7 @@
 * xref:quality-goals.adoc[]
 * xref:system-design.adoc[]
 * xref:protocol.adoc[]
+* xref:hardware.adoc[]
 
 .ADRs
 * xref:adr:001-system-split.adoc[]

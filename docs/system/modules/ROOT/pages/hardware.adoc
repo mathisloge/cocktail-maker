@@ -60,19 +60,19 @@ classes: {
 station: Station (Main Control & Power) {
   style.fill: "#f8f9fa"
   style.stroke: "#adb5bd"
-  
+
   # Components
   ac_in: "AC Mains Input\n(110V/230V AC)" { class: power }
-  switch: "Main Switch" { 
+  switch: "Main Switch" {
     shape: diamond
-    class: power 
+    class: power
   }
   psu: "MeanWell NDR-120-24\n(120W | 24V | 5A)" { class: power }
   step_down: "5V Step-Down" { class: power }
-  
+
   rpi: "Raspberry Pi 5" { class: controller }
   display: "RPi Touch Display 2" { class: controller }
-  
+
   fluid_hub: "Station Fluid Hub\n(Manifold / Collection)" { class: fluid }
 
   # Internal Station Wiring
@@ -90,7 +90,7 @@ pod1: Pod 1 (Dispenser Module) {
   style.stroke-dash: 4
 
   mcu: "BIGTREETECH\nOctopus V1.1" { class: controller }
-  
+
   # Logical grouping of peripherals per channel/dispenser
   stepper_group: Stepper Drive Group {
     style.stroke: "#0d6efd"
@@ -118,10 +118,10 @@ pod1: Pod 1 (Dispenser Module) {
   # Internal Pod Wiring (Direct node-to-node routing for clean layout)
   mcu -> stepper_group.driver: "SPI / Step-Dir"
   stepper_group.driver -> stepper_group.motor: "Motor Leads"
-  
+
   mcu -> weight_group.hx711: "I2C Bus"
   weight_group.hx711 -> weight_group.load_cell: "E+ | E- | A+ | A-"
-  
+
   mcu -> valve_group.pca9685: "I2C Bus"
   valve_group.pca9685 -> valve_group.valve: "3-Pin PWM\n(SIG, 5V, GND)"
 

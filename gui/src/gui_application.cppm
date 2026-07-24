@@ -15,7 +15,7 @@ export class GuiApplication : public Application
   public:
     GuiApplication();
     void init(const std::filesystem::path& db_dir) override;
-    void run(std::unique_ptr<PodDiscovery> pod_discovery);
+    void run(std::unique_ptr<PodDiscovery> pod_discovery, bool fullscreen = false);
 
   private:
     slint::ComponentHandle<AppWindow> ui_ = cm::gui::AppWindow::create();

@@ -67,7 +67,7 @@ endif()
 
 add_executable(cocktail-maker src/main.cpp)
 add_sanitizers(cocktail-maker)
-target_link_libraries(cocktail-maker PRIVATE cm::gui cocktail-maker-simulator)
+target_link_libraries(cocktail-maker PRIVATE cm::gui cocktail-maker-simulator CLI11::CLI11)
 target_include_directories(
     cocktail-maker
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR} @ONLY

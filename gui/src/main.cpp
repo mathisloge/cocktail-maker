@@ -1,3 +1,4 @@
+#include <CLI/CLI.hpp>
 #include <spdlog/spdlog.h>
 #include "config.hpp"
 import std;
@@ -10,6 +11,11 @@ import cm.sim;
 
 int main(int argc, char** argv)
 {
+    CLI::App cli{"Sir-Mix-A-Lot cocktail-mixing station"};
+    bool fullscreen = false;
+    cli.add_flag("--fullscreen", fullscreen, "Run the kiosk UI in fullscreen mode");
+    CLI11_PARSE(cli, argc, argv);
+
     cm::gui::GuiApplication app;
     cm::log::set_level(cm::log::Level::debug);
 
@@ -25,9 +31,9 @@ int main(int argc, char** argv)
 
     SPDLOG_LOGGER_INFO(logger, "Run application...");
 #if BUILD_SIMULATED == 1
-    app.run(std::make_unique<cm::sim::SimulatedPodDiscovery>());
+    app.run(std::make_unique<cm::sim::SimulatedPodDiscovery>(), fullscreen);
 #else
-    app.run(std::make_unique<cm::SerialPodDiscovery>());
+    app.run(std::make_unique<cm::SerialPodDiscovery>(), fullscreen);
 #endif
     SPDLOG_LOGGER_INFO(logger, "Application quit.");
     return 0;

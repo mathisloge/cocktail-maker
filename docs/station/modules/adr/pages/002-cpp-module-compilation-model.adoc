@@ -14,10 +14,15 @@ include::partial$adr-header.adoc[]
 The Station's {cpp} codebase is organized into several internal libraries with clear conceptual
 boundaries between them, foundations, domain model, Pod communication, and user interface, as
 described in xref:ROOT:building-blocks.adoc[]. Those boundaries need to be enforced by the compiler
-rather
-than by convention alone, and the traditional {cpp} header pitfalls, repeatedly re-parsed headers and
+rather than by convention alone, and the traditional {cpp} header pitfalls, repeatedly re-parsed headers and
 implementation detail leaking into every file that includes a header, should be avoided as the
 codebase grows.
+
+=== Decision Drivers
+
+* **Strong Encapsulation:** Enforce architectural boundaries between internal libraries via the compiler rather than by convention alone.
+* **Build Scalability:** Avoid the traditional {cpp} pitfalls of implementation details leaking into headers and repeated header re-parsing across translation units.
+* **Technology Exploration:** Since this is an experimental hobby project, a primary driver is the opportunity to evaluate emerging technologies like {cpp}26 modules in a low-risk environment.
 
 == Decision
 

@@ -21,10 +21,45 @@ namespace cm {
 export class PodReceiveError : public std::runtime_error
 {
   public:
-    explicit PodReceiveError(proto::field::ErrorCodeVal error)
-        : runtime_error{std::format("NAK with error reason: {}", proto::field::ErrorCodeCommon::valueName(error))}
+    PodReceiveError(PodId pod_id, proto::field::ErrorCodeVal error)
+        : runtime_error{
+              std::format("Pod '{}' NAK with error reason: {}", pod_id, proto::field::ErrorCodeCommon::valueName(error))}
+        , pod_id_{pod_id}
+        , error_code_{error}
     {
     }
+
+    PodId pod_id() const
+    {
+        return pod_id_;
+    }
+
+    proto::field::ErrorCodeVal error_code() const
+    {
+        return error_code_;
+    }
+
+  private:
+    PodId pod_id_;
+    proto::field::ErrorCodeVal error_code_;
+};
+
+export class PodTimeoutError : public TimeoutError
+{
+  public:
+    explicit PodTimeoutError(PodId pod_id)
+        : TimeoutError{std::format("Pod '{}' did not respond within the timeout", pod_id)}
+        , pod_id_{pod_id}
+    {
+    }
+
+    PodId pod_id() const
+    {
+        return pod_id_;
+    }
+
+  private:
+    PodId pod_id_;
 };
 
 export class DispenserEmptyError : public std::runtime_error

@@ -5,6 +5,7 @@ module;
 #include <boost/asio/post.hpp>
 #include <boost/cobalt/detached.hpp>
 #include <boost/cobalt/spawn.hpp>
+#include <proto/field/ErrorCodeCommon.h>
 #include <slint.h>
 #include <spdlog/spdlog.h>
 #include "app-window.h"
@@ -29,6 +30,24 @@ class AbortError : public std::runtime_error
     }
 };
 
+class RecipeNotFoundError : public std::runtime_error
+{
+  public:
+    explicit RecipeNotFoundError(RecipeId recipe_id)
+        : runtime_error{std::format("Recipe '{}' not found", recipe_id)}
+        , recipe_id_{std::move(recipe_id)}
+    {
+    }
+
+    RecipeId recipe_id() const
+    {
+        return recipe_id_;
+    }
+
+  private:
+    RecipeId recipe_id_;
+};
+
 enum class ErrorItemCategory
 {
     Ingredient,
@@ -51,14 +70,34 @@ slint::SharedString to_slint_string(ErrorItemCategory category)
 
 struct ErrorPageData
 {
-    slint::SharedString title;
-    slint::SharedString description;
+    slint::SharedString technical_title;
+    slint::SharedString technical_description;
     ErrorItemCategory item_category = ErrorItemCategory::Unknown;
     slint::SharedString item_name;
     slint::SharedString item_details;
 };
 
+struct CustomerFacingText
+{
+    slint::SharedString title;
+    slint::SharedString message;
+};
+
+CustomerFacingText customer_text_for(ErrorItemCategory category)
+{
+    switch (category) {
+    case ErrorItemCategory::Ingredient:
+        return {"Zutat nicht verfügbar", "Bitte wende dich kurz an das Personal."};
+    case ErrorItemCategory::Abort:
+        return {"Abgebrochen", "Die Zubereitung wurde abgebrochen."};
+    case ErrorItemCategory::Unknown:
+        return {"Kurze Unterbrechung", "Es gab ein technisches Problem. Bitte wende dich an das Personal."};
+    }
+    return {"Kurze Unterbrechung", "Es gab ein technisches Problem. Bitte wende dich an das Personal."};
+}
+
 namespace error_page {
+// codespell:ignore-begin
 ErrorPageData make(const DispenserEmptyError& ex,
                    const cm::StationConfig& station_config,
                    const IngredientStore& ingredient_store)
@@ -80,17 +119,17 @@ ErrorPageData make(const DispenserEmptyError& ex,
         // Dispenser->ingredient mapping missing or ingredient not in store -
         // still report the dispenser-empty error, just without a friendly name.
         return ErrorPageData{
-            .title = "Behälter leer!",
-            .description = "Bitte auffüllen.",
-            .item_category = ErrorItemCategory::Unknown,
+            .technical_title = "Behälter leer!",
+            .technical_description = "Bitte auffüllen.",
+            .item_category = ErrorItemCategory::Ingredient,
             .item_name = "Unbekannte Zutat",
             .item_details = item_details.c_str(),
         };
     }
 
     return ErrorPageData{
-        .title = "Behälter leer!",
-        .description = "Bitte auffüllen.",
+        .technical_title = "Behälter leer!",
+        .technical_description = "Bitte auffüllen.",
         .item_category = ErrorItemCategory::Ingredient,
         .item_name = ingredient->display_name.c_str(),
         .item_details = item_details.c_str(),
@@ -99,30 +138,165 @@ ErrorPageData make(const DispenserEmptyError& ex,
 
 ErrorPageData make(const AbortError& ex, const cm::StationConfig&, const IngredientStore&)
 {
-    // codespell:ignore-begin
     return ErrorPageData{
-        .title = "Prozess abgebrochen!",
-        .description = ex.what(),
+        .technical_title = "Prozess abgebrochen!",
+        .technical_description = ex.what(),
         .item_category = ErrorItemCategory::Abort,
         .item_name = "Nutzer",
         .item_details = "Bitte neustarten.",
     };
-    // codespell:ignore-end
+}
+
+ErrorPageData make(const RecipeNotFoundError&, const cm::StationConfig&, const IngredientStore&)
+{
+    return ErrorPageData{
+        .technical_title = "Rezept nicht gefunden!",
+        .technical_description = "Das ausgewählte Rezept konnte nicht geladen werden.",
+        .item_category = ErrorItemCategory::Unknown,
+        .item_name = "Rezept",
+        .item_details = "Bitte ein anderes Rezept wählen oder die Rezeptdaten prüfen.",
+    };
+}
+
+ErrorPageData make(const DispenserNotFoundError& ex, const cm::StationConfig&, const IngredientStore&)
+{
+    const auto item_details = std::format(
+        "Pod '{}', Dispenser '{}' - Bitte Stationskonfiguration und Verkabelung prüfen.", ex.pod_id(), ex.dispenser_id());
+    return ErrorPageData{
+        .technical_title = "Dispenser nicht gefunden!",
+        .technical_description = "Der für diese Zutat konfigurierte Dispenser konnte am Pod nicht gefunden werden.",
+        .item_category = ErrorItemCategory::Unknown,
+        .item_name = "Konfiguration",
+        .item_details = item_details.c_str(),
+    };
+}
+
+ErrorPageData make(const IngredientNotAssignedError& ex, const cm::StationConfig&, const IngredientStore& ingredient_store)
+{
+    const auto ingredient = ingredient_store.find_by_id(ex.ingredient_id());
+    const auto item_name = ingredient.has_value() ? ingredient->display_name : std::string{ex.ingredient_id().raw()};
+
+    return ErrorPageData{
+        .technical_title = "Zutat nicht zugeordnet!",
+        .technical_description = "Für diese Zutat ist kein Dispenser konfiguriert.",
+        .item_category = ErrorItemCategory::Ingredient,
+        .item_name = item_name.c_str(),
+        .item_details = "Bitte in der Administration einen Dispenser zuweisen.",
+    };
+}
+
+ErrorPageData make(const PodReceiveError& ex, const cm::StationConfig&, const IngredientStore&)
+{
+    using ErrorCode = proto::field::ErrorCodeCommon::ValueType;
+    const auto pod_label = std::format("Pod '{}'", ex.pod_id());
+
+    switch (ex.error_code()) {
+    case ErrorCode::HardwareFault: {
+        const auto item_details = std::format("{} - Bitte Pod prüfen und Support kontaktieren.", pod_label);
+        return ErrorPageData{
+            .technical_title = "Hardwarefehler!",
+            .technical_description = "Der Pod meldet einen Hardwaredefekt.",
+            .item_category = ErrorItemCategory::Unknown,
+            .item_name = "Hardware",
+            .item_details = item_details.c_str(),
+        };
+    }
+    case ErrorCode::Busy: {
+        const auto item_details = std::format("{} - Bitte kurz warten und erneut versuchen.", pod_label);
+        return ErrorPageData{
+            .technical_title = "Pod beschäftigt!",
+            .technical_description = "Der Pod verarbeitet noch einen anderen Befehl.",
+            .item_category = ErrorItemCategory::Unknown,
+            .item_name = "Pod",
+            .item_details = item_details.c_str(),
+        };
+    }
+    case ErrorCode::NotCalibrated: {
+        const auto item_details = std::format("{} - Bitte den Dispenser in den Einstellungen kalibrieren.", pod_label);
+        return ErrorPageData{
+            .technical_title = "Nicht kalibriert!",
+            .technical_description = "Der angesprochene Dispenser wurde noch nicht kalibriert.",
+            .item_category = ErrorItemCategory::Unknown,
+            .item_name = "Kalibrierung",
+            .item_details = item_details.c_str(),
+        };
+    }
+    case ErrorCode::UnsupportedInCurrentState: {
+        const auto item_details = std::format("{} - Bitte Pod neustarten und erneut versuchen.", pod_label);
+        return ErrorPageData{
+            .technical_title = "Aktion nicht möglich!",
+            .technical_description = "Der Pod befindet sich in einem Zustand, der diesen Befehl aktuell nicht zulässt.",
+            .item_category = ErrorItemCategory::Unknown,
+            .item_name = "Pod",
+            .item_details = item_details.c_str(),
+        };
+    }
+    case ErrorCode::DispenserNotFound: {
+        const auto item_details = std::format("{} - Bitte Stationskonfiguration prüfen.", pod_label);
+        return ErrorPageData{
+            .technical_title = "Dispenser unbekannt!",
+            .technical_description = "Der Pod kennt den angesprochenen Dispenser nicht.",
+            .item_category = ErrorItemCategory::Unknown,
+            .item_name = "Dispenser",
+            .item_details = item_details.c_str(),
+        };
+    }
+    case ErrorCode::InvalidParameter:
+    case ErrorCode::InternalError:
+    case ErrorCode::DispenserEmpty:
+    case ErrorCode::ValuesLimit:
+        break;
+    }
+
+    const auto item_details = std::format("{} - Bitte Support kontaktieren.", pod_label);
+    return ErrorPageData{
+        .technical_title = "Unbekannter Pod-Fehler!",
+        .technical_description = "Der Pod hat einen unerwarteten Fehler gemeldet.",
+        .item_category = ErrorItemCategory::Unknown,
+        .item_name = "Pod",
+        .item_details = item_details.c_str(),
+    };
+}
+
+ErrorPageData make(const PodTimeoutError& ex, const cm::StationConfig&, const IngredientStore&)
+{
+    const auto item_details = std::format("Pod '{}' - Bitte USB-Verbindung prüfen und den Pod neu starten.", ex.pod_id());
+    return ErrorPageData{
+        .technical_title = "Pod antwortet nicht!",
+        .technical_description = "Der Pod hat innerhalb der erwarteten Zeit nicht reagiert.",
+        .item_category = ErrorItemCategory::Unknown,
+        .item_name = "Verbindung",
+        .item_details = item_details.c_str(),
+    };
+}
+
+ErrorPageData make(const ProtocolError&, const cm::StationConfig&, const IngredientStore&)
+{
+    return ErrorPageData{
+        .technical_title = "Kommunikationsfehler!",
+        .technical_description = "Die Nachricht an den Pod konnte nicht verarbeitet werden.",
+        .item_category = ErrorItemCategory::Unknown,
+        .item_name = "Verbindung",
+        .item_details = "Bitte USB-Verbindung prüfen. Besteht das Problem weiterhin, Support kontaktieren.",
+    };
 }
 
 // Fallback for any exception without a dedicated overload above.
 ErrorPageData make(const std::exception& ex, const cm::StationConfig&, const IngredientStore&)
 {
+    const auto item_details = std::format("Bitte Support kontaktieren. Details: {}", ex.what());
     return ErrorPageData{
-        .title = "Unbekannter Fehler!",
-        .description = ex.what(),
+        .technical_title = "Unbekannter Fehler!",
+        .technical_description = "Es ist ein unerwarteter Fehler aufgetreten.",
         .item_category = ErrorItemCategory::Unknown,
-        .item_name = "Unbekannt",
-        .item_details = "Fehler",
+        .item_name = "Fehlerdetails",
+        .item_details = item_details.c_str(),
     };
 }
 
 } // namespace error_page
+
+// codespell:ignore-end
 
 void display_ui_error(const std::derived_from<std::exception> auto& ex,
                       slint::ComponentHandle<AppWindow> ui,
@@ -130,11 +304,14 @@ void display_ui_error(const std::derived_from<std::exception> auto& ex,
                       const IngredientStore& ingredient_store)
 {
     auto data = error_page::make(ex, station_config, ingredient_store);
+    auto customer_text = customer_text_for(data.item_category);
 
-    slint::invoke_from_event_loop([ui, data = std::move(data)]() mutable {
+    slint::invoke_from_event_loop([ui, data = std::move(data), customer_text = std::move(customer_text)]() mutable {
         auto& process_ctx = ui->global<ProcessContext>();
-        process_ctx.set_error_title(std::move(data.title));
-        process_ctx.set_error_description(std::move(data.description));
+        process_ctx.set_customer_title(std::move(customer_text.title));
+        process_ctx.set_customer_message(std::move(customer_text.message));
+        process_ctx.set_technical_title(std::move(data.technical_title));
+        process_ctx.set_technical_description(std::move(data.technical_description));
         process_ctx.set_error_item_category(to_slint_string(data.item_category));
         process_ctx.set_error_item_name(std::move(data.item_name));
         process_ctx.set_error_item_details(std::move(data.item_details));
@@ -174,8 +351,7 @@ void ProcessContextBridge::init()
             });
         }
         else {
-            // TODO: Add RecipeNotFoundError
-            display_ui_error(std::runtime_error{"Could not find recipe"}, ui_, station_config_, ingredient_store_);
+            display_ui_error(RecipeNotFoundError{RecipeId{recipe_to_create.id.data()}}, ui_, station_config_, ingredient_store_);
             SPDLOG_LOGGER_ERROR(logger_, "Could not find a recipe {}", recipe_to_create.name.data());
         }
     });
@@ -221,6 +397,26 @@ cobalt::task<void> ProcessContextBridge::async_process_recipe(Recipe recipe,
         display_ui_error(ex, ui_, station_config_, ingredient_store_);
     }
     catch (const DispenserEmptyError& ex) {
+        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+    }
+    catch (const DispenserNotFoundError& ex) {
+        SPDLOG_LOGGER_ERROR(logger_, "Dispenser not found while processing recipe: {}", ex.what());
+        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+    }
+    catch (const IngredientNotAssignedError& ex) {
+        SPDLOG_LOGGER_ERROR(logger_, "Ingredient not assigned while processing recipe: {}", ex.what());
+        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+    }
+    catch (const PodReceiveError& ex) {
+        SPDLOG_LOGGER_ERROR(logger_, "Pod rejected command while processing recipe: {}", ex.what());
+        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+    }
+    catch (const PodTimeoutError& ex) {
+        SPDLOG_LOGGER_ERROR(logger_, "Pod timed out while processing recipe: {}", ex.what());
+        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+    }
+    catch (const ProtocolError& ex) {
+        SPDLOG_LOGGER_ERROR(logger_, "Protocol error while processing recipe: {}", ex.what());
         display_ui_error(ex, ui_, station_config_, ingredient_store_);
     }
     catch (const std::exception& ex) {

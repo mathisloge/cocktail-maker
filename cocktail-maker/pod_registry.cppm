@@ -27,18 +27,17 @@ template <class A, class B>
 export class PodRegistry
 {
   public:
-    std::expected<std::unique_ptr<Dispenser>, std::out_of_range> dispenser_of_pod(PodId pod_id, DispenserId dispenser_id) const
+    std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> dispenser_of_pod(PodId pod_id,
+                                                                                       DispenserId dispenser_id) const
     {
         for (const auto& weak_pod : pods_) {
             if (auto pod = weak_pod.lock()) {
                 if (pod->pod_id() == pod_id) {
-                    return pod->create_dispenser(dispenser_id).transform_error([](auto&& err) {
-                        return std::out_of_range{err.what()};
-                    });
+                    return pod->create_dispenser(dispenser_id);
                 }
             }
         }
-        return std::unexpected{std::out_of_range{"Pod not found"}};
+        return std::unexpected{DispenserNotFoundError{pod_id, dispenser_id}};
     }
 
     void register_pod(std::shared_ptr<IPod> pod)

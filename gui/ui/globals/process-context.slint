@@ -1,7 +1,7 @@
 import { GlassDescriptor } from "../data.slint";
 export global ProcessContext {
-    in-out property <string> error-title: "Pod error";
-    in-out property <string> error-description: "The dispensing pod did not respond before the safety timeout elapsed.";
+    in-out property <string> error-title: "Pod-Fehler";
+    in-out property <string> error-description: "Der Pod hat innerhalb des Sicherheits-Zeitlimits nicht reagiert.";
     in-out property <string> error-item-category: "I"; // e.g. "I" for ingredient, "D" for dispenser etc.
     in-out property <string> error-item-name: "Orangensaft"; // e.g. ingredient failed / dispenser etc.
     in-out property <string> error-item-details: "Pod 1 - Dispenser 3";

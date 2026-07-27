@@ -104,7 +104,6 @@ void process_nak(const InNak& nak, const MessageEnvironment& env)
     case proto::field::ErrorCodeCommon::ValueType::DispenserEmpty:
         throw DispenserEmptyError{env.pod_id, env.dispenser_id};
     case proto::field::ErrorCodeCommon::ValueType::DispenserNotFound:
-        // throw DispenserEmptyError{pod_id, dispenser_id};
     case proto::field::ErrorCodeCommon::ValueType::InvalidParameter:
     case proto::field::ErrorCodeCommon::ValueType::UnsupportedInCurrentState:
     case proto::field::ErrorCodeCommon::ValueType::HardwareFault:
@@ -112,7 +111,7 @@ void process_nak(const InNak& nak, const MessageEnvironment& env)
     case proto::field::ErrorCodeCommon::ValueType::NotCalibrated:
     case proto::field::ErrorCodeCommon::ValueType::InternalError:
     case proto::field::ErrorCodeCommon::ValueType::ValuesLimit:
-        throw PodReceiveError{nak.field_errorCode().value()};
+        throw PodReceiveError{env.pod_id, nak.field_errorCode().value()};
     }
     std::unreachable();
 }
@@ -127,9 +126,14 @@ auto send_with_ack(AsyncMachineProtocolServer& server, TxMsg tx_msg, const Messa
     auto rx_action = server.async_receive<InAck, InNak>(transaction_id, env.timeout);
 
     co_await server.async_send(std::move(tx_msg), transaction_id);
-    const auto nak_or_ack = co_await rx_action;
-    if (std::holds_alternative<InNak>(nak_or_ack)) {
-        process_nak(std::get<InNak>(nak_or_ack), env);
+    try {
+        const auto nak_or_ack = co_await rx_action;
+        if (std::holds_alternative<InNak>(nak_or_ack)) {
+            process_nak(std::get<InNak>(nak_or_ack), env);
+        }
+    }
+    catch (const TimeoutError&) {
+        throw PodTimeoutError{env.pod_id};
     }
     co_return transaction_id;
 }
@@ -143,7 +147,12 @@ auto send_and_receive(AsyncMachineProtocolServer& server, TxMsg tx_msg, const Me
     auto rx_action = server.async_receive<RxMsg>(transaction_id, env.timeout);
 
     co_await server.async_send(std::move(tx_msg), transaction_id);
-    co_return co_await rx_action;
+    try {
+        co_return co_await rx_action;
+    }
+    catch (const TimeoutError&) {
+        throw PodTimeoutError{env.pod_id};
+    }
 }
 
 template <typename RxMsg, typename TxMsg>
@@ -153,11 +162,16 @@ auto send_action_with_response(AsyncMachineProtocolServer& server,
                                const MessageEnvironment env) -> cobalt::promise<RxMsg>
 {
     const auto transaction_id = co_await send_with_ack(server, std::move(tx_msg), env);
-    const auto nak_or_action = co_await server.async_receive<RxMsg, InNak>(transaction_id, action_timeout);
-    if (std::holds_alternative<InNak>(nak_or_action)) {
-        process_nak(std::get<InNak>(nak_or_action), env);
+    try {
+        const auto nak_or_action = co_await server.async_receive<RxMsg, InNak>(transaction_id, action_timeout);
+        if (std::holds_alternative<InNak>(nak_or_action)) {
+            process_nak(std::get<InNak>(nak_or_action), env);
+        }
+        co_return std::get<RxMsg>(nak_or_action);
     }
-    co_return std::get<RxMsg>(nak_or_action);
+    catch (const TimeoutError&) {
+        throw PodTimeoutError{env.pod_id};
+    }
 }
 
 Pod::Pod(std::unique_ptr<AnyIoStream> stream)
@@ -181,7 +195,7 @@ std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> Pod::create_di
 {
     const auto info = state_->info();
     if (dispenser_id.raw() >= (info.num_pumps + info.num_valves)) {
-        return std::unexpected{DispenserNotFoundError{"Searched dispenser id exceeded pumps and valves"}};
+        return std::unexpected{DispenserNotFoundError{pod_id(), dispenser_id}};
     }
     if (dispenser_id.raw() >= info.num_pumps) {
         return std::make_unique<Valve>(this->shared_from_this(), dispenser_id);

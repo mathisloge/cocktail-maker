@@ -42,11 +42,12 @@ void StationConfig::update_dispenser_ingredient_mapping(IngredientId ingredient_
     save_config_to_file();
 }
 
-std::expected<PodDispenser, std::out_of_range> StationConfig::find_dispenser_for_ingredient(IngredientId ingredient_id) const
+std::expected<PodDispenser, IngredientNotAssignedError> StationConfig::find_dispenser_for_ingredient(
+    IngredientId ingredient_id) const
 {
     auto it = ingredient_dispenser_mapping_.find(ingredient_id);
     if (it == ingredient_dispenser_mapping_.end()) {
-        return std::unexpected{std::out_of_range{std::format("Could not find a dispenser for ingredient '{}'.", ingredient_id)}};
+        return std::unexpected{IngredientNotAssignedError{std::move(ingredient_id)}};
     }
     return it->second;
 }

@@ -17,6 +17,24 @@ export struct PodDispenser
     friend constexpr auto operator<=>(const PodDispenser&, const PodDispenser&) = default;
 };
 
+export class IngredientNotAssignedError : public std::runtime_error
+{
+  public:
+    explicit IngredientNotAssignedError(IngredientId ingredient_id)
+        : runtime_error{std::format("No dispenser is assigned to ingredient '{}'", ingredient_id)}
+        , ingredient_id_{std::move(ingredient_id)}
+    {
+    }
+
+    IngredientId ingredient_id() const
+    {
+        return ingredient_id_;
+    }
+
+  private:
+    IngredientId ingredient_id_;
+};
+
 export class StationConfig final
 {
   public:
@@ -26,7 +44,7 @@ export class StationConfig final
 
     void update_dispenser_ingredient_mapping(IngredientId ingredient_id, PodDispenser pod_dispenser_pair);
 
-    std::expected<PodDispenser, std::out_of_range> find_dispenser_for_ingredient(IngredientId ingredient_id) const;
+    std::expected<PodDispenser, IngredientNotAssignedError> find_dispenser_for_ingredient(IngredientId ingredient_id) const;
 
     std::expected<IngredientId, std::out_of_range> find_ingredient_by_dispenser(PodDispenser pod_dispenser) const;
 

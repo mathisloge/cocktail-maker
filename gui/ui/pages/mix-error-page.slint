@@ -88,11 +88,14 @@ component ErrorDetailRow inherits Rectangle {
 
 export component MixErrorPage inherits Page {
     private property <string> cocktail-name:            RecipeContext.active-recipe.name;
-    private property <string> error-title:              ProcessContext.error-title;
-    private property <string> error-reason:             ProcessContext.error-description;
+    private property <string> customer-title:           ProcessContext.customer-title;
+    private property <string> customer-message:         ProcessContext.customer-message;
+    private property <string> technical-title:          ProcessContext.technical-title;
+    private property <string> technical-reason:         ProcessContext.technical-description;
     private property <string> failed-ingredient-icon:   ProcessContext.error-item-category;
     private property <string> failed-ingredient-name:   ProcessContext.error-item-name;
     private property <string> failed-pod-label:         ProcessContext.error-item-details;
+    private property <bool> details-expanded: false;
     callback cancel();
 
     // ── Continuous slow breathing pulse on the broken ring ───────
@@ -232,7 +235,7 @@ export component MixErrorPage inherits Page {
                 alignment: center;
 
                 LargeText {
-                    text: root.error-title;
+                    text: root.customer-title;
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
                         duration: 400ms;
@@ -246,7 +249,7 @@ export component MixErrorPage inherits Page {
                 }
 
                 MediumText {
-                    text: root.error-reason;
+                    text: root.customer-message;
                     wrap: word-wrap;
                     primary: true;
 
@@ -262,23 +265,53 @@ export component MixErrorPage inherits Page {
                     background: transparent;
                 }
 
-                // ── Failed-at-step detail ─────────────────────
-                if root.failed-ingredient-name != "": VerticalLayout {
-                    spacing: Layout.spacing-sm;
+                // ── Technische Details (dezent, für das Personal) ────
+                details-toggle-area := TouchArea {
+                    height: Layout.touch-height-sm;
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
                         duration: 400ms;
                         delay: 420ms;
                     }
+                    clicked => { root.details-expanded = !root.details-expanded; }
+
+                    HorizontalLayout {
+                        alignment: start;
+                        SmallText {
+                            text: (root.details-expanded ? "▾ " : "▸ ") + "Technische Details";
+                            highlight: root.details-expanded;
+                        }
+                    }
+                }
+
+                if root.details-expanded: VerticalLayout {
+                    spacing: Layout.spacing-sm;
+                    padding-top: Layout.spacing-sm;
 
                     SmallText {
-                        text: "UNTERBROCHEN BEI";
+                        text: root.technical-title;
                     }
 
-                    ErrorDetailRow {
-                        icon: root.failed-ingredient-icon;
-                        label: root.failed-ingredient-name;
-                        sub-label: root.failed-pod-label;
+                    MediumText {
+                        text: root.technical-reason;
+                        wrap: word-wrap;
+                        primary: false;
+                    }
+
+                    // ── Failed-at-step detail ─────────────────────
+                    if root.failed-ingredient-name != "": VerticalLayout {
+                        spacing: Layout.spacing-sm;
+                        padding-top: Layout.spacing-xs;
+
+                        SmallText {
+                            text: "UNTERBROCHEN BEI";
+                        }
+
+                        ErrorDetailRow {
+                            icon: root.failed-ingredient-icon;
+                            label: root.failed-ingredient-name;
+                            sub-label: root.failed-pod-label;
+                        }
                     }
                 }
 

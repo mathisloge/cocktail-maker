@@ -1,0 +1,63 @@
+{
+    "name": "cocktail-maker (Clang / libc++)",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+
+    // Slint builds its Rust core from source as part of the CMake configure.
+    "features": {
+        "ghcr.io/devcontainers/features/rust:1": {
+            "profile": "minimal"
+        }
+    },
+
+    // LeakSanitizer ptraces its own process and ASan wants an unrestricted mmap
+    // layout; the developer preset turns both on. Also what lldb needs to attach.
+    "runArgs": [
+        "--cap-add=SYS_PTRACE",
+        "--security-opt=seccomp=unconfined"
+    ],
+
+    // GetGitRevisionDescription shells out to git against the workspace.
+    "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "llvm-vs-code-extensions.vscode-clangd",
+                "ms-vscode.cmake-tools",
+                "Slint.slint"
+            ],
+            "settings": {
+                "cmake.useCMakePresets": "always",
+                "cmake.configureOnOpen": false
+            }
+        }
+    },
+
+    "remoteUser": "vscode",
+
+    // /workspaces is a 9p mount (WSL2 -> Windows host), which has severe
+    // per-file-open latency. CPM's default cache lives under build/_deps on
+    // that mount, so every dependency header read (Boost, mp-units, spdlog, ...)
+    // pays a network round trip. Caching sources on the container's native
+    // overlay fs instead keeps compiles CPU-bound rather than I/O-blocked.
+    "containerEnv": {
+        "CPM_SOURCE_CACHE": "/home/vscode/.cache/CPM"
+    }
+
+    // Optional GUI: WSLg passthrough, so the Slint window renders on the Windows
+    // desktop. A bind mount whose source is missing is a hard startup failure,
+    // not a warning, so confirm the paths exist in the Docker VM before adding.
+    // Headless always works: xvfb-run -a ctest --preset developer
+    //
+    // "mounts": [
+    //     "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
+    //     "source=/mnt/wslg,target=/mnt/wslg,type=bind"
+    // ],
+    // "containerEnv": {
+    //     "DISPLAY": ":0",
+    //     "WAYLAND_DISPLAY": "wayland-0",
+    //     "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir"
+    // }
+}

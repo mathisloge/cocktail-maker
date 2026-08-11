@@ -32,13 +32,4 @@ export class SerialMonitorException : public std::runtime_error
     }
 };
 
-export class SerialPortOpenException : public std::runtime_error
-{
-  public:
-    explicit SerialPortOpenException(const std::string& devnode, const std::string& details)
-        : std::runtime_error(std::format("Failed to open serial port [{}]: {}", devnode, details))
-    {
-    }
-};
-
 } // namespace cm

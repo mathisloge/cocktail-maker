@@ -55,7 +55,7 @@ jobs:
       - name: Setup CMake
         uses: lukka/get-cmake@latest
         with:
-          cmakeVersion: "~4.3.0" # cmake 4.4.0 has issues with modules
+          cmakeVersion: "~4.4.0"
 
       - name: Run CMake Workflow
         run: xvfb-run -a cmake --workflow --preset ci-linux

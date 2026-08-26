@@ -19,7 +19,7 @@ repos:
       - id: check-added-large-files
 
   - repo: https://github.com/BlankSpruce/gersemi-pre-commit
-    rev: 0.27.7
+    rev: 0.28.1
     hooks:
       - id: gersemi
         name: CMake linting

@@ -48,13 +48,13 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 endif()
 
 find_package(Sanitizers REQUIRED)
-set(BOOST_VERSION "1.91.0-1")
+set(BOOST_VERSION "1.92.0")
 set(BOOST_INCLUDE_LIBRARIES "asio\\\\;cobalt\\\\;hash2")
 cpmaddpackage(
   NAME Boost
   VERSION "${BOOST_VERSION}"
   URL https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}-cmake.tar.xz
-  URL_HASH SHA256=cc5dc5006ecbdf0051f90979be31b4eee5987d9ae14ae9fb9c03cfa43fa3cdad
+  URL_HASH SHA256=9bed76128d4e46755dbe818487788c6fceb6f72b378f4daa49b7e1e600d9088d
   EXCLUDE_FROM_ALL ON
   SYSTEM ON
   FIND_PACKAGE_ARGUMENTS "CONFIG"
@@ -65,15 +65,15 @@ cpmaddpackage(
 
 cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite )
 cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_USE_STD_FORMAT ON")
-cpmaddpackage(URI "gh:CLIUtils/CLI11@2.6.2" OPTIONS "CLI11_PRECOMPILED ON")
-cpmaddpackage(URI "gh:mpusz/mp-units#8df25adeefc73931ff3a1da52804e5c7a061e2d1" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
+cpmaddpackage(URI "gh:CLIUtils/CLI11@2.7.2" OPTIONS "CLI11_PRECOMPILED ON")
+cpmaddpackage(URI "gh:mpusz/mp-units#20cedd5acda14bff219f911a3935b1f4fc02e807" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
 )
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
-cpmaddpackage(URI "gh:simdjson/simdjson@4.6.4" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF")
+cpmaddpackage(URI "gh:simdjson/simdjson@4.6.8" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF")
 cpmaddpackage(
   NAME Slint
   GIT_REPOSITORY https://github.com/slint-ui/slint.git
-  GIT_TAG a978809d37135b6d3abefb3f888baed7d1b41467
+  GIT_TAG ec96b4bf263adf6a502774d4a18434207d6fb282
   SOURCE_SUBDIR api/cpp
 )
 cpmaddpackage(URI "gh:commschamp/comms@5.5.2" NAME LibComms)
@@ -84,7 +84,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(libudev IMPORTED_TARGET libudev)
 
 if(BUILD_TESTING)
-    cpmaddpackage("gh:catchorg/Catch2@3.15.1")
+    cpmaddpackage("gh:catchorg/Catch2@3.16.0")
     list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
     include(CTest)
     include(Catch)

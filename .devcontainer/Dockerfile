@@ -2,16 +2,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-FROM mcr.microsoft.com/devcontainers/base:noble
-
-# CMakeLists.txt pins us below 4.4.x until
-# https://gitlab.kitware.com/cmake/cmake/-/work_items/27930 is fixed.
-ARG CMAKE_VERSION=4.3.4
+FROM mcr.microsoft.com/devcontainers/base:resolute
+RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/*
+RUN test -f /usr/share/doc/kitware-archive-keyring/copyright || wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null && \
+    echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ resolute main' | sudo tee /etc/apt/sources.list.d/kitware.list >/dev/null
 
 # llvm.sh prerequisites (lsb-release/wget/gnupg/add-apt-repository), the build
 # tooling, and the runtime deps Slint needs — same set the Linux CI installs.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates curl wget gnupg lsb-release software-properties-common \
+        ca-certificates curl wget cmake gnupg lsb-release software-properties-common \
         git ninja-build pkg-config mold xvfb \
         libudev-dev libx11-xcb-dev libwayland-dev libfontconfig1-dev \
         libxkbcommon-x11-0 libgl1 libegl1 libinput10 \
@@ -22,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # `import std`) and libclang-rt (required for the sanitizers).
 RUN curl -fsSL https://apt.llvm.org/llvm.sh -o /tmp/llvm.sh \
     && chmod +x /tmp/llvm.sh \
-    && /tmp/llvm.sh all \
+    && /tmp/llvm.sh 23 all \
     && rm -f /tmp/llvm.sh \
     && rm -rf /var/lib/apt/lists/*
 
@@ -52,18 +51,6 @@ RUN set -eux; \
     manifest="$(clang++ -stdlib=libc++ -print-library-module-manifest-path)"; \
     test "${manifest}" != "<NOT PRESENT>"; \
     test -f "$(dirname "${manifest}")/../share/libc++/v1/std.cppm"
-
-RUN set -eux; \
-    case "$(uname -m)" in \
-        x86_64)  cmake_arch=linux-x86_64 ;; \
-        aarch64) cmake_arch=linux-aarch64 ;; \
-        *) echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;; \
-    esac; \
-    curl -fsSL -o /tmp/cmake.sh \
-        "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-${cmake_arch}.sh"; \
-    sh /tmp/cmake.sh --skip-license --prefix=/usr/local; \
-    rm -f /tmp/cmake.sh; \
-    cmake --version
 
 # The repo's lint hooks (.pre-commit-config.yaml) run through pre-commit. PEP 668
 # marks Ubuntu's python3 as externally managed, so pre-commit gets its own venv;

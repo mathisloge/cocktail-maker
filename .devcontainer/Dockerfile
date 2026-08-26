@@ -64,3 +64,15 @@ RUN set -eux; \
     sh /tmp/cmake.sh --skip-license --prefix=/usr/local; \
     rm -f /tmp/cmake.sh; \
     cmake --version
+
+# The repo's lint hooks (.pre-commit-config.yaml) run through pre-commit. PEP 668
+# marks Ubuntu's python3 as externally managed, so pre-commit gets its own venv;
+# python3-venv is also what its python-language hooks (gersemi, codespell, reuse,
+# clang-format, ...) need to build theirs on first run.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 python3-venv \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m venv /opt/pre-commit \
+    && /opt/pre-commit/bin/pip install --no-cache-dir pre-commit \
+    && ln -s /opt/pre-commit/bin/pre-commit /usr/local/bin/pre-commit \
+    && pre-commit --version

@@ -18,8 +18,9 @@
         "--security-opt=seccomp=unconfined"
     ],
 
-    // GetGitRevisionDescription shells out to git against the workspace.
-    "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+    // GetGitRevisionDescription shells out to git against the workspace, and the
+    // safe.directory entry also has to land before pre-commit touches .git/hooks.
+    "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && pre-commit install",
 
     "customizations": {
         "vscode": {

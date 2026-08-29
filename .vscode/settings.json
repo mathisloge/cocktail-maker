@@ -1,3 +1,7 @@
 {
-    "clangd.enable": true
+    "clangd.enable": true,
+    "cmake.copyCompileCommands": "${workspaceFolder}/compile_commands.json",
+    "clangd.arguments": [
+        "--experimental-modules-support"
+    ]
 }

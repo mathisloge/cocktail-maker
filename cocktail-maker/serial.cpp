@@ -495,13 +495,12 @@ class PodPortMonitor
     [[nodiscard]] cobalt::promise<UdevDevicePtr> next_event()
     {
         for (;;) {
-            co_await descriptor_.async_wait(asio::posix::descriptor_base::wait_read, cobalt::use_op);
-
             if (UdevDevicePtr dev{udev_monitor_receive_device(monitor_.get())}) {
                 co_return std::move(dev);
             }
 
-            SPDLOG_LOGGER_TRACE(logger_, "Received empty udev device event, skipping.");
+            SPDLOG_LOGGER_TRACE(logger_, "Nothing queued at the udev monitor, waiting for the next tty uevent.");
+            co_await descriptor_.async_wait(asio::posix::descriptor_base::wait_read, cobalt::use_op);
         }
     }
 

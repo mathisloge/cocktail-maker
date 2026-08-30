@@ -1,9 +1,13 @@
 module;
+#include <boost/asio/as_tuple.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/serial_port.hpp>
 #include <boost/cobalt/config.hpp>
 #include <boost/cobalt/generator.hpp>
 #include <boost/cobalt/op.hpp>
 #include <boost/cobalt/promise.hpp>
+#include <boost/cobalt/spawn.hpp>
+#include <boost/cobalt/task.hpp>
 #include <boost/cobalt/this_coro.hpp>
 #include <boost/system/error_code.hpp>
 #include <spdlog/spdlog.h>
@@ -31,8 +35,7 @@ namespace {
 
 namespace asio = boost::asio;
 namespace cobalt = boost::cobalt;
-
-// ── libudev handles ───────────────────────────────────────────────────────────
+using namespace serial_detail;
 
 /// Turns one of libudev's `*_unref` functions into a unique_ptr deleter.
 template <auto Unref>
@@ -50,62 +53,87 @@ using UdevMonitorPtr = std::unique_ptr<udev_monitor, UdevDeleter<udev_monitor_un
 using UdevDevicePtr = std::unique_ptr<udev_device, UdevDeleter<udev_device_unref>>;
 using UdevEnumeratePtr = std::unique_ptr<udev_enumerate, UdevDeleter<udev_enumerate_unref>>;
 
+/// Closes a descriptor until it is release()d to its final owner.
+class UniqueFd
+{
+  public:
+    explicit UniqueFd(int fd) noexcept
+        : fd_{fd}
+    {
+    }
+
+    UniqueFd(const UniqueFd&) = delete;
+    UniqueFd& operator=(const UniqueFd&) = delete;
+
+    UniqueFd(UniqueFd&& other) noexcept
+        : fd_{std::exchange(other.fd_, -1)}
+    {
+    }
+
+    UniqueFd& operator=(UniqueFd&& other) noexcept
+    {
+        std::swap(fd_, other.fd_);
+        return *this;
+    }
+
+    ~UniqueFd()
+    {
+        if (fd_ >= 0) {
+            ::close(fd_);
+        }
+    }
+
+    [[nodiscard]] int get() const noexcept
+    {
+        return fd_;
+    }
+
+    /// Gives up ownership once someone else has taken the descriptor over.
+    void disown() noexcept
+    {
+        fd_ = -1;
+    }
+
+  private:
+    int fd_;
+};
+
 /// libudev reports failures as negated errno values rather than through errno.
 std::string errno_message(int error_number)
 {
-    return std::system_category().message(error_number);
+    return std::error_code{error_number, std::generic_category()}.message();
 }
 
-std::string sysattr_or_empty(udev_device* dev, const char* name)
+/// The returned view is owned by `dev` and stays valid as long as it does.
+std::optional<std::string_view> sysattr(udev_device* dev, const char* name)
 {
     const char* value = udev_device_get_sysattr_value(dev, name);
-    return value != nullptr ? std::string{value} : std::string{};
+    if (value == nullptr) {
+        return std::nullopt;
+    }
+    return std::string_view{value};
 }
 
-// ── Recognising a pod's protocol port ─────────────────────────────────────────
-
-constexpr std::string_view kTargetVid = "2fe3"; // TODO: Replace with Vendor ID
-constexpr std::string_view kTargetPid = "0001"; // TODO: Replace with Product ID
-
-/// A pod exposes two CDC-ACM functions on a single USB device: one carries the
-/// firmware's console/log text, the other the binary protocol frames. Both show
-/// up as /dev/ttyACM*, and which of the two gets the lower number is a race
-/// between the instances during enumeration - so they are told apart by the USB
-/// interface string descriptor instead.
-///
-/// Firmware side that string is the `label` property of the cdc_acm_uart1 node
-/// in the pod's boards/btt_octopus_v1.overlay; Zephyr publishes it as the
-/// iInterface of the CDC control interface, which is exactly the interface the
-/// kernel's cdc_acm driver binds the ttyACM to. Keep the two in sync.
-constexpr std::string_view kProtocolInterfaceName = "Cocktailmaker Pod Protocol";
-
-/// Fallback for the case that the interface string descriptor cannot be read:
-/// the protocol is the second of the pod's two CDC-ACM functions, so its control
-/// interface - the one the ttyACM hangs off - is interface 2 (the log function
-/// occupies 0 and 1). Less robust than the string, because it silently depends
-/// on the order the firmware registers its USB classes in.
-constexpr std::string_view kProtocolInterfaceNumber = "02";
-
-struct UsbTtyInfo
-{
-    std::string devnode;
-    std::string vendor_id;
-    std::string product_id;
-    std::string device_serial;    // may be empty
-    std::string interface_name;   // may be empty when the descriptor is unreadable
-    std::string interface_number; // may be empty
-};
-
-/// Collects the identifying bits of a tty that belongs to a USB device.
-/// Returns nullopt for ttys that are not USB-backed at all (serial-over-PCI,
-/// pseudo terminals, ...), which is the bulk of what the monitor reports.
-///
-/// Note that both parent lookups return references owned by `dev` - they are
-/// borrowed and must not be unref'd.
-std::optional<UsbTtyInfo> describe_usb_tty(udev_device* dev)
+std::optional<std::string_view> devnode_of(udev_device* dev)
 {
     const char* devnode = udev_device_get_devnode(dev);
     if (devnode == nullptr) {
+        return std::nullopt;
+    }
+    return std::string_view{devnode};
+}
+
+/// Collects the identifying attributes of a tty that belongs to a USB device.
+/// Returns nullopt for ttys that are not USB-backed at all (serial-over-PCI, pseudo terminals, ...), which is the bulk of what
+/// the monitor reports.
+///
+/// Both parent lookups return references owned by `dev`, they must not be unref'd.
+std::optional<UsbTtyInfo> describe_usb_tty(udev_device* dev)
+{
+    const auto to_string = [](std::string_view value) { return std::string{value}; };
+
+    const auto devnode = devnode_of(dev);
+    if (!devnode) {
         return std::nullopt;
     }
 
@@ -114,52 +142,36 @@ std::optional<UsbTtyInfo> describe_usb_tty(udev_device* dev)
         return std::nullopt;
     }
 
-    // The interface node carries the per-function identity; the device node
-    // above it only says which pod this is, not which of its two ports.
     udev_device* usb_interface = udev_device_get_parent_with_subsystem_devtype(dev, "usb", "usb_interface");
     if (usb_interface == nullptr) {
         return std::nullopt;
     }
 
+    // Read straight from sysfs rather than via ID_VENDOR_ID/ID_MODEL_ID, which only exist once udev's usb_id builtin has run for
+    // the device.
+    const auto vendor_id = sysattr(usb_device, "idVendor");
+    const auto product_id = sysattr(usb_device, "idProduct");
+    if (!vendor_id || !product_id) {
+        return std::nullopt;
+    }
+
     return UsbTtyInfo{
-        .devnode = devnode,
-        // Read straight from sysfs rather than via ID_VENDOR_ID/ID_MODEL_ID,
-        // which only exist once udev's usb_id builtin has run for the device.
-        .vendor_id = sysattr_or_empty(usb_device, "idVendor"),
-        .product_id = sysattr_or_empty(usb_device, "idProduct"),
-        .device_serial = sysattr_or_empty(usb_device, "serial"),
-        .interface_name = sysattr_or_empty(usb_interface, "interface"),
-        .interface_number = sysattr_or_empty(usb_interface, "bInterfaceNumber"),
+        .devnode = std::string{*devnode},
+        .vendor_id = std::string{*vendor_id},
+        .product_id = std::string{*product_id},
+        .device_serial = sysattr(usb_device, "serial").transform(to_string),
+        .interface_name = sysattr(usb_interface, "interface").transform(to_string),
+        .interface_number = sysattr(usb_interface, "bInterfaceNumber").transform(to_string),
     };
 }
 
-bool is_pod_device(const UsbTtyInfo& info)
+struct PodPort
 {
-    return info.vendor_id == kTargetVid && info.product_id == kTargetPid;
-}
+    PortRole role;
+    UsbTtyInfo info;
+};
 
-bool is_protocol_port(const UsbTtyInfo& info)
-{
-    if (!info.interface_name.empty()) {
-        return info.interface_name == kProtocolInterfaceName;
-    }
-
-    return info.interface_number == kProtocolInterfaceNumber;
-}
-
-/// What makes two ttys the same pod. The USB device serial is the pod's MCU id,
-/// so it survives re-enumeration and, unlike the devnode, does not change when
-/// the pod comes back as a different ttyACM number. Firmware without a serial
-/// falls back to the devnode, which is the best that can be done there.
-std::string pod_identity(const UsbTtyInfo& info)
-{
-    return info.device_serial.empty() ? info.devnode : info.device_serial;
-}
-
-/// The one place that decides whether a tty is a pod's protocol port. Both the
-/// initial scan and the hotplug monitor go through it so the two cannot answer
-/// the question differently.
-std::optional<UsbTtyInfo> match_protocol_port(udev_device* dev, const log::Logger& logger)
+std::optional<PodPort> match_pod_port(udev_device* dev, const log::Logger& logger)
 {
     auto info = describe_usb_tty(dev);
     if (!info) {
@@ -175,32 +187,30 @@ std::optional<UsbTtyInfo> match_protocol_port(udev_device* dev, const log::Logge
         return std::nullopt;
     }
 
-    if (!is_protocol_port(*info)) {
-        // Expected for every pod: this is its log/console port, which carries
-        // human-readable text rather than protocol frames.
+    const auto role = port_role(*info);
+    if (!role) {
         SPDLOG_LOGGER_DEBUG(logger,
-                            "Ignoring pod tty device '{}': USB interface '{}' (#{}) is not the protocol port.",
+                            "Ignoring pod tty device '{}': USB interface '{}' (#{}) is not a known port.",
                             info->devnode,
-                            info->interface_name,
-                            info->interface_number);
+                            info->interface_name.value_or("<unnamed>"),
+                            info->interface_number.value_or("?"));
         return std::nullopt;
     }
 
-    return info;
+    return PodPort{.role = *role, .info = *std::move(info)};
 }
 
-// ── Opening a pod ─────────────────────────────────────────────────────────────
 constexpr unsigned int kPodBaudRate = 115200;
-using OpenedPort = std::pair<boost::system::error_code, asio::serial_port>;
 
 /// Opens `devnode` and puts it into the 8N1 line discipline the pod expects.
-///
-/// This might block.
-OpenedPort open_and_configure(cobalt::executor exec, const std::string& devnode)
+/// asio opens with O_NONBLOCK and applies the options with TCSANOW, so nothing here waits on a modem line or on output draining.
+std::expected<asio::serial_port, boost::system::error_code> open_and_configure(cobalt::executor exec, const std::string& devnode)
 {
     boost::system::error_code ec;
     asio::serial_port port{std::move(exec)};
-    port.open(devnode, ec);
+    if (port.open(devnode, ec)) {
+        return std::unexpected{ec};
+    }
 
     using serial_option = asio::serial_port_base;
     const auto apply = [&](const auto& option) {
@@ -211,206 +221,249 @@ OpenedPort open_and_configure(cobalt::executor exec, const std::string& devnode)
 
     apply(serial_option::baud_rate(kPodBaudRate));
     apply(serial_option::character_size(8));
-    // Spelled out instead of inherited from whatever state the port was left in
-    // by its previous user - hardware flow control in particular would stall
-    // every write until a modem line the pod does not drive gets asserted.
     apply(serial_option::parity(serial_option::parity::none));
     apply(serial_option::stop_bits(serial_option::stop_bits::one));
+    // Spelled out rather than inherited: asio's defaults leave CRTSCTS alone, and hardware flow control would stall every write
+    // until a modem line the pod does not drive gets asserted.
     apply(serial_option::flow_control(serial_option::flow_control::none));
 
-    return {ec, std::move(port)};
+    if (ec) {
+        return std::unexpected{ec};
+    }
+
+    return port;
 }
 
-/// Pod identity -> the devnode its session is currently running on.
-using OpenPods = std::map<std::string, std::string>;
+cobalt::task<void> stream_pod_log(asio::serial_port port, log::Logger logger)
+{
+    std::array<char, 1024> chunk{};
+    LineAssembler lines;
 
-/// Opens one pod, or returns nullptr if it should not or cannot be opened.
-std::shared_ptr<IPod> open_pod(cobalt::executor exec, OpenPods& open_pods, const log::Logger& logger, const UsbTtyInfo& info)
+    const auto emit = [&logger](std::string_view raw) {
+        const auto line = parse_firmware_line(raw);
+        if (!line.text.empty()) {
+            logger->log(line.level, "{}", line.text);
+        }
+    };
+
+    for (;;) {
+        auto [ec, bytes_read] = co_await port.async_read_some(asio::buffer(chunk), asio::as_tuple(cobalt::use_op));
+        if (ec) {
+            SPDLOG_LOGGER_DEBUG(logger, "Pod log stream ended: {}", ec.message());
+            co_return;
+        }
+
+        lines.feed(std::string_view{chunk.data(), bytes_read}, emit);
+    }
+}
+
+struct DiscoveryState
+{
+    cobalt::executor exec;
+    log::Logger logger;
+    PortTable pods;
+    PortTable logs;
+};
+
+/// Opens a pod's protocol port, or returns nullptr if it should not or cannot be opened.
+std::shared_ptr<IPod> open_pod(DiscoveryState& state, const UsbTtyInfo& info)
 {
     const auto identity = pod_identity(info);
 
-    // One physical pod gets one session. Keying this on the pod rather than on
-    // the devnode matters because the same pod can be reachable through several
-    // devnodes at once - a USB/IP export attached to two vhci ports, or an
-    // attachment that has not been torn down yet - and a second session would
+    // One session per physical pod, keyed on the pod rather than the devnode: the same pod can be reachable through several
+    // devnodes at once (a USB/IP export on two vhci ports, an attachment that is not torn down yet), and a second session would
     // put two competing command streams on one machine.
-    const auto [entry, is_new] = open_pods.try_emplace(identity, info.devnode);
-    if (!is_new) {
-        SPDLOG_LOGGER_DEBUG(
-            logger, "Pod '{}' is already open on '{}', ignoring its second port '{}'.", identity, entry->second, info.devnode);
+    auto claim = state.pods.claim(identity, info.devnode);
+    if (!claim) {
+        SPDLOG_LOGGER_DEBUG(state.logger,
+                            "Pod '{}' is already open on '{}', ignoring its second port '{}'.",
+                            identity,
+                            state.pods.devnode_of(identity).value_or("?"),
+                            info.devnode);
         return nullptr;
     }
 
-    SPDLOG_LOGGER_INFO(logger,
+    SPDLOG_LOGGER_INFO(state.logger,
                        "Matching serial pod found at '{}' (interface '{}' #{}, device serial '{}').",
                        info.devnode,
-                       info.interface_name,
-                       info.interface_number,
-                       info.device_serial);
+                       info.interface_name.value_or("<unnamed>"),
+                       info.interface_number.value_or("?"),
+                       info.device_serial.value_or("<none>"));
 
-    // A port that refuses to open is reported and skipped rather than failing
-    // discovery: discovery is the only thing that ever hands pods to the station,
-    // so ending it over one unusable port would take every other pod - connected
-    // and future - down with it. Dropping the pod from the table again lets a
-    // later "add" event give it another try.
-    auto [ec, port] = open_and_configure(exec, info.devnode);
-    if (ec) {
-        open_pods.erase(identity);
-        SPDLOG_LOGGER_ERROR(
-            logger, "Failed to open serial port '{}' ({}); skipping it: {}", info.devnode, ec.value(), ec.message());
+    // A port that refuses to open is reported and skipped rather than failing discovery: discovery is the only thing that ever
+    // hands pods to the station, so ending it over one unusable port would take every other pod down with it. The claim is not
+    // committed, so a later "add" event can retry.
+    auto port = open_and_configure(state.exec, info.devnode);
+    if (!port) {
+        SPDLOG_LOGGER_ERROR(state.logger,
+                            "Failed to open serial port '{}' ({}); skipping it: {}",
+                            info.devnode,
+                            port.error().value(),
+                            port.error().message());
         return nullptr;
     }
 
-    SPDLOG_LOGGER_DEBUG(logger, "Opened serial port '{}'.", info.devnode);
+    claim->commit();
+    SPDLOG_LOGGER_DEBUG(state.logger, "Opened serial port '{}'.", info.devnode);
 
-    return std::make_shared<Pod>(std::make_unique<SocketIoStream<asio::serial_port>>(std::move(port)));
+    return std::make_shared<Pod>(std::make_unique<SocketIoStream<asio::serial_port>>(*std::move(port)));
 }
 
-/// Drops the bookkeeping entry of a tty that has just disappeared, so the pod
-/// behind it can be opened again when it comes back.
-///
-/// Unplugging is not reported through the generator: the pod's session ends on
-/// its own once reads on the vanished port start failing, and the registry entry
-/// is dropped with it (see run_pod()).
-///
-/// The lookup goes the other way round than the table is keyed, because a remove
-/// event only carries the devnode - the sysfs attributes the pod's identity is
-/// built from are already gone by then.
-void forget_removed_port(OpenPods& open_pods, udev_device* dev, const log::Logger& logger)
+/// Opens a pod's log port and pumps its output into a per-pod spdlog logger.
+void start_log_stream(DiscoveryState& state, const UsbTtyInfo& info)
 {
-    const char* devnode = udev_device_get_devnode(dev);
-    if (devnode == nullptr) {
+    const auto identity = pod_identity(info);
+
+    auto claim = state.logs.claim(identity, info.devnode);
+    if (!claim) {
+        SPDLOG_LOGGER_DEBUG(state.logger,
+                            "Log of pod '{}' already streams from '{}', ignoring '{}'.",
+                            identity,
+                            state.logs.devnode_of(identity).value_or("?"),
+                            info.devnode);
         return;
     }
 
-    const auto removed = std::ranges::find_if(open_pods, [devnode](const auto& e) { return e.second == devnode; });
-    if (removed == open_pods.end()) {
+    auto port = open_and_configure(state.exec, info.devnode);
+    if (!port) {
+        SPDLOG_LOGGER_ERROR(state.logger,
+                            "Failed to open pod log port '{}' ({}); skipping it: {}",
+                            info.devnode,
+                            port.error().value(),
+                            port.error().message());
         return;
     }
 
-    SPDLOG_LOGGER_INFO(logger, "Serial pod '{}' at '{}' was removed.", removed->first, devnode);
-    open_pods.erase(removed);
+    claim->commit();
+
+    auto log_name = std::format("pod_log_{}", identity);
+    SPDLOG_LOGGER_INFO(state.logger, "Streaming pod log from '{}' into logger '{}'.", info.devnode, log_name);
+
+    // Detached: the log tty comes and goes on its own, independently of whether the pod's protocol session is up.
+    cobalt::spawn(state.exec, stream_pod_log(*std::move(port), log::create_or_get(std::move(log_name))), boost::asio::detached);
 }
 
-// ── Watching udev ─────────────────────────────────────────────────────────────
+/// Dispatches one newly seen port to its role.
+/// Returns a pod session only for a protocol port that was opened just now.
+std::shared_ptr<IPod> handle_port(DiscoveryState& state, const PodPort& port)
+{
+    if (port.role == PortRole::log) {
+        start_log_stream(state, port.info);
+        return nullptr;
+    }
 
-UdevPtr make_udev_context(const log::Logger& logger)
+    return open_pod(state, port.info);
+}
+
+/// Drops the bookkeeping entry of a tty that has just disappeared, so the pod behind it can be opened again when it comes back.
+///
+/// Unplugging is not reported through the generator: the pod's session ends on its own once reads on the vanished port start
+/// failing, and the registry entry is dropped with it (see run_pod()). The log stream ends the same way.
+void forget_removed_port(DiscoveryState& state, udev_device* dev)
+{
+    const auto devnode = devnode_of(dev);
+    if (!devnode) {
+        return;
+    }
+
+    // Only one of the two tables can hold the vanished devnode.
+    for (auto* table : {&state.pods, &state.logs}) {
+        if (const auto identity = table->release_by_devnode(*devnode)) {
+            SPDLOG_LOGGER_INFO(state.logger, "Port '{}' of pod '{}' was removed.", *devnode, *identity);
+        }
+    }
+}
+
+UdevPtr make_udev_context()
 {
     UdevPtr context{udev_new()};
     if (!context) {
-        SPDLOG_LOGGER_ERROR(logger, "Could not create udev context.");
-        throw SerialInitializationException{};
+        throw SerialInitializationError{"could not create a udev context"};
     }
 
     return context;
 }
 
-UdevMonitorPtr make_tty_monitor(udev& context, const log::Logger& logger)
+UdevMonitorPtr make_tty_monitor(udev& context)
 {
     UdevMonitorPtr monitor{udev_monitor_new_from_netlink(&context, "udev")};
     if (!monitor) {
-        SPDLOG_LOGGER_ERROR(logger, "Could not create udev monitor.");
-        throw SerialMonitorException{};
+        throw SerialMonitorError{"could not create a netlink monitor"};
     }
 
-    // The subsystem filter is installed as a socket filter by the kernel, so
-    // uevents for anything but ttys never even reach this process. It only takes
-    // effect when receiving is enabled, which is why it goes first.
+    // Filter only ttys
     if (const int rc = udev_monitor_filter_add_match_subsystem_devtype(monitor.get(), "tty", nullptr); rc < 0) {
-        SPDLOG_LOGGER_ERROR(logger, "Could not install the udev 'tty' subsystem filter: {}", errno_message(-rc));
-        throw SerialMonitorException{};
+        throw SerialMonitorError{std::format("could not install the 'tty' subsystem filter: {}", errno_message(-rc))};
     }
 
-    // Without this the monitor socket is never bound and next_event() would
-    // block forever instead of failing, so the result really has to be checked.
     if (const int rc = udev_monitor_enable_receiving(monitor.get()); rc < 0) {
-        SPDLOG_LOGGER_ERROR(logger, "Could not start receiving udev events: {}", errno_message(-rc));
-        throw SerialMonitorException{};
+        throw SerialMonitorError{std::format("could not start receiving events: {}", errno_message(-rc))};
     }
 
     return monitor;
 }
 
-/// asio's stream_descriptor closes the descriptor it is handed when it is
-/// destroyed, and udev_monitor_unref closes the monitor's own descriptor -
-/// handing the monitor's descriptor over directly would close it twice, and by
-/// the time the second close runs that number can already have been handed out
-/// again to an unrelated file on another thread. Hand out a private duplicate
-/// instead: it refers to the same socket (and shares its non-blocking flag) but
-/// is closed independently. F_DUPFD_CLOEXEC rather than dup() because the latter
-/// would drop close-on-exec.
-int dup_monitor_fd(udev_monitor& monitor, const log::Logger& logger)
+/// asio's stream_descriptor and udev_monitor_unref would each close the monitor's descriptor, and by the time the second close
+/// runs that number can already have been reused.
+/// Hand out a private duplicate instead. F_DUPFD_CLOEXEC rather than dup(), which would drop close-on-exec.
+UniqueFd dup_monitor_fd(udev_monitor& monitor)
 {
     const int monitor_fd = udev_monitor_get_fd(&monitor);
     if (monitor_fd < 0) {
-        SPDLOG_LOGGER_ERROR(logger, "udev monitor has no usable file descriptor: {}", errno_message(-monitor_fd));
-        throw SerialMonitorException{};
+        throw SerialMonitorError{std::format("monitor has no usable descriptor: {}", errno_message(-monitor_fd))};
     }
 
-    const int owned_fd = ::fcntl(monitor_fd, F_DUPFD_CLOEXEC, 0);
-    if (owned_fd < 0) {
-        SPDLOG_LOGGER_ERROR(logger, "Could not duplicate the udev monitor descriptor: {}", errno_message(errno));
-        throw SerialMonitorException{};
+    UniqueFd owned_fd{::fcntl(monitor_fd, F_DUPFD_CLOEXEC, 0)};
+    if (owned_fd.get() < 0) {
+        throw SerialMonitorError{std::format("could not duplicate the monitor descriptor: {}", errno_message(errno))};
     }
 
     return owned_fd;
 }
 
-/// Owns the udev connection, the netlink monitor reporting tty hotplug events,
-/// and the asio descriptor that makes waiting on that monitor awaitable.
-///
-/// Constructing this arms the monitor, which is deliberately done *before*
-/// scan_connected() runs: a pod plugged in while the scan is in flight is then
-/// reported by both, and open_pod() drops the duplicate - whereas arming
-/// afterwards would lose it entirely.
 class PodPortMonitor
 {
   public:
     PodPortMonitor(cobalt::executor exec, log::Logger logger)
         : logger_{std::move(logger)}
-        , context_{make_udev_context(logger_)}
-        , monitor_{make_tty_monitor(*context_, logger_)}
+        , context_{make_udev_context()}
+        , monitor_{make_tty_monitor(*context_)}
         , descriptor_{exec}
     {
-        const int owned_fd = dup_monitor_fd(*monitor_, logger_);
+        UniqueFd owned_fd = dup_monitor_fd(*monitor_);
 
         boost::system::error_code ec;
-        descriptor_.assign(owned_fd, ec);
-        if (ec) {
-            ::close(owned_fd);
-            SPDLOG_LOGGER_ERROR(logger_, "Could not watch the udev monitor descriptor: {}", ec.message());
-            throw SerialMonitorException{};
+        if (descriptor_.assign(owned_fd.get(), ec)) {
+            throw SerialMonitorError{std::format("could not watch the monitor descriptor: {}", ec.message())};
         }
+        owned_fd.disown();
 
         SPDLOG_LOGGER_INFO(logger_,
-                           "Watching udev for tty devices with VID '{}', PID '{}' and USB interface '{}'.",
+                           "Watching udev for tty devices with VID '{}', PID '{}' and USB interface '{}' or '{}'.",
                            kTargetVid,
                            kTargetPid,
-                           kProtocolInterfaceName);
+                           kProtocolInterfaceName,
+                           kLogInterfaceName);
     }
 
-    /// Every pod protocol port that is already plugged in. Those devices never
-    /// produce an "add" event, so they have to be picked up by an explicit scan.
-    [[nodiscard]] std::vector<UsbTtyInfo> scan_connected() const
+    /// Connected pods never produce an "add" event, so they have to be picked up by an explicit scan.
+    [[nodiscard]] std::vector<PodPort> scan_connected() const
     {
         const UdevEnumeratePtr enumerate{udev_enumerate_new(context_.get())};
         if (!enumerate) {
-            SPDLOG_LOGGER_ERROR(logger_, "Could not create udev enumerator.");
-            throw SerialInitializationException{};
+            throw SerialInitializationError{"could not create a udev enumerator"};
         }
 
         if (const int rc = udev_enumerate_add_match_subsystem(enumerate.get(), "tty"); rc < 0) {
-            SPDLOG_LOGGER_ERROR(logger_, "Could not restrict the udev scan to tty devices: {}", errno_message(-rc));
-            throw SerialInitializationException{};
+            throw SerialInitializationError{std::format("could not restrict the scan to tty devices: {}", errno_message(-rc))};
         }
 
         if (const int rc = udev_enumerate_scan_devices(enumerate.get()); rc < 0) {
-            // Not fatal: hotplug still works, only pods that are plugged in
-            // right now stay unnoticed until they are re-plugged.
+            // Not fatal: hotplug still works, only pods that are plugged in right now stay unnoticed until they are re-plugged.
             SPDLOG_LOGGER_WARN(logger_, "Could not scan for already connected tty devices: {}", errno_message(-rc));
         }
 
-        std::vector<UsbTtyInfo> ports;
+        std::vector<PodPort> ports;
         udev_list_entry* entry = nullptr;
         udev_list_entry_foreach(entry, udev_enumerate_get_list_entry(enumerate.get()))
         {
@@ -419,22 +472,20 @@ class PodPortMonitor
                 continue;
             }
 
-            auto info = match_protocol_port(dev.get(), logger_);
-            if (!info) {
+            auto port = match_pod_port(dev.get(), logger_);
+            if (!port) {
                 continue;
             }
 
-            // A device udev has not finished processing may not carry its final
-            // permissions yet, so opening it here could fail with EACCES for no
-            // good reason. The "add" event that concludes that processing handles 
-            // the opening, so skip it here and let the monitor pick it up later.
+            // A device udev has not finished processing may not carry its final permissions yet, so opening it here could fail
+            // with EACCES. The concluding "add" event opens it instead.
             if (udev_device_get_is_initialized(dev.get()) <= 0) {
                 SPDLOG_LOGGER_DEBUG(
-                    logger_, "Pod tty device '{}' is still being set up by udev; leaving it to the monitor.", info->devnode);
+                    logger_, "Pod tty device '{}' is still being set up by udev; leaving it to the monitor.", port->info.devnode);
                 continue;
             }
 
-            ports.push_back(*std::move(info));
+            ports.push_back(*std::move(port));
         }
 
         return ports;
@@ -461,11 +512,28 @@ class PodPortMonitor
     asio::posix::stream_descriptor descriptor_;
 };
 
-/// The action of a uevent, empty when the event does not name one.
-std::string_view event_action(udev_device* dev)
+enum class UdevAction
+{
+    add,
+    remove,
+    other,
+};
+
+UdevAction event_action(udev_device* dev)
 {
     const char* action = udev_device_get_action(dev);
-    return action != nullptr ? action : std::string_view{};
+    if (action == nullptr) {
+        return UdevAction::other;
+    }
+
+    const std::string_view name{action};
+    if (name == "add") {
+        return UdevAction::add;
+    }
+    if (name == "remove") {
+        return UdevAction::remove;
+    }
+    return UdevAction::other;
 }
 
 } // namespace
@@ -476,41 +544,36 @@ boost::cobalt::generator<std::shared_ptr<IPod>> SerialPodDiscovery::discover()
     auto logger = cm::log::create_or_get("serial");
 
 #ifndef __linux__
-    SPDLOG_LOGGER_ERROR(logger, "USB hotplug discovery is only implemented for Linux. Aborting discovery.");
-    throw SerialInitializationException{};
+    throw SerialInitializationError{"USB hotplug discovery is only implemented for Linux"};
 #else
 
-    const auto exec = co_await cobalt::this_coro::executor;
-    PodPortMonitor monitor{exec, logger};
+    DiscoveryState state{.exec = co_await cobalt::this_coro::executor, .logger = std::move(logger)};
+    PodPortMonitor monitor{state.exec, state.logger};
 
-    OpenPods open_pods;
-
-    for (const auto& info : monitor.scan_connected()) {
-        if (auto pod = open_pod(exec, open_pods, logger, info)) {
+    for (const auto& port : monitor.scan_connected()) {
+        if (auto pod = handle_port(state, port)) {
             co_yield std::move(pod);
         }
     }
 
     for (;;) {
         const UdevDevicePtr dev = co_await monitor.next_event();
-        const auto action = event_action(dev.get());
 
-        if (action == "remove") {
-            forget_removed_port(open_pods, dev.get(), logger);
-            continue;
-        }
+        switch (event_action(dev.get())) {
+        case UdevAction::remove:
+            forget_removed_port(state, dev.get());
+            break;
 
-        if (action != "add") {
-            continue;
-        }
+        case UdevAction::add:
+            if (const auto port = match_pod_port(dev.get(), state.logger)) {
+                if (auto pod = handle_port(state, *port)) {
+                    co_yield std::move(pod);
+                }
+            }
+            break;
 
-        const auto info = match_protocol_port(dev.get(), logger);
-        if (!info) {
-            continue;
-        }
-
-        if (auto pod = open_pod(exec, open_pods, logger, *info)) {
-            co_yield std::move(pod);
+        case UdevAction::other:
+            break;
         }
     }
 #endif

@@ -1,3 +1,4 @@
 CompileFlags:
+  CompilationDatabase: build
   Remove: [-mno-direct-extern-access,-fconcepts-diagnostics-depth=*]
   Compiler: clang++

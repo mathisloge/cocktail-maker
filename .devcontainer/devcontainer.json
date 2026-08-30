@@ -15,12 +15,16 @@
     // layout; the developer preset turns both on. Also what lldb needs to attach.
     "runArgs": [
         "--cap-add=SYS_PTRACE",
-        "--security-opt=seccomp=unconfined"
+        "--security-opt=seccomp=unconfined",
+        "--device=/dev/bus/usb",
+        "--privileged"
     ],
 
     // GetGitRevisionDescription shells out to git against the workspace, and the
     // safe.directory entry also has to land before pre-commit touches .git/hooks.
-    "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && pre-commit install",
+    // dialout group membership lets vscode open the Pods' /dev/ttyACM* devices
+    // (root:dialout, 0660) without running the Station as root.
+    "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && pre-commit install && sudo usermod -aG dialout vscode",
 
     "customizations": {
         "vscode": {
@@ -38,27 +42,14 @@
 
     "remoteUser": "vscode",
 
-    // /workspaces is a 9p mount (WSL2 -> Windows host), which has severe
-    // per-file-open latency. CPM's default cache lives under build/_deps on
-    // that mount, so every dependency header read (Boost, mp-units, spdlog, ...)
-    // pays a network round trip. Caching sources on the container's native
-    // overlay fs instead keeps compiles CPU-bound rather than I/O-blocked.
+    // Pod discovery reads udev_device_get_is_initialized() to decide whether a tty is
+    // safe to open yet (see serial.cpp). That flag comes from the udev database, which
+    // lives under /run/udev and is populated by the host's systemd-udevd
+    "mounts": [
+        "source=/run/udev,target=/run/udev,type=bind,readonly"
+    ],
+
     "containerEnv": {
         "CPM_SOURCE_CACHE": "/home/vscode/.cache/CPM"
     }
-
-    // Optional GUI: WSLg passthrough, so the Slint window renders on the Windows
-    // desktop. A bind mount whose source is missing is a hard startup failure,
-    // not a warning, so confirm the paths exist in the Docker VM before adding.
-    // Headless always works: xvfb-run -a ctest --preset developer
-    //
-    // "mounts": [
-    //     "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
-    //     "source=/mnt/wslg,target=/mnt/wslg,type=bind"
-    // ],
-    // "containerEnv": {
-    //     "DISPLAY": ":0",
-    //     "WAYLAND_DISPLAY": "wayland-0",
-    //     "XDG_RUNTIME_DIR": "/mnt/wslg/runtime-dir"
-    // }
 }

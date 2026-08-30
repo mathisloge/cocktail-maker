@@ -80,7 +80,7 @@ cpmaddpackage(URI "gh:mathisloge/cocktail-maker-protocol#main" SOURCE_SUBDIR gen
 )
 cpmaddpackage(URI "gh:jeremy-rifkin/libassert@2.2.1")
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(libudev IMPORTED_TARGET libudev)
+pkg_check_modules(libudev IMPORTED_TARGET libudev REQUIRED)
 
 if(BUILD_TESTING)
     cpmaddpackage("gh:catchorg/Catch2@3.16.0")

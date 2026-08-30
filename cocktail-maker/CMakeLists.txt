@@ -72,5 +72,6 @@ if(BUILD_TESTING)
             recipe_boost.test.cpp
             recipe_scale.test.cpp
             recipe.test.cpp
+            serial.test.cpp
     )
 endif()

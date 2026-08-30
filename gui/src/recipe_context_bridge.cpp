@@ -1,7 +1,6 @@
 module;
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/post.hpp>
-#include <boost/cobalt/detached.hpp>
 #include <slint.h>
 #include <spdlog/spdlog.h>
 #include "app-window.h"

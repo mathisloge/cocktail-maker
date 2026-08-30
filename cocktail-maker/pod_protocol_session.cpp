@@ -11,10 +11,10 @@ module;
 #include <proto/MsgId.h>
 #include <spdlog/spdlog.h>
 
-module cm:async_machine_protocol_server_impl;
+module cm:pod_protocol_session_impl;
 import std;
 import libassert;
-import :async_machine_protocol_server;
+import :pod_protocol_session;
 
 namespace cobalt = boost::cobalt;
 namespace asio = boost::asio;
@@ -37,10 +37,10 @@ comms::ErrorStatus ProtocolError::error_status() const
 }
 
 // ---------------------------------------------------------------------------
-// AsyncMachineProtocolServer
+// PodProtocolSession
 // ---------------------------------------------------------------------------
 
-AsyncMachineProtocolServer::~AsyncMachineProtocolServer()
+PodProtocolSession::~PodProtocolSession()
 {
     try {
         ASSERT(!is_running_, "Object destroyed while asynchronous loops were still running!");
@@ -49,23 +49,23 @@ AsyncMachineProtocolServer::~AsyncMachineProtocolServer()
         shutdown_channels();
     }
     catch (const std::exception& ex) {
-        SPDLOG_LOGGER_ERROR(logger_, "Error while descructing the server: {}", ex.what());
+        SPDLOG_LOGGER_ERROR(logger_, "Error while destructing the session: {}", ex.what());
     }
 }
 
-AsyncMachineProtocolServer::AsyncMachineProtocolServer(std::unique_ptr<AnyIoStream> stream)
+PodProtocolSession::PodProtocolSession(std::unique_ptr<AnyIoStream> stream)
     : logger_{log::create_or_get("protocol")}
     , stream_{std::move(stream)}
     , write_queue_{kWriteQueueCapacity, stream_->get_executor()}
 {
 }
 
-auto AsyncMachineProtocolServer::get_executor() -> asio::any_io_executor
+auto PodProtocolSession::get_executor() -> asio::any_io_executor
 {
     return stream_->get_executor();
 }
 
-cobalt::task<void> AsyncMachineProtocolServer::run()
+cobalt::task<void> PodProtocolSession::run()
 {
     is_running_ = true;
     try {
@@ -78,12 +78,12 @@ cobalt::task<void> AsyncMachineProtocolServer::run()
     shutdown_channels();
 }
 
-TransactionId::ValueType AsyncMachineProtocolServer::generate_new_transaction_id()
+TransactionId::ValueType PodProtocolSession::generate_new_transaction_id()
 {
     return ++transaction_id_counter_;
 }
 
-auto AsyncMachineProtocolServer::read_with_timeout(cobalt::channel<InFrame::MsgPtr>& chan, std::chrono::milliseconds timeout)
+auto PodProtocolSession::read_with_timeout(cobalt::channel<InFrame::MsgPtr>& chan, std::chrono::milliseconds timeout)
     -> cobalt::promise<InFrame::MsgPtr>
 {
     boost::asio::steady_timer timer{stream_->get_executor()};
@@ -100,7 +100,7 @@ auto AsyncMachineProtocolServer::read_with_timeout(cobalt::channel<InFrame::MsgP
     co_return std::move(boost::variant2::get<0>(res));
 }
 
-auto AsyncMachineProtocolServer::get_or_create_channel(TransactionId::ValueType id) -> ChannelPtr
+auto PodProtocolSession::get_or_create_channel(TransactionId::ValueType id) -> ChannelPtr
 {
     auto it = dispatch_map_.find(id);
     if (it == dispatch_map_.end()) {
@@ -109,7 +109,7 @@ auto AsyncMachineProtocolServer::get_or_create_channel(TransactionId::ValueType 
     return it->second;
 }
 
-void AsyncMachineProtocolServer::shutdown_channels()
+void PodProtocolSession::shutdown_channels()
 {
     write_queue_.close();
     for (auto&& [id, chan] : dispatch_map_) {
@@ -118,7 +118,7 @@ void AsyncMachineProtocolServer::shutdown_channels()
     dispatch_map_.clear();
 }
 
-cobalt::task<void> AsyncMachineProtocolServer::write_loop()
+cobalt::task<void> PodProtocolSession::write_loop()
 {
     while (true) {
         std::vector<uint8_t> data;
@@ -139,7 +139,7 @@ cobalt::task<void> AsyncMachineProtocolServer::write_loop()
     }
 }
 
-cobalt::task<void> AsyncMachineProtocolServer::read_loop()
+cobalt::task<void> PodProtocolSession::read_loop()
 {
     static constexpr std::size_t kMaxBufferSize = 64 * 1024;
 
@@ -230,9 +230,9 @@ cobalt::task<void> AsyncMachineProtocolServer::read_loop()
     }
 }
 
-AsyncMachineProtocolServer::CleanupGuard::~CleanupGuard()
+PodProtocolSession::CleanupGuard::~CleanupGuard()
 {
-    client->dispatch_map_.erase(transaction_id);
+    session->dispatch_map_.erase(transaction_id);
 }
 
 } // namespace cm

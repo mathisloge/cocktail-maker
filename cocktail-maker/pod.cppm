@@ -10,7 +10,7 @@ import mp_units;
 import cm.core;
 import :pod_types;
 import :station_state;
-import :async_machine_protocol_server;
+import :pod_protocol_session;
 import :dispenser;
 
 namespace cobalt = boost::cobalt;
@@ -187,7 +187,7 @@ export class Pod : public IPod, public std::enable_shared_from_this<Pod>
   private:
     log::Logger logger_{log::create_or_get("pod")};
     std::unique_ptr<PodState> state_{std::make_unique<NoopPodState>()};
-    AsyncMachineProtocolServer server_;
+    PodProtocolSession session_;
     AwaitableBool device_ready_;
 };
 } // namespace cm

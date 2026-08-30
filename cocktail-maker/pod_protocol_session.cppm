@@ -15,7 +15,7 @@ module;
 #include <proto/options/ServerDefaultOptions.h>
 #include <spdlog/spdlog.h>
 
-export module cm:async_machine_protocol_server;
+export module cm:pod_protocol_session;
 
 import std;
 import libassert;
@@ -34,7 +34,7 @@ using InMessage = proto::FrameInterface<comms::option::app::ReadIterator<const s
 
 using InFrame = proto::frame::Frame<InMessage, proto::input::ServerInputMessages<InMessage>, ServerOptions>;
 
-// All server input messages
+// All messages received from a Pod
 export using InPong = proto::message::Pong<InMessage>;
 export using InAck = proto::message::Ack<InMessage>;
 export using InNak = proto::message::Nak<InMessage>;
@@ -71,7 +71,7 @@ export class ProtocolError : public std::runtime_error
     comms::ErrorStatus error_status_;
 };
 
-export class AsyncMachineProtocolServer
+export class PodProtocolSession
 {
     static constexpr std::size_t kWriteQueueCapacity = 10;
     static constexpr std::size_t kResponseChannelCapacity = 1;
@@ -85,14 +85,14 @@ export class AsyncMachineProtocolServer
     bool is_running_ = false;
 
   public:
-    AsyncMachineProtocolServer(AsyncMachineProtocolServer&&) noexcept = delete;
-    AsyncMachineProtocolServer& operator=(AsyncMachineProtocolServer&&) noexcept = delete;
-    AsyncMachineProtocolServer(const AsyncMachineProtocolServer&) = delete;
-    AsyncMachineProtocolServer& operator=(const AsyncMachineProtocolServer&) = delete;
+    PodProtocolSession(PodProtocolSession&&) noexcept = delete;
+    PodProtocolSession& operator=(PodProtocolSession&&) noexcept = delete;
+    PodProtocolSession(const PodProtocolSession&) = delete;
+    PodProtocolSession& operator=(const PodProtocolSession&) = delete;
 
-    ~AsyncMachineProtocolServer();
+    ~PodProtocolSession();
 
-    explicit AsyncMachineProtocolServer(std::unique_ptr<AnyIoStream> stream);
+    explicit PodProtocolSession(std::unique_ptr<AnyIoStream> stream);
 
     auto get_executor() -> asio::any_io_executor;
 
@@ -130,7 +130,7 @@ export class AsyncMachineProtocolServer
 
     struct CleanupGuard
     {
-        AsyncMachineProtocolServer* client;
+        PodProtocolSession* session;
         TransactionId::ValueType transaction_id;
 
         ~CleanupGuard();
@@ -138,7 +138,7 @@ export class AsyncMachineProtocolServer
 };
 
 template <typename ExpectedMsg>
-auto AsyncMachineProtocolServer::async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
+auto PodProtocolSession::async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
     -> cobalt::promise<ExpectedMsg>
 {
     co_return std::get<0>(co_await async_receive_impl<ExpectedMsg>(transaction_id, timeout));
@@ -146,14 +146,14 @@ auto AsyncMachineProtocolServer::async_receive(TransactionId::ValueType transact
 
 template <typename... ExpectedMsgs>
     requires(sizeof...(ExpectedMsgs) >= 2)
-auto AsyncMachineProtocolServer::async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
+auto PodProtocolSession::async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
     -> cobalt::promise<std::variant<ExpectedMsgs...>>
 {
     co_return co_await async_receive_impl<ExpectedMsgs...>(transaction_id, timeout);
 }
 
 template <typename Message>
-auto AsyncMachineProtocolServer::async_send(Message msg, TransactionId::ValueType transaction_id) -> cobalt::promise<void>
+auto PodProtocolSession::async_send(Message msg, TransactionId::ValueType transaction_id) -> cobalt::promise<void>
 {
     OutFrame frame;
     std::vector<std::uint8_t> output;
@@ -182,7 +182,7 @@ auto AsyncMachineProtocolServer::async_send(Message msg, TransactionId::ValueTyp
 }
 
 template <typename... ExpectedMsgs>
-auto AsyncMachineProtocolServer::async_receive_impl(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
+auto PodProtocolSession::async_receive_impl(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
     -> cobalt::promise<std::variant<ExpectedMsgs...>>
 {
     static_assert((ExpectedMsgs::hasStaticMsgId() && ...), "All expected messages must have a compile-time message id.");

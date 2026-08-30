@@ -20,8 +20,6 @@ target_sources(
     PUBLIC
         FILE_SET CXX_MODULES
             FILES
-                async_machine_protocol_server.cppm
-                async_machine_protocol_server.cpp
                 dispenser.cppm
                 execute_recipe.cppm
                 glass.cppm
@@ -31,6 +29,8 @@ target_sources(
                 lib.cppm
                 pod_discovery.cppm
                 pod_types.cppm
+                pod_protocol_session.cppm
+                pod_protocol_session.cpp
                 pod_registry.cppm
                 pod_dispatcher.cppm
                 pod.cppm
@@ -61,12 +61,12 @@ if(BUILD_TESTING)
     target_sources(
         cocktail-maker-lib-tests
         PRIVATE
-            async_machine_protocol_server.test.cpp
             execute_recipe.test.cpp
             glass.test.cpp
             ingredient.test.cpp
             pod_discovery.test.cpp
             pod.test.cpp
+            pod_protocol_session.test.cpp
             pod_registry.test.cpp
             pod_algorithms.test.cpp
             recipe_boost.test.cpp

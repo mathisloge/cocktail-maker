@@ -70,8 +70,8 @@ cpmaddpackage(URI "gh:mpusz/mp-units#daaed987fa55419d0d5daffbad95e4463f2e3f74" S
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
 cpmaddpackage(URI "gh:simdjson/simdjson@4.6.11" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF")
 cpmaddpackage(
-  NAME Slint
   URI "gh:slint-ui/slint@1.18.0"
+  NAME Slint
   SOURCE_SUBDIR api/cpp
 )
 cpmaddpackage(URI "gh:commschamp/comms@5.5.3" NAME LibComms)

@@ -65,18 +65,17 @@ cpmaddpackage(
 cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite)
 cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_USE_STD_FORMAT ON")
 cpmaddpackage(URI "gh:CLIUtils/CLI11@2.7.2" OPTIONS "CLI11_PRECOMPILED ON")
-cpmaddpackage(URI "gh:mpusz/mp-units#20cedd5acda14bff219f911a3935b1f4fc02e807" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
+cpmaddpackage(URI "gh:mpusz/mp-units#daaed987fa55419d0d5daffbad95e4463f2e3f74" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
 )
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
-cpmaddpackage(URI "gh:simdjson/simdjson@4.6.8" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF")
+cpmaddpackage(URI "gh:simdjson/simdjson@4.6.11" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF")
 cpmaddpackage(
   NAME Slint
-  GIT_REPOSITORY https://github.com/slint-ui/slint.git
-  GIT_TAG ec96b4bf263adf6a502774d4a18434207d6fb282
+  URI "gh:slint-ui/slint@1.18.0"
   SOURCE_SUBDIR api/cpp
 )
-cpmaddpackage(URI "gh:commschamp/comms@5.5.2" NAME LibComms)
-cpmaddpackage(URI "gh:mathisloge/cocktail-maker-protocol#main" SOURCE_SUBDIR generated
+cpmaddpackage(URI "gh:commschamp/comms@5.5.3" NAME LibComms)
+cpmaddpackage(URI "gh:mathisloge/cocktail-maker-protocol@1.0.0" SOURCE_SUBDIR generated
 )
 cpmaddpackage(URI "gh:jeremy-rifkin/libassert@2.2.1")
 find_package(PkgConfig REQUIRED)

@@ -4,5 +4,5 @@
         "--experimental-modules-support",
         "--compile-commands-dir=${workspaceFolder}/build",
         "--header-insertion=never"
-    ]
+    ],
 }

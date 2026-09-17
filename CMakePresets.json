@@ -62,7 +62,7 @@
                 "SANITIZE_ADDRESS": true,
                 "SANITIZE_UNDEFINED": true,
                 "SANITIZE_THREAD": false,
-                "BUILD_SIMULATED": false
+                "BUILD_SIMULATED": true
             }
         },
         {
@@ -73,7 +73,8 @@
                 "release-build"
             ],
             "cacheVariables": {
-                "BUILD_TESTING": false
+                "BUILD_TESTING": false,
+                "BUILD_SIMULATED": false
             }
         },
         {

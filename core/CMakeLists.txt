@@ -18,7 +18,8 @@ target_link_libraries(
         mp-units::mp-units
         spdlog::spdlog
         simdjson::simdjson
-        Boost::cobalt
+        STDEXEC::stdexec
+        STDEXEC::asioexec
         libassert::assert
         proto
 )
@@ -30,13 +31,21 @@ target_sources(
             FILES
                 lib.cppm
                 any_io_stream.cppm
+                async_algorithms.cppm
+                async_algorithms.cpp
+                async_scope.cppm
+                async_scope.cpp
                 awaitable_bool.cppm
+                channel.cppm
                 comms_adapter.cppm
+                io_scheduler.cppm
                 logging.cppm
                 overloaded.cppm
                 strong_type.cppm
                 units.cppm
                 retry.cppm
+                run_until_complete.cppm
+                task.cppm
 )
 
 if(BUILD_TESTING)
@@ -51,6 +60,7 @@ if(BUILD_TESTING)
     target_sources(
         cocktail-maker-core-tests
         PRIVATE
+            async_algorithms.test.cpp
             awaitable_bool.test.cpp
             comms_adapter.test.cpp
             strong_type.test.cpp

@@ -13,6 +13,10 @@ option(
 set(FLAG_CANDIDATES
     # MSVC uses
     "/fsanitize=undefined"
+    # This Clang candidate disables the function check. stdexec is included as headers into several modules and
+    # translation units, and its sender descriptors are lambdas whose types differ between them. The function check
+    # reports the resulting indirect calls within stdexec, although they are sound.
+    "-g -fsanitize=undefined -fno-sanitize=function"
     # GNU/Clang
     "-g -fsanitize=undefined"
 )

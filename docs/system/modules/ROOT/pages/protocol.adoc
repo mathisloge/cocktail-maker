@@ -1,12 +1,12 @@
 = Protocol
 
-xref:system-design.adoc[] establishes the Station–Pod link as a request–response protocol with the
+xref:system-design.adoc[] establishes the Station-Pod link as a request-response protocol with the
 Station as sole initiator, and names three conceptual message categories: commands, status queries,
 and events.
 This page defines the wire-level realization of that model: the frame layout, how a request is
 correlated with its response, and the concrete communication patterns built on top of that
 correlation.
-The request–response model itself and the choice to generate the protocol code with commsdsl are
+The request-response model itself and the choice to generate the protocol code with commsdsl are
 decisions made elsewhere and are not repeated here. See xref:adr:003-protocol-communication.adoc[ADR-003]
 and xref:adr:006-protocol-serialization.adoc[ADR-006].
 

@@ -16,8 +16,10 @@ in a system where an incorrect quantity is a food-safety concern. xref:adr:004-d
 All Pod communication and recipe execution run as coroutines on one shared execution context rather
 than across multiple threads, so the domain and UI state they touch is never accessed from two places
 at once. Every exchange with a Pod carries an explicit timeout, so a Pod that stops responding cannot
-stall the Station indefinitely (xref:system::protocol.adoc[]). Related decision:
-xref:adr:003-asynchronous-execution-model.adoc[ADR-003].
+stall the Station indefinitely (xref:system::protocol.adoc[]). All background work is owned by one
+scope, which is stopped and joined before the Station shuts down. Related decisions:
+xref:adr:003-asynchronous-execution-model.adoc[ADR-003],
+xref:adr:005-sender-receiver-execution-model.adoc[ADR-005].
 
 == UI/Domain Separation
 

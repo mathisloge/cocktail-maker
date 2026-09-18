@@ -11,7 +11,7 @@ include::partial$adr-header.adoc[]
 
 == Context
 
-The Station–Pod protocol follows a request–response model with the Station as sole initiator (xref:adr:003-protocol-communication.adoc[ADR-003]), carried over USB CDC (xref:adr:002-pysical-pod-connection.adoc[ADR-002]), with the Pod side running Zephyr/C++ (xref:adr:005-embedded-os.adoc[ADR-005]).
+The Station-Pod protocol follows a request-response model with the Station as sole initiator (xref:adr:003-protocol-communication.adoc[ADR-003]), carried over USB CDC (xref:adr:002-pysical-pod-connection.adoc[ADR-002]), with the Pod side running Zephyr/C++ (xref:adr:005-embedded-os.adoc[ADR-005]).
 USB CDC presents a raw, continuous byte stream with no built-in message boundaries, so the protocol implementation needs an explicit framing mechanism, not just message field serialization.
 Because dispensing commands are safety- and food-safety-relevant, the transport also needs message integrity checking (e.g. a checksum/CRC) rather than assuming the underlying link is error-free.
 Hand-writing and manually keeping the Station and Pod (de)serialization code in sync across two independent codebases is error-prone and does not scale well as the message set grows.

@@ -1,10 +1,6 @@
 module;
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/detached.hpp>
-#include <boost/asio/post.hpp>
-#include <boost/cobalt/spawn.hpp>
-#include <boost/cobalt/task.hpp>
 #include <libassert/assert-macros.hpp>
+#include <stdexec/execution.hpp>
 #include "app-window.h"
 
 module cm.gui:dispenser_calibration_bridge_impl;
@@ -16,14 +12,11 @@ import mp_units;
 import libassert;
 import :dispenser_calibration_bridge;
 
-namespace asio = boost::asio;
-namespace cobalt = boost::cobalt;
-
 namespace cm::gui {
-DispenserCalibrationBridge::DispenserCalibrationBridge(asio::any_io_executor executor,
+DispenserCalibrationBridge::DispenserCalibrationBridge(AsyncScope& async_scope,
                                                        slint::ComponentHandle<AppWindow> ui,
                                                        const PodRegistry& pod_registry)
-    : executor_{std::move(executor)}
+    : async_scope_{async_scope}
     , ui_{std::move(ui)}
     , pod_registry_{pod_registry}
 {
@@ -45,30 +38,25 @@ void DispenserCalibrationBridge::init()
 
 void DispenserCalibrationBridge::dispatch_load_tare(const gui::Pod pod, const gui::Dispenser dispenser)
 {
-    boost::cobalt::spawn(
-        executor_, async_dispatch_load_tare(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}), boost::asio::detached);
+    async_scope_.spawn(async_dispatch_load_tare(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}));
 }
 
 void DispenserCalibrationBridge::dispatch_calibrate_load_cell_ref_weight(const gui::Pod pod,
                                                                          const gui::Dispenser dispenser,
                                                                          const units::Grams grams)
 {
-    boost::cobalt::spawn(
-        executor_,
-        async_dispatch_calibrate_load_cell_ref_weight(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}, grams),
-        boost::asio::detached);
+    async_scope_.spawn(
+        async_dispatch_calibrate_load_cell_ref_weight(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}, grams));
 }
 
 void DispenserCalibrationBridge::dispatch_calibrate_pump(const gui::Pod pod,
                                                          const gui::Dispenser dispenser,
                                                          const units::Steps steps)
 {
-    boost::cobalt::spawn(executor_,
-                         async_calibrate_pump(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}, steps),
-                         boost::asio::detached);
+    async_scope_.spawn(async_calibrate_pump(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}, steps));
 }
 
-cobalt::task<void> DispenserCalibrationBridge::async_dispatch_load_tare(const PodId pod_id, const DispenserId dispenser_id)
+Task<void> DispenserCalibrationBridge::async_dispatch_load_tare(const PodId pod_id, const DispenserId dispenser_id)
 {
     update_load_tare_status(CalibrationStepStatus::Running);
     auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
@@ -87,9 +75,9 @@ cobalt::task<void> DispenserCalibrationBridge::async_dispatch_load_tare(const Po
     }
 }
 
-cobalt::task<void> DispenserCalibrationBridge::async_dispatch_calibrate_load_cell_ref_weight(const PodId pod_id,
-                                                                                             const DispenserId dispenser_id,
-                                                                                             const units::Grams grams)
+Task<void> DispenserCalibrationBridge::async_dispatch_calibrate_load_cell_ref_weight(const PodId pod_id,
+                                                                                     const DispenserId dispenser_id,
+                                                                                     const units::Grams grams)
 {
     update_load_cell_calibration_status(CalibrationStepStatus::Running);
     auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
@@ -108,9 +96,9 @@ cobalt::task<void> DispenserCalibrationBridge::async_dispatch_calibrate_load_cel
     }
 }
 
-cobalt::task<void> DispenserCalibrationBridge::async_calibrate_pump(const PodId pod_id,
-                                                                    const DispenserId dispenser_id,
-                                                                    const units::Steps steps)
+Task<void> DispenserCalibrationBridge::async_calibrate_pump(const PodId pod_id,
+                                                            const DispenserId dispenser_id,
+                                                            const units::Steps steps)
 {
     update_pump_status(CalibrationStepStatus::Running);
     auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);

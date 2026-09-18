@@ -1,12 +1,11 @@
 module;
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/detached.hpp>
-#include <boost/cobalt/spawn.hpp>
-#include <boost/cobalt/task.hpp>
 #include <spdlog/spdlog.h>
+#include <stdexec/execution.hpp>
 
 module cm:application_impl;
 import std;
+import cm.core;
 import :application;
 import :pod_discovery;
 
@@ -14,7 +13,12 @@ namespace cm {
 
 Application::~Application()
 {
-    execution_context_.stop();
+    try {
+        shutdown();
+    }
+    catch (const std::exception& ex) {
+        SPDLOG_LOGGER_ERROR(logger_, "Could not shut down cleanly: {}", ex.what());
+    }
 }
 
 void Application::init(const std::filesystem::path& db_dir)
@@ -30,21 +34,42 @@ void Application::init(const std::filesystem::path& db_dir)
 
 void Application::run(std::shared_ptr<StationState> station_state, std::unique_ptr<PodDiscovery> pod_discovery)
 {
-    execution_thread_ = std::make_unique<std::jthread>(
-        [this, station_state = std::move(station_state), pod_discovery = std::move(pod_discovery)]() mutable {
-            auto logger = cm::log::create_or_get("app");
-            boost::cobalt::this_thread::set_executor(execution_context_.get_executor());
-            SPDLOG_LOGGER_INFO(logger, "Async context starting.");
-            boost::cobalt::spawn(execution_context_.get_executor(),
-                                 discover_and_run_pods(std::move(pod_discovery), std::move(station_state), pod_registry_),
-                                 boost::asio::detached);
-            execution_context_.run();
-            SPDLOG_LOGGER_INFO(logger, "Async context finished.");
-        });
+    execution_thread_ = std::make_unique<std::jthread>([this]() {
+        SPDLOG_LOGGER_INFO(logger_, "Async context starting.");
+        execution_context_.run();
+        SPDLOG_LOGGER_INFO(logger_, "Async context finished.");
+    });
+    async_scope_.spawn(discover_and_run_pods(std::move(pod_discovery), std::move(station_state), pod_registry_, async_scope_));
+}
+
+void Application::shutdown()
+{
+    if (execution_thread_ == nullptr) {
+        return;
+    }
+
+    SPDLOG_LOGGER_INFO(logger_, "Stopping all asynchronous work...");
+
+    // The scope is stopped and joined on the execution thread. The calling thread only waits for it.
+    auto stop_and_join = [](AsyncScope& scope) -> Task<void> {
+        scope.request_stop();
+        co_await scope.join();
+    };
+    stdexec::sync_wait(stdexec::starts_on(async_scope_.scheduler(), stop_and_join(async_scope_)));
+
+    // All asynchronous work has finished, so the handlers that are still queued can be dropped.
+    work_guard_.reset();
+    execution_context_.stop();
+    execution_thread_.reset();
 }
 
 boost::asio::any_io_executor Application::get_executor()
 {
     return execution_context_.get_executor();
+}
+
+AsyncScope& Application::async_scope()
+{
+    return async_scope_;
 }
 } // namespace cm

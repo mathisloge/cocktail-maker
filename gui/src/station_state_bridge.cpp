@@ -1,11 +1,9 @@
 module;
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/detached.hpp>
-#include <boost/asio/post.hpp>
 #include <boost/asio/steady_timer.hpp>
-#include <boost/cobalt/spawn.hpp>
+#include <exec/asio/use_sender.hpp>
 #include <slint.h>
 #include <spdlog/spdlog.h>
+#include <stdexec/execution.hpp>
 #include "app-window.h"
 
 module cm.gui:station_state_bridge_impl;
@@ -18,9 +16,7 @@ import :operator_auth;
 
 namespace cm::gui {
 
-boost::cobalt::task<void> async_highlight_dispenser(const PodRegistry& pod_registry,
-                                                    const PodId pod_id,
-                                                    const DispenserId dispenser_id);
+Task<void> async_highlight_dispenser(const PodRegistry& pod_registry, const PodId pod_id, const DispenserId dispenser_id);
 
 struct PodStateData
 {
@@ -167,8 +163,9 @@ constexpr std::string kSalt = "static";
 
 StationStateBridge::StationStateBridge(slint::ComponentHandle<AppWindow> ui,
                                        const PodRegistry& pod_registry,
-                                       boost::asio::any_io_executor executor)
-    : ui_{std::move(ui)}
+                                       AsyncScope& async_scope)
+    : async_scope_{async_scope}
+    , ui_{std::move(ui)}
     , pod_model_{std::make_shared<PodUiModel>()}
     , operator_auth_{OperatorAuthConfig{
           .pin_hash = hash_pin("000000", kSalt),
@@ -178,16 +175,12 @@ StationStateBridge::StationStateBridge(slint::ComponentHandle<AppWindow> ui,
       }}
 {
     ui_->global<StationStateContext>().set_pods(pod_model_);
-    ui_->global<StationStateContext>().on_highlight_dispenser(
-        [&pod_registry, executor](const gui::Pod pod, const gui::Dispenser dispenser) {
-            boost::cobalt::spawn(
-                executor,
-                async_highlight_dispenser(pod_registry, PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}),
-                boost::asio::detached);
-        });
+    ui_->global<StationStateContext>().on_highlight_dispenser([&pod_registry, &async_scope](const gui::Pod pod,
+                                                                                            const gui::Dispenser dispenser) {
+        async_scope.spawn(async_highlight_dispenser(pod_registry, PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}));
+    });
     ui_->global<StationStateContext>().on_navigate_to([this](Page target) { on_navigate_to(target); });
-    ui_->global<StationStateContext>().on_submit_operator_pin(
-        [this, executor](slint::SharedString pin) { on_submit_operator_pin(pin, executor); });
+    ui_->global<StationStateContext>().on_submit_operator_pin([this](slint::SharedString pin) { on_submit_operator_pin(pin); });
 }
 
 std::unique_ptr<PodState> StationStateBridge::create_pod_state()
@@ -246,9 +239,7 @@ void StationStateBridge::update_pod_model(const PodStateImpl& pod)
     slint::invoke_from_event_loop([self = shared_from_this(), pod = pod.data()]() { self->pod_model_->update_pod(pod); });
 }
 
-boost::cobalt::task<void> async_highlight_dispenser(const PodRegistry& pod_registry,
-                                                    const PodId pod_id,
-                                                    const DispenserId dispenser_id)
+Task<void> async_highlight_dispenser(const PodRegistry& pod_registry, const PodId pod_id, const DispenserId dispenser_id)
 {
     log::Logger logger{log::create_or_get("station_state_bridge")};
     auto dispenser = pod_registry.dispenser_of_pod(pod_id, dispenser_id);
@@ -278,7 +269,7 @@ void StationStateBridge::on_navigate_to(const Page target)
     ui_->global<StationStateContext>().invoke_navigated_to(previous, target);
 }
 
-void StationStateBridge::on_submit_operator_pin(const slint::SharedString& pin, boost::asio::any_io_executor executor)
+void StationStateBridge::on_submit_operator_pin(const slint::SharedString& pin)
 {
     const auto now = std::chrono::steady_clock::now();
     operator_authenticated_ = operator_auth_.verify(std::string{pin}, now);
@@ -297,17 +288,17 @@ void StationStateBridge::on_submit_operator_pin(const slint::SharedString& pin, 
             logger_, "Entered wrong operator pin {}. Remaining: {}", pin.data(), operator_auth_.remaining_attempts());
     }
     if (locked_out) {
-        boost::cobalt::spawn(executor, async_handle_operator_lockout(), boost::asio::detached);
+        async_scope_.spawn(async_handle_operator_lockout());
     }
 }
 
-boost::cobalt::task<void> StationStateBridge::async_handle_operator_lockout()
+Task<void> StationStateBridge::async_handle_operator_lockout()
 {
     SPDLOG_LOGGER_DEBUG(logger_, "Starting operator lockout timeout.");
     for (auto now = std::chrono::steady_clock::now(); operator_auth_.is_locked_out(now); now = std::chrono::steady_clock::now()) {
-        boost::asio::steady_timer timer{co_await boost::cobalt::this_coro::executor};
+        boost::asio::steady_timer timer{async_scope_.executor()};
         timer.expires_after(std::chrono::seconds{1});
-        co_await timer.async_wait(boost::cobalt::use_op);
+        co_await timer.async_wait(exec::asio::use_sender);
         slint::invoke_from_event_loop([this]() {
             const auto now = std::chrono::steady_clock::now();
             const auto& ctx = ui_->global<StationStateContext>();

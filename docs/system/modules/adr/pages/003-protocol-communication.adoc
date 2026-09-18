@@ -16,7 +16,7 @@ Dispensing is a safety- and food-safety-relevant action, so it must always be tr
 
 == Decision
 
-We will use a request–response protocol model in which the Station is the sole initiator of all communication.
+We will use a request-response protocol model in which the Station is the sole initiator of all communication.
 A Pod never sends unsolicited commands and never triggers dispensing or actuator movement on its own; it only acts in response to a request from the Station, and reports status and events back as responses within that model.
 
 == Consequences

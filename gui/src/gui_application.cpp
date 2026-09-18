@@ -31,11 +31,13 @@ void GuiApplication::init(const std::filesystem::path& db_dir)
 
 void GuiApplication::run(std::unique_ptr<PodDiscovery> pod_discovery, bool fullscreen)
 {
-    auto station_state = std::make_shared<StationStateBridge>(ui_, pod_registry_, get_executor());
+    auto station_state = std::make_shared<StationStateBridge>(ui_, pod_registry_, async_scope());
     // don't move station_state, keep it alive as long as the ui is running
     Application::run(station_state, std::move(pod_discovery));
     ui_->window().set_fullscreen(fullscreen);
     ui_->run();
+    // The asynchronous work references the bridges and station_state, so it has to finish before they are destroyed.
+    shutdown();
 }
 
 } // namespace cm::gui

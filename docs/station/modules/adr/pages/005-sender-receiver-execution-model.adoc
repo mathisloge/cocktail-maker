@@ -1,0 +1,47 @@
+= ADR-005: Sender/Receiver Execution Model (stdexec on Boost.Asio)
+:adr-status: Accepted
+:adr-date: 2026-09-18
+:adr-authors: {gh}mathisloge[@mathisloge]
+
+include::partial$adr-header.adoc[]
+
+== Context
+xref:003-asynchronous-execution-model.adoc[ADR-003] established that all Pod communication and recipe execution run as coroutines on a single shared Boost.Asio execution context, and used Boost.Cobalt for the coroutine building blocks.
+That execution model has proven right, but the coroutine library underneath it has not been a lasting fit:
+Boost.Cobalt is a Boost-specific design, while {cpp}26 standardizes asynchronous execution as senders and receivers (`std::execution`, P2300), including a coroutine task type (P3552) and structured-concurrency scopes (P3149).
+Cancellation in Boost.Cobalt is also reported as an exception (`operation_aborted`), which is easy to confuse with a genuine failure in safety-relevant code paths such as recipe abortion.
+
+=== Decision Drivers
+
+* **Standard Alignment:** Follow the {cpp}26 asynchronous model so the code base can move to `std::execution` with little more than a namespace change once standard libraries ship it.
+* **Structured Concurrency:** Every piece of background work must be owned by a scope that can be stopped and awaited, so the Station can shut down without work outliving the objects it references.
+* **Explicit Cancellation:** A stop request must be distinguishable from an error, so that aborting a recipe reliably triggers the safe-state handling instead of an error path.
+* **Keep ADR-003's guarantees:** One shared execution context, no shared state across threads, a timeout on every Pod exchange.
+
+== Decision
+We use the reference implementation of `std::execution`, https://github.com/NVIDIA/stdexec[stdexec] (pinned to a `main` commit), on top of the existing Boost.Asio execution context:
+
+* Coroutines are `stdexec::task` (P3552), aliased as `cm::Task` in one place.
+* Boost.Asio operations become senders through stdexec's `exec::asio::use_sender` completion token. Stop requests are forwarded to Asio's per-operation cancellation.
+* `cm::IoScheduler` schedules onto the Asio `io_context`. `cm::AsyncScope` (a `stdexec::counting_scope`) owns every spawned operation and is stopped and joined on shutdown.
+* Racing, joining and buffering use `exec::when_any`, `cm::join_all`/`cm::gather_all` and Asio channels (`cm::Channel`).
+* The execution model of ADR-003 with a single shared execution context is unchanged.
+
+== Alternatives Considered
+=== Keep Boost.Cobalt
+Rejected: it would tie the Station to a non-standard coroutine library with fewer users and an exception-based cancellation model, against the direction of {cpp}26.
+
+=== Asio's own coroutines (`asio::awaitable`)
+Rejected: they integrate well with Asio but are just as non-standard, and they provide no structured-concurrency scopes.
+
+=== stdexec as a {cpp} module (`import stdexec`)
+Rejected for now: with the pinned Clang version the module build of stdexec crashes the compiler, and stdexec itself documents module-related compiler bugs below Clang 24. stdexec is consumed as headers from the global module fragment instead, like the other third-party libraries (xref:002-cpp-module-compilation-model.adoc[ADR-002]).
+
+== Consequences
+* **Good:** the asynchronous code follows the {cpp}26 standard model. Switching to `std::execution` is mostly mechanical.
+* **Good:** cancellation is a separate completion (`set_stopped`), so recipe abortion triggers the safe-state handling through `upon_stopped` rather than through exception matching.
+* **Good:** all background work is owned by `cm::AsyncScope`. The application stops and joins it before tearing down the objects that work references.
+* **Bad:** stdexec's `main` branch is a moving target, so updates have to be deliberate and re-verified.
+* **Bad:** because stdexec is consumed as headers from several modules, Clang cannot always merge its template instantiations across module boundaries. Therefore, **module interface units must not contain non-template coroutine bodies**. Such bodies live in module implementation units. Templates in interfaces are fine. Module units also only include stdexec headers if they name stdexec entities themselves. The `cm::Task` alias and the other building blocks are reached through `import cm.core`.
+* **Bad:** for the same reason, UndefinedBehaviorSanitizer's function-type check is disabled: stdexec's sender descriptors are lambdas whose types differ between translation units, which that check reports although the calls are sound.
+* **Bad:** tasks are lazy. Anything that must happen at call time, like registering for a Pod response before sending the request, has to be done before the task is created and not inside it.

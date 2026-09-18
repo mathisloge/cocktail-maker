@@ -1,8 +1,5 @@
 module;
-#include <boost/cobalt/channel.hpp>
-#include <boost/cobalt/generator.hpp>
-#include <boost/cobalt/promise.hpp>
-#include <boost/cobalt/task.hpp>
+#include <boost/asio/any_io_executor.hpp>
 #include <comms/GenericMessage.h>
 #include <comms/dispatch.h>
 #include <comms/options.h>
@@ -23,7 +20,6 @@ import cm.core;
 
 namespace cm {
 
-namespace cobalt = boost::cobalt;
 namespace asio = boost::asio;
 
 using ServerOptions = proto::options::ServerDefaultOptions;
@@ -76,10 +72,12 @@ export class PodProtocolSession
     static constexpr std::size_t kWriteQueueCapacity = 10;
     static constexpr std::size_t kResponseChannelCapacity = 1;
 
+    using ResponseChannel = Channel<InFrame::MsgPtr>;
+    using ChannelPtr = std::shared_ptr<ResponseChannel>;
+
     log::Logger logger_;
     std::unique_ptr<AnyIoStream> stream_;
-    cobalt::channel<std::vector<uint8_t>> write_queue_;
-    using ChannelPtr = std::shared_ptr<cobalt::channel<InFrame::MsgPtr>>;
+    Channel<std::vector<uint8_t>> write_queue_;
     std::unordered_map<TransactionId::ValueType, ChannelPtr> dispatch_map_;
     TransactionId::ValueType transaction_id_counter_{0};
     bool is_running_ = false;
@@ -96,64 +94,82 @@ export class PodProtocolSession
 
     auto get_executor() -> asio::any_io_executor;
 
-    cobalt::task<void> run();
+    Task<void> run();
 
     TransactionId::ValueType generate_new_transaction_id();
 
+    /**
+     * Waits for the response with `transaction_id`.
+     *
+     * The response is registered right away when this is called, not when the returned task is started, so the request can
+     * be sent in between without its response getting lost. The timeout starts once the task is awaited.
+     */
     template <typename ExpectedMsg>
-    auto async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
-        -> cobalt::promise<ExpectedMsg>;
+    auto async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout) -> Task<ExpectedMsg>;
 
     template <typename... ExpectedMsgs>
         requires(sizeof...(ExpectedMsgs) >= 2)
     auto async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
-        -> cobalt::promise<std::variant<ExpectedMsgs...>>;
+        -> Task<std::variant<ExpectedMsgs...>>;
 
     template <typename Message>
-    auto async_send(Message msg, TransactionId::ValueType transaction_id) -> cobalt::promise<void>;
+    auto async_send(Message msg, TransactionId::ValueType transaction_id) -> Task<void>;
 
   private:
+    /// Keeps the response channel of one transaction registered in the dispatch map for as long as it lives.
+    class ResponseRegistration
+    {
+      public:
+        ResponseRegistration(PodProtocolSession& session, TransactionId::ValueType transaction_id, ChannelPtr channel);
+        ResponseRegistration(ResponseRegistration&& other) noexcept;
+        ResponseRegistration& operator=(ResponseRegistration&&) = delete;
+        ResponseRegistration(const ResponseRegistration&) = delete;
+        ResponseRegistration& operator=(const ResponseRegistration&) = delete;
+        ~ResponseRegistration();
+
+        [[nodiscard]] ResponseChannel& channel() const;
+
+      private:
+        PodProtocolSession* session_;
+        TransactionId::ValueType transaction_id_;
+        ChannelPtr channel_;
+    };
+
+    template <typename ExpectedMsg>
+    auto receive_single(ResponseRegistration registration, std::chrono::milliseconds timeout) -> Task<ExpectedMsg>;
+
     template <typename... ExpectedMsgs>
-    auto async_receive_impl(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
-        -> cobalt::promise<std::variant<ExpectedMsgs...>>;
+    auto receive_matching(ResponseRegistration registration, std::chrono::milliseconds timeout)
+        -> Task<std::variant<ExpectedMsgs...>>;
 
-    auto read_with_timeout(cobalt::channel<InFrame::MsgPtr>& chan, std::chrono::milliseconds timeout)
-        -> cobalt::promise<InFrame::MsgPtr>;
+    auto read_with_timeout(ResponseChannel& chan, std::chrono::milliseconds timeout) -> Task<InFrame::MsgPtr>;
 
-    auto get_or_create_channel(TransactionId::ValueType id) -> ChannelPtr;
+    auto register_response(TransactionId::ValueType id) -> ResponseRegistration;
 
     void shutdown_channels();
 
-    cobalt::task<void> write_loop();
+    Task<void> write_loop();
 
-    cobalt::task<void> read_loop();
-
-    struct CleanupGuard
-    {
-        PodProtocolSession* session;
-        TransactionId::ValueType transaction_id;
-
-        ~CleanupGuard();
-    };
+    Task<void> read_loop();
 };
 
 template <typename ExpectedMsg>
 auto PodProtocolSession::async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
-    -> cobalt::promise<ExpectedMsg>
+    -> Task<ExpectedMsg>
 {
-    co_return std::get<0>(co_await async_receive_impl<ExpectedMsg>(transaction_id, timeout));
+    return receive_single<ExpectedMsg>(register_response(transaction_id), timeout);
 }
 
 template <typename... ExpectedMsgs>
     requires(sizeof...(ExpectedMsgs) >= 2)
 auto PodProtocolSession::async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
-    -> cobalt::promise<std::variant<ExpectedMsgs...>>
+    -> Task<std::variant<ExpectedMsgs...>>
 {
-    co_return co_await async_receive_impl<ExpectedMsgs...>(transaction_id, timeout);
+    return receive_matching<ExpectedMsgs...>(register_response(transaction_id), timeout);
 }
 
 template <typename Message>
-auto PodProtocolSession::async_send(Message msg, TransactionId::ValueType transaction_id) -> cobalt::promise<void>
+auto PodProtocolSession::async_send(Message msg, TransactionId::ValueType transaction_id) -> Task<void>
 {
     OutFrame frame;
     std::vector<std::uint8_t> output;
@@ -177,20 +193,23 @@ auto PodProtocolSession::async_send(Message msg, TransactionId::ValueType transa
     ASSERT(output.size() == static_cast<std::size_t>(std::distance(output.data(), write_iter)));
 
     SPDLOG_LOGGER_TRACE(logger_, "Schedule message {} with transaction id '{}'", msg.name(), transaction_id);
-    co_await write_queue_.write(std::move(output));
-    co_return;
+    co_await cm::async_send(write_queue_, std::move(output));
+}
+
+template <typename ExpectedMsg>
+auto PodProtocolSession::receive_single(ResponseRegistration registration, std::chrono::milliseconds timeout) -> Task<ExpectedMsg>
+{
+    auto result = co_await receive_matching<ExpectedMsg>(std::move(registration), timeout);
+    co_return std::get<0>(std::move(result));
 }
 
 template <typename... ExpectedMsgs>
-auto PodProtocolSession::async_receive_impl(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout)
-    -> cobalt::promise<std::variant<ExpectedMsgs...>>
+auto PodProtocolSession::receive_matching(ResponseRegistration registration, std::chrono::milliseconds timeout)
+    -> Task<std::variant<ExpectedMsgs...>>
 {
     static_assert((ExpectedMsgs::hasStaticMsgId() && ...), "All expected messages must have a compile-time message id.");
 
-    auto chan = get_or_create_channel(transaction_id);
-    CleanupGuard guard{this, transaction_id};
-
-    InFrame::MsgPtr msg = co_await read_with_timeout(*chan, timeout);
+    InFrame::MsgPtr msg = co_await read_with_timeout(registration.channel(), timeout);
 
     std::optional<std::variant<ExpectedMsgs...>> result;
 

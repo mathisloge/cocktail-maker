@@ -94,7 +94,7 @@ The rationale and alternatives considered are documented in the referenced ADR.
 
 * **Physical Transport:** Station and Pods communicate over USB, using the USB CDC device class — decided in xref:adr:002-pysical-pod-connection.adoc[ADR-002].
 * **Pod Embedded OS:** Pods run on Zephyr RTOS with C++ application support enabled — decided in xref:adr:005-embedded-os.adoc[ADR-005].
-* **Protocol Codegen:** The Station–Pod protocol schema and its generated C++ code are produced using commsdsl (CommsChampion Tools) — decided in xref:adr:006-protocol-serialization.adoc[ADR-006].
+* **Protocol Codegen:** The Station-Pod protocol schema and its generated C++ code are produced using commsdsl (CommsChampion Tools) — decided in xref:adr:006-protocol-serialization.adoc[ADR-006].
 
 These three decisions are interdependent: the protocol code generated via commsdsl (xref:adr:006-protocol-serialization.adoc[ADR-006]) targets plain, freestanding C++, which is what makes it usable unmodified on both the Station and on Zephyr-based Pods (xref:adr:005-embedded-os.adoc[ADR-005]), over the USB CDC transport established in xref:adr:002-pysical-pod-connection.adoc[ADR-002].
 The Station, Pod, and Protocol software architecture documents build directly on this combination rather than re-deriving it.
@@ -103,13 +103,13 @@ The Station, Pod, and Protocol software architecture documents build directly on
 
 Some concerns affect both the Station and every Pod and are therefore defined once, here, rather than repeated in the Station or Pod software architecture documents.
 
-=== Station–Pod Communication Protocol
+=== Station-Pod Communication Protocol
 
-The Station and every Pod communicate through a request–response protocol.
+The Station and every Pod communicate through a request-response protocol.
 The Station is the sole initiator of communication.
 A Pod never sends unsolicited commands.
 Every Pod is addressed by a unique identifier assigned at connection time, allowing the Station to route commands to a specific Pod and to attribute status and events back to their origin.
-This request–response model, including the Station's role as sole initiator, is decided in xref:adr:003-protocol-communication.adoc[ADR-003].
+This request-response model, including the Station's role as sole initiator, is decided in xref:adr:003-protocol-communication.adoc[ADR-003].
 
 The protocol distinguishes three conceptual message categories:
 

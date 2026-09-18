@@ -13,3 +13,4 @@
 * xref:adr:002-cpp-module-compilation-model.adoc[]
 * xref:adr:003-asynchronous-execution-model.adoc[]
 * xref:adr:004-domain-type-safety.adoc[]
+* xref:adr:005-sender-receiver-execution-model.adoc[]

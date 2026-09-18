@@ -5,6 +5,7 @@
 #include "app-window.h"
 
 import std;
+import cm.core;
 import cm;
 import cm.gui;
 
@@ -32,9 +33,10 @@ struct SlintFlusher
 TEST_CASE("StationStateBridge - Initialization", "[gui][StationStateBridge]")
 {
     boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
     auto ui = cm::gui::AppWindow::create();
     cm::PodRegistry pod_registry;
-    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, ctx.get_executor());
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope);
     SlintFlusher flusher;
 
     SECTION("Pod UI model is created and initially empty")
@@ -51,9 +53,10 @@ TEST_CASE("StationStateBridge - Initialization", "[gui][StationStateBridge]")
 TEST_CASE("StationStateBridge - Pod Lifecycle", "[gui][StationStateBridge]")
 {
     boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
     auto ui = cm::gui::AppWindow::create();
     cm::PodRegistry pod_registry;
-    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, ctx.get_executor());
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope);
     auto model = bridge->pod_model();
     SlintFlusher flusher;
 
@@ -129,9 +132,10 @@ TEST_CASE("StationStateBridge - Pod Lifecycle", "[gui][StationStateBridge]")
 TEST_CASE("StationStateBridge - Readiness Status and Multiple Pods", "[gui][StationStateBridge]")
 {
     boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
     auto ui = cm::gui::AppWindow::create();
     cm::PodRegistry pod_registry;
-    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, ctx.get_executor());
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope);
     auto model = bridge->pod_model();
 
     SlintFlusher flusher;

@@ -5,5 +5,9 @@ target_sources(
     cocktail-maker-simulator
     PUBLIC
         FILE_SET CXX_MODULES
-            FILES lib.cppm client.cppm simulated_pod_discovery.cppm
+            FILES
+                lib.cppm
+                client.cppm
+                simulated_pod_discovery.cppm
+                simulated_pod_discovery.cpp
 )

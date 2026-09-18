@@ -18,7 +18,7 @@ Additional GPIO expanders were required to drive the growing number of steppers,
 
 We split the hardware into a single Station and one or more Pods.
 Each Pod is a self-contained module with its own embedded controller board, driving its connected stepper pumps, valves, and load cells locally and in real time.
-A Pod is controlled by the Station through a defined, hardware-independent request–response protocol.
+A Pod is controlled by the Station through a defined, hardware-independent request-response protocol.
 The Station no longer generates step pulses or reads load cells directly; it acts purely as the orchestrator, sending high-level dispensing commands to Pods and consuming their status/event reports.
 
 The choice of physical/electrical interface between Station and Pods (e.g. USB, RS-485, CAN) is intentionally out of scope for this ADR and is addressed separately.

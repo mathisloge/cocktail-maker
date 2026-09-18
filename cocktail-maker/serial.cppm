@@ -1,5 +1,4 @@
 module;
-#include <boost/cobalt/generator.hpp>
 #include <spdlog/common.h>
 
 export module cm:serial;
@@ -20,12 +19,12 @@ export class SerialPodDiscovery : public PodDiscovery
 {
   public:
     /**
-     * Runs discovery until the generator is destroyed.
+     * Runs discovery until stopped. Each pod's log port is streamed by a task spawned into `scope`.
      *
      * @throws SerialInitializationError If discovery cannot be set up at all, including unconditionally on non-Linux platforms.
      * @throws SerialMonitorError If the udev hotplug monitor fails while running.
      */
-    boost::cobalt::generator<std::shared_ptr<IPod>> discover() override;
+    Task<void> discover(AsyncScope& scope, std::function<void(std::shared_ptr<IPod>)> on_pod_discovered) override;
 };
 
 /** Thrown when serial pod discovery cannot be set up in the first place, e.g. because udev itself could not be reached or the

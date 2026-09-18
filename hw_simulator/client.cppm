@@ -1,7 +1,8 @@
 module;
 #include <boost/asio.hpp>
-#include <boost/cobalt.hpp>
 #include <comms/process.h>
+#include <exec/asio/use_sender.hpp>
+#include <exec/when_any.hpp>
 #include <proto/FrameInterface.h>
 #include <proto/dispatch/DispatchClientInputMessage.h>
 #include <proto/frame/Frame.h>
@@ -9,6 +10,7 @@ module;
 #include <proto/input/ClientInputMessages.h>
 #include <proto/options/ClientDefaultOptions.h>
 #include <spdlog/spdlog.h>
+#include <stdexec/execution.hpp>
 
 export module cm.sim:client;
 import std;
@@ -17,20 +19,19 @@ import cm.core;
 import cm;
 
 using namespace std::chrono_literals;
-namespace cobalt = boost::cobalt;
 namespace asio = boost::asio;
-
-cobalt::promise<void> delay(std::chrono::milliseconds duration = std::chrono::milliseconds{50})
-{
-    asio::steady_timer tim{co_await asio::this_coro::executor, duration};
-    co_await tim.async_wait(cobalt::use_op);
-}
 
 namespace cm::sim {
 export using Socket = asio::local::stream_protocol::socket;
 
+/**
+ * A simulated pod that answers the Station's protocol requests over `TSocket`.
+ *
+ * It must be owned by a `std::shared_ptr`, because every request is handled by a spawned task that keeps its client alive
+ * until it is done.
+ */
 export template <typename TSocket>
-class Client
+class Client : public std::enable_shared_from_this<Client<TSocket>>
 {
   private:
     using Options = proto::options::ClientDefaultOptions;
@@ -55,16 +56,19 @@ class Client
     static constexpr int kNumValves = 3;
 
     log::Logger logger_;
+    AsyncScope& scope_;
     TSocket stream_;
     DeviceInfoResponse device_info_response_msg_{};
-    cobalt::channel<std::vector<uint8_t>> write_queue_;
+    Channel<std::vector<uint8_t>> write_queue_;
     ClientFrame frame_;
     std::array<units::Litre, (kNumPumps + kNumValves)> dispenser_volume_;
 
   public:
-    Client(auto executor, std::string name, Version firmware_version)
+    Client(AsyncScope& scope, std::string name, Version firmware_version)
         : logger_{log::create_or_get(std::format("SimPod_{}", name))}
-        , stream_{std::move(executor)}
+        , scope_{scope}
+        , stream_{scope.executor()}
+        , write_queue_{scope.executor()}
     {
         for (auto&& d : dispenser_volume_) {
             d = 500 * units::milli_litre;
@@ -82,10 +86,10 @@ class Client
         return stream_;
     }
 
-    cobalt::task<void> run()
+    Task<void> run()
     {
         try {
-            co_await boost::cobalt::race(read_loop(), write_loop());
+            co_await exec::when_any(read_loop(), write_loop());
         }
         catch (const boost::system::system_error& e) {
             SPDLOG_LOGGER_ERROR(logger_, "I/O loops terminated: {}", e.what());
@@ -94,42 +98,42 @@ class Client
 
     void handle(InClientDeviceInfoRequest& msg)
     {
-        async_handle(msg);
+        scope_.spawn(async_handle(this->shared_from_this(), msg));
     }
 
     void handle(InClientPing& msg)
     {
-        async_handle(msg);
+        scope_.spawn(async_handle(this->shared_from_this(), msg));
     }
 
     void handle(InClientLoadCellCalibrateWithRefWeight& msg)
     {
-        async_handle(msg);
+        scope_.spawn(async_handle(this->shared_from_this(), msg));
     }
 
     void handle(InClientLoadCellTare& msg)
     {
-        async_handle(msg);
+        scope_.spawn(async_handle(this->shared_from_this(), msg));
     }
 
     void handle(InClientPumpStartCalibration& msg)
     {
-        async_handle(msg);
+        scope_.spawn(async_handle(this->shared_from_this(), msg));
     }
 
     void handle(InClientHighlightDispenser& msg)
     {
-        async_handle(msg);
+        scope_.spawn(async_handle(this->shared_from_this(), msg));
     }
 
     void handle(InClientDispense& msg)
     {
-        async_handle(msg);
+        scope_.spawn(async_handle(this->shared_from_this(), msg));
     }
 
     void handle(InClientEmergencyStop& msg)
     {
-        async_handle(msg);
+        scope_.spawn(async_handle(this->shared_from_this(), msg));
     }
 
     void handle(Message& msg)
@@ -138,37 +142,37 @@ class Client
     }
 
   private:
-    cobalt::detached async_handle(InClientDeviceInfoRequest msg)
+    Task<void> async_handle(std::shared_ptr<Client> /*self*/, InClientDeviceInfoRequest msg)
     {
         co_await delay(400ms);
         co_await async_send(device_info_response_msg_, msg.transportField_transactionId().getValue());
     }
 
-    cobalt::detached async_handle(InClientEmergencyStop msg)
+    Task<void> async_handle(std::shared_ptr<Client> /*self*/, InClientEmergencyStop msg)
     {
         co_await delay(50ms);
         co_await async_send(Ack{}, msg.transportField_transactionId().getValue());
     }
 
-    cobalt::detached async_handle(InClientPing msg)
+    Task<void> async_handle(std::shared_ptr<Client> /*self*/, InClientPing msg)
     {
         co_await delay(400ms);
         co_await async_send(Pong{}, msg.transportField_transactionId().getValue());
     }
 
-    cobalt::detached async_handle(InClientLoadCellCalibrateWithRefWeight msg)
+    Task<void> async_handle(std::shared_ptr<Client> /*self*/, InClientLoadCellCalibrateWithRefWeight msg)
     {
         co_await delay(150ms);
         co_await async_send(Ack{}, msg.transportField_transactionId().getValue());
     }
 
-    cobalt::detached async_handle(InClientLoadCellTare msg)
+    Task<void> async_handle(std::shared_ptr<Client> /*self*/, InClientLoadCellTare msg)
     {
         co_await delay(150ms);
         co_await async_send(Ack{}, msg.transportField_transactionId().getValue());
     }
 
-    cobalt::detached async_handle(InClientPumpStartCalibration msg)
+    Task<void> async_handle(std::shared_ptr<Client> /*self*/, InClientPumpStartCalibration msg)
     {
         const auto trid = msg.transportField_transactionId().getValue();
         co_await delay(50ms);
@@ -181,14 +185,14 @@ class Client
         co_await async_send(std::move(resp), trid);
     }
 
-    cobalt::detached async_handle(InClientHighlightDispenser msg)
+    Task<void> async_handle(std::shared_ptr<Client> /*self*/, InClientHighlightDispenser msg)
     {
         const auto trid = msg.transportField_transactionId().getValue();
         co_await delay(50ms);
         co_await async_send(Ack{}, trid);
     }
 
-    cobalt::detached async_handle(InClientDispense msg)
+    Task<void> async_handle(std::shared_ptr<Client> /*self*/, InClientDispense msg)
     {
         const auto trid = msg.transportField_transactionId().getValue();
         auto& remaining_volume = dispenser_volume_[msg.field_dispenserId().value()];
@@ -216,7 +220,13 @@ class Client
     }
 
   private:
-    auto async_send(auto msg, const TransactionId::ValueType transaction_id) -> cobalt::promise<void>
+    Task<void> delay(std::chrono::milliseconds duration = std::chrono::milliseconds{50})
+    {
+        asio::steady_timer timer{stream_.get_executor(), duration};
+        co_await timer.async_wait(exec::asio::use_sender);
+    }
+
+    auto async_send(auto msg, const TransactionId::ValueType transaction_id) -> Task<void>
     {
         SPDLOG_LOGGER_TRACE(logger_, "Schedule send {} with transaction id '{}'", msg.name(), transaction_id);
         ClientFrame frame;
@@ -239,25 +249,25 @@ class Client
 
         // write_iter has been advanced, check that it reached end of the allocated buffer.
         assert(output.size() == static_cast<std::size_t>(std::distance(output.data(), write_iter)));
-        co_await write_queue_.write(std::move(output));
-        co_return;
+        co_await cm::async_send(write_queue_, std::move(output));
     }
 
-    cobalt::task<void> write_loop()
+    Task<void> write_loop()
     {
         while (true) {
             std::vector<uint8_t> data;
             try {
-                data = co_await write_queue_.read();
+                data = co_await cm::async_receive(write_queue_);
             }
             catch (...) {
                 break; // Queue closed due to shutdown_channels()
             }
 
             try {
-                co_await asio::async_write(stream_,
-                                           asio::buffer(data),
-                                           asio::cancel_after(std::chrono::milliseconds(500), asio::as_tuple(asio::deferred)));
+                co_await asio::async_write(
+                    stream_,
+                    asio::buffer(data),
+                    asio::cancel_after(std::chrono::milliseconds(500), asio::as_tuple(exec::asio::use_sender)));
             }
             catch (const boost::system::system_error& e) {
                 SPDLOG_LOGGER_ERROR(logger_, "Write aborted: {}", e.what());
@@ -266,7 +276,7 @@ class Client
         }
     }
 
-    cobalt::task<void> read_loop()
+    Task<void> read_loop()
     {
         static constexpr std::size_t kMaxBufferSize = static_cast<const std::size_t>(64 * 1024);
 
@@ -298,8 +308,9 @@ class Client
                 rx_buffer.resize(rx_buffer.size() * 2);
             }
 
-            auto [ec, bytes_read] = co_await stream_.async_read_some(
-                asio::buffer(rx_buffer.data() + valid_bytes, rx_buffer.size() - valid_bytes), asio::as_tuple(cobalt::use_op));
+            auto [ec, bytes_read] =
+                co_await stream_.async_read_some(asio::buffer(rx_buffer.data() + valid_bytes, rx_buffer.size() - valid_bytes),
+                                                 asio::as_tuple(exec::asio::use_sender));
 
             if (ec) {
                 SPDLOG_LOGGER_DEBUG(logger_, "Could not read from stream. Returning from read-loop. Reason: {}", ec.message());

@@ -1,16 +1,12 @@
-#include <boost/asio/as_tuple.hpp>
-#include <boost/asio/bind_cancellation_slot.hpp>
-#include <boost/asio/cancellation_signal.hpp>
-#include <boost/asio/deferred.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/use_future.hpp>
-#include <boost/cobalt.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_all.hpp>
 #include <slint.h>
+#include <stdexec/execution.hpp>
 #include "app-window.h"
 
 import std;
+import cm.core;
 import cm;
 import cm.gui;
 
@@ -43,16 +39,15 @@ TEST_CASE("async_show_manual_command_popup - opens and resolves on confirm", "[g
     REQUIRE(ui_command.has_value());
 
     boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
     bool completed = false;
-    boost::system::error_code captured_ec;
 
-    auto coro = [&]() -> boost::cobalt::task<void> {
-        auto [ec, result] = co_await cm::gui::async_show_manual_command_popup(ui, *ui_command);
-        captured_ec = ec;
+    auto coro = [&]() -> cm::Task<void> {
+        co_await cm::gui::async_show_manual_command_popup(ui, *ui_command, ctx.get_executor());
         completed = true;
     };
 
-    std::future<void> fut = boost::cobalt::spawn(ctx, coro(), boost::asio::use_future);
+    scope.spawn(coro());
 
     ctx.poll();           // drives to first co_await -> queues popup-open onto Slint's loop
     flush_slint_events(); // opens popup, wires on_manual_command_confirmed()
@@ -60,13 +55,10 @@ TEST_CASE("async_show_manual_command_popup - opens and resolves on confirm", "[g
     ui->invoke_manual_command_confirmed(); // simulate user confirm; verify against app-window.slint
     flush_slint_events();
 
-    ctx.run();
-
     // Block until the coroutine frame is fully cleaned up
-    fut.get();
+    REQUIRE(cm::run_until_complete(ctx, scope.join()));
 
     REQUIRE(completed);
-    REQUIRE_FALSE(captured_ec);
 }
 
 TEST_CASE("async_show_manual_command_popup - cancellation closes the popup", "[gui][async_ui]")
@@ -80,31 +72,26 @@ TEST_CASE("async_show_manual_command_popup - cancellation closes the popup", "[g
     REQUIRE(ui_command.has_value());
 
     boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
     bool completed = false;
-    boost::system::error_code captured_ec;
-    boost::asio::cancellation_signal cancel_signal;
+    bool stopped = false;
 
-    auto coro = [&]() -> boost::cobalt::task<void> {
-        auto [ec, result] = co_await cm::gui::async_show_manual_command_popup(ui, *ui_command);
-        captured_ec = ec;
+    auto coro = [&]() -> cm::Task<void> {
+        co_await cm::gui::async_show_manual_command_popup(ui, *ui_command, ctx.get_executor());
         completed = true;
     };
 
-    // Spawn with use_future to guarantee completion tracking
-    std::future<void> fut =
-        boost::cobalt::spawn(ctx, coro(), boost::asio::bind_cancellation_slot(cancel_signal.slot(), boost::asio::use_future));
+    scope.spawn(coro() | stdexec::upon_stopped([&stopped]() noexcept { stopped = true; }));
 
     ctx.poll();
     flush_slint_events();
 
-    cancel_signal.emit(boost::asio::cancellation_type::terminal);
+    scope.request_stop();
     flush_slint_events(); // runs the invoke_close_manual_command_popup() closure
 
-    ctx.run();
-
     // Block until the coroutine frame is fully cleaned up
-    fut.get();
+    REQUIRE(cm::run_until_complete(ctx, scope.join()));
 
-    REQUIRE(completed);
-    REQUIRE(captured_ec == boost::asio::error::operation_aborted);
+    REQUIRE(stopped);
+    REQUIRE_FALSE(completed);
 }

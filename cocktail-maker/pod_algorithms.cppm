@@ -1,19 +1,24 @@
 module;
-#include <boost/cobalt/gather.hpp>
-#include <boost/cobalt/task.hpp>
 #include <libassert/assert-macros.hpp>
 
 export module cm:pod_algorithms;
 import std;
 import libassert;
+import cm.core;
 import :pod;
 
 namespace cm {
+/**
+ * Brings every pod in `pods` into its safe state concurrently.
+ *
+ * Every pod is commanded even if another one fails, since a pod left running is a safety concern. Once all are done, the
+ * first error is rethrown.
+ */
 export template <std::ranges::input_range R>
     requires std::convertible_to<std::ranges::range_reference_t<R>, std::shared_ptr<IPod>>
-cobalt::task<void> force_safe_state_all(R&& pods)
+Task<void> force_safe_state_all(R&& pods)
 {
-    std::vector<cobalt::task<void>> tasks;
+    std::vector<Task<void>> tasks;
     if constexpr (std::ranges::sized_range<R>) {
         tasks.reserve(std::ranges::size(pods));
     }
@@ -22,16 +27,6 @@ cobalt::task<void> force_safe_state_all(R&& pods)
         tasks.emplace_back(pod->force_safe_state());
     }
 
-    auto results = co_await cobalt::gather(std::move(tasks));
-
-    std::vector<std::exception_ptr> errors;
-    for (auto& result : results) {
-        if (result.has_error()) {
-            errors.push_back(result.error());
-        }
-    }
-    if (!errors.empty()) {
-        std::rethrow_exception(errors.front());
-    }
+    co_await gather_all(std::move(tasks));
 }
 } // namespace cm

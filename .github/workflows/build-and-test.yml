@@ -44,7 +44,7 @@ jobs:
       - name: Setup LLVM
         uses: ZhongRuoyu/setup-llvm@v0
         with:
-          llvm-version: 23
+          llvm-version: 22
 
       - name: Setup Rust
         run: rustup toolchain install stable --profile minimal

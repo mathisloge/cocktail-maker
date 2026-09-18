@@ -1,11 +1,12 @@
 module;
-#include <boost/cobalt/task.hpp>
+#include <boost/asio/any_io_executor.hpp>
 #include <slint.h>
 #include <spdlog/spdlog.h>
 #include "app-window.h"
 
 export module cm.gui:machine_adapter;
 import std;
+import cm.core;
 import cm;
 import :async_ui;
 import :recipe_adapter;
@@ -13,76 +14,33 @@ import :recipe_adapter;
 namespace cm::gui {
 
 namespace asio = boost::asio;
-namespace cobalt = boost::cobalt;
 
 export class MachineAdapter : public cm::BasicCommandExecuter
 {
     slint::ComponentHandle<AppWindow> ui_;
+    asio::any_io_executor io_executor_;
     const IngredientStore& ingredient_store_;
     const PodRegistry& pod_registry_;
     const StationConfig& station_config_;
 
   public:
+    /// @param io_executor Executor of the io thread the commands are executed on.
     explicit MachineAdapter(slint::ComponentHandle<AppWindow> ui,
+                            asio::any_io_executor io_executor,
                             const IngredientStore& ingredient_store,
                             const PodRegistry& pod_registry,
                             const StationConfig& station_config)
         : ui_{std::move(ui)}
+        , io_executor_{std::move(io_executor)}
         , ingredient_store_{ingredient_store}
         , pod_registry_{pod_registry}
         , station_config_{station_config}
     {
     }
 
-    cobalt::task<void> execute_command(ManualCommand command) override
-    {
-        auto logger = log::create_or_get("recipe");
-        SPDLOG_LOGGER_DEBUG(logger, "Opening UI manual command popup for '{}'", command.instruction);
+    Task<void> execute_command(ManualCommand command) override;
 
-        auto wrapped_command = cm::Command{std::move(command)};
-        auto ui_command = transform_command(wrapped_command, ingredient_store_);
-        if (not ui_command.has_value()) {
-            throw std::runtime_error("Command cannot be transformed into a ManualCommand");
-        }
-
-        co_await async_show_manual_command_popup(ui_, std::move(*ui_command));
-        co_return;
-    }
-
-    cobalt::task<void> execute_command(DispenseCommand command) override
-    {
-        auto logger = log::create_or_get("recipe");
-        SPDLOG_LOGGER_DEBUG(logger, "Process dispense command {}", command.ingredient);
-
-        auto dispatcher = create_dispenser_for_ingredient(pod_registry_, station_config_, command.ingredient);
-
-        constexpr auto kDispenseTolerance = 20 * units::milli_litre;
-
-        units::Litre dispensed = 0 * units::milli_litre;
-        bool needs_refill = false;
-
-        try {
-            dispensed = co_await dispatcher->dispense(command.volume);
-            // If we missed the target by more than the tolerance, the pod is running low.
-            needs_refill = units::abs(dispensed - command.volume) > kDispenseTolerance;
-        }
-        catch (const DispenserEmptyError&) {
-            // Pod ran out mid-pour. Assume whatever was left (+-5ml sensor tolerance)
-            // got dispensed before it failed.
-            SPDLOG_LOGGER_DEBUG(logger, "Dispense failed: pod ran empty. Refilling and continuing...");
-            dispensed = 0 * units::milli_litre;
-            needs_refill = true;
-        }
-
-        if (needs_refill) {
-            co_await execute_command(ManualCommand{.instruction = "Refill ingredient"});
-            // After refill confirmation, assume the pod is full again.
-            // Otherwise a new DispenserEmptyError will propagate and abort the cocktail.
-            co_await dispatcher->dispense(command.volume - dispensed);
-        }
-
-        SPDLOG_LOGGER_DEBUG(logger, "Finished dispense command {}", command.ingredient);
-    }
+    Task<void> execute_command(DispenseCommand command) override;
 
     void update_command_status(cm::CommandId id, cm::CommandStatus status) override
     {

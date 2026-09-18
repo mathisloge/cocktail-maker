@@ -48,7 +48,7 @@ endif()
 
 find_package(Sanitizers REQUIRED)
 set(BOOST_VERSION "1.92.0")
-set(BOOST_INCLUDE_LIBRARIES "asio\\\\;cobalt\\\\;hash2")
+set(BOOST_INCLUDE_LIBRARIES "asio\\\\;hash2")
 cpmaddpackage(
   NAME Boost
   VERSION "${BOOST_VERSION}"
@@ -60,6 +60,21 @@ cpmaddpackage(
   OPTIONS
     "BOOST_ENABLE_CMAKE ON"
     "BOOST_INCLUDE_LIBRARIES ${BOOST_INCLUDE_LIBRARIES}"
+)
+# stdexec has to be added after Boost, because its asio integration reuses the Boost package added above.
+cpmaddpackage(
+  NAME stdexec
+  GITHUB_REPOSITORY NVIDIA/stdexec
+  GIT_TAG 3de97310d26d4abf6af4cb65af2574838030aac9
+  SYSTEM ON
+  OPTIONS
+    "STDEXEC_BUILD_TESTS OFF"
+    "STDEXEC_BUILD_EXAMPLES OFF"
+    "STDEXEC_BUILD_DOCS OFF"
+    "STDEXEC_INSTALL OFF"
+    "STDEXEC_BUILD_MODULES OFF"
+    "STDEXEC_ENABLE_ASIO ON"
+    "STDEXEC_ASIO_IMPLEMENTATION boost"
 )
 
 cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite)

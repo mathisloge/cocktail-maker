@@ -1,7 +1,4 @@
 module;
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/bind_cancellation_slot.hpp>
-#include <boost/cobalt/task.hpp>
 #include "app-window.h"
 
 export module cm.gui:process_context_bridge;
@@ -15,7 +12,7 @@ namespace cm::gui {
 export class ProcessContextBridge
 {
   public:
-    explicit ProcessContextBridge(boost::asio::any_io_executor executor,
+    explicit ProcessContextBridge(AsyncScope& async_scope,
                                   slint::ComponentHandle<AppWindow> ui,
                                   const RecipeStore& recipe_store,
                                   const IngredientStore& ingredient_store,
@@ -25,7 +22,13 @@ export class ProcessContextBridge
     void init();
 
   private:
-    boost::cobalt::task<void> async_process_recipe(Recipe recipe, units::Percent boost, units::Litre target_volume);
+    /// Aborts a recipe that may still be processed and starts processing `recipe`. It runs on the io thread.
+    void start_recipe_processing(Recipe recipe, units::Percent boost, units::Litre target_volume);
+
+    /// Stops the recipe that is currently processed, if there is one. It runs on the io thread.
+    void abort_active_recipe();
+
+    Task<void> async_process_recipe(Recipe recipe, units::Percent boost, units::Litre target_volume);
 
     void update_ui_recipe(const Recipe& recipe) const;
 
@@ -33,12 +36,13 @@ export class ProcessContextBridge
 
   private:
     log::Logger logger_{log::create_or_get("ui")};
-    boost::asio::any_io_executor executor_;
+    AsyncScope& async_scope_;
     slint::ComponentHandle<AppWindow> ui_;
     const PodRegistry& pod_registry_;
     const RecipeStore& recipe_store_;
     const IngredientStore& ingredient_store_;
     const cm::StationConfig& station_config_;
-    boost::asio::cancellation_signal active_cancel_signal_;
+    /// Setting it aborts the recipe that is currently processed. It is only accessed on the io thread.
+    std::shared_ptr<AwaitableBool> active_recipe_abort_;
 };
 } // namespace cm::gui

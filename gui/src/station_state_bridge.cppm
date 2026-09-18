@@ -1,6 +1,4 @@
 module;
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/cobalt/task.hpp>
 #include "app-window.h"
 
 export module cm.gui:station_state_bridge;
@@ -17,9 +15,7 @@ class PodUiModel;
 export class StationStateBridge : public StationState, public std::enable_shared_from_this<StationStateBridge>
 {
   public:
-    explicit StationStateBridge(slint::ComponentHandle<AppWindow> ui,
-                                const PodRegistry& pod_registry,
-                                boost::asio::any_io_executor executor);
+    explicit StationStateBridge(slint::ComponentHandle<AppWindow> ui, const PodRegistry& pod_registry, AsyncScope& async_scope);
     std::unique_ptr<PodState> create_pod_state() override;
     void pod_connection_state_changed(const PodStateImpl& pod);
     void pod_about_to_removed(const PodStateImpl& pod);
@@ -32,11 +28,12 @@ export class StationStateBridge : public StationState, public std::enable_shared
 
     void update_pod_model(const PodStateImpl& pod);
     void on_navigate_to(Page target);
-    void on_submit_operator_pin(const slint::SharedString& pin, boost::asio::any_io_executor executor);
-    boost::cobalt::task<void> async_handle_operator_lockout();
+    void on_submit_operator_pin(const slint::SharedString& pin);
+    Task<void> async_handle_operator_lockout();
 
   private:
     log::Logger logger_{log::create_or_get("station_state_bridge")};
+    AsyncScope& async_scope_;
     slint::ComponentHandle<AppWindow> ui_;
     std::vector<PodStateImpl*> pods_;
     std::shared_ptr<PodUiModel> pod_model_;

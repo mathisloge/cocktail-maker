@@ -2,21 +2,21 @@ module;
 #include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/steady_timer.hpp>
-#include <boost/cobalt/channel.hpp>
-#include <boost/cobalt/promise.hpp>
-#include <boost/cobalt/race.hpp>
-#include <boost/cobalt/task.hpp>
+#include <boost/system/system_error.hpp>
 #include <comms/ErrorStatus.h>
+#include <exec/asio/use_sender.hpp>
+#include <exec/when_any.hpp>
 #include <libassert/assert-macros.hpp>
 #include <proto/MsgId.h>
 #include <spdlog/spdlog.h>
+#include <stdexec/execution.hpp>
 
 module cm:pod_protocol_session_impl;
 import std;
 import libassert;
+import cm.core;
 import :pod_protocol_session;
 
-namespace cobalt = boost::cobalt;
 namespace asio = boost::asio;
 
 namespace cm {
@@ -56,7 +56,7 @@ PodProtocolSession::~PodProtocolSession()
 PodProtocolSession::PodProtocolSession(std::unique_ptr<AnyIoStream> stream)
     : logger_{log::create_or_get("protocol")}
     , stream_{std::move(stream)}
-    , write_queue_{kWriteQueueCapacity, stream_->get_executor()}
+    , write_queue_{stream_->get_executor(), kWriteQueueCapacity}
 {
 }
 
@@ -65,17 +65,35 @@ auto PodProtocolSession::get_executor() -> asio::any_io_executor
     return stream_->get_executor();
 }
 
-cobalt::task<void> PodProtocolSession::run()
+Task<void> PodProtocolSession::run()
 {
-    is_running_ = true;
+    // A stop request unwinds the coroutine at the co_await, so the cleanup has to run in a destructor.
+    struct RunningGuard
+    {
+        PodProtocolSession& session;
+
+        explicit RunningGuard(PodProtocolSession& s)
+            : session{s}
+        {
+            session.is_running_ = true;
+        }
+
+        RunningGuard(const RunningGuard&) = delete;
+        RunningGuard& operator=(const RunningGuard&) = delete;
+
+        ~RunningGuard()
+        {
+            session.is_running_ = false;
+            session.shutdown_channels();
+        }
+    } running_guard{*this};
+
     try {
-        co_await boost::cobalt::race(read_loop(), write_loop());
+        co_await exec::when_any(read_loop(), write_loop());
     }
     catch (const boost::system::system_error& e) {
         SPDLOG_LOGGER_ERROR(logger_, "I/O loops terminated: {}", e.what());
     }
-    is_running_ = false;
-    shutdown_channels();
 }
 
 TransactionId::ValueType PodProtocolSession::generate_new_transaction_id()
@@ -83,30 +101,32 @@ TransactionId::ValueType PodProtocolSession::generate_new_transaction_id()
     return ++transaction_id_counter_;
 }
 
-auto PodProtocolSession::read_with_timeout(cobalt::channel<InFrame::MsgPtr>& chan, std::chrono::milliseconds timeout)
-    -> cobalt::promise<InFrame::MsgPtr>
+auto PodProtocolSession::read_with_timeout(ResponseChannel& chan, std::chrono::milliseconds timeout) -> Task<InFrame::MsgPtr>
 {
-    boost::asio::steady_timer timer{stream_->get_executor()};
-    timer.expires_after(timeout);
+    using Response = std::optional<InFrame::MsgPtr>;
+    asio::steady_timer timer{stream_->get_executor(), timeout};
 
-    // Race the channel read against the timer
-    auto res = co_await cobalt::race(chan.read(), timer.async_wait(cobalt::use_op));
+    // Race the channel read against the timer. The loser is stopped.
+    auto response = co_await exec::when_any(cm::async_receive(chan) |
+                                                stdexec::then([](InFrame::MsgPtr msg) { return Response{std::move(msg)}; }),
+                                            timer.async_wait(exec::asio::use_sender) | stdexec::then([] { return Response{}; }));
 
-    // If index 1 wins, the timer fired first (Timeout)
-    if (res.index() == 1) {
+    // An empty response means that the timer fired first.
+    if (!response.has_value()) {
         throw TimeoutError{"Could not receive any message"};
     }
 
-    co_return std::move(boost::variant2::get<0>(res));
+    co_return std::move(*response);
 }
 
-auto PodProtocolSession::get_or_create_channel(TransactionId::ValueType id) -> ChannelPtr
+auto PodProtocolSession::register_response(TransactionId::ValueType id) -> ResponseRegistration
 {
     auto it = dispatch_map_.find(id);
     if (it == dispatch_map_.end()) {
-        it = dispatch_map_.emplace(id, std::make_shared<cobalt::channel<InFrame::MsgPtr>>(kResponseChannelCapacity)).first;
+        it =
+            dispatch_map_.emplace(id, std::make_shared<ResponseChannel>(stream_->get_executor(), kResponseChannelCapacity)).first;
     }
-    return it->second;
+    return ResponseRegistration{*this, id, it->second};
 }
 
 void PodProtocolSession::shutdown_channels()
@@ -118,12 +138,12 @@ void PodProtocolSession::shutdown_channels()
     dispatch_map_.clear();
 }
 
-cobalt::task<void> PodProtocolSession::write_loop()
+Task<void> PodProtocolSession::write_loop()
 {
     while (true) {
         std::vector<uint8_t> data;
         try {
-            data = co_await write_queue_.read();
+            data = co_await cm::async_receive(write_queue_);
         }
         catch (...) {
             break; // Queue closed due to shutdown_channels()
@@ -139,7 +159,7 @@ cobalt::task<void> PodProtocolSession::write_loop()
     }
 }
 
-cobalt::task<void> PodProtocolSession::read_loop()
+Task<void> PodProtocolSession::read_loop()
 {
     static constexpr std::size_t kMaxBufferSize = 64 * 1024;
 
@@ -211,14 +231,9 @@ cobalt::task<void> PodProtocolSession::read_loop()
             if (rx_it != dispatch_map_.end()) {
                 auto chan = rx_it->second;
                 dispatch_map_.erase(rx_it);
-                try {
-                    co_await chan->write(std::move(msg));
-                }
-                catch (const boost::system::system_error& write_error) {
-                    SPDLOG_LOGGER_WARN(logger_,
-                                       "Dispatch to channel of transaction id '{}' failed with: {}",
-                                       transaction_id,
-                                       write_error.what());
+                // Every response channel has room for exactly the one response it is registered for.
+                if (!chan->try_send(boost::system::error_code{}, std::move(msg))) {
+                    SPDLOG_LOGGER_WARN(logger_, "Dispatch to channel of transaction id '{}' failed.", transaction_id);
                 }
             }
             else {
@@ -230,9 +245,37 @@ cobalt::task<void> PodProtocolSession::read_loop()
     }
 }
 
-PodProtocolSession::CleanupGuard::~CleanupGuard()
+PodProtocolSession::ResponseRegistration::ResponseRegistration(PodProtocolSession& session,
+                                                               TransactionId::ValueType transaction_id,
+                                                               ChannelPtr channel)
+    : session_{&session}
+    , transaction_id_{transaction_id}
+    , channel_{std::move(channel)}
 {
-    session->dispatch_map_.erase(transaction_id);
+}
+
+PodProtocolSession::ResponseRegistration::ResponseRegistration(ResponseRegistration&& other) noexcept
+    : session_{std::exchange(other.session_, nullptr)}
+    , transaction_id_{other.transaction_id_}
+    , channel_{std::move(other.channel_)}
+{
+}
+
+PodProtocolSession::ResponseRegistration::~ResponseRegistration()
+{
+    if (session_ == nullptr) {
+        return;
+    }
+    // The entry may already have been dispatched and replaced by a new registration for the same transaction id.
+    const auto it = session_->dispatch_map_.find(transaction_id_);
+    if (it != session_->dispatch_map_.end() && it->second == channel_) {
+        session_->dispatch_map_.erase(it);
+    }
+}
+
+auto PodProtocolSession::ResponseRegistration::channel() const -> ResponseChannel&
+{
+    return *channel_;
 }
 
 } // namespace cm

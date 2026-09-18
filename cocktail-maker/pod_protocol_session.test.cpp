@@ -1,7 +1,9 @@
 #include <boost/asio.hpp>
-#include <boost/cobalt.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <comms/ErrorStatus.h>
+#include <exec/asio/use_sender.hpp>
+#include <exec/when_any.hpp>
+#include <stdexec/execution.hpp>
 
 import std;
 import cm.core;
@@ -55,7 +57,6 @@ struct PodProtocolSessionTestFixture
     PodProtocolSessionTestFixture()
         : client_socket(ioc)
     {
-        boost::cobalt::this_thread::set_executor(ioc.get_executor());
         Socket session_socket{ioc};
         boost::asio::local::connect_pair(client_socket, session_socket);
         session = std::make_unique<Session>(std::make_unique<cm::SocketIoStream<Socket>>(std::move(session_socket)));
@@ -67,9 +68,10 @@ struct PodProtocolSessionTestFixture
     {
         std::exception_ptr err;
 
-        auto test_wrapper = [&]() -> boost::cobalt::task<void> {
+        auto test_wrapper = [&]() -> cm::Task<void> {
             try {
-                co_await boost::cobalt::race(test_coro(), session->run());
+                // The session runs until the test coroutine has finished and stops it.
+                co_await exec::when_any(test_coro(), session->run());
             }
             catch (...) {
                 // Catch2 REQUIRE failures throw an exception to abort the execution path
@@ -77,8 +79,7 @@ struct PodProtocolSessionTestFixture
             }
         };
 
-        boost::cobalt::spawn(ioc, test_wrapper(), boost::asio::detached);
-        ioc.run();
+        cm::run_until_complete(ioc, test_wrapper());
 
         if (err) {
             std::rethrow_exception(err);
@@ -103,16 +104,16 @@ struct PodProtocolSessionTestFixture
     // Encodes and writes msg to the client socket in one shot — the common
     // case for tests that don't care about fragmentation.
     template <typename Msg>
-    boost::cobalt::task<void> send_message(Msg msg, cm::TransactionId::ValueType transaction_id)
+    cm::Task<void> send_message(Msg msg, cm::TransactionId::ValueType transaction_id)
     {
         auto buffer = encode_message(std::move(msg), transaction_id);
-        co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer), boost::cobalt::use_op);
+        co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer), exec::asio::use_sender);
     }
 };
 
 TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Lifecycle Starts and Stops Cleanly", "[lifecycle]")
 {
-    run_test([&]() -> boost::cobalt::task<void> {
+    run_test([&]() -> cm::Task<void> {
         CHECK(true);
         co_return;
     });
@@ -120,13 +121,13 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Lifecycle 
 
 TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Sends Messages over Socket", "[send]")
 {
-    run_test([this]() -> boost::cobalt::task<void> {
+    run_test([this]() -> cm::Task<void> {
         TestTxMsg msg;
         REQUIRE_NOTHROW(co_await session->async_send(msg, kTestTransaction));
 
         std::vector<uint8_t> buffer(1024);
         auto [ec, bytes_read] =
-            co_await client_socket.async_read_some(boost::asio::buffer(buffer), boost::asio::as_tuple(boost::cobalt::use_op));
+            co_await client_socket.async_read_some(boost::asio::buffer(buffer), boost::asio::as_tuple(exec::asio::use_sender));
 
         REQUIRE(!ec);
         CHECK(bytes_read > 0);
@@ -141,23 +142,23 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Sends Mess
 
 TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Successful Receive", "[receive][success]")
 {
-    run_test([this]() -> boost::cobalt::task<void> {
-        // 1. Invoke async_receive first. This synchronously registers the channel in dispatch_map_
-        //    before suspending. We hold onto the returned promise/task.
+    run_test([this]() -> cm::Task<void> {
+        // 1. Invoke async_receive first. This registers the channel in dispatch_map_ right away, although the returned task
+        //    only starts once it is awaited.
         auto recv_task = session->async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(500));
 
         // 2. Safely blast the data over the socket.
         co_await send_message(TestRxMsg{}, kTestTransaction);
 
         // 3. Await the outcome. The background read_loop will route the incoming frame to recv_task.
-        auto res = co_await recv_task;
+        auto res = co_await std::move(recv_task);
         CHECK(res.getId() == TestRxMsg::staticMsgId());
     });
 }
 
 TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Receive Fragmented Message", "[receive][fragmented]")
 {
-    run_test([this]() -> boost::cobalt::task<void> {
+    run_test([this]() -> cm::Task<void> {
         auto buffer = encode_message(TestRxMsg{}, kTestTransaction);
         REQUIRE(buffer.size() > 1);
         size_t half = buffer.size() / 2;
@@ -165,16 +166,16 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Receive Fr
         auto recv_task = session->async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(500));
 
         // Write first half
-        co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer.data(), half), boost::cobalt::use_op);
+        co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer.data(), half), exec::asio::use_sender);
 
         // Introduce a slight delay before writing the second half
         boost::asio::steady_timer delay_timer(ioc, std::chrono::milliseconds(10));
-        co_await delay_timer.async_wait(boost::cobalt::use_op);
+        co_await delay_timer.async_wait(exec::asio::use_sender);
 
         co_await boost::asio::async_write(
-            client_socket, boost::asio::buffer(buffer.data() + half, buffer.size() - half), boost::cobalt::use_op);
+            client_socket, boost::asio::buffer(buffer.data() + half, buffer.size() - half), exec::asio::use_sender);
 
-        auto res = co_await recv_task;
+        auto res = co_await std::move(recv_task);
         REQUIRE(res.transportField_transactionId().getDisplayValue() == kTestTransaction);
     });
 }
@@ -183,7 +184,7 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
                  "PodProtocolSession - Receive Message Fragmented Across Three Writes",
                  "[receive][fragmented]")
 {
-    run_test([this]() -> boost::cobalt::task<void> {
+    run_test([this]() -> cm::Task<void> {
         auto buffer = encode_message(TestRxMsg{}, kTestTransaction);
         REQUIRE(buffer.size() >= 3);
         size_t third = buffer.size() / 3;
@@ -192,31 +193,31 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
 
         boost::asio::steady_timer delay_timer(ioc);
 
-        co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer.data(), third), boost::cobalt::use_op);
+        co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer.data(), third), exec::asio::use_sender);
 
         delay_timer.expires_after(std::chrono::milliseconds(5));
-        co_await delay_timer.async_wait(boost::cobalt::use_op);
+        co_await delay_timer.async_wait(exec::asio::use_sender);
 
         co_await boost::asio::async_write(
-            client_socket, boost::asio::buffer(buffer.data() + third, third), boost::cobalt::use_op);
+            client_socket, boost::asio::buffer(buffer.data() + third, third), exec::asio::use_sender);
 
         delay_timer.expires_after(std::chrono::milliseconds(5));
-        co_await delay_timer.async_wait(boost::cobalt::use_op);
+        co_await delay_timer.async_wait(exec::asio::use_sender);
 
         co_await boost::asio::async_write(
-            client_socket, boost::asio::buffer(buffer.data() + 2 * third, buffer.size() - 2 * third), boost::cobalt::use_op);
+            client_socket, boost::asio::buffer(buffer.data() + 2 * third, buffer.size() - 2 * third), exec::asio::use_sender);
 
-        auto res = co_await recv_task;
+        auto res = co_await std::move(recv_task);
         CHECK(res.transportField_transactionId().getDisplayValue() == kTestTransaction);
     });
 }
 
 TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Receive Invalid Msg ID", "[receive][invalid_id]")
 {
-    run_test([this]() -> boost::cobalt::task<void> {
+    run_test([this]() -> cm::Task<void> {
         auto recv_task = session->async_receive<TestInMsgFake>(kTestTransaction, std::chrono::milliseconds(500));
         co_await send_message(TestRxMsg{}, kTestTransaction);
-        REQUIRE_THROWS_AS(co_await recv_task, cm::ProtocolError);
+        REQUIRE_THROWS_AS(co_await std::move(recv_task), cm::ProtocolError);
     });
 }
 
@@ -224,22 +225,22 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
                  "PodProtocolSession - Dispatcher Drops Unmatched Transaction IDs",
                  "[receive][dispatch]")
 {
-    run_test([this]() -> boost::cobalt::task<void> {
+    run_test([this]() -> cm::Task<void> {
         auto recv_task1 = session->async_receive<TestRxMsg>(100, std::chrono::milliseconds(500));
         auto recv_task2 = session->async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(500));
 
         // Blast identical messages over the socket
         co_await send_message(TestRxMsg{}, kTestTransaction);
 
-        REQUIRE_THROWS_AS(co_await recv_task1, cm::TimeoutError);
-        auto res2 = co_await recv_task2;
+        REQUIRE_THROWS_AS(co_await std::move(recv_task1), cm::TimeoutError);
+        auto res2 = co_await std::move(recv_task2);
         CHECK(res2.transportField_transactionId().value() == kTestTransaction);
     });
 }
 
 TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Receive Timeouts", "[receive][timeout]")
 {
-    run_test([this]() -> boost::cobalt::task<void> {
+    run_test([this]() -> cm::Task<void> {
         REQUIRE_THROWS_AS(co_await session->async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(10)),
                           cm::TimeoutError);
     });
@@ -249,15 +250,15 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
                  "PodProtocolSession - Channel Cleanup After Timeout Allows Reuse Of Transaction Id",
                  "[receive][cleanup]")
 {
-    run_test([this]() -> boost::cobalt::task<void> {
-        // CleanupGuard must erase the dispatch_map_ entry on the timeout exit
+    run_test([this]() -> cm::Task<void> {
+        // ResponseRegistration must erase the dispatch_map_ entry on the timeout exit
         // path, otherwise this transaction id would stay "stuck" forever.
         REQUIRE_THROWS_AS(co_await session->async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(10)),
                           cm::TimeoutError);
 
         auto recv_task = session->async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(500));
         co_await send_message(TestRxMsg{}, kTestTransaction);
-        auto res = co_await recv_task;
+        auto res = co_await std::move(recv_task);
         CHECK(res.transportField_transactionId().value() == kTestTransaction);
     });
 }
@@ -266,16 +267,16 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
                  "PodProtocolSession - Channel Cleanup After Protocol Error Allows Reuse Of Transaction Id",
                  "[receive][cleanup]")
 {
-    run_test([this]() -> boost::cobalt::task<void> {
+    run_test([this]() -> cm::Task<void> {
         // Same as above, but exercising the exception exit path (id mismatch)
         // rather than the timeout exit path.
         auto bad_recv = session->async_receive<TestInMsgFake>(kTestTransaction, std::chrono::milliseconds(500));
         co_await send_message(TestRxMsg{}, kTestTransaction);
-        REQUIRE_THROWS_AS(co_await bad_recv, cm::ProtocolError);
+        REQUIRE_THROWS_AS(co_await std::move(bad_recv), cm::ProtocolError);
 
         auto good_recv = session->async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(500));
         co_await send_message(TestRxMsg{}, kTestTransaction);
-        auto res = co_await good_recv;
+        auto res = co_await std::move(good_recv);
         CHECK(res.transportField_transactionId().value() == kTestTransaction);
     });
 }
@@ -288,7 +289,7 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
                  "PodProtocolSession - Variant Receive Matches A Later Candidate In The Pack",
                  "[receive][variant]")
 {
-    run_test([this]() -> boost::cobalt::task<void> {
+    run_test([this]() -> cm::Task<void> {
         // TestInMsgFake never matches the wire id; this exercises the fold
         // expression correctly skipping a mismatched candidate before
         // landing on the one that actually matches.
@@ -296,7 +297,7 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
 
         co_await send_message(TestRxMsg{}, kTestTransaction);
 
-        auto result = co_await recv_task;
+        auto result = co_await std::move(recv_task);
         REQUIRE(std::holds_alternative<TestRxMsg>(result));
         CHECK(std::get<TestRxMsg>(result).transportField_transactionId().value() == kTestTransaction);
     });
@@ -306,18 +307,18 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
                  "PodProtocolSession - Variant Receive Throws When No Candidate Matches",
                  "[receive][variant][invalid_id]")
 {
-    run_test([this]() -> boost::cobalt::task<void> {
+    run_test([this]() -> cm::Task<void> {
         auto recv_task = session->async_receive<TestInMsgFake, AnotherFakeMsg>(kTestTransaction, std::chrono::milliseconds(500));
         co_await send_message(TestRxMsg{}, kTestTransaction);
-        REQUIRE_THROWS_AS(co_await recv_task, cm::ProtocolError);
+        REQUIRE_THROWS_AS(co_await std::move(recv_task), cm::ProtocolError);
     });
 }
 
 TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Variant Receive Timeout", "[receive][variant][timeout]")
 {
-    run_test([this]() -> boost::cobalt::task<void> {
+    run_test([this]() -> cm::Task<void> {
         auto recv_task = session->async_receive<TestRxMsg, TestInMsgFake>(kTestTransaction, std::chrono::milliseconds(10));
-        REQUIRE_THROWS_AS(co_await recv_task, cm::TimeoutError);
+        REQUIRE_THROWS_AS(co_await std::move(recv_task), cm::TimeoutError);
     });
 }
 
@@ -329,17 +330,17 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
     // name and must resolve unambiguously based on the number of explicit
     // template arguments. If overload resolution were ambiguous here, this
     // test wouldn't even compile.
-    run_test([this]() -> boost::cobalt::task<void> {
+    run_test([this]() -> cm::Task<void> {
         auto single_task = session->async_receive<TestRxMsg>(100, std::chrono::milliseconds(500));
         auto variant_task = session->async_receive<TestInMsgFake, TestRxMsg>(kTestTransaction, std::chrono::milliseconds(500));
 
         co_await send_message(TestRxMsg{}, 100);
         co_await send_message(TestRxMsg{}, kTestTransaction);
 
-        auto single_res = co_await single_task;
+        auto single_res = co_await std::move(single_task);
         CHECK(single_res.transportField_transactionId().value() == 100);
 
-        auto variant_res = co_await variant_task;
+        auto variant_res = co_await std::move(variant_task);
         REQUIRE(std::holds_alternative<TestRxMsg>(variant_res));
         CHECK(std::get<TestRxMsg>(variant_res).transportField_transactionId().value() == kTestTransaction);
     });

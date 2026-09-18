@@ -1,13 +1,11 @@
 module;
-#include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/bind_cancellation_slot.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/post.hpp>
-#include <boost/cobalt/detached.hpp>
-#include <boost/cobalt/spawn.hpp>
+#include <boost/system/system_error.hpp>
+#include <exec/when_any.hpp>
 #include <proto/field/ErrorCodeCommon.h>
 #include <slint.h>
 #include <spdlog/spdlog.h>
+#include <stdexec/execution.hpp>
 #include "app-window.h"
 
 module cm.gui:process_context_bridge_impl;
@@ -319,13 +317,13 @@ void display_ui_error(const std::derived_from<std::exception> auto& ex,
     });
 }
 
-ProcessContextBridge::ProcessContextBridge(boost::asio::any_io_executor executor,
+ProcessContextBridge::ProcessContextBridge(AsyncScope& async_scope,
                                            slint::ComponentHandle<AppWindow> ui,
                                            const RecipeStore& recipe_store,
                                            const IngredientStore& ingredient_store,
                                            const cm::StationConfig& station_config,
                                            const PodRegistry& pod_registry)
-    : executor_{std::move(executor)}
+    : async_scope_{async_scope}
     , ui_{std::move(ui)}
     , recipe_store_{recipe_store}
     , ingredient_store_{ingredient_store}
@@ -343,11 +341,8 @@ void ProcessContextBridge::init()
         auto r = recipe_store_.find_by_id(RecipeId{recipe_to_create.id.data()});
         if (r.has_value()) {
             ui_->global<StationStateContext>().invoke_navigate_to(Page::MixPage);
-            boost::asio::post(executor_, [recipe = std::move(r.value()), boost, target_volume, this]() {
-                active_cancel_signal_.emit(boost::asio::cancellation_type::all);
-                boost::cobalt::spawn(executor_,
-                                     async_process_recipe(recipe, boost, target_volume),
-                                     boost::asio::bind_cancellation_slot(active_cancel_signal_.slot(), boost::asio::detached));
+            boost::asio::post(async_scope_.executor(), [recipe = std::move(r.value()), boost, target_volume, this]() mutable {
+                start_recipe_processing(std::move(recipe), boost, target_volume);
             });
         }
         else {
@@ -364,14 +359,37 @@ void ProcessContextBridge::init()
     ui_->global<StationStateContext>().on_navigated_to([this](Page from, Page to) {
         if (from == Page::MixPage and to != Page::MixSuccessPage) {
             SPDLOG_LOGGER_INFO(logger_, "Cancelling recipe processing...");
-            boost::asio::post(executor_, [this]() { active_cancel_signal_.emit(boost::asio::cancellation_type::all); });
+            boost::asio::post(async_scope_.executor(), [this]() { abort_active_recipe(); });
         }
     });
 }
 
-cobalt::task<void> ProcessContextBridge::async_process_recipe(Recipe recipe,
-                                                              const units::Percent boost,
-                                                              const units::Litre target_volume)
+void ProcessContextBridge::start_recipe_processing(Recipe recipe, const units::Percent boost, const units::Litre target_volume)
+{
+    abort_active_recipe();
+
+    auto abort = std::make_shared<AwaitableBool>(async_scope_.executor());
+    active_recipe_abort_ = abort;
+
+    // An abort stops the processing, which then completes with set_stopped rather than with an exception.
+    auto aborted = abort->async_wait() | stdexec::let_value([] { return stdexec::just_stopped(); });
+    async_scope_.spawn(exec::when_any(async_process_recipe(std::move(recipe), boost, target_volume), std::move(aborted)) |
+                       stdexec::upon_stopped([this, abort]() noexcept {
+                           // The capture keeps `abort` alive while the wait on it is pending.
+                           SPDLOG_LOGGER_INFO(logger_, "Recipe processing cancelled");
+                           async_scope_.spawn(pod_registry_.force_safe_state_all_pods());
+                       }));
+}
+
+void ProcessContextBridge::abort_active_recipe()
+{
+    if (active_recipe_abort_ != nullptr) {
+        *active_recipe_abort_ = true;
+        active_recipe_abort_.reset();
+    }
+}
+
+Task<void> ProcessContextBridge::async_process_recipe(Recipe recipe, const units::Percent boost, const units::Litre target_volume)
 {
     using Clock = std::chrono::steady_clock;
 
@@ -380,7 +398,8 @@ cobalt::task<void> ProcessContextBridge::async_process_recipe(Recipe recipe,
     recipe.commands = scale_recipe(recipe.commands, recipe.nominal_serving_volume, target_volume);
     recipe.commands = boost_recipe(recipe.commands, boost, ingredient_store_);
     update_ui_recipe(recipe);
-    auto command_executer = std::make_shared<MachineAdapter>(ui_, ingredient_store_, pod_registry_, station_config_);
+    auto command_executer =
+        std::make_shared<MachineAdapter>(ui_, async_scope_.executor(), ingredient_store_, pod_registry_, station_config_);
     try {
         co_await execute_commands(std::move(recipe.commands), std::move(command_executer));
         const auto duration = std::chrono::duration_cast<std::chrono::seconds>(Clock::now() - start_tp);
@@ -388,11 +407,6 @@ cobalt::task<void> ProcessContextBridge::async_process_recipe(Recipe recipe,
         display_ui_success(duration);
     }
     catch (const boost::system::system_error& ex) {
-        if (ex.code() == boost::asio::error::operation_aborted) {
-            SPDLOG_LOGGER_INFO(logger_, "Recipe processing cancelled");
-            cobalt::spawn(executor_, pod_registry_.force_safe_state_all_pods(), boost::asio::detached);
-            co_return; // clean exit, no UI error
-        }
         SPDLOG_LOGGER_ERROR(logger_, "System error while processing recipe: {}", ex.what());
         display_ui_error(ex, ui_, station_config_, ingredient_store_);
     }

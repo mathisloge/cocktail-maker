@@ -1,20 +1,20 @@
-#include <boost/cobalt.hpp>
 #include <catch2/catch_test_macros.hpp>
+#include <stdexec/execution.hpp>
+import cm.core;
 import cm;
 
 using namespace cm;
-namespace cobalt = boost::cobalt;
 
 namespace {
 class MachineAdapterMock : public BasicCommandExecuter
 {
   public:
-    cobalt::task<void> execute_command(ManualCommand command) override
+    Task<void> execute_command(ManualCommand command) override
     {
         co_return;
     }
 
-    cobalt::task<void> execute_command(DispenseCommand command) override
+    Task<void> execute_command(DispenseCommand command) override
     {
         co_return;
     }

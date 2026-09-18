@@ -22,16 +22,19 @@ target_sources(
             FILES
                 dispenser.cppm
                 execute_recipe.cppm
+                execute_recipe.cpp
                 glass.cppm
                 glass.cpp
                 ingredient.cppm
                 ingredient.cpp
                 lib.cppm
                 pod_discovery.cppm
+                pod_discovery.cpp
                 pod_types.cppm
                 pod_protocol_session.cppm
                 pod_protocol_session.cpp
                 pod_registry.cppm
+                pod_registry.cpp
                 pod_dispatcher.cppm
                 pod.cppm
                 pod.cpp
@@ -61,6 +64,7 @@ if(BUILD_TESTING)
     target_sources(
         cocktail-maker-lib-tests
         PRIVATE
+            application.test.cpp
             execute_recipe.test.cpp
             glass.test.cpp
             ingredient.test.cpp

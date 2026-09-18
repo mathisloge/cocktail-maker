@@ -53,7 +53,7 @@ Station per machine.
 A **Pod** is a self-contained dispensing module holding one or more bottles, along with
 the embedded board, stepper motors, servos, valves, and load cells needed to measure and
 dispense its ingredients autonomously. Each Pod communicates with the Station over a USB
-CDC interface using a defined serial request–response protocol, and is identified by a
+CDC interface using a defined serial request-response protocol, and is identified by a
 unique Pod ID assigned at connection time.
 
 - Controls its own actuators (steppers, servos, valves)
@@ -89,7 +89,7 @@ See [docs/naming-conventions.md](docs/naming-conventions.md).
 #### Backend (C++)
 
 - **C++ Modules** for compilation units (`.cppm` for module interface (partition) units `.cpp` for module implementation partition units and `.test.cpp` for TU test files)
-- **Boost.Asio / Boost.Cobalt** for asynchronous I/O and coroutines
+- **stdexec** (`std::execution` senders/receivers and coroutine tasks) on **Boost.Asio** for asynchronous I/O
 - **mp-units** for physical quantities and unit-safe arithmetic
 - **libassert** for expressive runtime assertions
 - **Catch2** for testing

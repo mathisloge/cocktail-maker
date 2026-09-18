@@ -1,16 +1,11 @@
 module;
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/as_tuple.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/serial_port.hpp>
-#include <boost/cobalt/config.hpp>
-#include <boost/cobalt/generator.hpp>
-#include <boost/cobalt/op.hpp>
-#include <boost/cobalt/promise.hpp>
-#include <boost/cobalt/spawn.hpp>
-#include <boost/cobalt/task.hpp>
-#include <boost/cobalt/this_coro.hpp>
 #include <boost/system/error_code.hpp>
+#include <exec/asio/use_sender.hpp>
 #include <spdlog/spdlog.h>
+#include <stdexec/execution.hpp>
 
 #ifdef __linux__
 #include <boost/asio/posix/descriptor_base.hpp>
@@ -34,7 +29,6 @@ namespace cm {
 namespace {
 
 namespace asio = boost::asio;
-namespace cobalt = boost::cobalt;
 using namespace serial_detail;
 
 /// Turns one of libudev's `*_unref` functions into a unique_ptr deleter.
@@ -204,7 +198,8 @@ constexpr unsigned int kPodBaudRate = 115200;
 
 /// Opens `devnode` and puts it into the 8N1 line discipline the pod expects.
 /// asio opens with O_NONBLOCK and applies the options with TCSANOW, so nothing here waits on a modem line or on output draining.
-std::expected<asio::serial_port, boost::system::error_code> open_and_configure(cobalt::executor exec, const std::string& devnode)
+std::expected<asio::serial_port, boost::system::error_code> open_and_configure(asio::any_io_executor exec,
+                                                                               const std::string& devnode)
 {
     boost::system::error_code ec;
     asio::serial_port port{std::move(exec)};
@@ -234,7 +229,7 @@ std::expected<asio::serial_port, boost::system::error_code> open_and_configure(c
     return port;
 }
 
-cobalt::task<void> stream_pod_log(asio::serial_port port, log::Logger logger)
+Task<void> stream_pod_log(asio::serial_port port, log::Logger logger)
 {
     std::array<char, 1024> chunk{};
     LineAssembler lines;
@@ -247,7 +242,7 @@ cobalt::task<void> stream_pod_log(asio::serial_port port, log::Logger logger)
     };
 
     for (;;) {
-        auto [ec, bytes_read] = co_await port.async_read_some(asio::buffer(chunk), asio::as_tuple(cobalt::use_op));
+        auto [ec, bytes_read] = co_await port.async_read_some(asio::buffer(chunk), asio::as_tuple(exec::asio::use_sender));
         if (ec) {
             SPDLOG_LOGGER_DEBUG(logger, "Pod log stream ended: {}", ec.message());
             co_return;
@@ -259,7 +254,8 @@ cobalt::task<void> stream_pod_log(asio::serial_port port, log::Logger logger)
 
 struct DiscoveryState
 {
-    cobalt::executor exec;
+    asio::any_io_executor exec;
+    AsyncScope& scope;
     log::Logger logger;
     PortTable pods;
     PortTable logs;
@@ -339,8 +335,8 @@ void start_log_stream(DiscoveryState& state, const UsbTtyInfo& info)
     auto log_name = std::format("pod_log_{}", identity);
     SPDLOG_LOGGER_INFO(state.logger, "Streaming pod log from '{}' into logger '{}'.", info.devnode, log_name);
 
-    // Detached: the log tty comes and goes on its own, independently of whether the pod's protocol session is up.
-    cobalt::spawn(state.exec, stream_pod_log(*std::move(port), log::create_or_get(std::move(log_name))), boost::asio::detached);
+    // The log stream gets its own task because the log tty comes and goes independently of the pod's protocol session.
+    state.scope.spawn(stream_pod_log(*std::move(port), log::create_or_get(std::move(log_name))));
 }
 
 /// Dispatches one newly seen port to its role.
@@ -357,8 +353,8 @@ std::shared_ptr<IPod> handle_port(DiscoveryState& state, const PodPort& port)
 
 /// Drops the bookkeeping entry of a tty that has just disappeared, so the pod behind it can be opened again when it comes back.
 ///
-/// Unplugging is not reported through the generator: the pod's session ends on its own once reads on the vanished port start
-/// failing, and the registry entry is dropped with it (see run_pod()). The log stream ends the same way.
+/// Unplugging is not reported to the discovery callback. The pod's session ends on its own once reads on the vanished port
+/// start failing, and the registry entry is dropped with it (see run_pod()). The log stream ends the same way.
 void forget_removed_port(DiscoveryState& state, udev_device* dev)
 {
     const auto devnode = devnode_of(dev);
@@ -424,7 +420,7 @@ UniqueFd dup_monitor_fd(udev_monitor& monitor)
 class PodPortMonitor
 {
   public:
-    PodPortMonitor(cobalt::executor exec, log::Logger logger)
+    PodPortMonitor(asio::any_io_executor exec, log::Logger logger)
         : logger_{std::move(logger)}
         , context_{make_udev_context()}
         , monitor_{make_tty_monitor(*context_)}
@@ -492,7 +488,7 @@ class PodPortMonitor
     }
 
     /// Waits for the next tty uevent and hands back the device it concerns.
-    [[nodiscard]] cobalt::promise<UdevDevicePtr> next_event()
+    [[nodiscard]] Task<UdevDevicePtr> next_event()
     {
         for (;;) {
             if (UdevDevicePtr dev{udev_monitor_receive_device(monitor_.get())}) {
@@ -500,7 +496,7 @@ class PodPortMonitor
             }
 
             SPDLOG_LOGGER_TRACE(logger_, "Nothing queued at the udev monitor, waiting for the next tty uevent.");
-            co_await descriptor_.async_wait(asio::posix::descriptor_base::wait_read, cobalt::use_op);
+            co_await descriptor_.async_wait(asio::posix::descriptor_base::wait_read, exec::asio::use_sender);
         }
     }
 
@@ -538,7 +534,7 @@ UdevAction event_action(udev_device* dev)
 } // namespace
 #endif
 
-boost::cobalt::generator<std::shared_ptr<IPod>> SerialPodDiscovery::discover()
+Task<void> SerialPodDiscovery::discover(AsyncScope& scope, std::function<void(std::shared_ptr<IPod>)> on_pod_discovered)
 {
     auto logger = cm::log::create_or_get("serial");
 
@@ -546,12 +542,12 @@ boost::cobalt::generator<std::shared_ptr<IPod>> SerialPodDiscovery::discover()
     throw SerialInitializationError{"USB hotplug discovery is only implemented for Linux"};
 #else
 
-    DiscoveryState state{.exec = co_await cobalt::this_coro::executor, .logger = std::move(logger)};
+    DiscoveryState state{.exec = scope.executor(), .scope = scope, .logger = std::move(logger)};
     PodPortMonitor monitor{state.exec, state.logger};
 
     for (const auto& port : monitor.scan_connected()) {
         if (auto pod = handle_port(state, port)) {
-            co_yield std::move(pod);
+            on_pod_discovered(std::move(pod));
         }
     }
 
@@ -566,7 +562,7 @@ boost::cobalt::generator<std::shared_ptr<IPod>> SerialPodDiscovery::discover()
         case UdevAction::add:
             if (const auto port = match_pod_port(dev.get(), state.logger)) {
                 if (auto pod = handle_port(state, *port)) {
-                    co_yield std::move(pod);
+                    on_pod_discovered(std::move(pod));
                 }
             }
             break;

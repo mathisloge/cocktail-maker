@@ -26,6 +26,7 @@ target_sources(
                 src/recipe_adapter.cppm
                 src/async_ui.cppm
                 src/maschine_adapter.cppm
+                src/maschine_adapter.cpp
                 src/ui_log_sink.cppm
                 src/station_state_bridge.cppm
                 src/station_state_bridge.cpp

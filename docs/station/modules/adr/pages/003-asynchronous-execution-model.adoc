@@ -1,7 +1,8 @@
 = ADR-003: Asynchronous Execution Model (Boost.Asio + Boost.Cobalt Coroutines)
-:adr-status: Accepted
+:adr-status: Superseded
 :adr-date: 2026-07-24
 :adr-authors: {gh}mathisloge[@mathisloge]
+:adr-superseded-by: xref:005-sender-receiver-execution-model.adoc[ADR-005]
 
 include::partial$adr-header.adoc[]
 

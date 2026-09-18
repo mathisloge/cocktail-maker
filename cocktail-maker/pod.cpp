@@ -1,19 +1,17 @@
 module;
 #include <boost/asio/steady_timer.hpp>
-#include <boost/cobalt/async_for.hpp>
-#include <boost/cobalt/promise.hpp>
-#include <boost/cobalt/race.hpp>
-#include <boost/cobalt/task.hpp>
+#include <exec/asio/use_sender.hpp>
+#include <exec/when_any.hpp>
 #include <proto/field/ErrorCodeCommon.h>
 #include <proto/field/LedEffectCommon.h>
 #include <spdlog/spdlog.h>
+#include <stdexec/execution.hpp>
 
 module cm:pod_impl;
 import std;
 import cm.core;
 import :pod;
 
-namespace cobalt = boost::cobalt;
 namespace asio = boost::asio;
 
 namespace cm {
@@ -25,7 +23,7 @@ DispenserPodImpl::DispenserPodImpl(std::weak_ptr<IPod> pod, DispenserId dispense
 {
 }
 
-cobalt::promise<units::Litre> DispenserPodImpl::dispense(units::Litre volume)
+Task<units::Litre> DispenserPodImpl::dispense(units::Litre volume)
 {
     SPDLOG_LOGGER_DEBUG(logger_, "Start dispense of {}.", volume);
     const auto measured_volume = co_await pod()->dispense(dispenser_id_, volume);
@@ -33,19 +31,19 @@ cobalt::promise<units::Litre> DispenserPodImpl::dispense(units::Litre volume)
     co_return measured_volume;
 }
 
-cobalt::promise<void> DispenserPodImpl::load_cell_calibrate_with_ref_weight(units::Grams grams)
+Task<void> DispenserPodImpl::load_cell_calibrate_with_ref_weight(units::Grams grams)
 {
     SPDLOG_LOGGER_DEBUG(logger_, "Set load cell ref weight to {}.", grams);
     co_await pod()->load_cell_calibrate_with_ref_weight(dispenser_id_, grams);
 }
 
-cobalt::promise<void> DispenserPodImpl::load_cell_tare()
+Task<void> DispenserPodImpl::load_cell_tare()
 {
     SPDLOG_LOGGER_DEBUG(logger_, "load cell TARE.");
     co_await pod()->load_cell_tare(dispenser_id_);
 }
 
-cobalt::promise<void> DispenserPodImpl::highlight(std::chrono::milliseconds duration)
+Task<void> DispenserPodImpl::highlight(std::chrono::milliseconds duration)
 {
     SPDLOG_LOGGER_DEBUG(logger_, "Highlight for {}.", duration);
     co_await pod()->highlight_dispenser(id(), duration);
@@ -70,7 +68,7 @@ Pump::Pump(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
 {
 }
 
-cobalt::promise<units::Litre> Pump::calibrate(units::Steps steps)
+Task<units::Litre> Pump::calibrate(units::Steps steps)
 {
     SPDLOG_LOGGER_DEBUG(logger_, "Start calibration with {}.", steps);
     co_return co_await pod()->pump_calibrate(id(), steps);
@@ -117,8 +115,7 @@ void process_nak(const InNak& nak, const MessageEnvironment& env)
 }
 
 template <typename TxMsg>
-auto send_with_ack(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvironment env)
-    -> cobalt::promise<TransactionId::ValueType>
+auto send_with_ack(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvironment env) -> Task<TransactionId::ValueType>
 {
     const auto transaction_id = session.generate_new_transaction_id();
 
@@ -127,7 +124,7 @@ auto send_with_ack(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvir
 
     co_await session.async_send(std::move(tx_msg), transaction_id);
     try {
-        const auto nak_or_ack = co_await rx_action;
+        const auto nak_or_ack = co_await std::move(rx_action);
         if (std::holds_alternative<InNak>(nak_or_ack)) {
             process_nak(std::get<InNak>(nak_or_ack), env);
         }
@@ -139,7 +136,7 @@ auto send_with_ack(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvir
 }
 
 template <typename RxMsg, typename TxMsg>
-auto send_and_receive(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvironment env) -> cobalt::promise<RxMsg>
+auto send_and_receive(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvironment env) -> Task<RxMsg>
 {
     const auto transaction_id = session.generate_new_transaction_id();
 
@@ -148,7 +145,7 @@ auto send_and_receive(PodProtocolSession& session, TxMsg tx_msg, const MessageEn
 
     co_await session.async_send(std::move(tx_msg), transaction_id);
     try {
-        co_return co_await rx_action;
+        co_return co_await std::move(rx_action);
     }
     catch (const TimeoutError&) {
         throw PodTimeoutError{env.pod_id};
@@ -159,7 +156,7 @@ template <typename RxMsg, typename TxMsg>
 auto send_action_with_response(PodProtocolSession& session,
                                TxMsg tx_msg,
                                std::chrono::milliseconds action_timeout,
-                               const MessageEnvironment env) -> cobalt::promise<RxMsg>
+                               const MessageEnvironment env) -> Task<RxMsg>
 {
     const auto transaction_id = co_await send_with_ack(session, std::move(tx_msg), env);
     try {
@@ -185,10 +182,10 @@ PodId Pod::pod_id() const
     return state_->info().id;
 }
 
-cobalt::task<void> Pod::run(std::unique_ptr<PodState> state)
+Task<void> Pod::run(std::unique_ptr<PodState> state)
 {
     state_ = std::move(state);
-    co_await cobalt::race(session_.run(), monitor_device());
+    co_await exec::when_any(session_.run(), monitor_device());
 }
 
 std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> Pod::create_dispenser(DispenserId dispenser_id)
@@ -203,7 +200,7 @@ std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> Pod::create_di
     return std::make_unique<Pump>(this->shared_from_this(), dispenser_id);
 }
 
-cobalt::promise<PodInfo> Pod::aquire_device_info(std::chrono::milliseconds timeout)
+Task<PodInfo> Pod::aquire_device_info(std::chrono::milliseconds timeout)
 {
     InDeviceInfoResponse msg =
         co_await send_and_receive<InDeviceInfoResponse>(session_, OutDeviceInfoRequest{}, default_env(this, timeout));
@@ -220,7 +217,7 @@ cobalt::promise<PodInfo> Pod::aquire_device_info(std::chrono::milliseconds timeo
     };
 }
 
-cobalt::promise<void> Pod::load_cell_calibrate_with_ref_weight(const DispenserId dispenser_id, const units::Grams grams)
+Task<void> Pod::load_cell_calibrate_with_ref_weight(const DispenserId dispenser_id, const units::Grams grams)
 {
     auto tx = OutLoadCellCalibrateWithRefWeight{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
@@ -228,14 +225,14 @@ cobalt::promise<void> Pod::load_cell_calibrate_with_ref_weight(const DispenserId
     co_await send_with_ack(session_, std::move(tx), dispenser_env(this, dispenser_id));
 }
 
-cobalt::promise<void> Pod::load_cell_tare(DispenserId dispenser_id)
+Task<void> Pod::load_cell_tare(DispenserId dispenser_id)
 {
     auto tx = OutLoadCellTare{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
     co_await send_with_ack(session_, std::move(tx), dispenser_env(this, dispenser_id));
 }
 
-cobalt::promise<units::Litre> Pod::dispense(DispenserId dispenser_id, units::Litre volume)
+Task<units::Litre> Pod::dispense(DispenserId dispenser_id, units::Litre volume)
 {
     auto tx = OutDispense{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
@@ -246,7 +243,7 @@ cobalt::promise<units::Litre> Pod::dispense(DispenserId dispenser_id, units::Lit
     co_return (finish_result.field_millilitre().value() * units::milli_litre);
 }
 
-cobalt::promise<units::Litre> Pod::pump_calibrate(const DispenserId dispenser_id, const units::Steps steps)
+Task<units::Litre> Pod::pump_calibrate(const DispenserId dispenser_id, const units::Steps steps)
 {
     auto tx = OutPumpStartCalibration{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
@@ -257,7 +254,7 @@ cobalt::promise<units::Litre> Pod::pump_calibrate(const DispenserId dispenser_id
     co_return finish_result.field_millilitre().value() * units::milli_litre;
 }
 
-cobalt::promise<void> Pod::highlight_dispenser(DispenserId dispenser_id, std::chrono::milliseconds duration)
+Task<void> Pod::highlight_dispenser(DispenserId dispenser_id, std::chrono::milliseconds duration)
 {
     auto tx = OutHighlightDispenser{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
@@ -266,12 +263,12 @@ cobalt::promise<void> Pod::highlight_dispenser(DispenserId dispenser_id, std::ch
     co_await send_with_ack(session_, std::move(tx), dispenser_env(this, dispenser_id));
 }
 
-cobalt::task<void> Pod::force_safe_state()
+Task<void> Pod::force_safe_state()
 {
     co_await send_with_ack(session_, OutEmergencyStop{}, default_env(this));
 }
 
-cobalt::task<void> Pod::monitor_device()
+Task<void> Pod::monitor_device()
 {
     struct Cleanup
     {
@@ -297,18 +294,18 @@ cobalt::task<void> Pod::monitor_device()
     co_await keep_alive();
 }
 
-cobalt::task<void> Pod::keep_alive()
+Task<void> Pod::keep_alive()
 {
-    auto cs = co_await asio::this_coro::cancellation_state;
-    co_await device_ready_;
+    co_await device_ready_.async_wait();
     asio::steady_timer timer{session_.get_executor()};
-    while (cs.cancelled() == asio::cancellation_type::none) {
+    // The loop only ends through a stop request, which completes the pending ping or timer wait with set_stopped.
+    for (;;) {
         co_await retry_on_timeout(
             3,
             [this](auto timeout) { return send_and_receive<InPong>(session_, OutPing{}, default_env(this, timeout)); },
             ExponentialBackoffPolicy{.maximum = 1s});
         timer.expires_after(2s);
-        co_await timer.async_wait(cobalt::use_op);
+        co_await timer.async_wait(exec::asio::use_sender);
     }
 }
 

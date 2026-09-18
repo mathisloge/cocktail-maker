@@ -1,12 +1,11 @@
-#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/use_future.hpp>
-#include <boost/cobalt.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <slint.h>
+#include <stdexec/execution.hpp>
 #include "app-window.h"
 
 import std;
+import cm.core;
 import cm;
 import cm.gui;
 
@@ -27,17 +26,18 @@ TEST_CASE("MachineAdapter - manual command opens and resolves through the popup"
     cm::PodRegistry pod_registry;
     cm::StationConfig station_config{ingredient_store, ""};
 
-    cm::gui::MachineAdapter adapter{ui, ingredient_store, pod_registry, station_config};
-
     boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
+    cm::gui::MachineAdapter adapter{ui, ctx.get_executor(), ingredient_store, pod_registry, station_config};
+
     bool completed = false;
 
-    auto run_test = [&]() -> boost::cobalt::task<void> {
+    auto run_test = [&]() -> cm::Task<void> {
         co_await adapter.execute_command(cm::ManualCommand{.instruction = "Prime pump"});
         completed = true;
     };
 
-    std::future<void> fut = boost::cobalt::spawn(ctx, run_test(), boost::asio::use_future);
+    scope.spawn(run_test());
 
     ctx.poll();           // Drives up to the `co_await` suspend point
     flush_slint_events(); // Slint handles the open request
@@ -45,9 +45,7 @@ TEST_CASE("MachineAdapter - manual command opens and resolves through the popup"
     ui->invoke_manual_command_confirmed(); // Simulate user confirmation
     flush_slint_events();                  // Post the manual_command completion
 
-    ctx.run();
-
-    fut.get();
+    REQUIRE(cm::run_until_complete(ctx, scope.join()));
 
     REQUIRE(completed);
 }
@@ -59,7 +57,8 @@ TEST_CASE("MachineAdapter - update_command_status updates the active recipe", "[
     cm::PodRegistry pod_registry;
     cm::StationConfig station_config{ingredient_store, ""};
 
-    cm::gui::MachineAdapter adapter{ui, ingredient_store, pod_registry, station_config};
+    boost::asio::io_context ctx;
+    cm::gui::MachineAdapter adapter{ui, ctx.get_executor(), ingredient_store, pod_registry, station_config};
 
     auto active = ui->global<cm::gui::RecipeContext>().get_active_recipe();
 

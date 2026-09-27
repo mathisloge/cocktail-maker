@@ -14,12 +14,6 @@ namespace asio = boost::asio;
 
 /**
  * Owns all fire-and-forget work of the Station and runs it on one io_context.
- *
- * It replaces detached spawning. Every spawned sender stays associated with this scope until it completes, so the
- * application can stop all of it and wait for it to finish before tearing down the objects it references.
- *
- * The underlying `stdexec::counting_scope` terminates the program if it is destroyed while work is still associated
- * with it, so `join()` must have completed before destruction whenever anything was spawned.
  */
 export class AsyncScope
 {
@@ -35,12 +29,7 @@ export class AsyncScope
     AsyncScope& operator=(AsyncScope&&) = delete;
     ~AsyncScope() = default;
 
-    /**
-     * Starts `sender` on the io_context and associates it with this scope.
-     *
-     * It is thread-safe and can therefore also be called from the UI thread. Values are discarded and an error completion is
-     * logged, because nobody waits for the result. Work spawned after `request_stop()` sees a stop request right away.
-     */
+    /// Starts `sender` on the io_context and associates it with this scope.
     template <stdexec::sender Sender>
     void spawn(Sender&& sender)
     {

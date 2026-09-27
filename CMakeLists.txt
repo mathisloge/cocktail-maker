@@ -65,7 +65,7 @@ cpmaddpackage(
 cpmaddpackage(
   NAME stdexec
   GITHUB_REPOSITORY NVIDIA/stdexec
-  GIT_TAG 3de97310d26d4abf6af4cb65af2574838030aac9
+  GIT_TAG ead186b1d8db3ebe37a946ff84a6ce08bf795153
   SYSTEM ON
   OPTIONS
     "STDEXEC_BUILD_TESTS OFF"
@@ -85,7 +85,7 @@ cpmaddpackage(URI "gh:mpusz/mp-units#daaed987fa55419d0d5daffbad95e4463f2e3f74" S
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
 cpmaddpackage(URI "gh:simdjson/simdjson@4.6.11" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF")
 cpmaddpackage(
-  URI "gh:slint-ui/slint@1.18.0"
+  URI "gh:slint-ui/slint@1.18.1"
   NAME Slint
   SOURCE_SUBDIR api/cpp
 )

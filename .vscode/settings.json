@@ -2,7 +2,28 @@
     "clangd.enable": true,
     "clangd.arguments": [
         "--experimental-modules-support",
-        "--compile-commands-dir=${workspaceFolder}/build",
-        "--header-insertion=never"
+        "--compile-commands-dir=${command:cmake.buildDirectory}",
+        "--header-insertion=never",
+        "--completion-style=detailed"
+    ],
+    "clangd.onConfigChanged": "restart",
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "cmake.useCMakePresets": "always",
+    "cmake.configureOnOpen": false,
+    "files.associations": {
+        "*.cppm": "cpp"
+    },
+    "files.watcherExclude": {
+        "**/build/**": true,
+        "**/.cache/**": true
+    },
+    "editor.inlayHints.enabled": "offUnlessPressed",
+    "[cpp]": {
+        "editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd",
+    },
+    "lldb-dap.customFrameFormat": "{${function.scope}}${function.basename}",
+    "lldb-dap.initCommands": [
+        "type summary add --summary-string \"${var.value_}\" -x \"^cm::strong_type<.+>$\"",
+        "type summary add --summary-string \"${var.numerical_value_is_an_implementation_detail_}\" -x \"^mp_units::quantity<.+>$\""
     ],
 }

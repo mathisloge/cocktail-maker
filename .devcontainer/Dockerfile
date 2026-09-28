@@ -39,7 +39,7 @@ RUN curl -fsSL https://apt.llvm.org/llvm.sh -o /tmp/llvm.sh \
 # surface much later as an unexplained `import std` error.
 RUN set -eux; \
     llvm_ver="$(ls -d /usr/lib/llvm-* | sed 's|.*/llvm-||' | sort -n | tail -1)"; \
-    for tool in clang clang++ clang-tidy clang-format clangd lldb lld ld.lld llvm-symbolizer; do \
+    for tool in clang clang++ clang-tidy clang-format clangd lldb lldb-dap lld ld.lld llvm-symbolizer; do \
         if [ -x "/usr/lib/llvm-${llvm_ver}/bin/${tool}" ]; then \
             update-alternatives --install "/usr/bin/${tool}" "${tool}" \
                 "/usr/lib/llvm-${llvm_ver}/bin/${tool}" 100; \

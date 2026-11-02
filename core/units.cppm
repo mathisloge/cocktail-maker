@@ -20,7 +20,7 @@ inline constexpr struct step final : named_unit<"steps", one>
 {
 } step;
 
-using Steps = quantity<step, std::int32_t>;
+using Steps = quantity<step, std::int64_t>;
 inline constexpr auto steps_per_litre = step / si::litre;
 using StepsPerLitre = quantity<steps_per_litre>;
 // ^^^ Stepper-Motor units

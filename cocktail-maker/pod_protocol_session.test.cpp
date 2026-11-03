@@ -122,8 +122,10 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Lifecycle 
 TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Sends Messages over Socket", "[send]")
 {
     run_test([this]() -> cm::Task<void> {
+        constexpr cm::TransactionId::ValueType kWideTransaction = 0x1234;
+
         TestTxMsg msg;
-        REQUIRE_NOTHROW(co_await session->async_send(msg, kTestTransaction));
+        REQUIRE_NOTHROW(co_await session->async_send(msg, kWideTransaction));
 
         std::vector<uint8_t> buffer(1024);
         auto [ec, bytes_read] =
@@ -132,7 +134,9 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Sends Mess
         REQUIRE(!ec);
         CHECK(bytes_read > 0);
 
-        CHECK(static_cast<int>(buffer[6]) == kTestTransaction);
+        // Sync, Size and MsgId take 6 bytes, and the frame is little endian.
+        CHECK(buffer[6] == 0x34);
+        CHECK(buffer[7] == 0x12);
     });
 }
 

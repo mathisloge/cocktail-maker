@@ -23,13 +23,13 @@ export class DispenserCalibrationBridge
 
     void dispatch_calibrate_load_cell_ref_weight(gui::Pod pod, gui::Dispenser dispenser, units::Grams grams);
 
-    void dispatch_calibrate_pump(gui::Pod pod, gui::Dispenser dispenser, units::Steps steps);
+    void dispatch_calibrate_dispenser(gui::Pod pod, gui::Dispenser dispenser, std::chrono::milliseconds run_time);
 
     Task<void> async_dispatch_load_tare(PodId pod_id, DispenserId dispenser_id);
 
     Task<void> async_dispatch_calibrate_load_cell_ref_weight(PodId pod_id, DispenserId dispenser_id, units::Grams grams);
 
-    Task<void> async_calibrate_pump(PodId pod_id, DispenserId dispenser_id, units::Steps steps);
+    Task<void> async_calibrate_dispenser(PodId pod_id, DispenserId dispenser_id, std::chrono::milliseconds run_time);
 
     void update_ui_error(std::string error_str);
 
@@ -37,9 +37,9 @@ export class DispenserCalibrationBridge
 
     void update_load_tare_status(CalibrationStepStatus status);
 
-    void update_pump_status(CalibrationStepStatus status);
+    void update_dispenser_status(CalibrationStepStatus status);
 
-    void update_pump_measured_calibration_value(units::Litre litre);
+    void update_dispenser_measured_amount(units::Litre amount);
 
   private:
     AsyncScope& async_scope_;

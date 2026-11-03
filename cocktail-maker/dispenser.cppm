@@ -44,6 +44,7 @@ export class Dispenser
     Dispenser& operator=(Dispenser&&) noexcept = delete;
 
     virtual Task<units::Litre> dispense(units::Litre volume) = 0;
+    virtual Task<units::Litre> calibrate(std::chrono::milliseconds run_time) = 0;
     virtual Task<void> load_cell_calibrate_with_ref_weight(units::Grams grams) = 0;
     virtual Task<void> load_cell_tare() = 0;
     virtual Task<void> highlight(std::chrono::milliseconds duration) = 0;

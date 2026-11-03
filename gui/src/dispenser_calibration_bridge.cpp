@@ -1,5 +1,4 @@
 module;
-#include <libassert/assert-macros.hpp>
 #include <stdexec/execution.hpp>
 #include "app-window.h"
 
@@ -9,7 +8,6 @@ import std;
 import cm;
 import cm.core;
 import mp_units;
-import libassert;
 import :dispenser_calibration_bridge;
 
 namespace cm::gui {
@@ -31,9 +29,10 @@ void DispenserCalibrationBridge::init()
     ui_->global<DispenserCalibrationContext>().on_load_cell_tare(
         [this](gui::Pod pod, gui::Dispenser dispenser) { dispatch_load_tare(std::move(pod), std::move(dispenser)); });
 
-    ui_->global<DispenserCalibrationContext>().on_calibrate_pump([this](gui::Pod pod, gui::Dispenser dispenser, int steps) {
-        dispatch_calibrate_pump(std::move(pod), std::move(dispenser), (steps * units::step));
-    });
+    ui_->global<DispenserCalibrationContext>().on_calibrate_dispenser(
+        [this](gui::Pod pod, gui::Dispenser dispenser, int run_time_s) {
+            dispatch_calibrate_dispenser(std::move(pod), std::move(dispenser), std::chrono::seconds{run_time_s});
+        });
 }
 
 void DispenserCalibrationBridge::dispatch_load_tare(const gui::Pod pod, const gui::Dispenser dispenser)
@@ -49,11 +48,11 @@ void DispenserCalibrationBridge::dispatch_calibrate_load_cell_ref_weight(const g
         async_dispatch_calibrate_load_cell_ref_weight(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}, grams));
 }
 
-void DispenserCalibrationBridge::dispatch_calibrate_pump(const gui::Pod pod,
-                                                         const gui::Dispenser dispenser,
-                                                         const units::Steps steps)
+void DispenserCalibrationBridge::dispatch_calibrate_dispenser(const gui::Pod pod,
+                                                              const gui::Dispenser dispenser,
+                                                              const std::chrono::milliseconds run_time)
 {
-    async_scope_.spawn(async_calibrate_pump(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}, steps));
+    async_scope_.spawn(async_calibrate_dispenser(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}, run_time));
 }
 
 Task<void> DispenserCalibrationBridge::async_dispatch_load_tare(const PodId pod_id, const DispenserId dispenser_id)
@@ -96,27 +95,25 @@ Task<void> DispenserCalibrationBridge::async_dispatch_calibrate_load_cell_ref_we
     }
 }
 
-Task<void> DispenserCalibrationBridge::async_calibrate_pump(const PodId pod_id,
-                                                            const DispenserId dispenser_id,
-                                                            const units::Steps steps)
+Task<void> DispenserCalibrationBridge::async_calibrate_dispenser(const PodId pod_id,
+                                                                 const DispenserId dispenser_id,
+                                                                 const std::chrono::milliseconds run_time)
 {
-    update_pump_status(CalibrationStepStatus::Running);
+    update_dispenser_status(CalibrationStepStatus::Running);
     auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
     if (not dispenser.has_value()) {
-        update_pump_status(CalibrationStepStatus::Error);
+        update_dispenser_status(CalibrationStepStatus::Error);
         update_ui_error("Es konnte kein Dispenser gefunden werden.");
         co_return;
     }
-    auto* pump = dynamic_cast<Pump*>(dispenser.value().get());
-    ASSERT(pump != nullptr, "Dispenser needs to be a pump");
 
     try {
-        const auto pumped = co_await pump->calibrate(steps);
-        update_pump_measured_calibration_value(pumped);
-        update_pump_status(CalibrationStepStatus::Success);
+        const units::Litre amount = co_await (*dispenser)->calibrate(run_time);
+        update_dispenser_measured_amount(amount);
+        update_dispenser_status(CalibrationStepStatus::Success);
     }
     catch (const std::exception& err) {
-        update_pump_status(CalibrationStepStatus::Error);
+        update_dispenser_status(CalibrationStepStatus::Error);
         update_ui_error(err.what());
     }
 }
@@ -140,17 +137,17 @@ void DispenserCalibrationBridge::update_load_tare_status(CalibrationStepStatus s
         [ui = ui_, status]() { ui->global<DispenserCalibrationContext>().invoke_update_load_cell_tare_status(status); });
 }
 
-void DispenserCalibrationBridge::update_pump_status(CalibrationStepStatus status)
+void DispenserCalibrationBridge::update_dispenser_status(CalibrationStepStatus status)
 {
     slint::invoke_from_event_loop(
-        [ui = ui_, status]() { ui->global<DispenserCalibrationContext>().invoke_update_pump_status(status); });
+        [ui = ui_, status]() { ui->global<DispenserCalibrationContext>().invoke_update_dispenser_status(status); });
 }
 
-void DispenserCalibrationBridge::update_pump_measured_calibration_value(units::Litre litre)
+void DispenserCalibrationBridge::update_dispenser_measured_amount(units::Litre amount)
 {
-    const auto str = std::format("{}", litre);
-    slint::invoke_from_event_loop([ui = ui_, litre = slint::SharedString{str.c_str()}]() {
-        ui->global<DispenserCalibrationContext>().invoke_update_pump_measured_calibrated_value(litre);
+    const auto text = std::format("{} mL", std::lround(amount.numerical_value_in(units::milli_litre)));
+    slint::invoke_from_event_loop([ui = ui_, amount = slint::SharedString{text.c_str()}]() {
+        ui->global<DispenserCalibrationContext>().invoke_update_dispenser_measured_amount(amount);
     });
 }
 } // namespace cm::gui

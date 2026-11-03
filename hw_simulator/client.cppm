@@ -49,7 +49,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
     using Pong = proto::message::Pong<Message, Options>;
     using Ack = proto::message::Ack<Message, Options>;
     using Nak = proto::message::Nak<Message, Options>;
-    using PumpCalibrationFinished = proto::message::PumpFinishedCalibrationResponse<Message, Options>;
+    using CalibrationFinished = proto::message::DispenserFinishedCalibrationResponse<Message, Options>;
     using DispenseFinished = proto::message::DispenseFinished<Message, Options>;
 
     static constexpr int kNumPumps = 5;
@@ -116,7 +116,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
         scope_.spawn(async_handle(this->shared_from_this(), msg));
     }
 
-    void handle(InClientPumpStartCalibration& msg)
+    void handle(InClientDispenserStartCalibration& msg)
     {
         scope_.spawn(async_handle(this->shared_from_this(), msg));
     }
@@ -172,16 +172,15 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
         co_await async_send(Ack{}, msg.transportField_transactionId().getValue());
     }
 
-    Task<void> async_handle(std::shared_ptr<Client> /*self*/, InClientPumpStartCalibration msg)
+    Task<void> async_handle(std::shared_ptr<Client> /*self*/, InClientDispenserStartCalibration msg)
     {
         const auto trid = msg.transportField_transactionId().getValue();
         co_await delay(50ms);
         co_await async_send(Ack{}, trid);
-        co_await delay((msg.field_pumpStep().value() * 1ms) + 50ms);
+        co_await delay((msg.field_milliseconds().value() * 1ms) + 50ms);
 
-        PumpCalibrationFinished resp{};
+        CalibrationFinished resp{};
         resp.field_millilitre().setValue(230);
-        resp.field_pumpStep().setValue(430);
         co_await async_send(std::move(resp), trid);
     }
 

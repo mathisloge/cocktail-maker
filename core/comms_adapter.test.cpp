@@ -32,8 +32,8 @@ TEST_CASE("proto::MsgId formats mapped names")
 {
     using proto::MsgId;
 
-    REQUIRE(std::format("{}", MsgId::MsgId_Ping) == "Ping Server Message");
-    REQUIRE(std::format("{}", MsgId::MsgId_Pong) == "Pong Client Message");
+    REQUIRE(std::format("{}", MsgId::MsgId_Ping) == "Ping");
+    REQUIRE(std::format("{}", MsgId::MsgId_Pong) == "Pong");
     REQUIRE(std::format("{}", MsgId::MsgId_Ack) == "Ack");
     REQUIRE(std::format("{}", MsgId::MsgId_DeviceInfoRequest) == "Device Info Request");
     REQUIRE(std::format("{}", MsgId::MsgId_DeviceInfoResponse) == "Device Info Response");

@@ -99,7 +99,7 @@ export class IPod
 
     virtual Task<units::Litre> dispense(DispenserId dispenser_id, units::Litre volume) = 0;
 
-    virtual Task<units::Litre> pump_calibrate(DispenserId dispenser_id, units::Steps steps) = 0;
+    virtual Task<units::Litre> dispenser_calibrate(DispenserId dispenser_id, std::chrono::milliseconds run_time) = 0;
     virtual Task<void> force_safe_state() = 0;
 };
 
@@ -116,6 +116,8 @@ class DispenserPodImpl : public Dispenser
     explicit DispenserPodImpl(std::weak_ptr<IPod> pod, DispenserId dispenser_id, std::string logger_name);
 
     Task<units::Litre> dispense(units::Litre volume) override;
+
+    Task<units::Litre> calibrate(std::chrono::milliseconds run_time) override;
 
     Task<void> load_cell_calibrate_with_ref_weight(units::Grams grams) override;
 
@@ -141,7 +143,6 @@ export class Pump final : public DispenserPodImpl
 
   public:
     Pump(std::weak_ptr<IPod> pod, DispenserId dispenser_id);
-    Task<units::Litre> calibrate(units::Steps steps);
 };
 
 export class Valve final : public DispenserPodImpl
@@ -169,7 +170,7 @@ export class Pod : public IPod, public std::enable_shared_from_this<Pod>
 
     Task<units::Litre> dispense(DispenserId dispenser_id, units::Litre volume) override;
 
-    Task<units::Litre> pump_calibrate(const DispenserId dispenser_id, const units::Steps steps) override;
+    Task<units::Litre> dispenser_calibrate(DispenserId dispenser_id, std::chrono::milliseconds run_time) override;
 
     Task<void> highlight_dispenser(DispenserId dispenser_id, std::chrono::milliseconds duration) override;
 

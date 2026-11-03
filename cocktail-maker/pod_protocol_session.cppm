@@ -35,7 +35,8 @@ export using InPong = proto::message::Pong<InMessage>;
 export using InAck = proto::message::Ack<InMessage>;
 export using InNak = proto::message::Nak<InMessage>;
 export using InDeviceInfoResponse = proto::message::DeviceInfoResponse<InMessage>;
-export using InPumpFinishedCalibrationResponse = proto::message::PumpFinishedCalibrationResponse<InMessage>;
+export using InDispenserFinishedCalibrationResponse = proto::message::DispenserFinishedCalibrationResponse<InMessage>;
+export using InLoadCellWeightResponse = proto::message::LoadCellWeightResponse<InMessage>;
 export using InDispenseFinished = proto::message::DispenseFinished<InMessage>;
 
 export using OutMessage = proto::FrameInterface<comms::option::app::WriteIterator<std::uint8_t*>,
@@ -50,7 +51,8 @@ export using OutEmergencyStop = proto::message::EmergencyStop<OutMessage>;
 export using OutDeviceInfoRequest = proto::message::DeviceInfoRequest<OutMessage>;
 export using OutLoadCellCalibrateWithRefWeight = proto::message::LoadCellCalibrateWithRefWeight<OutMessage>;
 export using OutLoadCellTare = proto::message::LoadCellTare<OutMessage>;
-export using OutPumpStartCalibration = proto::message::PumpStartCalibration<OutMessage>;
+export using OutDispenserStartCalibration = proto::message::DispenserStartCalibration<OutMessage>;
+export using OutLoadCellWeightRequest = proto::message::LoadCellWeightRequest<OutMessage>;
 export using OutHighlightDispenser = proto::message::HighlightDispenser<OutMessage>;
 export using OutDispense = proto::message::Dispense<OutMessage>;
 

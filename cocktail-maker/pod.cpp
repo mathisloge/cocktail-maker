@@ -16,6 +16,11 @@ namespace asio = boost::asio;
 
 namespace cm {
 
+namespace {
+// The dispenser has to stop first, then the Pod measures at rest.
+constexpr std::chrono::milliseconds kCalibrationAllowance = 3s;
+} // namespace
+
 DispenserPodImpl::DispenserPodImpl(std::weak_ptr<IPod> pod, DispenserId dispenser_id, std::string logger_name)
     : dispenser_id_{dispenser_id}
     , pod_{std::move(pod)}
@@ -29,6 +34,12 @@ Task<units::Litre> DispenserPodImpl::dispense(units::Litre volume)
     const auto measured_volume = co_await pod()->dispense(dispenser_id_, volume);
     SPDLOG_LOGGER_DEBUG(logger_, "Finished dispensing of {}. Dispensed: {}.", volume, measured_volume);
     co_return measured_volume;
+}
+
+Task<units::Litre> DispenserPodImpl::calibrate(std::chrono::milliseconds run_time)
+{
+    SPDLOG_LOGGER_DEBUG(logger_, "Start calibration with a run time of {}.", run_time);
+    co_return co_await pod()->dispenser_calibrate(id(), run_time);
 }
 
 Task<void> DispenserPodImpl::load_cell_calibrate_with_ref_weight(units::Grams grams)
@@ -66,12 +77,6 @@ DispenserId DispenserPodImpl::id() const
 Pump::Pump(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
     : DispenserPodImpl{std::move(pod), dispenser_id, std::format("pump_{}", dispenser_id)}
 {
-}
-
-Task<units::Litre> Pump::calibrate(units::Steps steps)
-{
-    SPDLOG_LOGGER_DEBUG(logger_, "Start calibration with {}.", steps);
-    co_return co_await pod()->pump_calibrate(id(), steps);
 }
 
 Valve::Valve(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
@@ -243,14 +248,15 @@ Task<units::Litre> Pod::dispense(DispenserId dispenser_id, units::Litre volume)
     co_return (finish_result.field_millilitre().value() * units::milli_litre);
 }
 
-Task<units::Litre> Pod::pump_calibrate(const DispenserId dispenser_id, const units::Steps steps)
+Task<units::Litre> Pod::dispenser_calibrate(const DispenserId dispenser_id, const std::chrono::milliseconds run_time)
 {
-    auto tx = OutPumpStartCalibration{};
+    auto tx = OutDispenserStartCalibration{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
-    tx.field_pumpStep().setValue(steps);
+    tx.field_milliseconds().setValue(run_time.count());
 
-    const InPumpFinishedCalibrationResponse finish_result = co_await send_action_with_response<InPumpFinishedCalibrationResponse>(
-        session_, std::move(tx), (steps * 2ms) + 100ms, dispenser_env(this, dispenser_id));
+    const InDispenserFinishedCalibrationResponse finish_result =
+        co_await send_action_with_response<InDispenserFinishedCalibrationResponse>(
+            session_, std::move(tx), run_time + kCalibrationAllowance, dispenser_env(this, dispenser_id));
     co_return finish_result.field_millilitre().value() * units::milli_litre;
 }
 

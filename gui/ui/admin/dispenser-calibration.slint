@@ -115,7 +115,7 @@ component DispenserCalibrationContent inherits Rectangle {
     in property <Pod> active-pod;
     in property <Dispenser> active-dispenser;
     private property <int> reference-weight-g: 100;
-    private property <int> pump-test-steps: 200;
+    private property <int> run-time-s: 15;
 
     background: Palette.background;
 
@@ -209,45 +209,45 @@ component DispenserCalibrationContent inherits Rectangle {
                         }
                     }
 
-                    if root.active-dispenser.type == DispenserType.pump: StepCard {
+                    StepCard {
                         step-number: "3";
-                        title: "Pumpvolumen";
-                        description: "Pumpt die eingegebene Anzahl Schritte und misst das ausgegebene Volumen mit der kalibrierten Waage.";
-                        status: DispenserCalibrationContext.state.pump-status;
+                        title: "Dispenser";
+                        description: "Läuft für die eingegebene Zeit und misst die ausgegebene Menge mit der kalibrierten Waage.";
+                        status: DispenserCalibrationContext.state.dispenser-status;
                         enabled: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.success;
 
                         HorizontalBox {
                             cross-axis-alignment: center;
                             spacing: Layout.spacing-md;
                             SmallText {
-                                text: "Schritte:";
+                                text: "Laufzeit (s):";
                             }
 
                             SpinBox {
                                 height: Layout.touch-height-sm;
                                 minimum: 1;
-                                maximum: 20000;
-                                value <=> root.pump-test-steps;
+                                maximum: 30;
+                                value <=> root.run-time-s;
                                 enabled: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.success;
                             }
                         }
 
                         Button {
-                            text: DispenserCalibrationContext.state.pump-status == CalibrationStepStatus.running
-                                ? "läuft..." : "Pumptest starten";
+                            text: DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.running
+                                ? "läuft..." : "Lauf starten";
                             height: Layout.touch-height;
                             enabled: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.success
-                                && DispenserCalibrationContext.state.pump-status != CalibrationStepStatus.running;
+                                && DispenserCalibrationContext.state.dispenser-status != CalibrationStepStatus.running;
                             clicked => {
-                                DispenserCalibrationContext.calibrate-pump(
-                                root.active-pod,
+                                DispenserCalibrationContext.calibrate-dispenser(
+                                    root.active-pod,
                                     root.active-dispenser,
-                                    root.pump-test-steps);
+                                    root.run-time-s);
                             }
                         }
 
-                        if DispenserCalibrationContext.state.pump-status == CalibrationStepStatus.success: SmallText {
-                            text: "Ergebnis: " + DispenserCalibrationContext.state.measured-ml-per-step;
+                        if DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.success: SmallText {
+                            text: "Gemessen: " + DispenserCalibrationContext.state.measured-amount;
                             color: Palette.log-info;
                         }
                     }

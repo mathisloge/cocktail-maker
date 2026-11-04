@@ -64,6 +64,7 @@ if(BUILD_TESTING)
             src/operator_auth.test.cpp
             src/maschine_adapter.test.cpp
             src/station_flows.test.cpp
+            src/dispenser_calibration_bridge.test.cpp
     )
 endif()
 

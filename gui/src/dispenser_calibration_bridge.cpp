@@ -1,4 +1,5 @@
 module;
+#include <proto/field/ErrorCodeCommon.h>
 #include <stdexec/execution.hpp>
 #include "app-window.h"
 
@@ -11,66 +12,121 @@ import mp_units;
 import :dispenser_calibration_bridge;
 
 namespace cm::gui {
+
+namespace {
+// codespell:ignore-begin
+constexpr auto kDispenserNotFoundText = "Es konnte kein Dispenser gefunden werden.";
+constexpr auto kKeepsCalibrationText = " Der Pod nutzt weiter die bisherige Kalibrierung. Bitte den Lauf wiederholen.";
+
+std::string receive_error_text(const CalibrationStep step, const PodReceiveError& error)
+{
+    using ErrorCode = proto::field::ErrorCodeCommon::ValueType;
+    switch (error.error_code()) {
+    case ErrorCode::Busy:
+        return "Auf diesem Dispenser läuft noch eine andere Aktion. Bitte warten und erneut versuchen.";
+    case ErrorCode::UnsupportedInCurrentState:
+        return "Die Last war nicht ruhig oder die Tara ist älter als 5 Minuten. Bitte die Waage nicht berühren und erneut "
+               "versuchen, sonst zuerst neu tarieren.";
+    case ErrorCode::InvalidParameter:
+        if (step == CalibrationStep::reference_weight) {
+            return "Das Referenzgewicht lag vermutlich nicht auf der Waage. Bitte auflegen und erneut versuchen.";
+        }
+        if (step == CalibrationStep::dispenser_run) {
+            return "Die Laufzeit ist ungültig. Erlaubt sind 1 bis 30 Sekunden.";
+        }
+        break;
+    case ErrorCode::HardwareFault:
+        if (step == CalibrationStep::dispenser_run) {
+            return std::string{
+                       "Keine Wägezelle, kein Motorstrom, ein Sensor- oder Treiberfehler, oder der Lauf wurde gestoppt."} +
+                   kKeepsCalibrationText;
+        }
+        return "Keine Wägezelle, kein Motorstrom, oder ein Sensor- oder Treiberfehler.";
+    case ErrorCode::DispenserNotFound:
+    case ErrorCode::NotCalibrated:
+    case ErrorCode::InternalError:
+    case ErrorCode::DispenserEmpty:
+    case ErrorCode::ValuesLimit:
+        break;
+    }
+    return error.what();
+}
+
+// codespell:ignore-end
+} // namespace
+
+std::string calibration_error_text(const CalibrationStep step, const std::exception_ptr& error)
+{
+    // codespell:ignore-begin
+    try {
+        std::rethrow_exception(error);
+    }
+    catch (const DispenserEmptyError&) {
+        return "Es ist fast nichts geflossen. Bitte Flasche, Schlauch und Motorstrom prüfen oder eine längere Laufzeit wählen. "
+               "Die bisherige Kalibrierung bleibt gültig.";
+    }
+    catch (const PodReceiveError& receive_error) {
+        return receive_error_text(step, receive_error);
+    }
+    catch (const PodTimeoutError&) {
+        return "Der Pod hat nicht geantwortet. Bitte die USB-Verbindung prüfen.";
+    }
+    catch (const std::exception& other) {
+        return other.what();
+    }
+    // codespell:ignore-end
+}
+
 DispenserCalibrationBridge::DispenserCalibrationBridge(AsyncScope& async_scope,
                                                        slint::ComponentHandle<AppWindow> ui,
-                                                       const PodRegistry& pod_registry)
+                                                       const PodRegistry& pod_registry,
+                                                       FillLevelTracker& fill_levels)
     : async_scope_{async_scope}
     , ui_{std::move(ui)}
     , pod_registry_{pod_registry}
+    , fill_levels_{fill_levels}
 {
 }
 
 void DispenserCalibrationBridge::init()
 {
-    ui_->global<DispenserCalibrationContext>().on_calibrate_load_cell_ref_weight(
-        [this](gui::Pod pod, gui::Dispenser dispenser, int grams) {
-            dispatch_calibrate_load_cell_ref_weight(std::move(pod), std::move(dispenser), (grams * units::si::gram));
-        });
-    ui_->global<DispenserCalibrationContext>().on_load_cell_tare(
-        [this](gui::Pod pod, gui::Dispenser dispenser) { dispatch_load_tare(std::move(pod), std::move(dispenser)); });
-
-    ui_->global<DispenserCalibrationContext>().on_calibrate_dispenser(
-        [this](gui::Pod pod, gui::Dispenser dispenser, int run_time_s) {
-            dispatch_calibrate_dispenser(std::move(pod), std::move(dispenser), std::chrono::seconds{run_time_s});
-        });
-}
-
-void DispenserCalibrationBridge::dispatch_load_tare(const gui::Pod pod, const gui::Dispenser dispenser)
-{
-    async_scope_.spawn(async_dispatch_load_tare(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}));
-}
-
-void DispenserCalibrationBridge::dispatch_calibrate_load_cell_ref_weight(const gui::Pod pod,
-                                                                         const gui::Dispenser dispenser,
-                                                                         const units::Grams grams)
-{
-    async_scope_.spawn(
-        async_dispatch_calibrate_load_cell_ref_weight(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}, grams));
-}
-
-void DispenserCalibrationBridge::dispatch_calibrate_dispenser(const gui::Pod pod,
-                                                              const gui::Dispenser dispenser,
-                                                              const std::chrono::milliseconds run_time)
-{
-    async_scope_.spawn(async_calibrate_dispenser(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}, run_time));
+    const auto& context = ui_->global<DispenserCalibrationContext>();
+    context.on_load_cell_tare([this](const gui::Pod pod, const gui::Dispenser dispenser) {
+        async_scope_.spawn(async_dispatch_load_tare(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}));
+    });
+    context.on_calibrate_load_cell_ref_weight([this](const gui::Pod pod, const gui::Dispenser dispenser, const int grams) {
+        async_scope_.spawn(async_dispatch_calibrate_load_cell_ref_weight(
+            PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}, grams * units::si::gram));
+    });
+    context.on_empty_bottle_tare([this](const gui::Pod pod, const gui::Dispenser dispenser) {
+        async_scope_.spawn(async_dispatch_empty_bottle_tare(PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}));
+    });
+    context.on_calibrate_dispenser([this](const gui::Pod pod, const gui::Dispenser dispenser, const int run_time_s) {
+        async_scope_.spawn(async_calibrate_dispenser(
+            PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}, std::chrono::seconds{run_time_s}));
+    });
+    context.on_stop_calibration([this]() { async_scope_.spawn(pod_registry_.force_safe_state_all_pods()); });
 }
 
 Task<void> DispenserCalibrationBridge::async_dispatch_load_tare(const PodId pod_id, const DispenserId dispenser_id)
 {
     update_load_tare_status(CalibrationStepStatus::Running);
+    update_ui_error("");
     auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
     if (not dispenser.has_value()) {
         update_load_tare_status(CalibrationStepStatus::Error);
-        update_ui_error("Es konnte kein Dispenser gefunden werden.");
+        update_ui_error(kDispenserNotFoundText);
         co_return;
     }
     try {
         co_await (*dispenser)->load_cell_tare();
+        // The zero point has moved and the bottle is off the scale, so the level isn't known anymore.
+        fill_levels_.clear_scale_tared(PodDispenser{pod_id, dispenser_id});
         update_load_tare_status(CalibrationStepStatus::Success);
     }
-    catch (const std::exception& err) {
+    catch (const std::exception&) {
         update_load_tare_status(CalibrationStepStatus::Error);
-        update_ui_error(err.what());
+        update_ui_error(calibration_error_text(CalibrationStep::clear_scale_tare, std::current_exception()));
     }
 }
 
@@ -79,19 +135,50 @@ Task<void> DispenserCalibrationBridge::async_dispatch_calibrate_load_cell_ref_we
                                                                                      const units::Grams grams)
 {
     update_load_cell_calibration_status(CalibrationStepStatus::Running);
+    update_ui_error("");
     auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
     if (not dispenser.has_value()) {
         update_load_cell_calibration_status(CalibrationStepStatus::Error);
-        update_ui_error("Es konnte kein Dispenser gefunden werden.");
+        update_ui_error(kDispenserNotFoundText);
         co_return;
     }
     try {
         co_await (*dispenser)->load_cell_calibrate_with_ref_weight(grams);
         update_load_cell_calibration_status(CalibrationStepStatus::Success);
     }
-    catch (const std::exception& err) {
+    catch (const std::exception&) {
         update_load_cell_calibration_status(CalibrationStepStatus::Error);
-        update_ui_error(err.what());
+        update_ui_error(calibration_error_text(CalibrationStep::reference_weight, std::current_exception()));
+        co_return;
+    }
+
+    // The scale should now show the known weight, which lets the operator check the result.
+    try {
+        update_reference_reading(co_await (*dispenser)->load_cell_weight());
+    }
+    catch (const std::exception&) {
+        update_ui_error(calibration_error_text(CalibrationStep::reference_weight, std::current_exception()));
+    }
+}
+
+Task<void> DispenserCalibrationBridge::async_dispatch_empty_bottle_tare(const PodId pod_id, const DispenserId dispenser_id)
+{
+    update_empty_bottle_tare_status(CalibrationStepStatus::Running);
+    update_ui_error("");
+    auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
+    if (not dispenser.has_value()) {
+        update_empty_bottle_tare_status(CalibrationStepStatus::Error);
+        update_ui_error(kDispenserNotFoundText);
+        co_return;
+    }
+    try {
+        co_await (*dispenser)->load_cell_tare();
+        fill_levels_.empty_bottle_tared(PodDispenser{pod_id, dispenser_id});
+        update_empty_bottle_tare_status(CalibrationStepStatus::Success);
+    }
+    catch (const std::exception&) {
+        update_empty_bottle_tare_status(CalibrationStepStatus::Error);
+        update_ui_error(calibration_error_text(CalibrationStep::empty_bottle_tare, std::current_exception()));
     }
 }
 
@@ -100,10 +187,11 @@ Task<void> DispenserCalibrationBridge::async_calibrate_dispenser(const PodId pod
                                                                  const std::chrono::milliseconds run_time)
 {
     update_dispenser_status(CalibrationStepStatus::Running);
+    update_ui_error("");
     auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
     if (not dispenser.has_value()) {
         update_dispenser_status(CalibrationStepStatus::Error);
-        update_ui_error("Es konnte kein Dispenser gefunden werden.");
+        update_ui_error(kDispenserNotFoundText);
         co_return;
     }
 
@@ -112,10 +200,13 @@ Task<void> DispenserCalibrationBridge::async_calibrate_dispenser(const PodId pod
         update_dispenser_measured_amount(amount);
         update_dispenser_status(CalibrationStepStatus::Success);
     }
-    catch (const std::exception& err) {
+    catch (const std::exception&) {
         update_dispenser_status(CalibrationStepStatus::Error);
-        update_ui_error(err.what());
+        update_ui_error(calibration_error_text(CalibrationStep::dispenser_run, std::current_exception()));
     }
+
+    // Liquid may have come out even if the run failed.
+    co_await fill_levels_.refresh(PodDispenser{pod_id, dispenser_id}, **dispenser);
 }
 
 void DispenserCalibrationBridge::update_ui_error(std::string error_str)
@@ -137,6 +228,12 @@ void DispenserCalibrationBridge::update_load_tare_status(CalibrationStepStatus s
         [ui = ui_, status]() { ui->global<DispenserCalibrationContext>().invoke_update_load_cell_tare_status(status); });
 }
 
+void DispenserCalibrationBridge::update_empty_bottle_tare_status(CalibrationStepStatus status)
+{
+    slint::invoke_from_event_loop(
+        [ui = ui_, status]() { ui->global<DispenserCalibrationContext>().invoke_update_empty_bottle_tare_status(status); });
+}
+
 void DispenserCalibrationBridge::update_dispenser_status(CalibrationStepStatus status)
 {
     slint::invoke_from_event_loop(
@@ -145,9 +242,19 @@ void DispenserCalibrationBridge::update_dispenser_status(CalibrationStepStatus s
 
 void DispenserCalibrationBridge::update_dispenser_measured_amount(units::Litre amount)
 {
-    const auto text = std::format("{} mL", std::lround(amount.numerical_value_in(units::milli_litre)));
-    slint::invoke_from_event_loop([ui = ui_, amount = slint::SharedString{text.c_str()}]() {
-        ui->global<DispenserCalibrationContext>().invoke_update_dispenser_measured_amount(amount);
+    const units::Litre rounded = std::lround(amount.numerical_value_in(units::milli_litre)) * units::milli_litre;
+    const auto text = std::format("{} mL", std::lround(rounded.numerical_value_in(units::milli_litre)));
+    const bool below_recommended = rounded < kRecommendedCalibrationAmount;
+    slint::invoke_from_event_loop([ui = ui_, text = slint::SharedString{text.c_str()}, below_recommended]() {
+        ui->global<DispenserCalibrationContext>().invoke_update_dispenser_measured_amount(text, below_recommended);
+    });
+}
+
+void DispenserCalibrationBridge::update_reference_reading(units::Grams reading)
+{
+    const auto text = std::format("{} g", std::lround(reading.numerical_value_in(units::si::gram)));
+    slint::invoke_from_event_loop([ui = ui_, text = slint::SharedString{text.c_str()}]() {
+        ui->global<DispenserCalibrationContext>().invoke_update_reference_reading(text);
     });
 }
 } // namespace cm::gui

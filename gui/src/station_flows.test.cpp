@@ -136,8 +136,7 @@ struct SimStation
         std::filesystem::temp_directory_path() /
         std::format("station-flows-{}.json", std::chrono::steady_clock::now().time_since_epoch().count());
     cm::FillLevelTracker fill_levels{ctx.get_executor(), file, cm::FillLevelOptions{.refill_settle_time = 1ms}};
-    std::shared_ptr<cm::sim::Client<Socket>> client =
-        std::make_shared<cm::sim::Client<Socket>>(scope, "SimPod", cm::Version{.major = 2}, fast_config());
+    std::shared_ptr<cm::sim::Client<Socket>> client;
     std::shared_ptr<cm::Pod> pod;
 
     const cm::IngredientId rum{"rum"};
@@ -145,7 +144,8 @@ struct SimStation
     const cm::PodDispenser rum_address{cm::PodId{"SimPod"}, cm::DispenserId{0}};
     const cm::PodDispenser lime_address{cm::PodId{"SimPod"}, cm::DispenserId{1}};
 
-    SimStation()
+    explicit SimStation(cm::sim::ClientConfig client_config = fast_config())
+        : client{std::make_shared<cm::sim::Client<Socket>>(scope, "SimPod", cm::Version{.major = 2}, std::move(client_config))}
     {
         ingredients.init_ingredients({
             cm::Ingredient{.id = rum, .display_name = "Rum", .type = {}, .boost_category = cm::BoostCategory::fixed},
@@ -524,6 +524,175 @@ TEST_CASE_METHOD(WarningStation, "The confirm button waits for the check", "[flo
 
     REQUIRE(pump_until([this]() { return last_page == cm::gui::Page::MixPage; }));
     CHECK_FALSE(ui->global<cm::gui::ProcessContext>().get_checking_fill_level());
+}
+
+namespace {
+cm::sim::ClientConfig calibration_config()
+{
+    auto config = fast_config();
+    config.flow = 30.0 * units::milli_litre / units::si::second;
+    return config;
+}
+
+/// A simulated station with the calibration dialog's bridge, at a flow of 30 mL/s.
+struct CalibrationStation : SimStation
+{
+    using Status = cm::gui::CalibrationStepStatus;
+
+    cm::gui::DispenserCalibrationBridge bridge{scope, ui, registry, fill_levels};
+    cm::gui::Pod gui_pod;
+    cm::gui::Dispenser gui_dispenser;
+
+    CalibrationStation()
+        : SimStation{calibration_config()}
+    {
+        bridge.init();
+        gui_pod.id = slint::SharedString{rum_address.pod_id.raw()};
+        gui_dispenser.id = rum_address.dispenser_id.raw();
+    }
+
+    const cm::gui::DispenserCalibrationContext& context() const
+    {
+        return ui->global<cm::gui::DispenserCalibrationContext>();
+    }
+
+    cm::gui::DispenserCalibrationState state() const
+    {
+        return context().get_state();
+    }
+
+    bool clear_scale_tare()
+    {
+        context().invoke_load_cell_tare(gui_pod, gui_dispenser);
+        return pump_until([this]() { return state().load_cell_tare_status == Status::Success; });
+    }
+
+    bool reference()
+    {
+        context().invoke_calibrate_load_cell_ref_weight(gui_pod, gui_dispenser, 100);
+        return pump_until([this]() { return state().load_cell_status == Status::Success; });
+    }
+
+    bool empty_bottle_tare()
+    {
+        context().invoke_empty_bottle_tare(gui_pod, gui_dispenser);
+        return pump_until([this]() { return state().empty_bottle_tare_status == Status::Success; });
+    }
+
+    void start_run(int seconds)
+    {
+        context().invoke_calibrate_dispenser(gui_pod, gui_dispenser, seconds);
+    }
+
+    bool run_finished_with(Status status)
+    {
+        return pump_until([this, status]() { return state().dispenser_status == status; });
+    }
+};
+} // namespace
+
+TEST_CASE_METHOD(CalibrationStation, "The whole calibration procedure succeeds", "[flow][calibration]")
+{
+    REQUIRE(clear_scale_tare());
+    REQUIRE(reference());
+    CHECK(pump_until([this]() { return not state().reference_reading.empty(); }));
+
+    REQUIRE(empty_bottle_tare());
+    client->bottle(rum_address.dispenser_id).liquid = 500 * units::si::gram;
+
+    start_run(2);
+    REQUIRE(run_finished_with(Status::Success));
+    CHECK(std::string{state().measured_amount.data()} == "60 mL");
+    CHECK_FALSE(state().below_recommended_amount);
+    CHECK(state().error_message.empty());
+}
+
+TEST_CASE_METHOD(CalibrationStation, "Taring the empty scale forgets the level", "[flow][calibration]")
+{
+    fill_levels.empty_bottle_tared(rum_address);
+    REQUIRE(fill_levels.record(rum_address).has_value());
+
+    REQUIRE(clear_scale_tare());
+
+    CHECK_FALSE(fill_levels.record(rum_address).has_value());
+}
+
+TEST_CASE_METHOD(CalibrationStation, "Taring the empty bottle sets the level to 0", "[flow][calibration]")
+{
+    REQUIRE(empty_bottle_tare());
+
+    const auto record = fill_levels.record(rum_address);
+    REQUIRE(record.has_value());
+    CHECK(record->level == 0 * units::si::gram);
+}
+
+TEST_CASE_METHOD(CalibrationStation, "A run updates the level and works without the load cell card", "[flow][calibration]")
+{
+    fill_levels.empty_bottle_tared(rum_address);
+    client->bottle(rum_address.dispenser_id).liquid += 100 * units::si::gram;
+    bool refreshed = false;
+    const auto refresh = [&]() -> cm::Task<void> {
+        auto dispenser = registry.dispenser_of_pod(rum_address.pod_id, rum_address.dispenser_id);
+        co_await fill_levels.refresh(rum_address, **dispenser);
+        refreshed = true;
+    };
+    scope.spawn(refresh());
+    REQUIRE(pump_until([&refreshed]() { return refreshed; }));
+    REQUIRE(fill_levels.record(rum_address)->level == 100 * units::si::gram);
+
+    start_run(1);
+    REQUIRE(run_finished_with(Status::Success));
+
+    CHECK(pump_until([this]() { return fill_levels.record(rum_address)->level == 70 * units::si::gram; }));
+    CHECK(state().below_recommended_amount);
+}
+
+TEST_CASE_METHOD(CalibrationStation, "A run with next to nothing coming out explains itself", "[flow][calibration]")
+{
+    client->bottle(rum_address.dispenser_id).liquid = 3 * units::si::gram;
+
+    start_run(1);
+    REQUIRE(run_finished_with(Status::Error));
+
+    // codespell:ignore-next-line
+    CHECK(std::string{state().error_message.data()}.starts_with("Es ist fast nichts geflossen."));
+}
+
+TEST_CASE_METHOD(CalibrationStation, "A valve calibrates like a pump", "[flow][calibration]")
+{
+    gui_dispenser.id = 5;
+
+    start_run(1);
+
+    CHECK(run_finished_with(Status::Success));
+}
+
+// codespell:ignore-next-line
+TEST_CASE_METHOD(CalibrationStation, "Stopp ends a running calibration", "[flow][calibration]")
+{
+    start_run(5);
+    REQUIRE(run_finished_with(Status::Running));
+    pump_for(100ms);
+
+    context().invoke_stop_calibration();
+
+    REQUIRE(run_finished_with(Status::Error));
+    CHECK(std::string{state().error_message.data()}.contains("der Lauf wurde gestoppt"));
+}
+
+TEST_CASE_METHOD(CalibrationStation, "A new start clears the old error", "[flow][calibration]")
+{
+    client->bottle(rum_address.dispenser_id).liquid = 3 * units::si::gram;
+    start_run(1);
+    REQUIRE(run_finished_with(Status::Error));
+
+    client->bottle(rum_address.dispenser_id).liquid = 500 * units::si::gram;
+    start_run(1);
+
+    REQUIRE(run_finished_with(Status::Running));
+    pump_for(10ms);
+    CHECK(state().error_message.empty());
+    REQUIRE(run_finished_with(Status::Success));
 }
 
 namespace {

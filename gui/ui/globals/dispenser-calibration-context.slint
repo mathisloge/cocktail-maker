@@ -10,17 +10,28 @@ export enum CalibrationStepStatus {
 export struct DispenserCalibrationState {
     load-cell-status: CalibrationStepStatus,
     load-cell-tare-status: CalibrationStepStatus,
+    empty-bottle-tare-status: CalibrationStepStatus,
     dispenser-status: CalibrationStepStatus,
+    reference-reading: string,
     measured-amount: string,
+    below-recommended-amount: bool,
     error-message: string,
 }
 
 export global DispenserCalibrationContext {
+    // The reference for this is a run that pours at least 50 mL. Change it here once the pump's real flow is known.
+    out property <int> default-run-time-s: 15;
+    out property <int> min-run-time-s: 1;
+    out property <int> max-run-time-s: 30;
+
     in-out property <DispenserCalibrationState> state: {
         load-cell-status: CalibrationStepStatus.idle,
         load-cell-tare-status: CalibrationStepStatus.idle,
+        empty-bottle-tare-status: CalibrationStepStatus.idle,
         dispenser-status: CalibrationStepStatus.idle,
+        reference-reading: "",
         measured-amount: "",
+        below-recommended-amount: false,
         error-message: "",
     };
 
@@ -36,25 +47,39 @@ export global DispenserCalibrationContext {
         self.state.load-cell-tare-status = status;
     }
 
+    public function update-empty-bottle-tare-status(status: CalibrationStepStatus) {
+        self.state.empty-bottle-tare-status = status;
+    }
+
     public function update-dispenser-status(status: CalibrationStepStatus) {
         self.state.dispenser-status = status;
     }
 
-    public function update-dispenser-measured-amount(amount: string) {
+    public function update-dispenser-measured-amount(amount: string, below-recommended: bool) {
         self.state.measured-amount = amount;
+        self.state.below-recommended-amount = below-recommended;
+    }
+
+    public function update-reference-reading(reading: string) {
+        self.state.reference-reading = reading;
     }
 
     // implemented by business logic
-    callback calibrate-load-cell-ref-weight(Pod, Dispenser, int /* reference-weight-g */);
     callback load-cell-tare(Pod, Dispenser);
+    callback calibrate-load-cell-ref-weight(Pod, Dispenser, int /* reference-weight-g */);
+    callback empty-bottle-tare(Pod, Dispenser);
     callback calibrate-dispenser(Pod, Dispenser, int /* run-time-s */);
+    callback stop-calibration();
 
     public function reset-state() {
         state = {
             load-cell-status: CalibrationStepStatus.idle,
             load-cell-tare-status: CalibrationStepStatus.idle,
+            empty-bottle-tare-status: CalibrationStepStatus.idle,
             dispenser-status: CalibrationStepStatus.idle,
+            reference-reading: "",
             measured-amount: "",
+            below-recommended-amount: false,
             error-message: "",
         };
     }

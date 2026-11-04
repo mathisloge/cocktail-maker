@@ -98,7 +98,11 @@ Task<void> PodProtocolSession::run()
 
 TransactionId::ValueType PodProtocolSession::generate_new_transaction_id()
 {
-    return ++transaction_id_counter_;
+    // An id only has to be unique among the pending exchanges, so a wrapped counter skips the ones still in use.
+    do {
+        ++transaction_id_counter_;
+    } while (dispatch_map_.contains(transaction_id_counter_));
+    return transaction_id_counter_;
 }
 
 auto PodProtocolSession::read_with_timeout(ResponseChannel& chan, std::chrono::milliseconds timeout) -> Task<InFrame::MsgPtr>
@@ -229,10 +233,8 @@ Task<void> PodProtocolSession::read_loop()
 
             const auto rx_it = dispatch_map_.find(transaction_id);
             if (rx_it != dispatch_map_.end()) {
-                auto chan = rx_it->second;
-                dispatch_map_.erase(rx_it);
-                // Every response channel has room for exactly the one response it is registered for.
-                if (!chan->try_send(boost::system::error_code{}, std::move(msg))) {
+                // The entry stays, because a final reply can follow in this very read. The waiters remove it.
+                if (!rx_it->second->try_send(boost::system::error_code{}, std::move(msg))) {
                     SPDLOG_LOGGER_WARN(logger_, "Dispatch to channel of transaction id '{}' failed.", transaction_id);
                 }
             }
@@ -266,9 +268,10 @@ PodProtocolSession::ResponseRegistration::~ResponseRegistration()
     if (session_ == nullptr) {
         return;
     }
-    // The entry may already have been dispatched and replaced by a new registration for the same transaction id.
+    // Another wait on the same transaction id may still need the entry. Then the map and that wait hold the channel as well.
+    constexpr long kOwnersOfLastWaiter = 2;
     const auto it = session_->dispatch_map_.find(transaction_id_);
-    if (it != session_->dispatch_map_.end() && it->second == channel_) {
+    if (it != session_->dispatch_map_.end() && it->second == channel_ && channel_.use_count() == kOwnersOfLastWaiter) {
         session_->dispatch_map_.erase(it);
     }
 }

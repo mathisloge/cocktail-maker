@@ -72,7 +72,8 @@ export class ProtocolError : public std::runtime_error
 export class PodProtocolSession
 {
     static constexpr std::size_t kWriteQueueCapacity = 10;
-    static constexpr std::size_t kResponseChannelCapacity = 1;
+    // A command gets at most an Ack and a final reply, and both can arrive before the first waiter has resumed.
+    static constexpr std::size_t kResponseChannelCapacity = 2;
 
     using ResponseChannel = Channel<InFrame::MsgPtr>;
     using ChannelPtr = std::shared_ptr<ResponseChannel>;
@@ -101,10 +102,13 @@ export class PodProtocolSession
     TransactionId::ValueType generate_new_transaction_id();
 
     /**
-     * Waits for the response with `transaction_id`.
+     * Waits for the next response with `transaction_id`.
      *
      * The response is registered right away when this is called, not when the returned task is started, so the request can
      * be sent in between without its response getting lost. The timeout starts once the task is awaited.
+     *
+     * Several waits can share one id, one per expected response, and they have to be awaited in the order of the responses.
+     * The id stays registered until the last of them is gone.
      */
     template <typename ExpectedMsg>
     auto async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout) -> Task<ExpectedMsg>;

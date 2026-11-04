@@ -163,9 +163,20 @@ auto send_action_with_response(PodProtocolSession& session,
                                std::chrono::milliseconds action_timeout,
                                const MessageEnvironment env) -> Task<RxMsg>
 {
-    const auto transaction_id = co_await send_with_ack(session, std::move(tx_msg), env);
+    const auto transaction_id = session.generate_new_transaction_id();
+
+    // Both are registered before the send, so a final reply right behind the Ack can't get lost.
+    auto ack_action = session.async_receive<InAck, InNak>(transaction_id, env.timeout);
+    auto final_action = session.async_receive<RxMsg, InNak>(transaction_id, action_timeout);
+
+    co_await session.async_send(std::move(tx_msg), transaction_id);
     try {
-        const auto nak_or_action = co_await session.async_receive<RxMsg, InNak>(transaction_id, action_timeout);
+        const auto nak_or_ack = co_await std::move(ack_action);
+        if (std::holds_alternative<InNak>(nak_or_ack)) {
+            process_nak(std::get<InNak>(nak_or_ack), env);
+        }
+
+        const auto nak_or_action = co_await std::move(final_action);
         if (std::holds_alternative<InNak>(nak_or_action)) {
             process_nak(std::get<InNak>(nak_or_action), env);
         }

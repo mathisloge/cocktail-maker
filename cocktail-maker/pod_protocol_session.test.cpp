@@ -9,6 +9,8 @@ import std;
 import cm.core;
 import cm;
 
+using namespace std::chrono_literals;
+
 using Socket = boost::asio::local::stream_protocol::socket;
 using Session = cm::PodProtocolSession;
 
@@ -347,5 +349,60 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
         auto variant_res = co_await std::move(variant_task);
         REQUIRE(std::holds_alternative<TestRxMsg>(variant_res));
         CHECK(std::get<TestRxMsg>(variant_res).transportField_transactionId().value() == kTestTransaction);
+    });
+}
+
+// ---------------------------------------------------------------------------
+// One transaction with several replies
+// ---------------------------------------------------------------------------
+
+TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Ack And Final Reply In One Read", "[receive][transaction]")
+{
+    run_test([this]() -> cm::Task<void> {
+        auto ack = session->async_receive<cm::InAck, cm::InNak>(kTestTransaction, 500ms);
+        auto final_reply = session->async_receive<cm::InDispenseFinished, cm::InNak>(kTestTransaction, 500ms);
+
+        auto bytes = encode_message(cm::InAck{}, kTestTransaction);
+        std::ranges::copy(encode_message(cm::InNak{}, kTestTransaction), std::back_inserter(bytes));
+        co_await boost::asio::async_write(client_socket, boost::asio::buffer(bytes), exec::asio::use_sender);
+
+        const auto first = co_await std::move(ack);
+        CHECK(std::holds_alternative<cm::InAck>(first));
+        const auto second = co_await std::move(final_reply);
+        CHECK(std::holds_alternative<cm::InNak>(second));
+    });
+}
+
+TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - New Ids Skip Registered Ones", "[transaction]")
+{
+    run_test([this]() -> cm::Task<void> {
+        const auto first = session->generate_new_transaction_id();
+        const auto taken = static_cast<cm::TransactionId::ValueType>(first + 1);
+        auto pending = session->async_receive<TestRxMsg>(taken, 10ms);
+
+        CHECK(session->generate_new_transaction_id() == static_cast<cm::TransactionId::ValueType>(first + 2));
+        REQUIRE_THROWS_AS(co_await std::move(pending), cm::TimeoutError);
+
+        // The counter wraps around without getting stuck.
+        for (int i = 0; i < 70000; ++i) {
+            std::ignore = session->generate_new_transaction_id();
+        }
+    });
+}
+
+TEST_CASE_METHOD(PodProtocolSessionTestFixture,
+                 "PodProtocolSession - A Wait That Never Starts Releases Its Id",
+                 "[transaction][cleanup]")
+{
+    run_test([this]() -> cm::Task<void> {
+        const auto first = session->generate_new_transaction_id();
+        const auto next = static_cast<cm::TransactionId::ValueType>(first + 1);
+        {
+            auto ack = session->async_receive<TestRxMsg>(next, 500ms);
+            auto final_reply = session->async_receive<TestRxMsg>(next, 500ms);
+            co_await send_message(TestRxMsg{}, next);
+            std::ignore = co_await std::move(ack);
+        }
+        CHECK(session->generate_new_transaction_id() == next);
     });
 }

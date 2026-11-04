@@ -138,6 +138,17 @@ void write_atomically(const std::filesystem::path& file, const std::string_view 
     }
 
     std::filesystem::rename(temporary, file);
+
+    // The rename only lasts through a power loss once the directory has reached the disk as well.
+    const auto directory = file.has_parent_path() ? file.parent_path() : std::filesystem::path{"."};
+    const int directory_descriptor = ::open(directory.c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (directory_descriptor < 0) {
+        throw std::system_error{errno, std::generic_category(), "open directory"};
+    }
+    const Closer directory_closer{directory_descriptor};
+    if (::fsync(directory_descriptor) != 0) {
+        throw std::system_error{errno, std::generic_category(), "fsync directory"};
+    }
 }
 } // namespace
 
@@ -293,15 +304,19 @@ Task<void> FillLevelTracker::pour_finished(const PodDispenser& address, Dispense
     // Without a reading or a correction, the reading can't say what this pour took.
     if (not reading.has_value() || not corrections_.contains(address)) {
         record.level -= to_mass(report.amount);
-        record.low_water = std::min(record.low_water, record.level);
     }
     if (reading.has_value()) {
         apply_reading(address, *reading);
     }
 
+    const bool was_suspected = record.suspected_empty;
     record.suspected_empty = report.outcome == DispenseOutcome::bottle_empty;
-    if (record.suspected_empty) {
-        // Whatever the level claims, this is as low as the bottle gets. A refill counts from here.
+    if (not record.suspected_empty) {
+        record.low_water = std::min(record.low_water, record.level);
+    }
+    else if (not was_suspected || report.amount > 0.0 * units::milli_litre) {
+        // Whatever the level claims, this is as low as the bottle gets. A refill counts from here. A dry pour on a bottle
+        // already suspected says nothing new, and the bottle may be off the scale by now.
         record.low_water = record.level;
     }
     changed(address);
@@ -386,7 +401,10 @@ void FillLevelTracker::apply_reading(const PodDispenser& address, const units::G
 
     const auto [correction, inserted] = corrections_.try_emplace(address, record.level - reading);
     record.level = reading + correction->second;
-    record.low_water = std::min(record.low_water, record.level);
+    // A suspected bottle may be off the scale, and that must not count as room for the next refill.
+    if (not record.suspected_empty) {
+        record.low_water = std::min(record.low_water, record.level);
+    }
     if (record.capacity.has_value()) {
         record.capacity = std::max(*record.capacity, record.level);
     }

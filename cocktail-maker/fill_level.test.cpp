@@ -198,7 +198,35 @@ TEST_CASE_METHOD(FillLevelFixture, "A blocked hose clears itself with the next p
 
     CHECK_FALSE(record().suspected_empty);
     CHECK(level() == 760);
+    CHECK(record().low_water == grams(760));
     CHECK(record().capacity == grams(1000));
+}
+
+TEST_CASE_METHOD(FillLevelFixture, "A bottle off the scale doesn't count towards the next refill", "[fill_level]")
+{
+    start_at(1000, 30);
+    pour_finished(30, cm::DispenseOutcome::bottle_empty, 0);
+
+    // The bottle is off the scale while somebody confirms the dialog, and the next pour comes out dry.
+    refilled(-500);
+    pour_finished(0, cm::DispenseOutcome::bottle_empty, -500);
+
+    refilled(970);
+
+    CHECK(level() == 970);
+    CHECK(record().capacity == grams(970));
+}
+
+TEST_CASE_METHOD(FillLevelFixture, "Another empty pour that took something counts from the new low", "[fill_level]")
+{
+    start_at(1000, 800);
+    pour_finished(0, cm::DispenseOutcome::bottle_empty, 800);
+
+    pour_finished(100, cm::DispenseOutcome::bottle_empty, 700);
+    CHECK(record().low_water == grams(700));
+
+    refilled(1000);
+    CHECK(level() == 300);
 }
 
 TEST_CASE_METHOD(FillLevelFixture, "A refill after an empty bottle takes the amount that went in", "[fill_level]")
@@ -375,6 +403,18 @@ TEST_CASE_METHOD(FillLevelFixture, "A malformed entry doesn't cost the others", 
     CHECK(level() == 640);
     CHECK_FALSE(record().capacity.has_value());
     CHECK_FALSE(tracker->record(cm::PodDispenser{cm::PodId{"Pod"}, cm::DispenserId{7}}).has_value());
+}
+
+TEST_CASE("A file that can't be written only logs", "[fill_level]")
+{
+    boost::asio::io_context ctx;
+    cm::FillLevelTracker tracker{ctx.get_executor(),
+                                 std::filesystem::temp_directory_path() / "missing-directory" / "levels.json"};
+
+    tracker.empty_bottle_tared(kAddress);
+    tracker.flush();
+
+    CHECK(tracker.record(kAddress).has_value());
 }
 
 TEST_CASE_METHOD(FillLevelFixture, "Saving leaves one complete file behind", "[fill_level]")

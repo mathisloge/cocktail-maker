@@ -346,6 +346,40 @@ TEST_CASE_METHOD(SimStation, "An abort ends both waiting prompts and frees the d
     REQUIRE(pump_until([&third_done]() { return third_done; }));
 }
 
+TEST_CASE_METHOD(SimStation, "The admin row shows the level and takes a refill", "[flow]")
+{
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, registry, scope, fill_levels);
+    auto pod_state = bridge->create_pod_state();
+    pod_state->update_info(cm::PodInfo{.id = rum_address.pod_id, .firmware_version = {}, .num_pumps = 2, .num_valves = 0});
+    pod_state->update_state(cm::PodState::ConnectionState::connected);
+    pump_for(10ms);
+
+    const auto row_text = [&bridge]() -> std::string {
+        const auto gui_pod = bridge->pod_model()->row_data(0);
+        if (not gui_pod.has_value()) {
+            return {};
+        }
+        const auto dispenser = gui_pod->dispensers->row_data(0);
+        return dispenser.has_value() ? std::string{dispenser->fill_text.data()} : std::string{};
+    };
+    REQUIRE(row_text() == "unbekannt");
+
+    fill_levels.empty_bottle_tared(rum_address);
+    REQUIRE(pump_until([&row_text]() { return row_text() == "ca. 0 mL"; }));
+
+    client->bottle(rum_address.dispenser_id).liquid += 300 * units::si::gram;
+    cm::gui::Pod gui_pod;
+    gui_pod.id = slint::SharedString{rum_address.pod_id.raw()};
+    cm::gui::Dispenser gui_dispenser;
+    gui_dispenser.id = rum_address.dispenser_id.raw();
+    ui->global<cm::gui::StationStateContext>().invoke_mark_dispenser_refilled(gui_pod, gui_dispenser);
+
+    CHECK(pump_until([&row_text]() { return row_text() == "ca. 300 mL · 100 %"; }));
+
+    pod_state.reset();
+    pump_for(10ms);
+}
+
 namespace {
 /// A station whose only pod refuses every pour, with one recipe that needs it.
 struct FailingMixStation

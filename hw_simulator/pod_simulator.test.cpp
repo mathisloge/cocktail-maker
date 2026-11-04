@@ -368,3 +368,167 @@ TEST_CASE_METHOD(SimPodFixture, "An emergency stop fails a running calibration",
         co_await cm::join_all(std::move(tasks));
     });
 }
+
+namespace {
+struct SimFillLevelFixture : SimPodFixture
+{
+    std::filesystem::path file =
+        std::filesystem::temp_directory_path() /
+        std::format("sim-fill-levels-{}.json", std::chrono::steady_clock::now().time_since_epoch().count());
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), file, cm::FillLevelOptions{.refill_settle_time = 1ms}};
+    cm::PodRegistry registry;
+    const cm::PodInfo info{.id = cm::PodId{"SimPod"}, .firmware_version = {}, .num_pumps = 5, .num_valves = 3};
+    const cm::PodDispenser address{info.id, kDispenser};
+
+    SimFillLevelFixture()
+    {
+        configure(fast_config());
+        registry.register_pod(pod);
+    }
+
+    ~SimFillLevelFixture()
+    {
+        registry.unregister_pod(pod);
+        fill_levels.flush();
+        std::filesystem::remove(file);
+    }
+
+    cm::Dispenser& dispenser()
+    {
+        auto created = registry.dispenser_of_pod(address.pod_id, address.dispenser_id);
+        REQUIRE(created.has_value());
+        held_dispenser = std::move(*created);
+        return *held_dispenser;
+    }
+
+    std::unique_ptr<cm::Dispenser> held_dispenser;
+};
+} // namespace
+
+TEST_CASE_METHOD(SimFillLevelFixture, "A connecting pod gets its levels corrected after a power loss", "[sim][fill_level]")
+{
+    run_test([this]() -> cm::Task<void> {
+        co_await connected();
+        fill_levels.empty_bottle_tared(address);
+        client->bottle(kDispenser).liquid += 300 * units::si::gram;
+        co_await fill_levels.refresh(address, dispenser());
+        REQUIRE(fill_levels.record(address)->level == 300 * units::si::gram);
+
+        fill_levels.pod_disconnected(info.id);
+        client->power_cycle_load_cells();
+        co_await cm::sync_pod_fill_levels(info, registry, fill_levels);
+        CHECK(fill_levels.record(address)->level == 300 * units::si::gram);
+
+        client->bottle(kDispenser).liquid -= 100 * units::si::gram;
+        co_await fill_levels.refresh(address, dispenser());
+        CHECK(fill_levels.record(address)->level == 200 * units::si::gram);
+
+        CHECK_FALSE(fill_levels.record(cm::PodDispenser{info.id, kWithoutLoadCell}).has_value());
+    });
+}
+
+TEST_CASE_METHOD(SimFillLevelFixture,
+                 "A dispenser without a load cell doesn't disturb the others at connect",
+                 "[sim][fill_level]")
+{
+    run_test([this]() -> cm::Task<void> {
+        co_await connected();
+        const cm::PodDispenser without_cell{info.id, kWithoutLoadCell};
+        fill_levels.empty_bottle_tared(without_cell);
+        fill_levels.empty_bottle_tared(cm::PodDispenser{info.id, cm::DispenserId{5}});
+
+        co_await cm::sync_pod_fill_levels(info, registry, fill_levels);
+
+        CHECK(fill_levels.record(without_cell)->level == 0 * units::si::gram);
+        CHECK(client->stats().weight_requests == 2);
+    });
+}
+
+TEST_CASE_METHOD(SimFillLevelFixture, "The weights at connect are read one after the other", "[sim][fill_level]")
+{
+    auto config = fast_config();
+    config.quick_reply = 50ms;
+    registry.unregister_pod(pod);
+    configure(config);
+    registry.register_pod(pod);
+    run_test([this]() -> cm::Task<void> {
+        co_await connected();
+        for (int i = 0; i < 4; ++i) {
+            fill_levels.empty_bottle_tared(cm::PodDispenser{info.id, cm::DispenserId{i}});
+        }
+
+        co_await cm::sync_pod_fill_levels(info, registry, fill_levels);
+
+        CHECK(client->stats().weight_requests == 4);
+        CHECK(client->stats().max_outstanding_weight_requests == 1);
+    });
+}
+
+TEST_CASE_METHOD(SimFillLevelFixture, "A pod that is gone during the reads ends them quietly", "[sim][fill_level]")
+{
+    run_test([this]() -> cm::Task<void> {
+        co_await connected();
+        fill_levels.empty_bottle_tared(address);
+        registry.unregister_pod(pod);
+
+        co_await cm::sync_pod_fill_levels(info, registry, fill_levels);
+
+        CHECK(client->stats().weight_requests == 0);
+        registry.register_pod(pod);
+    });
+}
+
+namespace {
+class SimApplication : public cm::Application
+{
+  public:
+    using Application::run;
+};
+
+class SilentStationState : public cm::StationState
+{
+    class State final : public cm::PodState
+    {
+      public:
+        void update_info(cm::PodInfo info) override
+        {
+            info_ = std::move(info);
+        }
+
+        cm::PodInfo info() const override
+        {
+            return info_;
+        }
+
+        void update_state(ConnectionState /*state*/) override
+        {
+        }
+
+      private:
+        cm::PodInfo info_;
+    };
+
+  public:
+    std::unique_ptr<cm::PodState> create_pod_state() override
+    {
+        return std::make_unique<State>();
+    }
+};
+} // namespace
+
+TEST_CASE("The application reads the fill levels of a pod that connects", "[sim][fill_level]")
+{
+    std::atomic<int> changes{0};
+    SimApplication app;
+    app.fill_levels().set_change_handler([&changes](const cm::PodDispenser&, const cm::FillLevelView&) { ++changes; });
+
+    app.run(std::make_shared<SilentStationState>(), std::make_unique<cm::sim::SimulatedPodDiscovery>());
+
+    // Two simulated pods have eight dispensers each.
+    const auto end = std::chrono::steady_clock::now() + 5s;
+    while (changes < 16 && std::chrono::steady_clock::now() < end) {
+        std::this_thread::sleep_for(10ms);
+    }
+    CHECK(changes == 16);
+    app.shutdown();
+}

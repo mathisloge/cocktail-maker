@@ -5,6 +5,7 @@
 #include "app-window.h"
 
 import std;
+import mp_units;
 import cm.core;
 import cm;
 import cm.gui;
@@ -36,7 +37,8 @@ TEST_CASE("StationStateBridge - Initialization", "[gui][StationStateBridge]")
     cm::AsyncScope scope{ctx};
     auto ui = cm::gui::AppWindow::create();
     cm::PodRegistry pod_registry;
-    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope);
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
     SlintFlusher flusher;
 
     SECTION("Pod UI model is created and initially empty")
@@ -56,7 +58,8 @@ TEST_CASE("StationStateBridge - Pod Lifecycle", "[gui][StationStateBridge]")
     cm::AsyncScope scope{ctx};
     auto ui = cm::gui::AppWindow::create();
     cm::PodRegistry pod_registry;
-    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope);
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
     auto model = bridge->pod_model();
     SlintFlusher flusher;
 
@@ -135,7 +138,8 @@ TEST_CASE("StationStateBridge - Readiness Status and Multiple Pods", "[gui][Stat
     cm::AsyncScope scope{ctx};
     auto ui = cm::gui::AppWindow::create();
     cm::PodRegistry pod_registry;
-    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope);
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
     auto model = bridge->pod_model();
 
     SlintFlusher flusher;
@@ -184,4 +188,18 @@ TEST_CASE("StationStateBridge - Readiness Status and Multiple Pods", "[gui][Stat
         REQUIRE(model->row_count() == 0);
         REQUIRE(model->row_data(0) == std::nullopt);
     }
+}
+
+TEST_CASE("format_fill_level words what is known about a bottle", "[gui][StationStateBridge]")
+{
+    namespace units = cm::units;
+    const auto grams = [](double value) { return value * units::si::gram; };
+
+    CHECK(cm::gui::format_fill_level(cm::FillLevelView{}) == "unbekannt");
+    CHECK(cm::gui::format_fill_level(cm::FillLevelView{.level = grams(640), .percent = std::nullopt, .suspected_empty = false}) ==
+          "ca. 640 mL");
+    CHECK(cm::gui::format_fill_level(cm::FillLevelView{
+              .level = grams(640), .percent = 64.0 * units::percent, .suspected_empty = false}) == "ca. 640 mL · 64 %");
+    CHECK(cm::gui::format_fill_level(cm::FillLevelView{
+              .level = grams(30), .percent = 3.0 * units::percent, .suspected_empty = true}) == "vermutlich leer");
 }

@@ -391,4 +391,17 @@ void FillLevelTracker::write_file(const Records& records) const
         SPDLOG_LOGGER_ERROR(logger_, "Could not save the fill levels to '{}': {}", file_.string(), error.what());
     }
 }
+
+Task<void> sync_pod_fill_levels(const PodInfo info, const PodRegistry& registry, FillLevelTracker& fill_levels)
+{
+    const int dispenser_count = info.num_pumps + info.num_valves;
+    for (int index = 0; index < dispenser_count; ++index) {
+        const DispenserId dispenser_id{index};
+        auto dispenser = registry.dispenser_of_pod(info.id, dispenser_id);
+        if (not dispenser.has_value()) {
+            continue;
+        }
+        co_await fill_levels.correct_on_connect(PodDispenser{info.id, dispenser_id}, **dispenser);
+    }
+}
 } // namespace cm

@@ -9,6 +9,7 @@ module;
 module cm.gui:station_state_bridge_impl;
 
 import std;
+import mp_units;
 import cm.core;
 import cm;
 import :station_state_bridge;
@@ -17,6 +18,25 @@ import :operator_auth;
 namespace cm::gui {
 
 Task<void> async_highlight_dispenser(const PodRegistry& pod_registry, const PodId pod_id, const DispenserId dispenser_id);
+Task<void> async_mark_dispenser_refilled(const PodRegistry& pod_registry,
+                                         FillLevelTracker& fill_levels,
+                                         const PodId pod_id,
+                                         const DispenserId dispenser_id);
+
+std::string format_fill_level(const FillLevelView& view)
+{
+    if (view.suspected_empty) {
+        return "vermutlich leer";
+    }
+    if (not view.level.has_value()) {
+        return "unbekannt";
+    }
+    const auto millilitres = std::lround(to_volume(*view.level).numerical_value_in(units::milli_litre));
+    if (not view.percent.has_value()) {
+        return std::format("ca. {} mL", millilitres);
+    }
+    return std::format("ca. {} mL · {} %", millilitres, std::lround(view.percent->numerical_value_in(units::percent)));
+}
 
 struct PodStateData
 {
@@ -105,12 +125,14 @@ class PodUiModel : public slint::Model<gui::Pod>
                     dispenser_model->push_back(gui::Dispenser{
                         .id = i,
                         .type = DispenserType::Pump,
+                        .fill_text = "unbekannt",
                     });
                 }
                 for (int i = 0; i < state_pod.info.num_valves; ++i) {
                     dispenser_model->push_back(gui::Dispenser{
                         .id = (state_pod.info.num_pumps + i),
                         .type = DispenserType::Valve,
+                        .fill_text = "unbekannt",
                     });
                 }
                 gui_pod.dispensers = std::move(dispenser_model);
@@ -135,6 +157,23 @@ class PodUiModel : public slint::Model<gui::Pod>
 
             apply_state_to_ui(inserted, pod);
             this->notify_row_added(row, 1);
+        }
+    }
+
+    void update_dispenser_fill_text(const PodDispenser& address, const std::string& text)
+    {
+        const auto pod_it =
+            std::ranges::find_if(pods_, [&address](const auto& ui_pod) { return ui_pod.id == address.pod_id.raw().c_str(); });
+        if (pod_it == pods_.end() || pod_it->dispensers == nullptr) {
+            return;
+        }
+        for (std::size_t row = 0; row < pod_it->dispensers->row_count(); ++row) {
+            auto dispenser = pod_it->dispensers->row_data(row);
+            if (dispenser.has_value() && dispenser->id == address.dispenser_id.raw()) {
+                dispenser->fill_text = slint::SharedString{text};
+                pod_it->dispensers->set_row_data(row, *dispenser);
+                return;
+            }
         }
     }
 
@@ -163,7 +202,8 @@ constexpr std::string kSalt = "static";
 
 StationStateBridge::StationStateBridge(slint::ComponentHandle<AppWindow> ui,
                                        const PodRegistry& pod_registry,
-                                       AsyncScope& async_scope)
+                                       AsyncScope& async_scope,
+                                       FillLevelTracker& fill_levels)
     : async_scope_{async_scope}
     , ui_{std::move(ui)}
     , pod_model_{std::make_shared<PodUiModel>()}
@@ -178,6 +218,15 @@ StationStateBridge::StationStateBridge(slint::ComponentHandle<AppWindow> ui,
     ui_->global<StationStateContext>().on_highlight_dispenser([&pod_registry, &async_scope](const gui::Pod pod,
                                                                                             const gui::Dispenser dispenser) {
         async_scope.spawn(async_highlight_dispenser(pod_registry, PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}));
+    });
+    ui_->global<StationStateContext>().on_mark_dispenser_refilled(
+        [&pod_registry, &async_scope, &fill_levels](const gui::Pod pod, const gui::Dispenser dispenser) {
+            async_scope.spawn(async_mark_dispenser_refilled(
+                pod_registry, fill_levels, PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}));
+        });
+    fill_levels.set_change_handler([model = pod_model_](const PodDispenser& address, const FillLevelView& view) {
+        slint::invoke_from_event_loop(
+            [model, address, text = format_fill_level(view)]() { model->update_dispenser_fill_text(address, text); });
     });
     ui_->global<StationStateContext>().on_navigate_to([this](Page target) { on_navigate_to(target); });
     ui_->global<StationStateContext>().on_submit_operator_pin([this](slint::SharedString pin) { on_submit_operator_pin(pin); });
@@ -253,6 +302,20 @@ Task<void> async_highlight_dispenser(const PodRegistry& pod_registry, const PodI
     catch (const std::exception& err) {
         SPDLOG_LOGGER_ERROR(logger, "Error while highlighting: {}", err.what());
     }
+}
+
+Task<void> async_mark_dispenser_refilled(const PodRegistry& pod_registry,
+                                         FillLevelTracker& fill_levels,
+                                         const PodId pod_id,
+                                         const DispenserId dispenser_id)
+{
+    log::Logger logger{log::create_or_get("station_state_bridge")};
+    auto dispenser = pod_registry.dispenser_of_pod(pod_id, dispenser_id);
+    if (not dispenser.has_value()) {
+        SPDLOG_LOGGER_ERROR(logger, "Could not find a dispenser with id {} or pod with id {}", dispenser_id, pod_id);
+        co_return;
+    }
+    co_await fill_levels.refilled(PodDispenser{pod_id, dispenser_id}, **dispenser, RefillSource::admin_area);
 }
 
 void StationStateBridge::on_navigate_to(const Page target)

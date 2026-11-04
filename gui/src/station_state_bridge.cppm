@@ -12,10 +12,16 @@ namespace cm::gui {
 class PodStateImpl;
 class PodUiModel;
 
+/// What the admin area says about a bottle.
+export [[nodiscard]] std::string format_fill_level(const FillLevelView& view);
+
 export class StationStateBridge : public StationState, public std::enable_shared_from_this<StationStateBridge>
 {
   public:
-    explicit StationStateBridge(slint::ComponentHandle<AppWindow> ui, const PodRegistry& pod_registry, AsyncScope& async_scope);
+    explicit StationStateBridge(slint::ComponentHandle<AppWindow> ui,
+                                const PodRegistry& pod_registry,
+                                AsyncScope& async_scope,
+                                FillLevelTracker& fill_levels);
     std::unique_ptr<PodState> create_pod_state() override;
     void pod_connection_state_changed(const PodStateImpl& pod);
     void pod_about_to_removed(const PodStateImpl& pod);

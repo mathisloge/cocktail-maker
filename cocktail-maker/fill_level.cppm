@@ -10,6 +10,7 @@ import cm.core;
 import :pod_types;
 import :dispenser;
 import :station_config;
+import :pod_registry;
 
 namespace cm {
 
@@ -133,4 +134,7 @@ export class FillLevelTracker
     std::atomic<std::uint64_t> save_generation_{0};
     boost::asio::thread_pool writer_{1};
 };
+
+/// Brings the levels of a Pod that has just connected up to date, reading one dispenser after the other.
+export Task<void> sync_pod_fill_levels(PodInfo info, const PodRegistry& registry, FillLevelTracker& fill_levels);
 } // namespace cm

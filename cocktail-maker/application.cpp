@@ -8,8 +8,86 @@ import std;
 import cm.core;
 import :application;
 import :pod_discovery;
+import :pod_registry;
+import :station_state;
+import :fill_level;
 
 namespace cm {
+
+namespace {
+/// Passes everything on, and keeps the fill levels up to date as the Pod comes and goes.
+class FillLevelPodState final : public PodState
+{
+  public:
+    FillLevelPodState(std::unique_ptr<PodState> inner,
+                      AsyncScope& scope,
+                      const PodRegistry& registry,
+                      FillLevelTracker& fill_levels)
+        : inner_{std::move(inner)}
+        , scope_{scope}
+        , registry_{registry}
+        , fill_levels_{fill_levels}
+    {
+    }
+
+    void update_info(PodInfo info) override
+    {
+        inner_->update_info(std::move(info));
+    }
+
+    PodInfo info() const override
+    {
+        return inner_->info();
+    }
+
+    void update_state(ConnectionState state) override
+    {
+        inner_->update_state(state);
+        if (state == ConnectionState::connected) {
+            scope_.spawn(sync_pod_fill_levels(inner_->info(), registry_, fill_levels_));
+        }
+        else if (state == ConnectionState::disconnected) {
+            fill_levels_.pod_disconnected(inner_->info().id);
+        }
+    }
+
+  private:
+    std::unique_ptr<PodState> inner_;
+    AsyncScope& scope_;
+    const PodRegistry& registry_;
+    FillLevelTracker& fill_levels_;
+};
+
+class FillLevelStationState final : public StationState
+{
+  public:
+    FillLevelStationState(std::shared_ptr<StationState> inner,
+                          AsyncScope& scope,
+                          const PodRegistry& registry,
+                          FillLevelTracker& fill_levels)
+        : inner_{std::move(inner)}
+        , scope_{scope}
+        , registry_{registry}
+        , fill_levels_{fill_levels}
+    {
+    }
+
+    std::unique_ptr<PodState> create_pod_state() override
+    {
+        auto state = inner_->create_pod_state();
+        if (state == nullptr) {
+            return nullptr;
+        }
+        return std::make_unique<FillLevelPodState>(std::move(state), scope_, registry_, fill_levels_);
+    }
+
+  private:
+    std::shared_ptr<StationState> inner_;
+    AsyncScope& scope_;
+    const PodRegistry& registry_;
+    FillLevelTracker& fill_levels_;
+};
+} // namespace
 
 Application::~Application()
 {
@@ -40,7 +118,9 @@ void Application::run(std::shared_ptr<StationState> station_state, std::unique_p
         execution_context_.run();
         SPDLOG_LOGGER_INFO(logger_, "Async context finished.");
     });
-    async_scope_.spawn(discover_and_run_pods(std::move(pod_discovery), std::move(station_state), pod_registry_, async_scope_));
+    auto tracked_state =
+        std::make_shared<FillLevelStationState>(std::move(station_state), async_scope_, pod_registry_, fill_levels_);
+    async_scope_.spawn(discover_and_run_pods(std::move(pod_discovery), std::move(tracked_state), pod_registry_, async_scope_));
 }
 
 void Application::shutdown()

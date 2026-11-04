@@ -117,12 +117,23 @@ export component PodConfigTab inherits Rectangle {
                         text: "Dispenser " + dispenser.id;
                     }
 
+                    SmallText {
+                        text: dispenser.fill-text;
+                        color: Palette.text-secondary;
+                    }
+
                     ComboBox {
                         height: Layout.touch-height-sm;
                         model: RecipeContext.ingredient-ids;
                         selected(current-value) => {
                             RecipeContext.assign-ingredient-to-dispenser(active-pod, dispenser, current-value);
                         }
+                    }
+
+                    Button {
+                        text: "Nachgefüllt";
+                        height: Layout.touch-height-sm;
+                        clicked => { StationStateContext.mark-dispenser-refilled(active-pod, dispenser); }
                     }
 
                     Button {

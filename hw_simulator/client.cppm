@@ -57,6 +57,8 @@ export struct ClientStats
     int tare_requests{};
     int dispense_requests{};
     int last_dispense_ml{};
+    int weight_requests{};
+    int max_outstanding_weight_requests{};
 };
 
 /**
@@ -127,6 +129,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
     ClientFrame frame_;
     ClientConfig config_;
     ClientStats stats_;
+    int outstanding_weight_requests_{};
     std::array<DispenserState, (kNumPumps + kNumValves)> dispensers_;
 
   public:
@@ -266,7 +269,12 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
     {
         const auto trid = msg.transportField_transactionId().getValue();
         const auto id = msg.field_dispenserId().value();
+        ++stats_.weight_requests;
+        ++outstanding_weight_requests_;
+        stats_.max_outstanding_weight_requests = std::max(stats_.max_outstanding_weight_requests, outstanding_weight_requests_);
+
         co_await delay(config_.quick_reply);
+        --outstanding_weight_requests_;
         if (const auto refused = load_cell_refusal(id)) {
             co_await send_nak(trid, *refused);
             co_return;

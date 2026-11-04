@@ -21,5 +21,8 @@ if(BUILD_TESTING)
     )
     catch_discover_tests(cocktail-maker-sim-tests)
 
-    target_sources(cocktail-maker-sim-tests PRIVATE pod_simulator.test.cpp)
+    target_sources(
+        cocktail-maker-sim-tests
+        PRIVATE client.test.cpp pod_simulator.test.cpp
+    )
 endif()

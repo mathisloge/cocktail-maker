@@ -322,13 +322,15 @@ ProcessContextBridge::ProcessContextBridge(AsyncScope& async_scope,
                                            const RecipeStore& recipe_store,
                                            const IngredientStore& ingredient_store,
                                            const cm::StationConfig& station_config,
-                                           const PodRegistry& pod_registry)
+                                           const PodRegistry& pod_registry,
+                                           FillLevelTracker& fill_levels)
     : async_scope_{async_scope}
     , ui_{std::move(ui)}
     , recipe_store_{recipe_store}
     , ingredient_store_{ingredient_store}
     , station_config_{station_config}
     , pod_registry_{pod_registry}
+    , fill_levels_{fill_levels}
 {
 }
 
@@ -398,8 +400,15 @@ Task<void> ProcessContextBridge::async_process_recipe(Recipe recipe, const units
     recipe.commands = scale_recipe(recipe.commands, recipe.nominal_serving_volume, target_volume);
     recipe.commands = boost_recipe(recipe.commands, boost, ingredient_store_);
     update_ui_recipe(recipe);
-    auto command_executer =
-        std::make_shared<MachineAdapter>(ui_, async_scope_.executor(), ingredient_store_, pod_registry_, station_config_);
+    auto command_executer = std::make_shared<MachineAdapter>(
+        ui_, async_scope_.executor(), ingredient_store_, pod_registry_, station_config_, fill_levels_);
+
+    // Failing a sibling only stops the waiting on the Station's side. The Pods keep pouring until they are told otherwise.
+    const auto mix_failed = [this](const auto& error) {
+        display_ui_error(error, ui_, station_config_, ingredient_store_);
+        async_scope_.spawn(pod_registry_.force_safe_state_all_pods());
+    };
+
     try {
         co_await execute_commands(std::move(recipe.commands), std::move(command_executer));
         const auto duration = std::chrono::duration_cast<std::chrono::seconds>(Clock::now() - start_tp);
@@ -408,34 +417,34 @@ Task<void> ProcessContextBridge::async_process_recipe(Recipe recipe, const units
     }
     catch (const boost::system::system_error& ex) {
         SPDLOG_LOGGER_ERROR(logger_, "System error while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+        mix_failed(ex);
     }
     catch (const DispenserEmptyError& ex) {
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+        mix_failed(ex);
     }
     catch (const DispenserNotFoundError& ex) {
         SPDLOG_LOGGER_ERROR(logger_, "Dispenser not found while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+        mix_failed(ex);
     }
     catch (const IngredientNotAssignedError& ex) {
         SPDLOG_LOGGER_ERROR(logger_, "Ingredient not assigned while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+        mix_failed(ex);
     }
     catch (const PodReceiveError& ex) {
         SPDLOG_LOGGER_ERROR(logger_, "Pod rejected command while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+        mix_failed(ex);
     }
     catch (const PodTimeoutError& ex) {
         SPDLOG_LOGGER_ERROR(logger_, "Pod timed out while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+        mix_failed(ex);
     }
     catch (const ProtocolError& ex) {
         SPDLOG_LOGGER_ERROR(logger_, "Protocol error while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+        mix_failed(ex);
     }
     catch (const std::exception& ex) {
         SPDLOG_LOGGER_ERROR(logger_, "Unknown error while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+        mix_failed(ex);
     }
 }
 

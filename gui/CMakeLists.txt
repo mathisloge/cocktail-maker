@@ -47,7 +47,7 @@ if(BUILD_TESTING)
     add_sanitizers(cocktail-maker-gui-tests)
     target_link_libraries(
         cocktail-maker-gui-tests
-        PRIVATE Catch2::Catch2WithMain cm::gui
+        PRIVATE Catch2::Catch2WithMain cm::gui cocktail-maker-simulator proto
     )
     catch_discover_tests(cocktail-maker-gui-tests)
     target_compile_definitions(
@@ -63,6 +63,7 @@ if(BUILD_TESTING)
             src/station_state_bridge.test.cpp
             src/operator_auth.test.cpp
             src/maschine_adapter.test.cpp
+            src/station_flows.test.cpp
     )
 endif()
 

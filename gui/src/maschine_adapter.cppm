@@ -1,5 +1,6 @@
 module;
 #include <boost/asio/any_io_executor.hpp>
+#include <boost/system/error_code.hpp>
 #include <slint.h>
 #include <spdlog/spdlog.h>
 #include "app-window.h"
@@ -22,6 +23,12 @@ export class MachineAdapter : public cm::BasicCommandExecuter
     const IngredientStore& ingredient_store_;
     const PodRegistry& pod_registry_;
     const StationConfig& station_config_;
+    FillLevelTracker& fill_levels_;
+    // The window has one popup, and a second prompt would take its confirm button away from the first. Whoever holds the
+    // single message in this channel may show the popup.
+    Channel<std::monostate> refill_prompt_token_;
+
+    Task<void> ask_for_refill(IngredientId ingredient);
 
   public:
     /// @param io_executor Executor of the io thread the commands are executed on.
@@ -29,13 +36,17 @@ export class MachineAdapter : public cm::BasicCommandExecuter
                             asio::any_io_executor io_executor,
                             const IngredientStore& ingredient_store,
                             const PodRegistry& pod_registry,
-                            const StationConfig& station_config)
+                            const StationConfig& station_config,
+                            FillLevelTracker& fill_levels)
         : ui_{std::move(ui)}
         , io_executor_{std::move(io_executor)}
         , ingredient_store_{ingredient_store}
         , pod_registry_{pod_registry}
         , station_config_{station_config}
+        , fill_levels_{fill_levels}
+        , refill_prompt_token_{io_executor_, 1}
     {
+        refill_prompt_token_.try_send(boost::system::error_code{}, std::monostate{});
     }
 
     Task<void> execute_command(ManualCommand command) override;

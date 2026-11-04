@@ -23,7 +23,7 @@ export class GuiApplication : public Application
     RecipeContextBridge recipe_context_bridge_{get_executor(), ui_, recipe_store_, ingredient_store_, station_config_};
     GlassContextBridge glass_context_bridge_{ui_, glass_store_};
     ProcessContextBridge process_context_bridge_{
-        async_scope(), ui_, recipe_store_, ingredient_store_, station_config_, pod_registry_};
+        async_scope(), ui_, recipe_store_, ingredient_store_, station_config_, pod_registry_, fill_levels()};
 };
 
 } // namespace cm::gui

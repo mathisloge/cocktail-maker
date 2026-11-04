@@ -28,7 +28,8 @@ TEST_CASE("MachineAdapter - manual command opens and resolves through the popup"
 
     boost::asio::io_context ctx;
     cm::AsyncScope scope{ctx};
-    cm::gui::MachineAdapter adapter{ui, ctx.get_executor(), ingredient_store, pod_registry, station_config};
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    cm::gui::MachineAdapter adapter{ui, ctx.get_executor(), ingredient_store, pod_registry, station_config, fill_levels};
 
     bool completed = false;
 
@@ -58,7 +59,8 @@ TEST_CASE("MachineAdapter - update_command_status updates the active recipe", "[
     cm::StationConfig station_config{ingredient_store, ""};
 
     boost::asio::io_context ctx;
-    cm::gui::MachineAdapter adapter{ui, ctx.get_executor(), ingredient_store, pod_registry, station_config};
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    cm::gui::MachineAdapter adapter{ui, ctx.get_executor(), ingredient_store, pod_registry, station_config, fill_levels};
 
     auto active = ui->global<cm::gui::RecipeContext>().get_active_recipe();
 

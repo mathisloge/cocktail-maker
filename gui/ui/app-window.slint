@@ -51,7 +51,8 @@ export component AppWindow inherits Window {
     preferred-height: 720px;
     private property <bool> device_ready: StationStateContext.station-ready;
     private property <bool> boot_screen_confirmed: false;
-    private property <Command> popup_command;
+    out property <Command> popup_command;
+    out property <bool> manual-command-popup-open: false;
     changed device_ready => {
         if (!device_ready) {
             boot_screen_confirmed = false;
@@ -63,9 +64,11 @@ export component AppWindow inherits Window {
 
     public function open-manual-command-popup(command: Command) {
         root.popup_command = command;
+        root.manual-command-popup-open = true;
         popup.show();
     }
     public function close-manual-command-popup() {
+        root.manual-command-popup-open = false;
         popup.close();
     }
 

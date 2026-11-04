@@ -17,7 +17,8 @@ export class ProcessContextBridge
                                   const RecipeStore& recipe_store,
                                   const IngredientStore& ingredient_store,
                                   const cm::StationConfig& station_config,
-                                  const PodRegistry& pod_registry);
+                                  const PodRegistry& pod_registry,
+                                  FillLevelTracker& fill_levels);
 
     void init();
 
@@ -42,6 +43,7 @@ export class ProcessContextBridge
     const RecipeStore& recipe_store_;
     const IngredientStore& ingredient_store_;
     const cm::StationConfig& station_config_;
+    FillLevelTracker& fill_levels_;
     /// Setting it aborts the recipe that is currently processed. It is only accessed on the io thread.
     std::shared_ptr<AwaitableBool> active_recipe_abort_;
 };

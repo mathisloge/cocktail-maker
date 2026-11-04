@@ -7,6 +7,7 @@ import {
     PulseDot,
 } from "../components.slint";
 import { Command, CommandStatus } from "../data.slint";
+import { ProcessContext } from "../globals/process-context.slint";
 export component ManualCommandPopup inherits PopupWindow {
     close-policy: PopupClosePolicy.no-auto-close;
     in property <string> title: "Bitte führe den angezeigten Schritt aus:";
@@ -98,6 +99,19 @@ export component ManualCommandPopup inherits PopupWindow {
                 clicked => {
                     root.close();
                     root.confirmed();
+                }
+            }
+
+            Rectangle {
+                height: Layout.spacing-xs;
+                background: transparent;
+            }
+
+            Button {
+                text: "ABBRECHEN";
+                secondary: true;
+                clicked => {
+                    ProcessContext.abort();
                 }
             }
         }

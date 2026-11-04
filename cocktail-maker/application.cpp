@@ -30,6 +30,7 @@ void Application::init(const std::filesystem::path& db_dir)
     ingredient_store_.init_ingredients(load_ingredients_from_dir(ingredients_db_path));
     recipe_store_.init_recipes(load_recipes_from_dir(recipe_db_path, ingredient_store_));
     station_config_.init();
+    fill_levels_.init();
 }
 
 void Application::run(std::shared_ptr<StationState> station_state, std::unique_ptr<PodDiscovery> pod_discovery)
@@ -61,6 +62,7 @@ void Application::shutdown()
     work_guard_.reset();
     execution_context_.stop();
     execution_thread_.reset();
+    fill_levels_.flush();
 }
 
 boost::asio::any_io_executor Application::get_executor()
@@ -71,5 +73,10 @@ boost::asio::any_io_executor Application::get_executor()
 AsyncScope& Application::async_scope()
 {
     return async_scope_;
+}
+
+FillLevelTracker& Application::fill_levels()
+{
+    return fill_levels_;
 }
 } // namespace cm

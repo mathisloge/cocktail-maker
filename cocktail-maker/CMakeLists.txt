@@ -23,6 +23,8 @@ target_sources(
                 dispenser.cppm
                 fill_level.cppm
                 fill_level.cpp
+                pour.cppm
+                pour.cpp
                 execute_recipe.cppm
                 execute_recipe.cpp
                 glass.cppm
@@ -76,6 +78,7 @@ if(BUILD_TESTING)
             pod_protocol_session.test.cpp
             pod_registry.test.cpp
             pod_algorithms.test.cpp
+            pour.test.cpp
             recipe_boost.test.cpp
             recipe_scale.test.cpp
             recipe.test.cpp

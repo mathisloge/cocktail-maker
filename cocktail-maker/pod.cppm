@@ -14,12 +14,28 @@ import :dispenser;
 using namespace std::chrono_literals;
 
 namespace cm {
+/// A Pod stops a pour after this time at the latest, and the amount it reports is then short.
+export inline constexpr std::chrono::milliseconds kPodPourLimit{30s};
+
+/// How far a pour may miss its amount: about 1 g from the Pod plus 0.5 mL of rounding.
+export inline constexpr units::Litre kDispenseTolerance = 1.5 * units::milli_litre;
+
+/**
+ * Tells why a pour ended, from what is known on protocol 2.0.0.
+ *
+ * `DispenseFinished` carries only the amount, so the duration has to tell the Pod's time limit from an empty bottle. The
+ * next protocol release carries the reason, and this function goes away with it.
+ */
+export DispenseOutcome classify_dispense(units::Litre requested,
+                                         units::Litre measured,
+                                         std::chrono::milliseconds elapsed,
+                                         std::chrono::milliseconds pour_limit = kPodPourLimit);
+
 export class PodReceiveError : public std::runtime_error
 {
   public:
     PodReceiveError(PodId pod_id, proto::field::ErrorCodeVal error)
-        : runtime_error{
-              std::format("Pod '{}' NAK with error reason: {}", pod_id, proto::field::ErrorCodeCommon::valueName(error))}
+        : runtime_error{std::format("Pod '{}' NAK with error reason: {}", pod_id, error_name(error))}
         , pod_id_{pod_id}
         , error_code_{error}
     {
@@ -36,6 +52,13 @@ export class PodReceiveError : public std::runtime_error
     }
 
   private:
+    /// A Pod on a newer protocol can send a code this Station doesn't know.
+    static std::string_view error_name(proto::field::ErrorCodeVal error)
+    {
+        const char* name = proto::field::ErrorCodeCommon::valueName(error);
+        return name != nullptr ? name : "unknown";
+    }
+
     PodId pod_id_;
     proto::field::ErrorCodeVal error_code_;
 };
@@ -97,7 +120,9 @@ export class IPod
     virtual Task<void> load_cell_calibrate_with_ref_weight(DispenserId dispenser_id, units::Grams grams) = 0;
     virtual Task<void> load_cell_tare(DispenserId dispenser_id) = 0;
 
-    virtual Task<units::Litre> dispense(DispenserId dispenser_id, units::Litre volume) = 0;
+    virtual Task<units::Grams> load_cell_weight(DispenserId dispenser_id) = 0;
+
+    virtual Task<DispenseReport> dispense(DispenserId dispenser_id, units::Litre volume) = 0;
 
     virtual Task<units::Litre> dispenser_calibrate(DispenserId dispenser_id, std::chrono::milliseconds run_time) = 0;
     virtual Task<void> force_safe_state() = 0;
@@ -115,9 +140,11 @@ class DispenserPodImpl : public Dispenser
   public:
     explicit DispenserPodImpl(std::weak_ptr<IPod> pod, DispenserId dispenser_id, std::string logger_name);
 
-    Task<units::Litre> dispense(units::Litre volume) override;
+    Task<DispenseReport> dispense(units::Litre volume) override;
 
     Task<units::Litre> calibrate(std::chrono::milliseconds run_time) override;
+
+    Task<units::Grams> load_cell_weight() override;
 
     Task<void> load_cell_calibrate_with_ref_weight(units::Grams grams) override;
 
@@ -154,7 +181,7 @@ export class Valve final : public DispenserPodImpl
 export class Pod : public IPod, public std::enable_shared_from_this<Pod>
 {
   public:
-    explicit Pod(std::unique_ptr<AnyIoStream> stream);
+    explicit Pod(std::unique_ptr<AnyIoStream> stream, std::chrono::milliseconds pour_limit = kPodPourLimit);
 
     PodId pod_id() const override;
 
@@ -168,7 +195,9 @@ export class Pod : public IPod, public std::enable_shared_from_this<Pod>
 
     Task<void> load_cell_tare(DispenserId dispenser_id) override;
 
-    Task<units::Litre> dispense(DispenserId dispenser_id, units::Litre volume) override;
+    Task<units::Grams> load_cell_weight(DispenserId dispenser_id) override;
+
+    Task<DispenseReport> dispense(DispenserId dispenser_id, units::Litre volume) override;
 
     Task<units::Litre> dispenser_calibrate(DispenserId dispenser_id, std::chrono::milliseconds run_time) override;
 
@@ -186,5 +215,6 @@ export class Pod : public IPod, public std::enable_shared_from_this<Pod>
     std::unique_ptr<PodState> state_{std::make_unique<NoopPodState>()};
     PodProtocolSession session_;
     AwaitableBool device_ready_;
+    std::chrono::milliseconds pour_limit_;
 };
 } // namespace cm

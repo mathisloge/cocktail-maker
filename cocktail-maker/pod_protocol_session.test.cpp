@@ -382,11 +382,21 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - New Ids Sk
 
         CHECK(session->generate_new_transaction_id() == static_cast<cm::TransactionId::ValueType>(first + 2));
         REQUIRE_THROWS_AS(co_await std::move(pending), cm::TimeoutError);
+    });
+}
 
-        // The counter wraps around without getting stuck.
-        for (int i = 0; i < 70000; ++i) {
-            std::ignore = session->generate_new_transaction_id();
+TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - A Wrapped Counter Skips Registered Ids", "[transaction]")
+{
+    run_test([this]() -> cm::Task<void> {
+        constexpr auto kLast = std::numeric_limits<cm::TransactionId::ValueType>::max();
+        while (session->generate_new_transaction_id() != kLast - 1) {
         }
+        auto last = session->async_receive<TestRxMsg>(kLast, 10ms);
+        auto zero = session->async_receive<TestRxMsg>(0, 10ms);
+
+        CHECK(session->generate_new_transaction_id() == 1);
+        REQUIRE_THROWS_AS(co_await std::move(last), cm::TimeoutError);
+        REQUIRE_THROWS_AS(co_await std::move(zero), cm::TimeoutError);
     });
 }
 

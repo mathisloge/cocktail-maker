@@ -17,9 +17,30 @@ namespace asio = boost::asio;
 namespace cm {
 
 namespace {
+// These follow the reply times in protocol.adoc. Each has to be longer than the Pod's worst case.
+constexpr std::chrono::milliseconds kLoadCellActionTimeout = 2s;
+// The Pod reads the load cell over I2C on its protocol thread before it replies to these.
+constexpr std::chrono::milliseconds kActionAckTimeout = 500ms;
+constexpr std::chrono::milliseconds kLoadCellWeightTimeout = 500ms;
+// This reply can wait behind such a read.
+constexpr std::chrono::milliseconds kEmergencyStopAckTimeout = 500ms;
+constexpr std::chrono::milliseconds kHighlightAckTimeout = 100ms;
+// The Pod stops a pour after 30 s at the latest and then measures it at rest.
+constexpr std::chrono::milliseconds kDispenseFinishedTimeout = 35s;
 // The dispenser has to stop first, then the Pod measures at rest.
 constexpr std::chrono::milliseconds kCalibrationAllowance = 3s;
 } // namespace
+
+DispenseOutcome classify_dispense(const units::Litre requested,
+                                  const units::Litre measured,
+                                  const std::chrono::milliseconds elapsed,
+                                  const std::chrono::milliseconds pour_limit)
+{
+    if (requested - measured <= kDispenseTolerance) {
+        return DispenseOutcome::completed;
+    }
+    return elapsed >= pour_limit ? DispenseOutcome::timed_out : DispenseOutcome::bottle_empty;
+}
 
 DispenserPodImpl::DispenserPodImpl(std::weak_ptr<IPod> pod, DispenserId dispenser_id, std::string logger_name)
     : dispenser_id_{dispenser_id}
@@ -28,12 +49,12 @@ DispenserPodImpl::DispenserPodImpl(std::weak_ptr<IPod> pod, DispenserId dispense
 {
 }
 
-Task<units::Litre> DispenserPodImpl::dispense(units::Litre volume)
+Task<DispenseReport> DispenserPodImpl::dispense(units::Litre volume)
 {
     SPDLOG_LOGGER_DEBUG(logger_, "Start dispense of {}.", volume);
-    const auto measured_volume = co_await pod()->dispense(dispenser_id_, volume);
-    SPDLOG_LOGGER_DEBUG(logger_, "Finished dispensing of {}. Dispensed: {}.", volume, measured_volume);
-    co_return measured_volume;
+    const auto report = co_await pod()->dispense(dispenser_id_, volume);
+    SPDLOG_LOGGER_DEBUG(logger_, "Finished dispensing of {}. Dispensed: {}.", volume, report.amount);
+    co_return report;
 }
 
 Task<units::Litre> DispenserPodImpl::calibrate(std::chrono::milliseconds run_time)
@@ -52,6 +73,11 @@ Task<void> DispenserPodImpl::load_cell_tare()
 {
     SPDLOG_LOGGER_DEBUG(logger_, "load cell TARE.");
     co_await pod()->load_cell_tare(dispenser_id_);
+}
+
+Task<units::Grams> DispenserPodImpl::load_cell_weight()
+{
+    co_return co_await pod()->load_cell_weight(dispenser_id_);
 }
 
 Task<void> DispenserPodImpl::highlight(std::chrono::milliseconds duration)
@@ -91,9 +117,9 @@ struct MessageEnvironment
     std::chrono::milliseconds timeout = 100ms;
 };
 
-MessageEnvironment dispenser_env(Pod* pod, DispenserId dispenser_id)
+MessageEnvironment dispenser_env(Pod* pod, DispenserId dispenser_id, std::chrono::milliseconds timeout)
 {
-    return MessageEnvironment{.pod_id = pod->pod_id(), .dispenser_id = dispenser_id};
+    return MessageEnvironment{.pod_id = pod->pod_id(), .dispenser_id = dispenser_id, .timeout = timeout};
 }
 
 MessageEnvironment default_env(Pod* pod, std::chrono::milliseconds timeout = 100ms)
@@ -116,11 +142,12 @@ void process_nak(const InNak& nak, const MessageEnvironment& env)
     case proto::field::ErrorCodeCommon::ValueType::ValuesLimit:
         throw PodReceiveError{env.pod_id, nak.field_errorCode().value()};
     }
-    std::unreachable();
+    // A Pod on a newer protocol can send a code this Station doesn't know.
+    throw PodReceiveError{env.pod_id, nak.field_errorCode().value()};
 }
 
 template <typename TxMsg>
-auto send_with_ack(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvironment env) -> Task<TransactionId::ValueType>
+auto send_with_ack(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvironment env) -> Task<void>
 {
     const auto transaction_id = session.generate_new_transaction_id();
 
@@ -137,7 +164,6 @@ auto send_with_ack(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvir
     catch (const TimeoutError&) {
         throw PodTimeoutError{env.pod_id};
     }
-    co_return transaction_id;
 }
 
 template <typename RxMsg, typename TxMsg>
@@ -151,6 +177,28 @@ auto send_and_receive(PodProtocolSession& session, TxMsg tx_msg, const MessageEn
     co_await session.async_send(std::move(tx_msg), transaction_id);
     try {
         co_return co_await std::move(rx_action);
+    }
+    catch (const TimeoutError&) {
+        throw PodTimeoutError{env.pod_id};
+    }
+}
+
+/// Like `send_and_receive`, but for a request the Pod can answer with a Nak.
+template <typename RxMsg, typename TxMsg>
+auto send_and_receive_or_nak(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvironment env) -> Task<RxMsg>
+{
+    const auto transaction_id = session.generate_new_transaction_id();
+
+    // register queue at first
+    auto rx_action = session.async_receive<RxMsg, InNak>(transaction_id, env.timeout);
+
+    co_await session.async_send(std::move(tx_msg), transaction_id);
+    try {
+        const auto nak_or_response = co_await std::move(rx_action);
+        if (std::holds_alternative<InNak>(nak_or_response)) {
+            process_nak(std::get<InNak>(nak_or_response), env);
+        }
+        co_return std::get<RxMsg>(nak_or_response);
     }
     catch (const TimeoutError&) {
         throw PodTimeoutError{env.pod_id};
@@ -187,9 +235,10 @@ auto send_action_with_response(PodProtocolSession& session,
     }
 }
 
-Pod::Pod(std::unique_ptr<AnyIoStream> stream)
+Pod::Pod(std::unique_ptr<AnyIoStream> stream, const std::chrono::milliseconds pour_limit)
     : session_{std::move(stream)}
     , device_ready_{session_.get_executor()}
+    , pour_limit_{pour_limit}
 {
 }
 
@@ -237,26 +286,47 @@ Task<void> Pod::load_cell_calibrate_with_ref_weight(const DispenserId dispenser_
 {
     auto tx = OutLoadCellCalibrateWithRefWeight{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
-    tx.field_gram().setValue(grams.numerical_value_in(units::si::gram));
-    co_await send_with_ack(session_, std::move(tx), dispenser_env(this, dispenser_id));
+    tx.field_gram().setValue(std::lround(grams.numerical_value_in(units::si::gram)));
+    co_await send_with_ack(session_, std::move(tx), dispenser_env(this, dispenser_id, kLoadCellActionTimeout));
 }
 
 Task<void> Pod::load_cell_tare(DispenserId dispenser_id)
 {
     auto tx = OutLoadCellTare{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
-    co_await send_with_ack(session_, std::move(tx), dispenser_env(this, dispenser_id));
+    co_await send_with_ack(session_, std::move(tx), dispenser_env(this, dispenser_id, kLoadCellActionTimeout));
 }
 
-Task<units::Litre> Pod::dispense(DispenserId dispenser_id, units::Litre volume)
+Task<units::Grams> Pod::load_cell_weight(const DispenserId dispenser_id)
 {
+    auto tx = OutLoadCellWeightRequest{};
+    tx.field_dispenserId().setValue(dispenser_id.raw());
+
+    const InLoadCellWeightResponse response = co_await send_and_receive_or_nak<InLoadCellWeightResponse>(
+        session_, std::move(tx), dispenser_env(this, dispenser_id, kLoadCellWeightTimeout));
+    co_return response.field_gram().value() * units::si::gram;
+}
+
+Task<DispenseReport> Pod::dispense(DispenserId dispenser_id, units::Litre volume)
+{
+    const auto millilitres = std::lround(volume.numerical_value_in(units::milli_litre));
+    // The Pod refuses an amount of 0 mL or less, and there is nothing to pour anyway.
+    if (millilitres <= 0) {
+        co_return DispenseReport{.amount = 0.0 * units::milli_litre, .outcome = DispenseOutcome::completed};
+    }
+
     auto tx = OutDispense{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
-    tx.field_millilitre().setValue(volume.numerical_value_in(units::milli_litre));
+    tx.field_millilitre().setValue(millilitres);
 
-    const InDispenseFinished finish_result =
-        co_await send_action_with_response<InDispenseFinished>(session_, std::move(tx), 30s, dispenser_env(this, dispenser_id));
-    co_return (finish_result.field_millilitre().value() * units::milli_litre);
+    const auto start = std::chrono::steady_clock::now();
+    const InDispenseFinished finish_result = co_await send_action_with_response<InDispenseFinished>(
+        session_, std::move(tx), kDispenseFinishedTimeout, dispenser_env(this, dispenser_id, kActionAckTimeout));
+    const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+
+    const units::Litre measured = finish_result.field_millilitre().value() * units::milli_litre;
+    const units::Litre requested = millilitres * units::milli_litre;
+    co_return DispenseReport{.amount = measured, .outcome = classify_dispense(requested, measured, elapsed, pour_limit_)};
 }
 
 Task<units::Litre> Pod::dispenser_calibrate(const DispenserId dispenser_id, const std::chrono::milliseconds run_time)
@@ -267,7 +337,7 @@ Task<units::Litre> Pod::dispenser_calibrate(const DispenserId dispenser_id, cons
 
     const InDispenserFinishedCalibrationResponse finish_result =
         co_await send_action_with_response<InDispenserFinishedCalibrationResponse>(
-            session_, std::move(tx), run_time + kCalibrationAllowance, dispenser_env(this, dispenser_id));
+            session_, std::move(tx), run_time + kCalibrationAllowance, dispenser_env(this, dispenser_id, kActionAckTimeout));
     co_return finish_result.field_millilitre().value() * units::milli_litre;
 }
 
@@ -277,12 +347,12 @@ Task<void> Pod::highlight_dispenser(DispenserId dispenser_id, std::chrono::milli
     tx.field_dispenserId().setValue(dispenser_id.raw());
     tx.field_ledEffect().setValue(proto::field::LedEffectVal::Highlight);
     tx.field_milliseconds().setValue(duration.count());
-    co_await send_with_ack(session_, std::move(tx), dispenser_env(this, dispenser_id));
+    co_await send_with_ack(session_, std::move(tx), dispenser_env(this, dispenser_id, kHighlightAckTimeout));
 }
 
 Task<void> Pod::force_safe_state()
 {
-    co_await send_with_ack(session_, OutEmergencyStop{}, default_env(this));
+    co_await send_with_ack(session_, OutEmergencyStop{}, default_env(this, kEmergencyStopAckTimeout));
 }
 
 Task<void> Pod::monitor_device()
@@ -327,7 +397,7 @@ Task<void> Pod::keep_alive()
 }
 
 DispenserEmptyError::DispenserEmptyError(PodId pod_id, DispenserId dispenser_id)
-    : runtime_error{std::format("Dispenser '{}' of Pod '{}' is empty", pod_id, dispenser_id)}
+    : runtime_error{std::format("Dispenser '{}' of Pod '{}' is empty", dispenser_id, pod_id)}
     , pod_id_{pod_id}
     , dispenser_id_{dispenser_id}
 {

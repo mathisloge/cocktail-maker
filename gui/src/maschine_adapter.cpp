@@ -43,7 +43,7 @@ Task<void> MachineAdapter::execute_command(DispenseCommand command)
     bool needs_refill = false;
 
     try {
-        dispensed = co_await dispatcher->dispense(command.volume);
+        dispensed = (co_await dispatcher->dispense(command.volume)).amount;
         // If we missed the target by more than the tolerance, the pod is running low.
         needs_refill = units::abs(dispensed - command.volume) > kDispenseTolerance;
     }

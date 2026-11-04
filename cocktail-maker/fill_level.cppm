@@ -11,6 +11,7 @@ import :pod_types;
 import :dispenser;
 import :station_config;
 import :pod_registry;
+import :recipe;
 
 namespace cm {
 
@@ -134,6 +135,22 @@ export class FillLevelTracker
     std::atomic<std::uint64_t> save_generation_{0};
     boost::asio::thread_pool writer_{1};
 };
+
+/// An ingredient whose bottle may not be enough for a drink.
+export struct FillShortage
+{
+    IngredientId ingredient;
+    units::Litre available;
+    units::Litre needed;
+};
+
+/// The assigned dispensers that `commands` pour from, each one once.
+export [[nodiscard]] std::vector<PodDispenser> involved_dispensers(const Commands& commands, const StationConfig& config);
+
+/// The ingredients that may not be enough. An unknown level or a missing assignment gives no shortage.
+export [[nodiscard]] std::vector<FillShortage> find_fill_shortages(const Commands& commands,
+                                                                   const StationConfig& config,
+                                                                   const FillLevelTracker& fill_levels);
 
 /// Brings the levels of a Pod that has just connected up to date, reading one dispenser after the other.
 export Task<void> sync_pod_fill_levels(PodInfo info, const PodRegistry& registry, FillLevelTracker& fill_levels);

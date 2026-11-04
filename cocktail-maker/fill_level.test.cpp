@@ -392,3 +392,87 @@ TEST_CASE_METHOD(FillLevelFixture, "Saving leaves one complete file behind", "[f
     CHECK(content.contains(R"("suspected_empty")"));
     CHECK_FALSE(std::filesystem::exists(std::filesystem::path{file} += ".tmp"));
 }
+
+namespace {
+/// A catalog with two ingredients assigned to two dispensers.
+struct ShortageFixture : FillLevelFixture
+{
+    cm::IngredientStore ingredients;
+    cm::StationConfig config{ingredients, ""};
+    const cm::IngredientId rum{"rum"};
+    const cm::IngredientId lime{"lime"};
+    const cm::PodDispenser lime_address{cm::PodId{"Pod"}, cm::DispenserId{1}};
+
+    ShortageFixture()
+    {
+        ingredients.init_ingredients({
+            cm::Ingredient{.id = rum, .display_name = "Rum", .type = {}, .boost_category = cm::BoostCategory::fixed},
+            cm::Ingredient{.id = lime, .display_name = "Limette", .type = {}, .boost_category = cm::BoostCategory::fixed},
+        });
+        config.update_dispenser_ingredient_mapping(rum, kAddress);
+        config.update_dispenser_ingredient_mapping(lime, lime_address);
+    }
+
+    cm::Command pour(const cm::IngredientId& ingredient, double millilitres)
+    {
+        return cm::DispenseCommand{cm::CommandId{1}, ingredient, millilitres * units::milli_litre};
+    }
+
+    std::vector<cm::FillShortage> shortages(const cm::Commands& commands)
+    {
+        return cm::find_fill_shortages(commands, config, *tracker);
+    }
+};
+} // namespace
+
+TEST_CASE_METHOD(ShortageFixture, "An amount that fits with the reserve isn't short", "[fill_level][shortage]")
+{
+    start_at(60);
+    CHECK(shortages({pour(rum, 40)}).empty());
+}
+
+TEST_CASE_METHOD(ShortageFixture, "An amount that doesn't fit with the reserve is short", "[fill_level][shortage]")
+{
+    start_at(59);
+
+    const auto found = shortages({pour(rum, 40)});
+
+    REQUIRE(found.size() == 1);
+    CHECK(found.front().ingredient == rum);
+    CHECK(std::lround(found.front().available.numerical_value_in(units::milli_litre)) == 59);
+    CHECK(std::lround(found.front().needed.numerical_value_in(units::milli_litre)) == 40);
+}
+
+TEST_CASE_METHOD(ShortageFixture, "Several steps of one ingredient add up", "[fill_level][shortage]")
+{
+    start_at(70);
+
+    const auto found = shortages({pour(rum, 30), cm::ParallelCommand{pour(rum, 30), pour(lime, 10)}});
+
+    REQUIRE(found.size() == 1);
+    CHECK(std::lround(found.front().needed.numerical_value_in(units::milli_litre)) == 60);
+}
+
+TEST_CASE_METHOD(ShortageFixture, "A suspected empty bottle counts as empty", "[fill_level][shortage]")
+{
+    start_at(1000, 800);
+    pour_finished(0, cm::DispenseOutcome::bottle_empty, 800);
+
+    const auto found = shortages({pour(rum, 40)});
+
+    REQUIRE(found.size() == 1);
+    CHECK(found.front().available == 0.0 * units::milli_litre);
+}
+
+TEST_CASE_METHOD(ShortageFixture, "An unknown level or a missing assignment isn't short", "[fill_level][shortage]")
+{
+    CHECK(shortages({pour(rum, 40)}).empty());
+    CHECK(shortages({pour(cm::IngredientId{"unassigned"}, 40)}).empty());
+}
+
+TEST_CASE_METHOD(ShortageFixture, "The dispensers of a recipe come once each", "[fill_level][shortage]")
+{
+    const auto found = cm::involved_dispensers({pour(rum, 30), cm::ParallelCommand{pour(rum, 30), pour(lime, 10)}}, config);
+
+    CHECK(found == std::vector<cm::PodDispenser>{kAddress, lime_address});
+}

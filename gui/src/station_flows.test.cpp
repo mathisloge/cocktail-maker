@@ -381,6 +381,152 @@ TEST_CASE_METHOD(SimStation, "The admin row shows the level and takes a refill",
 }
 
 namespace {
+/// A simulated station with the bridge that starts a mix, and one recipe that needs 40 mL of rum.
+struct WarningStation : SimStation
+{
+    cm::gui::ProcessContextBridge bridge{scope, ui, recipes, ingredients, config, registry, fill_levels};
+    std::optional<cm::gui::Page> last_page;
+
+    WarningStation()
+    {
+        use_recipe("drink", rum);
+        bridge.init();
+        ui->global<cm::gui::StationStateContext>().on_navigate_to([this](cm::gui::Page page) { last_page = page; });
+        ui->global<cm::gui::ProcessContext>().set_boost(0);
+        ui->global<cm::gui::ProcessContext>().set_glass_volume(250);
+    }
+
+    void use_recipe(const std::string& id, const cm::IngredientId& ingredient)
+    {
+        recipes.init_recipes({cm::Recipe{
+            .id = cm::RecipeId{id},
+            .display_name = id,
+            .description = "",
+            .tags = {},
+            .image_path = "",
+            .nominal_serving_volume = 250 * units::milli_litre,
+            .commands = {cm::Command{cm::DispenseCommand{cm::CommandId{1}, ingredient, 40 * units::milli_litre}}},
+        }});
+
+        auto active = ui->global<cm::gui::RecipeContext>().get_active_recipe();
+        active.id = slint::SharedString{id};
+        ui->global<cm::gui::RecipeContext>().set_active_recipe(active);
+    }
+
+    void confirm_glass()
+    {
+        ui->global<cm::gui::ProcessContext>().invoke_process_active_recipe();
+    }
+
+    bool warning_open() const
+    {
+        return ui->get_fill_warning_popup_open();
+    }
+
+    std::vector<std::string> warning_lines() const
+    {
+        std::vector<std::string> lines;
+        const auto model = ui->global<cm::gui::ProcessContext>().get_fill_warning_lines();
+        for (std::size_t row = 0; row < model->row_count(); ++row) {
+            lines.emplace_back(model->row_data(row)->data());
+        }
+        return lines;
+    }
+
+    void fill_rum_to(double grams)
+    {
+        fill_levels.empty_bottle_tared(rum_address);
+        client->bottle(rum_address.dispenser_id).liquid += grams * units::si::gram;
+    }
+};
+} // namespace
+
+TEST_CASE_METHOD(WarningStation, "A drink that fits starts at once", "[flow][warning]")
+{
+    fill_rum_to(200);
+
+    confirm_glass();
+
+    REQUIRE(pump_until([this]() { return last_page == cm::gui::Page::MixPage; }));
+    CHECK_FALSE(warning_open());
+}
+
+TEST_CASE_METHOD(WarningStation, "An unknown level starts at once", "[flow][warning]")
+{
+    confirm_glass();
+
+    REQUIRE(pump_until([this]() { return last_page == cm::gui::Page::MixPage; }));
+    CHECK_FALSE(warning_open());
+}
+
+TEST_CASE_METHOD(WarningStation, "A drink that may not fit warns and can be cancelled", "[flow][warning]")
+{
+    fill_rum_to(15);
+
+    confirm_glass();
+
+    REQUIRE(pump_until([this]() { return warning_open(); }));
+    CHECK(warning_lines() == std::vector<std::string>{"Rum: ca. 15 mL da, 40 mL nötig"});
+    CHECK_FALSE(last_page.has_value());
+
+    ui->global<cm::gui::ProcessContext>().invoke_fill_warning_canceled();
+
+    REQUIRE(pump_until([this]() { return !warning_open(); }));
+    pump_for(50ms);
+    CHECK_FALSE(last_page.has_value());
+}
+
+TEST_CASE_METHOD(WarningStation, "A warned drink can be started anyway", "[flow][warning]")
+{
+    fill_rum_to(15);
+
+    confirm_glass();
+    REQUIRE(pump_until([this]() { return warning_open(); }));
+
+    ui->global<cm::gui::ProcessContext>().invoke_fill_warning_confirmed();
+
+    REQUIRE(pump_until([this]() { return last_page == cm::gui::Page::MixPage; }));
+    CHECK_FALSE(warning_open());
+}
+
+TEST_CASE_METHOD(WarningStation, "A bottle topped up without the button gives no warning", "[flow][warning]")
+{
+    fill_rum_to(15);
+    confirm_glass();
+    REQUIRE(pump_until([this]() { return warning_open(); }));
+    ui->global<cm::gui::ProcessContext>().invoke_fill_warning_canceled();
+    REQUIRE(pump_until([this]() { return !warning_open(); }));
+
+    client->bottle(rum_address.dispenser_id).liquid += 300 * units::si::gram;
+    confirm_glass();
+
+    REQUIRE(pump_until([this]() { return last_page == cm::gui::Page::MixPage; }));
+    CHECK_FALSE(warning_open());
+}
+
+TEST_CASE_METHOD(WarningStation, "A pod that is gone gives no warning and the mix fails as before", "[flow][warning]")
+{
+    config.update_dispenser_ingredient_mapping(lime, cm::PodDispenser{cm::PodId{"Gone"}, cm::DispenserId{0}});
+    use_recipe("lime_drink", lime);
+
+    confirm_glass();
+
+    REQUIRE(pump_until([this]() { return last_page == cm::gui::Page::MixErrorPage; }));
+    CHECK_FALSE(warning_open());
+}
+
+TEST_CASE_METHOD(WarningStation, "The confirm button waits for the check", "[flow][warning]")
+{
+    fill_rum_to(200);
+
+    confirm_glass();
+    CHECK(ui->global<cm::gui::ProcessContext>().get_checking_fill_level());
+
+    REQUIRE(pump_until([this]() { return last_page == cm::gui::Page::MixPage; }));
+    CHECK_FALSE(ui->global<cm::gui::ProcessContext>().get_checking_fill_level());
+}
+
+namespace {
 /// A station whose only pod refuses every pour, with one recipe that needs it.
 struct FailingMixStation
 {

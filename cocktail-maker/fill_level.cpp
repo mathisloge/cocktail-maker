@@ -31,6 +31,32 @@ units::Grams to_mass(const units::Litre volume)
     return volume * kAssumedDensity;
 }
 
+/// What each ingredient adds up to over all steps, in the order of the recipe.
+std::vector<std::pair<IngredientId, units::Litre>> amounts_per_ingredient(const Commands& commands)
+{
+    std::vector<std::pair<IngredientId, units::Litre>> amounts;
+    const auto add = [&amounts](const Command& command) {
+        const auto* pour = std::get_if<DispenseCommand>(&command);
+        if (pour == nullptr) {
+            return;
+        }
+        const auto it = std::ranges::find(amounts, pour->ingredient, [](const auto& entry) { return entry.first; });
+        if (it == amounts.end()) {
+            amounts.emplace_back(pour->ingredient, pour->volume);
+        }
+        else {
+            it->second += pour->volume;
+        }
+    };
+
+    for (const auto& step : commands) {
+        std::visit(detail::Overloaded{[&add](const Command& command) { add(command); },
+                                      [&add](const ParallelCommand& group) { std::ranges::for_each(group, add); }},
+                   step);
+    }
+    return amounts;
+}
+
 std::string serialize(const std::map<PodDispenser, FillLevelRecord>& records)
 {
     simdjson::builder::string_builder sb;
@@ -390,6 +416,44 @@ void FillLevelTracker::write_file(const Records& records) const
     catch (const std::exception& error) {
         SPDLOG_LOGGER_ERROR(logger_, "Could not save the fill levels to '{}': {}", file_.string(), error.what());
     }
+}
+
+std::vector<PodDispenser> involved_dispensers(const Commands& commands, const StationConfig& config)
+{
+    std::vector<PodDispenser> dispensers;
+    for (const auto& [ingredient, amount] : amounts_per_ingredient(commands)) {
+        const auto address = config.find_dispenser_for_ingredient(ingredient);
+        if (address.has_value() && not std::ranges::contains(dispensers, *address)) {
+            dispensers.push_back(*address);
+        }
+    }
+    return dispensers;
+}
+
+std::vector<FillShortage> find_fill_shortages(const Commands& commands,
+                                              const StationConfig& config,
+                                              const FillLevelTracker& fill_levels)
+{
+    const auto whole_millilitres = [](const units::Litre volume) {
+        return std::lround(volume.numerical_value_in(units::milli_litre));
+    };
+
+    std::vector<FillShortage> shortages;
+    for (const auto& [ingredient, amount] : amounts_per_ingredient(commands)) {
+        const auto address = config.find_dispenser_for_ingredient(ingredient);
+        if (not address.has_value()) {
+            continue;
+        }
+        const auto view = fill_levels.view(*address);
+        if (not view.level.has_value()) {
+            continue;
+        }
+        const units::Litre available = view.suspected_empty ? units::Litre{} : to_volume(*view.level);
+        if (whole_millilitres(amount + kFillLevelReserve) > whole_millilitres(available)) {
+            shortages.push_back(FillShortage{.ingredient = ingredient, .available = available, .needed = amount});
+        }
+    }
+    return shortages;
 }
 
 Task<void> sync_pod_fill_levels(const PodInfo info, const PodRegistry& registry, FillLevelTracker& fill_levels)

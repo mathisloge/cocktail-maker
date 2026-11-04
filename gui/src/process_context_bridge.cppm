@@ -23,6 +23,22 @@ export class ProcessContextBridge
     void init();
 
   private:
+    /// A mix the guest has asked for, waiting for the check of the fill levels or for the answer to its warning.
+    struct PendingMix
+    {
+        Recipe recipe;
+        units::Percent boost;
+        units::Litre target_volume;
+    };
+
+    /// Reads the bottles a mix needs, then starts it or warns the guest.
+    Task<void> async_check_and_start(PendingMix mix);
+
+    /// Leaves the current page and starts processing. It runs on the io thread.
+    void start_mix(PendingMix mix);
+
+    Commands prepare_commands(const Recipe& recipe, units::Percent boost, units::Litre target_volume) const;
+
     /// Aborts a recipe that may still be processed and starts processing `recipe`. It runs on the io thread.
     void start_recipe_processing(Recipe recipe, units::Percent boost, units::Litre target_volume);
 
@@ -46,5 +62,7 @@ export class ProcessContextBridge
     FillLevelTracker& fill_levels_;
     /// Setting it aborts the recipe that is currently processed. It is only accessed on the io thread.
     std::shared_ptr<AwaitableBool> active_recipe_abort_;
+    /// The mix whose warning is open. It is only accessed on the io thread.
+    std::optional<PendingMix> pending_mix_;
 };
 } // namespace cm::gui

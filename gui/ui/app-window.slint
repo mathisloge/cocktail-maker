@@ -38,7 +38,7 @@ import {
     MixSuccessPage,
     MixGlassSelectionPage,
 } from "pages.slint";
-import { ManualCommandPopup, OperatorPinPopup } from "popups.slint";
+import { ManualCommandPopup, FillWarningPopup, OperatorPinPopup } from "popups.slint";
 import { AdminArea } from "admin-area.slint";
 import { StationStateContext } from "./globals/station-state-context.slint";
 import { ProcessContext } from "./globals/process-context.slint";
@@ -53,6 +53,7 @@ export component AppWindow inherits Window {
     private property <bool> boot_screen_confirmed: false;
     out property <Command> popup_command;
     out property <bool> manual-command-popup-open: false;
+    out property <bool> fill-warning-popup-open: false;
     changed device_ready => {
         if (!device_ready) {
             boot_screen_confirmed = false;
@@ -72,6 +73,16 @@ export component AppWindow inherits Window {
         popup.close();
     }
 
+    public function open-fill-warning-popup() {
+        root.fill-warning-popup-open = true;
+        fill_warning_popup.show();
+    }
+
+    public function close-fill-warning-popup() {
+        root.fill-warning-popup-open = false;
+        fill_warning_popup.close();
+    }
+
     operation_canceled => {
         StationStateContext.navigate-to(Page.cocktail-list-page);
     }
@@ -85,6 +96,11 @@ export component AppWindow inherits Window {
     }
 
     operator_pin_popup := OperatorPinPopup {
+        width: root.width;
+        height: root.height;
+    }
+
+    fill_warning_popup := FillWarningPopup {
         width: root.width;
         height: root.height;
     }

@@ -342,15 +342,29 @@ void ProcessContextBridge::init()
         const auto target_volume = ui_->global<ProcessContext>().get_glass_volume() * units::milli_litre;
         auto r = recipe_store_.find_by_id(RecipeId{recipe_to_create.id.data()});
         if (r.has_value()) {
-            ui_->global<StationStateContext>().invoke_navigate_to(Page::MixPage);
-            boost::asio::post(async_scope_.executor(), [recipe = std::move(r.value()), boost, target_volume, this]() mutable {
-                start_recipe_processing(std::move(recipe), boost, target_volume);
-            });
+            ui_->global<ProcessContext>().set_checking_fill_level(true);
+            async_scope_.spawn(async_check_and_start(PendingMix{std::move(r.value()), boost, target_volume}));
         }
         else {
             display_ui_error(RecipeNotFoundError{RecipeId{recipe_to_create.id.data()}}, ui_, station_config_, ingredient_store_);
             SPDLOG_LOGGER_ERROR(logger_, "Could not find a recipe {}", recipe_to_create.name.data());
         }
+    });
+
+    ui_->global<ProcessContext>().on_fill_warning_confirmed([this]() {
+        ui_->invoke_close_fill_warning_popup();
+        boost::asio::post(async_scope_.executor(), [this]() {
+            if (pending_mix_.has_value()) {
+                auto mix = std::move(*pending_mix_);
+                pending_mix_.reset();
+                start_mix(std::move(mix));
+            }
+        });
+    });
+
+    ui_->global<ProcessContext>().on_fill_warning_canceled([this]() {
+        ui_->invoke_close_fill_warning_popup();
+        boost::asio::post(async_scope_.executor(), [this]() { pending_mix_.reset(); });
     });
 
     ui_->global<ProcessContext>().on_abort([this]() {
@@ -364,6 +378,62 @@ void ProcessContextBridge::init()
             boost::asio::post(async_scope_.executor(), [this]() { abort_active_recipe(); });
         }
     });
+}
+
+Commands ProcessContextBridge::prepare_commands(const Recipe& recipe,
+                                                const units::Percent boost,
+                                                const units::Litre target_volume) const
+{
+    return boost_recipe(scale_recipe(recipe.commands, recipe.nominal_serving_volume, target_volume), boost, ingredient_store_);
+}
+
+Task<void> ProcessContextBridge::async_check_and_start(PendingMix mix)
+{
+    pending_mix_.reset();
+
+    const auto commands = prepare_commands(mix.recipe, mix.boost, mix.target_volume);
+    for (const auto& address : involved_dispensers(commands, station_config_)) {
+        auto dispenser = pod_registry_.dispenser_of_pod(address.pod_id, address.dispenser_id);
+        if (dispenser.has_value()) {
+            co_await fill_levels_.refresh(address, **dispenser);
+        }
+    }
+
+    const auto shortages = find_fill_shortages(commands, station_config_, fill_levels_);
+    if (shortages.empty()) {
+        start_mix(std::move(mix));
+        co_return;
+    }
+
+    auto lines = std::make_shared<std::vector<std::string>>();
+    for (const auto& shortage : shortages) {
+        const auto found = ingredient_store_.find_by_id(shortage.ingredient);
+        // codespell:ignore-next-line
+        lines->push_back(std::format("{}: ca. {} mL da, {} mL nötig",
+                                     found.has_value() ? found->display_name : shortage.ingredient.raw(),
+                                     std::lround(shortage.available.numerical_value_in(units::milli_litre)),
+                                     std::lround(shortage.needed.numerical_value_in(units::milli_litre))));
+    }
+
+    pending_mix_ = std::move(mix);
+    slint::invoke_from_event_loop([ui = ui_, lines = std::move(lines)]() {
+        auto model = std::make_shared<slint::VectorModel<slint::SharedString>>();
+        for (const auto& line : *lines) {
+            model->push_back(slint::SharedString{line});
+        }
+        ui->global<ProcessContext>().set_fill_warning_lines(std::move(model));
+        ui->global<ProcessContext>().set_checking_fill_level(false);
+        ui->invoke_open_fill_warning_popup();
+    });
+}
+
+void ProcessContextBridge::start_mix(PendingMix mix)
+{
+    slint::invoke_from_event_loop([ui = ui_]() {
+        ui->global<ProcessContext>().set_checking_fill_level(false);
+        ui->global<StationStateContext>().invoke_navigate_to(Page::MixPage);
+    });
+    start_recipe_processing(std::move(mix.recipe), mix.boost, mix.target_volume);
 }
 
 void ProcessContextBridge::start_recipe_processing(Recipe recipe, const units::Percent boost, const units::Litre target_volume)
@@ -397,8 +467,7 @@ Task<void> ProcessContextBridge::async_process_recipe(Recipe recipe, const units
 
     SPDLOG_LOGGER_INFO(logger_, "Create {} with boost factor '{}' and target volume '{}'", recipe, boost, target_volume);
     const auto start_tp = Clock::now();
-    recipe.commands = scale_recipe(recipe.commands, recipe.nominal_serving_volume, target_volume);
-    recipe.commands = boost_recipe(recipe.commands, boost, ingredient_store_);
+    recipe.commands = prepare_commands(recipe, boost, target_volume);
     update_ui_recipe(recipe);
     auto command_executer = std::make_shared<MachineAdapter>(
         ui_, async_scope_.executor(), ingredient_store_, pod_registry_, station_config_, fill_levels_);

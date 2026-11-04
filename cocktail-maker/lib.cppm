@@ -15,5 +15,6 @@ export import :pod_dispatcher;
 export import :pod;
 export import :station_state;
 export import :station_config;
+export import :fill_level;
 export import :serial;
 export import :application;

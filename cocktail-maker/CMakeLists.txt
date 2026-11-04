@@ -21,6 +21,8 @@ target_sources(
         FILE_SET CXX_MODULES
             FILES
                 dispenser.cppm
+                fill_level.cppm
+                fill_level.cpp
                 execute_recipe.cppm
                 execute_recipe.cpp
                 glass.cppm
@@ -66,6 +68,7 @@ if(BUILD_TESTING)
         PRIVATE
             application.test.cpp
             execute_recipe.test.cpp
+            fill_level.test.cpp
             glass.test.cpp
             ingredient.test.cpp
             pod_discovery.test.cpp

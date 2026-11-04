@@ -122,7 +122,7 @@ MessageEnvironment dispenser_env(Pod* pod, DispenserId dispenser_id, std::chrono
     return MessageEnvironment{.pod_id = pod->pod_id(), .dispenser_id = dispenser_id, .timeout = timeout};
 }
 
-MessageEnvironment default_env(Pod* pod, std::chrono::milliseconds timeout = 100ms)
+MessageEnvironment default_env(Pod* pod, std::chrono::milliseconds timeout)
 {
     return MessageEnvironment{.pod_id = pod->pod_id(), .timeout = timeout};
 }

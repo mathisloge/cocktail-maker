@@ -37,5 +37,6 @@ TEST_CASE("DispenserEmptyError names the dispenser and the pod", "[pod]")
 TEST_CASE("PodReceiveError copes with an error code it doesn't know", "[pod]")
 {
     const cm::PodReceiveError error{cm::PodId{"Pod"}, static_cast<proto::field::ErrorCodeVal>(200)};
-    CHECK(std::string_view{error.what()}.contains("Pod"));
+    CHECK(std::string_view{error.what()}.contains("unknown"));
+    CHECK(error.error_code() == static_cast<proto::field::ErrorCodeVal>(200));
 }

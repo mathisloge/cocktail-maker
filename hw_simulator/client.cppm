@@ -430,7 +430,10 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
     Task<void> async_refill(std::shared_ptr<Client> /*self*/, DispenserState& state)
     {
         co_await delay(*config_.auto_refill_after);
-        state.bottle.liquid = config_.refill_to;
+        // The bottle may be in use or filled again by now.
+        if (state.activity == Activity::idle && state.bottle.liquid <= 0.0 * units::si::gram) {
+            state.bottle.liquid = config_.refill_to;
+        }
     }
 
     /**

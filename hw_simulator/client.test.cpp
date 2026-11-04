@@ -131,6 +131,13 @@ struct ClientFixture
         co_return co_await std::move(final_reply);
     }
 
+    /// Fails if another reply to this transaction arrives within `duration`.
+    cm::Task<void> expect_no_reply(cm::TransactionId::ValueType id, std::chrono::milliseconds duration)
+    {
+        auto reply = session->async_receive<cm::InDispenseFinished, cm::InNak>(id, duration);
+        REQUIRE_THROWS_AS(co_await std::move(reply), cm::TimeoutError);
+    }
+
     cm::Task<void> pause(std::chrono::milliseconds duration)
     {
         boost::asio::steady_timer timer{ctx, duration};
@@ -179,7 +186,9 @@ TEST_CASE_METHOD(ClientFixture, "A tare takes as long as on the real Pod", "[sim
 
 TEST_CASE_METHOD(ClientFixture, "A second tare is refused while the first one runs", "[sim][client]")
 {
-    create();
+    auto config = fast_config();
+    config.load_cell_action = 300ms;
+    create(config);
     run_test([this]() -> cm::Task<void> {
         const auto id = session->generate_new_transaction_id();
         auto first = session->async_receive<cm::InAck, cm::InNak>(id, kReplyTimeout);
@@ -300,11 +309,31 @@ TEST_CASE_METHOD(ClientFixture, "A calibration run answers like the firmware", "
 
         const auto good = co_await action_of<Finished>(calibration(kDispenser, 200ms));
         REQUIRE(std::holds_alternative<Finished>(good));
-        CHECK(std::get<Finished>(good).field_millilitre().value() > 0);
+        CHECK(std::get<Finished>(good).field_millilitre().value() == 200);
+    });
+}
 
-        client->bottle(kOtherDispenser).liquid = 3 * units::si::gram;
-        const auto too_little = co_await action_of<Finished>(calibration(kOtherDispenser, 200ms));
+TEST_CASE_METHOD(ClientFixture, "A calibration run below the smallest amount counts as empty", "[sim][client]")
+{
+    auto config = fast_config();
+    config.stall = 5s;
+    config.flow = 20.0 * units::milli_litre / units::si::second;
+    create(config);
+    using Finished = cm::InDispenserFinishedCalibrationResponse;
+    run_test([this]() -> cm::Task<void> {
+        const auto too_little = co_await action_of<Finished>(calibration(kDispenser, 200ms));
         CHECK(error_of(too_little) == ErrorCode::DispenserEmpty);
+    });
+}
+
+TEST_CASE_METHOD(ClientFixture, "A calibration run that stalls counts as empty even with enough poured", "[sim][client]")
+{
+    create();
+    client->bottle(kDispenser).liquid = 10 * units::si::gram;
+    using Finished = cm::InDispenserFinishedCalibrationResponse;
+    run_test([this]() -> cm::Task<void> {
+        const auto stalled = co_await action_of<Finished>(calibration(kDispenser, 2s));
+        CHECK(error_of(stalled) == ErrorCode::DispenserEmpty);
     });
 }
 
@@ -330,6 +359,11 @@ TEST_CASE_METHOD(ClientFixture, "A running pour blocks only its own dispenser", 
 
         const auto other = co_await action_of<cm::InDispenseFinished>(dispense(kOtherDispenser, 5));
         CHECK(std::holds_alternative<cm::InDispenseFinished>(other));
+        const auto other_tare = co_await ack_of(tare(kOtherDispenser));
+        CHECK(std::holds_alternative<cm::InAck>(other_tare));
+        const auto other_run =
+            co_await action_of<cm::InDispenserFinishedCalibrationResponse>(calibration(kOtherDispenser, 100ms));
+        CHECK(std::holds_alternative<cm::InDispenserFinishedCalibrationResponse>(other_run));
 
         const auto finished = co_await std::move(running);
         CHECK(std::holds_alternative<cm::InDispenseFinished>(finished));
@@ -365,6 +399,7 @@ TEST_CASE_METHOD(ClientFixture, "An emergency stop acknowledges first and ends e
     auto config = fast_config();
     config.flow = 10.0 * units::milli_litre / units::si::second;
     config.load_cell_action = 300ms;
+    config.stop_nak_spacing = 200ms;
     create(config);
     run_test([this]() -> cm::Task<void> {
         const auto start_pour = [this](cm::DispenserId dispenser) -> cm::Task<cm::TransactionId::ValueType> {
@@ -393,7 +428,7 @@ TEST_CASE_METHOD(ClientFixture, "An emergency stop acknowledges first and ends e
         CHECK(error_of(first_reply) == ErrorCode::HardwareFault);
 
         const auto second_reply = co_await std::move(second_final);
-        CHECK(Clock::now() - first_at >= 15ms);
+        CHECK(Clock::now() - first_at >= 100ms);
         CHECK(error_of(second_reply) == ErrorCode::HardwareFault);
 
         const auto tare_result = co_await std::move(tare_reply);
@@ -414,5 +449,91 @@ TEST_CASE_METHOD(ClientFixture, "A dry bottle refills itself when configured", "
 
         co_await pause(150ms);
         CHECK(client->bottle(kDispenser).liquid == 500 * units::si::gram);
+    });
+}
+
+TEST_CASE_METHOD(ClientFixture, "A stop before the Ack ends a pour with a single reply", "[sim][client]")
+{
+    auto config = fast_config();
+    config.ack_delay = 200ms;
+    create(config);
+    run_test([this]() -> cm::Task<void> {
+        const auto id = session->generate_new_transaction_id();
+        auto first = session->async_receive<cm::InAck, cm::InNak>(id, kReplyTimeout);
+        co_await session->async_send(dispense(kDispenser, 50), id);
+
+        co_await pause(50ms);
+        std::ignore = co_await ack_of(cm::OutEmergencyStop{});
+
+        const auto reply = co_await std::move(first);
+        CHECK(error_of(reply) == ErrorCode::HardwareFault);
+        co_await expect_no_reply(id, 500ms);
+        CHECK(client->bottle(kDispenser).liquid == 500 * units::si::gram);
+    });
+}
+
+TEST_CASE_METHOD(ClientFixture, "A stop while the load settles ends a pour with a single reply", "[sim][client]")
+{
+    auto config = fast_config();
+    config.settle = 400ms;
+    create(config);
+    run_test([this]() -> cm::Task<void> {
+        const auto id = session->generate_new_transaction_id();
+        auto ack = session->async_receive<cm::InAck, cm::InNak>(id, kReplyTimeout);
+        auto final_reply = session->async_receive<cm::InDispenseFinished, cm::InNak>(id, kReplyTimeout);
+        co_await session->async_send(dispense(kDispenser, 50), id);
+        const auto ack_reply = co_await std::move(ack);
+        REQUIRE(std::holds_alternative<cm::InAck>(ack_reply));
+
+        // The first tick pours everything, and the load settles after that.
+        co_await pause(200ms);
+        std::ignore = co_await ack_of(cm::OutEmergencyStop{});
+
+        const auto reply = co_await std::move(final_reply);
+        CHECK(error_of(reply) == ErrorCode::HardwareFault);
+        co_await expect_no_reply(id, 600ms);
+    });
+}
+
+TEST_CASE_METHOD(ClientFixture, "A stop during a calibration run ends it with a single reply", "[sim][client]")
+{
+    auto config = fast_config();
+    config.flow = 100.0 * units::milli_litre / units::si::second;
+    create(config);
+    run_test([this]() -> cm::Task<void> {
+        const auto id = session->generate_new_transaction_id();
+        auto ack = session->async_receive<cm::InAck, cm::InNak>(id, kReplyTimeout);
+        auto final_reply = session->async_receive<cm::InDispenserFinishedCalibrationResponse, cm::InNak>(id, kReplyTimeout);
+        co_await session->async_send(calibration(kDispenser, 600ms), id);
+        const auto ack_reply = co_await std::move(ack);
+        REQUIRE(std::holds_alternative<cm::InAck>(ack_reply));
+
+        co_await pause(200ms);
+        std::ignore = co_await ack_of(cm::OutEmergencyStop{});
+
+        const auto reply = co_await std::move(final_reply);
+        CHECK(error_of(reply) == ErrorCode::HardwareFault);
+
+        const auto liquid_at_stop = client->bottle(kDispenser).liquid;
+        auto later = session->async_receive<cm::InDispenserFinishedCalibrationResponse, cm::InNak>(id, 800ms);
+        REQUIRE_THROWS_AS(co_await std::move(later), cm::TimeoutError);
+        CHECK(client->bottle(kDispenser).liquid == liquid_at_stop);
+    });
+}
+
+TEST_CASE_METHOD(ClientFixture, "An old refill doesn't fill a bottle that is in use again", "[sim][client]")
+{
+    auto config = fast_config();
+    config.auto_refill_after = 150ms;
+    create(config);
+    client->bottle(kDispenser).liquid = 10 * units::si::gram;
+    run_test([this]() -> cm::Task<void> {
+        std::ignore = co_await action_of<cm::InDispenseFinished>(dispense(kDispenser, 20));
+        REQUIRE(client->bottle(kDispenser).liquid == 0 * units::si::gram);
+
+        // Somebody refills by hand before the automatic refill is due.
+        client->bottle(kDispenser).liquid = 40 * units::si::gram;
+        co_await pause(300ms);
+        CHECK(client->bottle(kDispenser).liquid == 40 * units::si::gram);
     });
 }

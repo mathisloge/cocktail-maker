@@ -141,8 +141,8 @@ TEST_CASE_METHOD(SimPodFixture, "A calibration run returns the measured amount",
 TEST_CASE_METHOD(SimPodFixture, "Replies within the Station's timeouts are accepted", "[sim][pod]")
 {
     auto config = fast_config();
-    config.ack_delay = 400ms;
-    config.quick_reply = 400ms;
+    config.ack_delay = 300ms;
+    config.quick_reply = 300ms;
     configure(config);
     run_test([this]() -> cm::Task<void> {
         co_await connected();
@@ -246,9 +246,7 @@ TEST_CASE_METHOD(SimPodFixture, "A refused pour fails at once instead of waiting
     configure(config);
     run_test([this]() -> cm::Task<void> {
         co_await connected();
-        std::vector<cm::Task<void>> tasks;
-        tasks.emplace_back(pod->load_cell_tare(kDispenser));
-        tasks.emplace_back([this]() -> cm::Task<void> {
+        const auto refused_pour = [this]() -> cm::Task<void> {
             const auto start = std::chrono::steady_clock::now();
             try {
                 std::ignore = co_await pod->dispense(kDispenser, 5 * units::milli_litre);
@@ -258,7 +256,11 @@ TEST_CASE_METHOD(SimPodFixture, "A refused pour fails at once instead of waiting
                 CHECK(error.error_code() == ErrorCode::Busy);
             }
             CHECK(std::chrono::steady_clock::now() - start < 1s);
-        }());
+        };
+
+        std::vector<cm::Task<void>> tasks;
+        tasks.emplace_back(pod->load_cell_tare(kDispenser));
+        tasks.emplace_back(refused_pour());
         co_await cm::join_all(std::move(tasks));
     });
 }
@@ -299,6 +301,69 @@ TEST_CASE_METHOD(SimPodFixture, "An emergency stop fails the running pours with 
         std::vector<cm::Task<void>> tasks;
         tasks.emplace_back(pour(kDispenser));
         tasks.emplace_back(pour(kOtherDispenser));
+        tasks.emplace_back(stop());
+        co_await cm::join_all(std::move(tasks));
+    });
+}
+
+TEST_CASE_METHOD(SimPodFixture, "A pour at real speed finishes within the timeouts", "[sim][pod]")
+{
+    run_test([this]() -> cm::Task<void> {
+        co_await connected();
+        // At 4 mL/s and with the load settling for 1.5 s, the final reply comes well after the Ack.
+        const auto report = co_await pod->dispense(kDispenser, 5 * units::milli_litre);
+        CHECK(report.amount == 5 * units::milli_litre);
+        CHECK(report.outcome == cm::DispenseOutcome::completed);
+    });
+}
+
+// It takes over 30 s, so it only runs when asked for by its tag.
+TEST_CASE_METHOD(SimPodFixture, "A pour at the real time limit stays within the timeout", "[.slow][sim][pod]")
+{
+    run_test([this]() -> cm::Task<void> {
+        co_await connected();
+        const auto report = co_await pod->dispense(kDispenser, 170 * units::milli_litre);
+        CHECK(report.outcome == cm::DispenseOutcome::timed_out);
+    });
+}
+
+TEST_CASE_METHOD(SimPodFixture, "An Ack that comes too late fails the pour without sending it again", "[sim][pod]")
+{
+    auto config = fast_config();
+    config.ack_delay = 700ms;
+    configure(config);
+    run_test([this]() -> cm::Task<void> {
+        co_await connected();
+        REQUIRE_THROWS_AS(co_await pod->dispense(kDispenser, 5 * units::milli_litre), cm::PodTimeoutError);
+        CHECK(client->stats().dispense_requests == 1);
+    });
+}
+
+TEST_CASE_METHOD(SimPodFixture, "An emergency stop fails a running calibration", "[sim][pod]")
+{
+    auto config = fast_config();
+    config.flow = 10.0 * units::milli_litre / units::si::second;
+    configure(config);
+    run_test([this]() -> cm::Task<void> {
+        co_await connected();
+
+        const auto run = [this]() -> cm::Task<void> {
+            try {
+                std::ignore = co_await pod->dispenser_calibrate(kDispenser, 5s);
+                FAIL("Expected a PodReceiveError");
+            }
+            catch (const cm::PodReceiveError& error) {
+                CHECK(error.error_code() == ErrorCode::HardwareFault);
+            }
+        };
+        const auto stop = [this]() -> cm::Task<void> {
+            boost::asio::steady_timer timer{ctx, 200ms};
+            co_await timer.async_wait(exec::asio::use_sender);
+            co_await pod->force_safe_state();
+        };
+
+        std::vector<cm::Task<void>> tasks;
+        tasks.emplace_back(run());
         tasks.emplace_back(stop());
         co_await cm::join_all(std::move(tasks));
     });

@@ -59,6 +59,7 @@ export struct ClientStats
     int last_dispense_ml{};
     int weight_requests{};
     int max_outstanding_weight_requests{};
+    int emergency_stops{};
 };
 
 /**
@@ -247,6 +248,8 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
 
     Task<void> async_handle(std::shared_ptr<Client> /*self*/, InClientEmergencyStop msg)
     {
+        ++stats_.emergency_stops;
+
         // A tare or a load cell calibration carries on and replies by itself.
         std::vector<TransactionId::ValueType> interrupted;
         for (auto& state : dispensers_) {
@@ -455,26 +458,31 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
                                                  const std::chrono::milliseconds time_limit)
     {
         const auto start = Clock::now();
+        const auto end_of_run = start + time_limit;
+        auto last_tick = start;
         auto last_progress = start;
         units::Grams amount = 0 * units::si::gram;
         bool stalled = false;
 
-        while (Clock::now() - start < time_limit) {
-            const auto left = std::chrono::duration_cast<std::chrono::milliseconds>(time_limit - (Clock::now() - start));
-            const auto step = std::clamp<std::chrono::milliseconds>(left, 1ms, kTick);
-            co_await delay(step);
+        while (Clock::now() < end_of_run) {
+            const auto left = std::chrono::duration_cast<std::chrono::milliseconds>(end_of_run - Clock::now());
+            co_await delay(std::clamp<std::chrono::milliseconds>(left, 1ms, kTick));
             if (state.generation != generation) {
                 co_return std::nullopt;
             }
 
-            auto flowed = state.bottle.hose_blocked ? 0.0 * units::si::gram : std::min(flow_during(step), state.bottle.liquid);
+            // Timers run late on a busy machine, so the amount has to follow the clock and not the number of ticks.
+            const auto now = Clock::now();
+            const auto flow_until = std::min(now, end_of_run);
+            auto flowed = state.bottle.hose_blocked ? 0.0 * units::si::gram
+                                                    : std::min(flow_during(flow_until - last_tick), state.bottle.liquid);
+            last_tick = flow_until;
             if (target.has_value()) {
                 flowed = std::min(flowed, *target - amount);
             }
             state.bottle.liquid -= flowed;
             amount += flowed;
 
-            const auto now = Clock::now();
             if (flowed > 0.0 * units::si::gram) {
                 last_progress = now;
             }
@@ -558,10 +566,10 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
         return state.bottle.on_scale ? state.bottle.glass + state.bottle.liquid : 0.0 * units::si::gram;
     }
 
-    units::Grams flow_during(const std::chrono::milliseconds duration) const
+    units::Grams flow_during(const std::chrono::duration<double> duration) const
     {
         const double millilitres_per_second = config_.flow.numerical_value_in(units::milli_litre / units::si::second);
-        return millilitres_per_second * std::chrono::duration<double>{duration}.count() * units::si::gram;
+        return millilitres_per_second * duration.count() * units::si::gram;
     }
 
   private:

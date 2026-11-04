@@ -474,8 +474,8 @@ Task<void> ProcessContextBridge::async_process_recipe(Recipe recipe, const units
 
     // Failing a sibling only stops the waiting on the Station's side. The Pods keep pouring until they are told otherwise.
     const auto mix_failed = [this](const auto& error) {
-        display_ui_error(error, ui_, station_config_, ingredient_store_);
         async_scope_.spawn(pod_registry_.force_safe_state_all_pods());
+        display_ui_error(error, ui_, station_config_, ingredient_store_);
     };
 
     try {

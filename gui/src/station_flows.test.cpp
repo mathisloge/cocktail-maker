@@ -168,12 +168,26 @@ struct SimStation
 
     ~SimStation()
     {
-        registry.unregister_pod(pod);
-        scope.request_stop();
-        cm::run_until_complete(ctx, scope.join());
+        stop();
         fill_levels.flush();
         std::filesystem::remove(file);
     }
+
+    /// Ends all work, as `Application::shutdown` does. A station with a bridge has to call it before the bridge is destroyed.
+    void stop()
+    {
+        if (stopped) {
+            return;
+        }
+        stopped = true;
+        registry.unregister_pod(pod);
+        scope.request_stop();
+        cm::run_until_complete(ctx, scope.join());
+        ctx.restart();
+        ctx.poll();
+    }
+
+    bool stopped = false;
 
     void pump_once()
     {
@@ -240,6 +254,8 @@ TEST_CASE_METHOD(SimStation, "A mix pours the rest after a refill", "[flow]")
 {
     auto& bottle = client->bottle(rum_address.dispenser_id);
     bottle.liquid = 30 * units::si::gram;
+    client->power_cycle_load_cells();
+    fill_levels.empty_bottle_tared(rum_address);
     auto adapter = make_adapter();
     bool done = false;
 
@@ -247,6 +263,7 @@ TEST_CASE_METHOD(SimStation, "A mix pours the rest after a refill", "[flow]")
 
     REQUIRE(pump_until([this]() { return popup_open(); }));
     CHECK(popup_text() == "Rum nachfüllen. Bitte Personal rufen.");
+    CHECK(fill_levels.record(rum_address)->suspected_empty);
     CHECK_FALSE(done);
 
     bottle.liquid = 500 * units::si::gram;
@@ -255,6 +272,8 @@ TEST_CASE_METHOD(SimStation, "A mix pours the rest after a refill", "[flow]")
     REQUIRE(pump_until([&done]() { return done; }));
     CHECK(bottle.liquid == 430 * units::si::gram);
     CHECK_FALSE(popup_open());
+    CHECK_FALSE(fill_levels.record(rum_address)->suspected_empty);
+    CHECK(fill_levels.record(rum_address)->capacity.has_value());
 }
 
 TEST_CASE_METHOD(SimStation, "Confirming without a refill asks again and leaves the level alone", "[flow]")
@@ -270,6 +289,8 @@ TEST_CASE_METHOD(SimStation, "Confirming without a refill asks again and leaves 
 
     REQUIRE(pump_until([this]() { return popup_open(); }));
     const auto before = fill_levels.record(rum_address);
+    REQUIRE(before.has_value());
+    CHECK(before->suspected_empty);
 
     ui->invoke_manual_command_confirmed();
     REQUIRE(pump_until([this]() { return !popup_open(); }));
@@ -391,9 +412,18 @@ struct WarningStation : SimStation
     {
         use_recipe("drink", rum);
         bridge.init();
-        ui->global<cm::gui::StationStateContext>().on_navigate_to([this](cm::gui::Page page) { last_page = page; });
+        ui->global<cm::gui::StationStateContext>().on_navigate_to([this](cm::gui::Page page) {
+            const auto previous = last_page.value_or(cm::gui::Page::MixGlassSelectionPage);
+            last_page = page;
+            ui->global<cm::gui::StationStateContext>().invoke_navigated_to(previous, page);
+        });
         ui->global<cm::gui::ProcessContext>().set_boost(0);
         ui->global<cm::gui::ProcessContext>().set_glass_volume(250);
+    }
+
+    ~WarningStation()
+    {
+        stop();
     }
 
     void use_recipe(const std::string& id, const cm::IngredientId& ingredient)
@@ -515,6 +545,22 @@ TEST_CASE_METHOD(WarningStation, "A pod that is gone gives no warning and the mi
     CHECK_FALSE(warning_open());
 }
 
+TEST_CASE_METHOD(WarningStation, "Abbrechen in the refill dialog closes it and stops the pods once", "[flow][warning]")
+{
+    client->bottle(rum_address.dispenser_id).liquid = 0 * units::si::gram;
+    confirm_glass();
+    REQUIRE(pump_until([this]() { return popup_open(); }));
+    REQUIRE(client->stats().emergency_stops == 0);
+
+    ui->global<cm::gui::ProcessContext>().invoke_abort();
+
+    REQUIRE(pump_until(
+        [this]() { return !popup_open() && client->stats().emergency_stops == 1 && last_page == cm::gui::Page::MixErrorPage; }));
+    pump_for(100ms);
+    CHECK(client->stats().emergency_stops == 1);
+    CHECK_FALSE(popup_open());
+}
+
 TEST_CASE_METHOD(WarningStation, "The confirm button waits for the check", "[flow][warning]")
 {
     fill_rum_to(200);
@@ -549,6 +595,11 @@ struct CalibrationStation : SimStation
         bridge.init();
         gui_pod.id = slint::SharedString{rum_address.pod_id.raw()};
         gui_dispenser.id = rum_address.dispenser_id.raw();
+    }
+
+    ~CalibrationStation()
+    {
+        stop();
     }
 
     const cm::gui::DispenserCalibrationContext& context() const
@@ -733,7 +784,11 @@ struct FailingMixStation
         }});
 
         bridge.init();
-        ui->global<cm::gui::StationStateContext>().on_navigate_to([this](cm::gui::Page page) { last_page = page; });
+        ui->global<cm::gui::StationStateContext>().on_navigate_to([this](cm::gui::Page page) {
+            const auto previous = last_page.value_or(cm::gui::Page::MixGlassSelectionPage);
+            last_page = page;
+            ui->global<cm::gui::StationStateContext>().invoke_navigated_to(previous, page);
+        });
 
         auto active = ui->global<cm::gui::RecipeContext>().get_active_recipe();
         active.id = "drink";
@@ -768,11 +823,15 @@ struct FailingMixStation
 };
 } // namespace
 
-TEST_CASE_METHOD(FailingMixStation, "A failed mix stops the pods and shows the error page", "[flow]")
+TEST_CASE_METHOD(FailingMixStation, "A failed mix stops the pods once and shows the error page", "[flow]")
 {
     ui->global<cm::gui::ProcessContext>().invoke_process_active_recipe();
 
     REQUIRE(pump_until([this]() { return pod->stops == 1 && last_page == cm::gui::Page::MixErrorPage; }));
+
+    const auto end = std::chrono::steady_clock::now() + 100ms;
+    pump_until([this, end]() { return pod->stops != 1 || std::chrono::steady_clock::now() >= end; });
+    CHECK(pod->stops == 1);
 }
 
 TEST_CASE_METHOD(FailingMixStation, "A stop that times out after a failed mix still shows the error page", "[flow]")

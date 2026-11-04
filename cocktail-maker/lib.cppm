@@ -10,6 +10,7 @@ export import :dispenser;
 export import :pod_types;
 export import :pod_protocol_session;
 export import :pod_discovery;
+export import :pod_algorithms;
 export import :pod_registry;
 export import :pod_dispatcher;
 export import :pod;

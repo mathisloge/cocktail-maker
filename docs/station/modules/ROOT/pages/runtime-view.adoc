@@ -22,6 +22,9 @@ sequenceDiagram
     Domain->>UI: Pod connected
 ....
 
+Once a Pod is connected, the Station also brings the fill level of its dispensers up to date. See
+<<A Pod Comes Back After a Power Loss>>.
+
 == A Guest Mixes a Drink
 
 A guest browses the recipe catalog, selects a recipe and, if needed, a glass. The Station scales the
@@ -37,8 +40,16 @@ sequenceDiagram
     participant PodComm as Pod Communication
 
     Guest->>UI: Select recipe and glass, start mix
-    UI->>Domain: Start recipe execution
+    UI->>Domain: Check the fill levels
     Domain->>Domain: Scale recipe to chosen glass
+    Domain->>PodComm: Read the weight of each dispenser involved
+    PodComm-->>Domain: Readings
+    opt An ingredient may not be enough
+        Domain->>UI: Warning
+        UI->>Guest: Show the ingredients and the amounts
+        Guest->>UI: Start anyway or cancel
+    end
+    UI->>Domain: Start recipe execution
     loop Each ingredient
         Domain->>PodComm: Dispense ingredient
         PodComm-->>Domain: Dispensed
@@ -47,15 +58,83 @@ sequenceDiagram
     UI->>Guest: Show success screen
 ....
 
-If a dispenser is empty or the guest cancels partway through, the Station stops the remaining actions,
-brings every involved Pod into a safe state, and returns the guest to a known-good screen naming the
+The warning leaves a reserve of 20 mL, because the fill level is only a guide.
+It doesn't block a drink, and it stays out of the way for a dispenser with no known fill level.
+
+A Pod reports a pour that came up short as a pour with less than the requested amount, not as an
+error.
+There are two reasons for that, and protocol 2.0.0 doesn't say which one it was, so the Station goes by how long the pour took.
+
+[cols="1,3", options="header"]
+|===
+| Pour ended | What the Station does
+
+| After 30 s or more
+| The Pod's time limit ended it. The Station pours the rest without asking, unless the pour moved less
+than 20 mL, which points at a problem.
+
+| Earlier
+| The bottle ran empty or the pump is blocked, which look the same. The Station asks for a refill and
+pours the rest. See <<A Bottle Runs Empty and Gets Refilled>>.
+|===
+
+If a dispense fails or the guest cancels partway through, the Station stops the remaining actions,
+sends an `EmergencyStop` to every Pod, and returns the guest to a known-good screen naming the
 affected ingredient rather than a generic failure.
+
+== A Bottle Runs Empty and Gets Refilled
+
+A short pour only makes the Station suspect that the bottle is empty.
+It can't store 0 yet, because a blocked pump looks just the same and the bottle may still be full.
+The suspected bottle counts as empty for the warning, and the maintenance area says "vermutlich leer".
+
+[mermaid, target="runtime-bottle-refilled", format="svg"]
+....
+sequenceDiagram
+    actor Person
+    participant UI
+    participant Domain as Domain Model
+    participant PodComm as Pod Communication
+
+    PodComm-->>Domain: Pour ended short
+    Domain->>PodComm: Read the weight
+    PodComm-->>Domain: Reading
+    Note over Domain: Suspected empty, a refill counts from this reading
+    Domain->>UI: Ask for a refill
+    UI->>Person: Name the ingredient, ask to call the staff
+    Person->>UI: Done
+    Note over Domain: Wait 1 s for the load to settle
+    Domain->>PodComm: Read the weight
+    PodComm-->>Domain: Reading
+    alt Risen by at least 50 g
+        Note over Domain: The rise is the fill level and the new 100 %
+    else Hardly any rise
+        Note over Domain: Nothing changes
+    end
+    Domain->>PodComm: Dispense the rest
+....
+
+The dialog needs no PIN, because a guest may stand at the machine.
+Confirming without a refill changes nothing and only costs a dry run of about 6.5 s, after which the
+dialog comes back.
+The dialog also offers to cancel the drink.
+If the next pour doesn't end short, the suspicion was wrong and goes away by itself.
+
+The maintenance area has a button of its own for each dispenser, behind the operator PIN.
+A rise counts as above.
+Without a rise, the operator is saying that the bottle is full, so the fill level goes back to the last 100 %.
+This covers a bottle refilled while the Station was off, which the correction at connect can't see.
+
+A bottle topped up without any button still shows, because the fill level always follows the reading.
 
 == An Operator Calibrates a Dispenser
 
-An operator authenticates, opens the maintenance area, and recalibrates a specific dispenser's load
-cell or pump. Each calibration step follows the Request/Acknowledgement/Event pattern from
-xref:system::protocol.adoc[], since calibration is a longer-running physical action.
+An operator authenticates, opens the maintenance area, and works through up to three steps for a
+specific dispenser.
+The load cell comes first, because the dispenser calibration measures with it, but it only needs doing
+once, when the load cell is fitted.
+So the dispenser calibration can run on its own.
+The exchanges follow the patterns from xref:system::protocol.adoc[].
 
 [mermaid, target="runtime-operator-calibrates", format="svg"]
 ....
@@ -66,12 +145,85 @@ sequenceDiagram
     participant PodComm as Pod Communication
 
     Operator->>UI: Authenticate, open dispenser calibration
-    UI->>Domain: Start calibration for dispenser
-    Domain->>PodComm: Calibration command
+
+    Note over Operator,PodComm: Load cell, once when it is fitted
+    Operator->>UI: Clear the scale, start tare
+    UI->>Domain: Tare load cell
+    Domain->>PodComm: Tare command
+    PodComm-->>Domain: Finished
+    Note over Domain: The zero point moved, so the fill level is unknown
+    Operator->>UI: Place known weight, enter it, start calibration
+    UI->>Domain: Calibrate load cell
+    Domain->>PodComm: Calibration command with the weight
+    PodComm-->>Domain: Finished
+    Domain->>PodComm: Read the weight
+    PodComm-->>Domain: Reading
+    Domain->>UI: Show the reading to check against the weight
+
+    Note over Operator,PodComm: Empty bottle
+    Operator->>UI: Remove the weight, place the empty bottle, start tare
+    UI->>Domain: Tare load cell
+    Domain->>PodComm: Tare command
+    PodComm-->>Domain: Finished
+    Note over Domain: The fill level is 0, and the scale reads the liquid alone from now on
+
+    Note over Operator,PodComm: Dispenser, with a filled bottle
+    Operator->>UI: Choose run time, start run
+    UI->>Domain: Calibrate dispenser
+    Domain->>PodComm: Calibration command with the run time
     PodComm-->>Domain: Acknowledged
-    Note over PodComm: Pod performs calibration
-    PodComm-->>Domain: Calibration finished
-    Domain->>UI: Show calibration result
+    Note over PodComm: Pod runs the dispenser and measures at rest
+    PodComm-->>Domain: Measured amount
+    Domain->>UI: Show measured amount
 ....
+
+The Station only chooses the run time and shows the measured amount.
+The Pod derives the calibration from that run, uses it at once, and keeps it across power cycles.
+So the Station needs to know nothing about motor steps, and the same flow works for pumps and valves.
+A new run replaces the calibration.
+
+The run pours real liquid, so a glass has to stand under the dispenser, and the operator can stop it.
+A longer run gives a more accurate calibration, because the load cell reads to about 1 g.
+That is about 5 % at 20 mL and about 2 % at 50 mL.
+The run time is 1 s to 30 s and starts at 15 s, and the Station hints at a longer run below 50 mL.
+A run where next to nothing came out ends with a `DispenserEmpty` error and leaves the previous
+calibration in place.
+That can also be a run that was simply too short for this dispenser.
+
+== A Pod Comes Back After a Power Loss
+
+The Station owns the fill level of every dispenser (xref:system:adr:007-calibration-and-fill-level.adoc[ADR-007]).
+A load cell takes whatever stands on it as its zero point at every power up, so a half full bottle
+then reads about 0 g.
+Both calibrations survive, and pouring keeps working, because the Pod only looks at how far the weight
+falls.
+Only the fill level needs a correction.
+
+[mermaid, target="runtime-pod-power-loss", format="svg"]
+....
+sequenceDiagram
+    participant PodComm as Pod Communication
+    participant Domain as Domain Model
+
+    Note over PodComm: Load cell powers up, the current load becomes 0 g
+    PodComm->>Domain: Pod connected
+    Domain->>PodComm: Read the weight of each dispenser
+    PodComm-->>Domain: Reading
+    Note over Domain: correction = last fill level minus reading
+    Note over Domain: fill level = reading plus correction
+....
+
+When only the Pod's controller restarted, the load cells kept their zero point.
+The correction then comes out as it was before, and the fill level stays right.
+A read that fails at connect is made up for at the next read.
+A dispenser without a load cell has no fill level, and that is normal.
+
+The Station therefore:
+
+* Keeps the last fill level of every dispenser on disk, together with the last 100 % and the lowest
+  level since then.
+* Stores a fill level of 0 after taring an empty bottle.
+* Writes that file in one step, on a thread of its own, so a power loss leaves a whole file and nothing
+  blocks the Pods.
 
 Continue with xref:deployment-view.adoc[].

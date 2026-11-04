@@ -22,7 +22,8 @@ SHOW_LEGEND()
 ....
 
 .Domain Model & Application
-* Owns the recipe, ingredient, and glass catalogs, and the persisted ingredient-to-dispenser mapping.
+* Owns the recipe, ingredient, and glass catalogs, the persisted ingredient-to-dispenser mapping, and
+  the persisted fill level of each dispenser.
 * Tracks which Pods are connected and what each one reports about itself.
 * Turns a selected recipe into a sequence of dispensing actions and coordinates their execution.
 
@@ -45,11 +46,14 @@ SHOW_LEGEND()
 
 * *Catalogs* — the recipe, ingredient, and glass data loaded from the local data files described in
   xref:context-and-scope.adoc[].
-* *Station configuration and state* — the persisted ingredient-to-dispenser mapping, and the live,
-  in-memory state of each connected Pod that the UI observes.
+* *Station configuration and state* — the persisted ingredient-to-dispenser mapping and fill levels,
+  and the live, in-memory state of each connected Pod that the UI observes.
 * *Pod registry and dispatch* — tracks connected Pods and routes a command to the right one.
 * *Recipe execution* — scales and adjusts a recipe for the chosen glass, and executes it as a sequence
-  of commands dispatched to the owning Pods, reporting progress as it goes.
+  of commands dispatched to the owning Pods, reporting progress as it goes. A single pour asks for a
+  refill and pours the rest when it comes up short, and leaves the dialog itself to the UI.
+* *Fill level* — works out what is in each bottle from the weight readings, corrects that when a Pod
+  connects, and persists it. It also says which ingredients may not be enough for a drink.
 
 == Level 2: User Interface
 
@@ -63,20 +67,20 @@ Model.
 | Concern | Responsibility
 
 | Navigation & Pod Status
-| Owns which screen is active, tracks live Pod connection state for display, and gates the operator
-maintenance area behind PIN authentication.
+| Owns which screen is active, tracks live Pod connection state and fill levels for display, and gates
+the operator maintenance area behind PIN authentication.
 
 | Recipe Browsing & Mixing
-| Publishes the recipe and ingredient catalog to the guest UI and drives recipe execution when a guest
-starts a mix.
+| Publishes the recipe and ingredient catalog to the guest UI, warns when a drink may not fit, and
+drives recipe execution when a guest starts a mix.
 
 | Glass Configuration
 | Exposes which glasses and pour volumes a guest may currently choose from, and lets an operator change
 that set.
 
 | Dispenser Calibration
-| Drives load-cell taring, reference-weight calibration, and pump-step calibration for a specific
-dispenser, for the operator maintenance flow.
+| Drives load-cell taring, reference-weight calibration, and the timed dispenser calibration for a
+specific dispenser, for the operator maintenance flow.
 |===
 
 Operator authentication itself, PIN verification and attempt-based lockout, is a small policy

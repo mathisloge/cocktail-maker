@@ -25,8 +25,9 @@ app --> pod2 : USB CDC
 app --> podN : USB CDC
 ....
 
-All data the Station persists, the recipe/ingredient/glass catalog and the ingredient-to-dispenser
-mapping, lives as plain files under the service's working directory rather than a database server.
+All data the Station persists, the recipe/ingredient/glass catalog, the ingredient-to-dispenser mapping
+and the fill levels, lives as plain files under the service's working directory rather than a database
+server.
 This keeps the deployment self-contained on a single device, at the cost of tying correct operation to
 the service always being started from the intended working directory. See
 xref:risks-and-technical-debt.adoc[].

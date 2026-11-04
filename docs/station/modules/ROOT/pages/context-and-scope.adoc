@@ -45,7 +45,11 @@ else in this document is scoped inside the "Station" box above.
 
 | Persisted ingredient-to-dispenser mapping
 | Filesystem, read and write
-| The one piece of Station-local configuration, changed by an operator and persisted across restarts.
+| Station-local configuration, changed by an operator and persisted across restarts.
+
+| Persisted fill levels
+| Filesystem, read and write
+| The last known fill level of each dispenser, persisted across restarts.
 
 | Touch display
 | Guest and Operator

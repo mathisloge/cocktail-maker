@@ -46,7 +46,7 @@ Station per machine.
 - Runs the host application (UI, recipe logic, session management)
 - Maintains USB connections to all Pods
 - Sends dispensing commands and receives status/events from Pods
-- Owns the domain model: recipes, ingredients, calibration state
+- Owns the domain model: recipes, ingredients, fill levels
 
 ### Pod
 
@@ -58,6 +58,7 @@ unique Pod ID assigned at connection time.
 
 - Controls its own actuators (steppers, servos, valves)
 - Reports weight measurements via load cells
+- Keeps its load cell and dispenser calibration across power cycles
 - Responds to Station requests
 - Emits events (calibration complete, error conditions, etc.)
 

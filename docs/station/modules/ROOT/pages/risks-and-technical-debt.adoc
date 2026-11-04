@@ -7,9 +7,25 @@ xref:adr:002-cpp-module-compilation-model.adoc[ADR-002], and
 xref:adr:003-asynchronous-execution-model.adoc[ADR-003].
 
 * *Working-directory-relative persistence:* both the read-only recipe/ingredient/glass data and the
-  read-write ingredient-to-dispenser mapping are located relative to the process's current working
-  directory rather than a fixed, installed location. Starting the Station from an unintended working
-  directory silently changes, or loses access to, its data instead of failing loudly.
+  read-write ingredient-to-dispenser mapping and fill levels are located relative to the process's
+  current working directory rather than a fixed, installed location. Starting the Station from an
+  unintended working directory silently changes, or loses access to, its data instead of failing
+  loudly.
+* *Fill level while the Station is off:* the Station can only correct a fill level from what it last
+  stored. A bottle refilled while the Station is off stays unnoticed until someone corrects its fill
+  level.
+* *Load cell drift:* a load cell's reading wanders slowly even with nothing on the scale. Up to about
+  20 g in an hour has been measured, on an unloaded and uncalibrated cell. A pour lasts seconds and
+  doesn't notice, but a fill level kept over hours can be that far off. The Station doesn't compensate
+  for it, and the warning before a drink only leaves a reserve of 20 mL.
+* *Telling why a pour ended short:* protocol 2.0.0 reports only the amount, so the Station goes by the
+  duration and has to know the Pod's limit of 30 s. The next protocol release carries the reason, and
+  this goes away. Misjudging a pour costs about 7 s until the correct prompt.
+* *A false empty followed by a small top-up:* the Station takes the top-up for the whole content of the
+  bottle, as it can't tell this from a real refill. The warning then shows too little until the next
+  refill or the button in the maintenance area.
+* *`PodId` isn't unique yet:* every Pod reports the same name until the firmware changes that, and the
+  ingredient assignment and the fill levels hang on it. A second Pod would collide with the first.
 * *Simulated hardware ships in the same binary as production:* the compile-time switch between
   simulated and real Pods only changes which code path runs. The simulator code itself is always
   linked into every build, including the one shipped to a real machine. This has no functional effect

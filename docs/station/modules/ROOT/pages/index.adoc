@@ -24,8 +24,7 @@ and turns a selected recipe into a sequence of dispensing commands sent to those
 == Quality Goals
 
 The quality goals driving the Station's architecture are the machine-wide goals defined in
-xref:system::quality-goals.adoc[]. xref:quality-requirements.adoc[] refines them into concrete
-scenarios for the Station application specifically.
+xref:system::quality-goals.adoc[].
 
 == Stakeholders
 

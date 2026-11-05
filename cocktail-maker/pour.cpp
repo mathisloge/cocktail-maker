@@ -34,7 +34,9 @@ Task<void> pour_with_refill(Dispenser& dispenser,
 
     for (;;) {
         auto report = co_await dispense_or_empty(dispenser, remaining);
-        if (report.outcome == DispenseOutcome::timed_out && report.amount < kMinTimedOutProgress) {
+        // Trims running out says nothing about an empty bottle, so it is treated like the time limit.
+        const bool can_continue = report.outcome == DispenseOutcome::timed_out || report.outcome == DispenseOutcome::still_short;
+        if (can_continue && report.amount < kMinTimedOutProgress) {
             report.outcome = DispenseOutcome::bottle_empty;
         }
         co_await fill_levels.pour_finished(address, dispenser, report);

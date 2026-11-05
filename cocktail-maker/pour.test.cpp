@@ -117,6 +117,29 @@ TEST_CASE_METHOD(PourFixture, "The Pod's time limit continues without a prompt",
     CHECK(prompts == 0);
 }
 
+TEST_CASE_METHOD(PourFixture, "A pour still short after its trims continues without a prompt", "[pour]")
+{
+    dispenser.steps.emplace_back(report(37, still_short));
+    dispenser.steps.emplace_back(report(3, completed));
+
+    pour(40);
+
+    CHECK(requests() == std::vector<long>{40, 3});
+    CHECK(prompts == 0);
+}
+
+TEST_CASE_METHOD(PourFixture, "A pour still short that barely moved prompts", "[pour]")
+{
+    tracker.empty_bottle_tared(kAddress);
+    dispenser.steps.emplace_back(report(5, still_short));
+    dispenser.steps.emplace_back(report(35, completed));
+
+    pour(40);
+
+    CHECK(requests() == std::vector<long>{40, 35});
+    CHECK(prompts == 1);
+}
+
 TEST_CASE_METHOD(PourFixture, "A pour that barely moved in its time limit prompts", "[pour]")
 {
     tracker.empty_bottle_tared(kAddress);

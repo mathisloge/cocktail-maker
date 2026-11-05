@@ -80,12 +80,12 @@ struct SimPodFixture
     }
 
     /// Replaces the client and the pod, so it has to be called before `run_test`.
-    void configure(cm::sim::ClientConfig config, std::chrono::milliseconds pour_limit = cm::kPodPourLimit)
+    void configure(cm::sim::ClientConfig config)
     {
         client = std::make_shared<cm::sim::Client<Socket>>(scope, "SimPod", cm::Version{.major = 2}, std::move(config));
         Socket pod_socket{ctx};
         boost::asio::local::connect_pair(client->socket(), pod_socket);
-        pod = std::make_shared<cm::Pod>(std::make_unique<cm::SocketIoStream<Socket>>(std::move(pod_socket)), pour_limit);
+        pod = std::make_shared<cm::Pod>(std::make_unique<cm::SocketIoStream<Socket>>(std::move(pod_socket)));
     }
 
     auto connected()
@@ -219,11 +219,24 @@ TEST_CASE_METHOD(SimPodFixture, "A pour over the time limit reports the limit", 
     auto config = fast_config();
     config.pour_limit = 200ms;
     config.flow = 100.0 * units::milli_litre / units::si::second;
-    configure(config, 200ms);
+    configure(config);
     run_test([this]() -> cm::Task<void> {
         co_await connected();
         const auto report = co_await pod->dispense(kDispenser, 100 * units::milli_litre);
         CHECK(report.outcome == cm::DispenseOutcome::timed_out);
+    });
+}
+
+TEST_CASE_METHOD(SimPodFixture, "A pour that used up its trims reports still short", "[sim][pod]")
+{
+    auto config = fast_config();
+    config.trim_shortfall = 3 * units::si::gram;
+    configure(config);
+    run_test([this]() -> cm::Task<void> {
+        co_await connected();
+        const auto report = co_await pod->dispense(kDispenser, 40 * units::milli_litre);
+        CHECK(report.amount == 37 * units::milli_litre);
+        CHECK(report.outcome == cm::DispenseOutcome::still_short);
     });
 }
 

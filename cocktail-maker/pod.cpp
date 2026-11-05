@@ -1,7 +1,9 @@
 module;
 #include <boost/asio/steady_timer.hpp>
+#include <comms/ErrorStatus.h>
 #include <exec/asio/use_sender.hpp>
 #include <exec/when_any.hpp>
+#include <proto/field/DispenseResultCommon.h>
 #include <proto/field/ErrorCodeCommon.h>
 #include <proto/field/LedEffectCommon.h>
 #include <spdlog/spdlog.h>
@@ -31,15 +33,24 @@ constexpr std::chrono::milliseconds kDispenseFinishedTimeout = 35s;
 constexpr std::chrono::milliseconds kCalibrationAllowance = 3s;
 } // namespace
 
-DispenseOutcome classify_dispense(const units::Litre requested,
-                                  const units::Litre measured,
-                                  const std::chrono::milliseconds elapsed,
-                                  const std::chrono::milliseconds pour_limit)
+DispenseOutcome to_dispense_outcome(const proto::field::DispenseResultVal result)
 {
-    if (requested - measured <= kDispenseTolerance) {
+    using Result = proto::field::DispenseResultCommon::ValueType;
+    switch (result) {
+    case Result::Completed:
         return DispenseOutcome::completed;
+    case Result::BottleEmpty:
+        return DispenseOutcome::bottle_empty;
+    case Result::TimedOut:
+        return DispenseOutcome::timed_out;
+    case Result::StillShort:
+        return DispenseOutcome::still_short;
+    case Result::ValuesLimit:
+        break;
     }
-    return elapsed >= pour_limit ? DispenseOutcome::timed_out : DispenseOutcome::bottle_empty;
+    // Only a Pod on another protocol release can send this, and guessing could pour the wrong amount.
+    throw ProtocolError{comms::ErrorStatus::InvalidMsgData,
+                        std::format("Unknown dispense result {}", std::to_underlying(result))};
 }
 
 DispenserPodImpl::DispenserPodImpl(std::weak_ptr<IPod> pod, DispenserId dispenser_id, std::string logger_name)
@@ -235,10 +246,9 @@ auto send_action_with_response(PodProtocolSession& session,
     }
 }
 
-Pod::Pod(std::unique_ptr<AnyIoStream> stream, const std::chrono::milliseconds pour_limit)
+Pod::Pod(std::unique_ptr<AnyIoStream> stream)
     : session_{std::move(stream)}
     , device_ready_{session_.get_executor()}
-    , pour_limit_{pour_limit}
 {
 }
 
@@ -319,14 +329,11 @@ Task<DispenseReport> Pod::dispense(DispenserId dispenser_id, units::Litre volume
     tx.field_dispenserId().setValue(dispenser_id.raw());
     tx.field_millilitre().setValue(millilitres);
 
-    const auto start = std::chrono::steady_clock::now();
     const InDispenseFinished finish_result = co_await send_action_with_response<InDispenseFinished>(
         session_, std::move(tx), kDispenseFinishedTimeout, dispenser_env(this, dispenser_id, kActionAckTimeout));
-    const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
 
-    const units::Litre measured = finish_result.field_millilitre().value() * units::milli_litre;
-    const units::Litre requested = millilitres * units::milli_litre;
-    co_return DispenseReport{.amount = measured, .outcome = classify_dispense(requested, measured, elapsed, pour_limit_)};
+    co_return DispenseReport{.amount = finish_result.field_millilitre().value() * units::milli_litre,
+                             .outcome = to_dispense_outcome(finish_result.field_dispenseResult().value())};
 }
 
 Task<units::Litre> Pod::dispenser_calibrate(const DispenserId dispenser_id, const std::chrono::milliseconds run_time)

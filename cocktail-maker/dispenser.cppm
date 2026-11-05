@@ -39,6 +39,8 @@ export enum class DispenseOutcome
     completed,
     bottle_empty,
     timed_out,
+    /// The Pod used up its trims and the amount is still below the target.
+    still_short,
 };
 
 /// What a pour really delivered, measured at rest, and why it ended.

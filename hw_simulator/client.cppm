@@ -41,6 +41,8 @@ export struct ClientConfig
     std::optional<DispenserId> without_load_cell{DispenserId{4}};
     std::optional<std::chrono::milliseconds> auto_refill_after{};
     units::Grams refill_to{500 * units::si::gram};
+    /// Makes every pour stop this far short and report that its trims are used up.
+    std::optional<units::Grams> trim_shortfall{};
 };
 
 /// A bottle on a scale. Tests change it directly, as nothing else reaches the simulated pod but protocol messages.
@@ -91,6 +93,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
     using DispenseFinished = proto::message::DispenseFinished<Message, Options>;
     using WeightResponse = proto::message::LoadCellWeightResponse<Message, Options>;
     using ErrorCode = proto::field::ErrorCodeCommon::ValueType;
+    using DispenseResult = proto::field::DispenseResultCommon::ValueType;
     using Clock = std::chrono::steady_clock;
 
     static constexpr int kNumPumps = 5;
@@ -120,6 +123,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
     {
         units::Grams amount;
         bool stalled;
+        bool reached_target;
     };
 
     log::Logger logger_;
@@ -425,15 +429,28 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
         }
         co_await async_send(Ack{}, trid);
 
-        const auto result = co_await run_dispenser(state, generation, requested * units::si::gram, config_.pour_limit);
+        const units::Grams target = requested * units::si::gram - config_.trim_shortfall.value_or(units::Grams{});
+        const auto result = co_await run_dispenser(state, generation, target, config_.pour_limit);
         if (!result.has_value()) {
             co_return;
         }
 
-        // An empty bottle isn't an error. The amount tells the Station that it came up short.
+        // An empty bottle isn't an error. The result tells the Station why the pour came up short.
         state.activity = Activity::idle;
         DispenseFinished finished{};
         finished.field_millilitre().setValue(std::lround(result->amount.numerical_value_in(units::si::gram)));
+        if (result->stalled) {
+            finished.field_dispenseResult().setValue(DispenseResult::BottleEmpty);
+        }
+        else if (not result->reached_target) {
+            finished.field_dispenseResult().setValue(DispenseResult::TimedOut);
+        }
+        else if (config_.trim_shortfall.has_value()) {
+            finished.field_dispenseResult().setValue(DispenseResult::StillShort);
+        }
+        else {
+            finished.field_dispenseResult().setValue(DispenseResult::Completed);
+        }
         co_await async_send(std::move(finished), trid);
         refill_if_dry(self, id);
     }
@@ -463,6 +480,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
         auto last_progress = start;
         units::Grams amount = 0 * units::si::gram;
         bool stalled = false;
+        bool reached_target = false;
 
         while (Clock::now() < end_of_run) {
             const auto left = std::chrono::duration_cast<std::chrono::milliseconds>(end_of_run - Clock::now());
@@ -487,6 +505,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
                 last_progress = now;
             }
             if (target.has_value() && amount >= *target) {
+                reached_target = true;
                 break;
             }
             if (now - last_progress >= config_.stall) {
@@ -499,7 +518,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
         if (state.generation != generation) {
             co_return std::nullopt;
         }
-        co_return RunResult{.amount = amount, .stalled = stalled};
+        co_return RunResult{.amount = amount, .stalled = stalled, .reached_target = reached_target};
     }
 
     Task<void> send_nak(const TransactionId::ValueType transaction_id, const ErrorCode error)

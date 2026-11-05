@@ -14,22 +14,8 @@ import :dispenser;
 using namespace std::chrono_literals;
 
 namespace cm {
-/// A Pod stops a pour after this time at the latest, and the amount it reports is then short.
-export inline constexpr std::chrono::milliseconds kPodPourLimit{30s};
-
 /// How far a pour may miss its amount: about 1 g from the Pod plus 0.5 mL of rounding.
 export inline constexpr units::Litre kDispenseTolerance = 1.5 * units::milli_litre;
-
-/**
- * Tells why a pour ended, from what is known on protocol 2.0.0.
- *
- * `DispenseFinished` carries only the amount, so the duration has to tell the Pod's time limit from an empty bottle. The
- * next protocol release carries the reason, and this function goes away with it.
- */
-export DispenseOutcome classify_dispense(units::Litre requested,
-                                         units::Litre measured,
-                                         std::chrono::milliseconds elapsed,
-                                         std::chrono::milliseconds pour_limit = kPodPourLimit);
 
 export class PodReceiveError : public std::runtime_error
 {
@@ -181,7 +167,7 @@ export class Valve final : public DispenserPodImpl
 export class Pod : public IPod, public std::enable_shared_from_this<Pod>
 {
   public:
-    explicit Pod(std::unique_ptr<AnyIoStream> stream, std::chrono::milliseconds pour_limit = kPodPourLimit);
+    explicit Pod(std::unique_ptr<AnyIoStream> stream);
 
     PodId pod_id() const override;
 
@@ -215,6 +201,5 @@ export class Pod : public IPod, public std::enable_shared_from_this<Pod>
     std::unique_ptr<PodState> state_{std::make_unique<NoopPodState>()};
     PodProtocolSession session_;
     AwaitableBool device_ready_;
-    std::chrono::milliseconds pour_limit_;
 };
 } // namespace cm

@@ -38,6 +38,7 @@ export using InDeviceInfoResponse = proto::message::DeviceInfoResponse<InMessage
 export using InDispenserFinishedCalibrationResponse = proto::message::DispenserFinishedCalibrationResponse<InMessage>;
 export using InLoadCellWeightResponse = proto::message::LoadCellWeightResponse<InMessage>;
 export using InDispenseFinished = proto::message::DispenseFinished<InMessage>;
+export using InDispenseProgress = proto::message::DispenseProgress<InMessage>;
 
 export using OutMessage = proto::FrameInterface<comms::option::app::WriteIterator<std::uint8_t*>,
                                                 comms::option::app::LengthInfoInterface,

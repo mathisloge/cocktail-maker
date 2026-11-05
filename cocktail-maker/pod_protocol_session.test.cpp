@@ -416,3 +416,25 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
         CHECK(session->generate_new_transaction_id() == next);
     });
 }
+
+TEST_CASE_METHOD(PodProtocolSessionTestFixture,
+                 "PodProtocolSession - Progress Never Pushes The Final Reply Out",
+                 "[receive][transaction]")
+{
+    run_test([this]() -> cm::Task<void> {
+        auto ack = session->async_receive<cm::InAck, cm::InNak>(kTestTransaction, 500ms);
+        auto final_reply = session->async_receive<cm::InDispenseFinished, cm::InNak>(kTestTransaction, 500ms);
+
+        auto bytes = encode_message(cm::InAck{}, kTestTransaction);
+        for (int i = 0; i < 3; ++i) {
+            std::ranges::copy(encode_message(cm::InDispenseProgress{}, kTestTransaction), std::back_inserter(bytes));
+        }
+        std::ranges::copy(encode_message(cm::InDispenseFinished{}, kTestTransaction), std::back_inserter(bytes));
+        co_await boost::asio::async_write(client_socket, boost::asio::buffer(bytes), exec::asio::use_sender);
+
+        const auto first = co_await std::move(ack);
+        CHECK(std::holds_alternative<cm::InAck>(first));
+        const auto second = co_await std::move(final_reply);
+        CHECK(std::holds_alternative<cm::InDispenseFinished>(second));
+    });
+}

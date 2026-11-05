@@ -231,6 +231,12 @@ Task<void> PodProtocolSession::read_loop()
 
             SPDLOG_LOGGER_TRACE(logger_, "Received message '{}' with transaction id '{}'", msg->name(), transaction_id);
 
+            // Nothing uses progress yet, and four of them a second would push the final reply out of its two slots.
+            if (msg->getId() == proto::MsgId_DispenseProgress) {
+                consume_front(consumed);
+                continue;
+            }
+
             const auto rx_it = dispatch_map_.find(transaction_id);
             if (rx_it != dispatch_map_.end()) {
                 // The entry stays, because a final reply can follow in this very read. The waiters remove it.

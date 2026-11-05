@@ -90,7 +90,7 @@ cpmaddpackage(
   SOURCE_SUBDIR api/cpp
 )
 cpmaddpackage(URI "gh:commschamp/comms@5.5.3" NAME LibComms)
-cpmaddpackage(URI "gh:mathisloge/cocktail-maker-protocol@2.0.0" SOURCE_SUBDIR generated
+cpmaddpackage(URI "gh:mathisloge/cocktail-maker-protocol@2.1.0" SOURCE_SUBDIR generated
 )
 cpmaddpackage(URI "gh:jeremy-rifkin/libassert@2.2.1")
 find_package(PkgConfig REQUIRED)

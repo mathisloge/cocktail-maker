@@ -34,9 +34,12 @@ Task<void> pour_with_refill(Dispenser& dispenser,
 
     for (;;) {
         auto report = co_await dispense_or_empty(dispenser, remaining);
-        // Trims running out says nothing about an empty bottle, so it is treated like the time limit.
-        const bool can_continue = report.outcome == DispenseOutcome::timed_out || report.outcome == DispenseOutcome::still_short;
-        if (can_continue && report.amount < kMinTimedOutProgress) {
+        // A full time limit with hardly anything poured points at a problem. Trims running out only means the pour
+        // came close, unless less than half of it came out.
+        const bool barely_moved_in_time_limit =
+            report.outcome == DispenseOutcome::timed_out && report.amount < kMinTimedOutProgress;
+        const bool far_short_after_trims = report.outcome == DispenseOutcome::still_short && report.amount < remaining / 2;
+        if (barely_moved_in_time_limit || far_short_after_trims) {
             report.outcome = DispenseOutcome::bottle_empty;
         }
         co_await fill_levels.pour_finished(address, dispenser, report);

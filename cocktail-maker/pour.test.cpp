@@ -128,6 +128,17 @@ TEST_CASE_METHOD(PourFixture, "A pour still short after its trims continues with
     CHECK(prompts == 0);
 }
 
+TEST_CASE_METHOD(PourFixture, "A small pour still short after its trims continues without a prompt", "[pour]")
+{
+    dispenser.steps.emplace_back(report(13, still_short));
+    dispenser.steps.emplace_back(report(2, completed));
+
+    pour(15);
+
+    CHECK(requests() == std::vector<long>{15, 2});
+    CHECK(prompts == 0);
+}
+
 TEST_CASE_METHOD(PourFixture, "A pour still short that barely moved prompts", "[pour]")
 {
     tracker.empty_bottle_tared(kAddress);

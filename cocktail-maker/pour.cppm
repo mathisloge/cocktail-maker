@@ -10,7 +10,7 @@ import :fill_level;
 
 namespace cm {
 
-/// A pour that reached the Pod's time limit or used up its trims with less than this points at a problem.
+/// A pour that reached the Pod's time limit with less than this points at a problem.
 export inline constexpr units::Litre kMinTimedOutProgress = 20.0 * units::milli_litre;
 
 /// Completes once somebody has confirmed the refill. A stop request completes it with `set_stopped`.

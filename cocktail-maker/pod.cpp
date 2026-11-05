@@ -157,7 +157,7 @@ void process_nak(const InNak& nak, const MessageEnvironment& env)
     case proto::field::ErrorCodeCommon::ValueType::ValuesLimit:
         throw PodReceiveError{env.pod_id, nak.field_errorCode().value()};
     }
-    // A Pod on a newer protocol can send a code this Station doesn't know.
+    // The version check keeps other releases out, so only a faulty Pod sends a code this Station doesn't know.
     throw PodReceiveError{env.pod_id, nak.field_errorCode().value()};
 }
 

@@ -1,6 +1,5 @@
 module;
 #include <spdlog/spdlog.h>
-#include <stdexec/execution.hpp>
 
 module cm:pour_impl;
 

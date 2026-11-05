@@ -15,6 +15,8 @@ export class PodState
         connecting,
         connected,
         disconnected,
+        /// The Pod reported another protocol release and stays unused.
+        incompatible,
     };
 
   public:

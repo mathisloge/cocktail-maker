@@ -270,7 +270,8 @@ Task<void> Pod::run(std::unique_ptr<PodState> state)
 std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> Pod::create_dispenser(DispenserId dispenser_id)
 {
     const auto info = state_->info();
-    if (dispenser_id.raw() >= (info.num_pumps + info.num_valves)) {
+    // A Pod on another protocol release hands out no dispenser, because the Station can't read its replies safely.
+    if (info.protocol_version != station_protocol_version() || dispenser_id.raw() >= (info.num_pumps + info.num_valves)) {
         return std::unexpected{DispenserNotFoundError{pod_id(), dispenser_id}};
     }
     if (dispenser_id.raw() >= info.num_pumps) {
@@ -291,6 +292,7 @@ Task<PodInfo> Pod::aquire_device_info(std::chrono::milliseconds timeout)
                 .minor = msg.field_firmwareMinor().getValue(),
                 .patch = msg.field_firmwarePatch().getValue(),
             },
+        .protocol_version = protocol_version_from_wire(msg.field_protocolVersion().getValue()),
         .num_pumps = msg.field_numPumps().getValue(),
         .num_valves = msg.field_numValves().getValue(),
     };
@@ -382,9 +384,31 @@ Task<void> Pod::monitor_device()
 
     Cleanup c{*this};
     state_->update_state(PodState::ConnectionState::connecting);
-    const auto pod_info = co_await retry_on_timeout(
-        5, [this](auto timeout) { return aquire_device_info(timeout); }, ExponentialBackoffPolicy{.maximum = 10s});
+    PodInfo pod_info{};
+    try {
+        pod_info = co_await retry_on_timeout(
+            5, [this](auto timeout) { return aquire_device_info(timeout); }, ExponentialBackoffPolicy{.maximum = 10s});
+    }
+    catch (const TimeoutError&) {
+        // A Pod on another protocol release sends a device info the Station can't decode, so it looks like silence.
+        SPDLOG_LOGGER_ERROR(logger_,
+                            "The Pod never answered the device info request. It may speak another protocol than {}.",
+                            station_protocol_version());
+        throw;
+    }
     state_->update_info(pod_info);
+    if (pod_info.protocol_version != station_protocol_version()) {
+        SPDLOG_LOGGER_ERROR(logger_,
+                            "Device '{}' speaks protocol {}, but the Station expects {}. It stays unused.",
+                            pod_info.id,
+                            pod_info.protocol_version,
+                            station_protocol_version());
+        state_->update_state(PodState::ConnectionState::incompatible);
+        // Only a stop request ends the wait, when the Pod goes away or the Station shuts down.
+        asio::steady_timer never{session_.get_executor(), asio::steady_timer::time_point::max()};
+        co_await never.async_wait(exec::asio::use_sender);
+        co_return;
+    }
     SPDLOG_LOGGER_INFO(logger_, "Device '{}' is ready.", pod_info.id);
     state_->update_state(PodState::ConnectionState::connected);
     device_ready_ = true;

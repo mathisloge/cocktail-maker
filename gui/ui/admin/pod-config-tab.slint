@@ -47,9 +47,17 @@ component PodListDelegate inherits Rectangle {
                 Palette.log-error;
         }
 
-        title := SmallText {
-            text: pod.id;
-            animate color { duration: 100ms; }
+        VerticalLayout {
+            alignment: center;
+            title := SmallText {
+                text: pod.id;
+                animate color { duration: 100ms; }
+            }
+
+            if pod.status-text != "": SmallText {
+                text: pod.status-text;
+                color: Palette.log-error;
+            }
         }
     }
 
@@ -107,6 +115,11 @@ export component PodConfigTab inherits Rectangle {
 
         MediumText {
             text: active-pod.id;
+        }
+
+        if active-pod.status-text != "": SmallText {
+            text: active-pod.status-text;
+            color: Palette.log-error;
         }
 
         ScrollView {

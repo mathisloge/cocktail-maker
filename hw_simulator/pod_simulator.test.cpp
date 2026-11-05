@@ -35,8 +35,9 @@ cm::sim::ClientConfig fast_config()
 class TestPodState final : public cm::PodState
 {
   public:
-    explicit TestPodState(cm::AwaitableBool& connected)
+    TestPodState(cm::AwaitableBool& connected, cm::AwaitableBool& incompatible)
         : connected_{connected}
+        , incompatible_{incompatible}
     {
     }
 
@@ -55,10 +56,14 @@ class TestPodState final : public cm::PodState
         if (state == ConnectionState::connected) {
             connected_ = true;
         }
+        if (state == ConnectionState::incompatible) {
+            incompatible_ = true;
+        }
     }
 
   private:
     cm::AwaitableBool& connected_;
+    cm::AwaitableBool& incompatible_;
     cm::PodInfo info_;
 };
 
@@ -68,6 +73,7 @@ struct SimPodFixture
     boost::asio::io_context ctx;
     cm::AsyncScope scope{ctx};
     cm::AwaitableBool is_connected{ctx.get_executor()};
+    cm::AwaitableBool is_incompatible{ctx.get_executor()};
     std::shared_ptr<cm::sim::Client<Socket>> client =
         std::make_shared<cm::sim::Client<Socket>>(scope, "SimPod", cm::Version{.major = 2});
     std::shared_ptr<cm::Pod> pod = make_pod();
@@ -100,7 +106,7 @@ struct SimPodFixture
         std::exception_ptr error;
         auto test_wrapper = [&]() -> cm::Task<void> {
             try {
-                co_await exec::when_any(test_coro(), pod->run(std::make_unique<TestPodState>(is_connected)));
+                co_await exec::when_any(test_coro(), pod->run(std::make_unique<TestPodState>(is_connected, is_incompatible)));
             }
             catch (...) {
                 error = std::current_exception();
@@ -588,4 +594,23 @@ TEST_CASE("The application reads the fill levels of a pod that connects", "[sim]
     }
     CHECK(changes == 16);
     app.shutdown();
+}
+
+TEST_CASE_METHOD(SimPodFixture, "A pod on another protocol release is incompatible and pours nothing", "[sim][pod]")
+{
+    auto config = fast_config();
+    config.protocol_version = cm::Version{.major = 2, .minor = 0, .patch = 0};
+    configure(config);
+    run_test([this]() -> cm::Task<void> {
+        co_await is_incompatible.async_wait();
+
+        CHECK_FALSE(pod->create_dispenser(kDispenser).has_value());
+        CHECK_FALSE(static_cast<bool>(is_connected));
+    });
+}
+
+TEST_CASE("The Station speaks the protocol it was built against", "[sim][pod]")
+{
+    CHECK(cm::station_protocol_version() == cm::Version{.major = 2, .minor = 1, .patch = 0});
+    CHECK(std::format("{}", cm::station_protocol_version()) == "2.1.0");
 }

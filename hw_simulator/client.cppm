@@ -43,6 +43,7 @@ export struct ClientConfig
     units::Grams refill_to{500 * units::si::gram};
     /// Makes every pour stop this far short and report that its trims are used up.
     std::optional<units::Grams> trim_shortfall{};
+    Version protocol_version{station_protocol_version()};
 };
 
 /// A bottle on a scale. Tests change it directly, as nothing else reaches the simulated pod but protocol messages.
@@ -146,6 +147,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
         , config_{std::move(config)}
     {
         power_cycle_load_cells();
+        device_info_response_msg_.field_protocolVersion().setValue(protocol_version_to_wire(config_.protocol_version));
         device_info_response_msg_.field_deviceName().setValue(std::move(name));
         device_info_response_msg_.field_firmwareMajor().setValue(firmware_version.major);
         device_info_response_msg_.field_firmwareMinor().setValue(firmware_version.minor);

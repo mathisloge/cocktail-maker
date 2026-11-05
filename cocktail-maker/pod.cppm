@@ -1,4 +1,5 @@
 module;
+#include <proto/Version.h>
 #include <proto/field/ErrorCodeCommon.h>
 
 export module cm:pod;
@@ -16,6 +17,36 @@ using namespace std::chrono_literals;
 namespace cm {
 /// How far a pour may miss its amount: about 1 g from the Pod plus 0.5 mL of rounding.
 export inline constexpr units::Litre kDispenseTolerance = 1.5 * units::milli_litre;
+
+/// The protocol release this Station was built against. A Pod has to report exactly this one.
+export constexpr Version station_protocol_version()
+{
+    return Version{
+        .major = static_cast<int>(proto::versionMajor()),
+        .minor = static_cast<int>(proto::versionMinor()),
+        .patch = static_cast<int>(proto::versionPatch()),
+    };
+}
+
+/// Reads a protocol release from its wire form 0xMMmmpp.
+export constexpr Version protocol_version_from_wire(std::uint32_t wire)
+{
+    return Version{
+        .major = static_cast<int>((wire >> 16U) & 0xFFU),
+        .minor = static_cast<int>((wire >> 8U) & 0xFFU),
+        .patch = static_cast<int>(wire & 0xFFU),
+    };
+}
+
+/// Writes a protocol release in its wire form 0xMMmmpp.
+export constexpr std::uint32_t protocol_version_to_wire(const Version& version)
+{
+    return (static_cast<std::uint32_t>(version.major) << 16U) | (static_cast<std::uint32_t>(version.minor) << 8U) |
+           static_cast<std::uint32_t>(version.patch);
+}
+
+static_assert(protocol_version_to_wire(station_protocol_version()) == proto::specVersion());
+static_assert(protocol_version_from_wire(proto::specVersion()) == station_protocol_version());
 
 export class PodReceiveError : public std::runtime_error
 {

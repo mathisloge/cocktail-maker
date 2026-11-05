@@ -81,6 +81,14 @@ class PodStateImpl final : public PodState
     PodStateData data_;
 };
 
+std::string pod_status_text(const PodStateData& pod)
+{
+    if (pod.connection_state != gui::ConnectionState::Incompatible) {
+        return {};
+    }
+    return std::format("Protokoll {}, erwartet {}", pod.info.protocol_version, station_protocol_version());
+}
+
 class PodUiModel : public slint::Model<gui::Pod>
 {
   private:
@@ -118,6 +126,10 @@ class PodUiModel : public slint::Model<gui::Pod>
             }
             if (gui_pod.connection_state != state_pod.connection_state) {
                 gui_pod.connection_state = state_pod.connection_state;
+                changed = true;
+            }
+            if (const auto status = pod_status_text(state_pod); gui_pod.status_text.data() != status) {
+                gui_pod.status_text = slint::SharedString{status};
                 changed = true;
             }
 
@@ -405,6 +417,8 @@ void PodStateImpl::update_state(ConnectionState state)
             return gui::ConnectionState::Connecting;
         case PodState::ConnectionState::connected:
             return gui::ConnectionState::Connected;
+        case PodState::ConnectionState::incompatible:
+            return gui::ConnectionState::Incompatible;
         }
         std::unreachable();
     }();

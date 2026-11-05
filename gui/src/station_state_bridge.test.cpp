@@ -204,3 +204,31 @@ TEST_CASE("format_fill_level words what is known about a bottle", "[gui][Station
     CHECK(cm::gui::format_fill_level(cm::FillLevelView{
               .level = grams(30), .percent = 3.0 * units::percent, .suspected_empty = true}) == "vermutlich leer");
 }
+
+TEST_CASE("StationStateBridge - A pod on another protocol release shows why it isn't used", "[gui][StationStateBridge]")
+{
+    boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
+    auto ui = cm::gui::AppWindow::create();
+    cm::PodRegistry pod_registry;
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
+    SlintFlusher flusher;
+
+    auto pod = bridge->create_pod_state();
+    pod->update_info(cm::PodInfo{.id = cm::PodId{"Old"},
+                                 .firmware_version = {},
+                                 .protocol_version = cm::Version{.major = 2, .minor = 0, .patch = 0},
+                                 .num_pumps = 1,
+                                 .num_valves = 0});
+    pod->update_state(cm::PodState::ConnectionState::incompatible);
+    flush_slint_events();
+
+    const auto row = bridge->pod_model()->row_data(0);
+    REQUIRE(row.has_value());
+    CHECK(row->connection_state == cm::gui::ConnectionState::Incompatible);
+    CHECK(std::string{row->status_text.data()} == "Protokoll 2.0.0, erwartet 2.1.0");
+    CHECK_FALSE(ui->global<cm::gui::StationStateContext>().get_station_ready());
+
+    pod.reset();
+}

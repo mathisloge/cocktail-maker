@@ -20,7 +20,20 @@ export struct PodInfo
 {
     PodId id;
     Version firmware_version;
+    Version protocol_version;
     int num_pumps;
     int num_valves;
 };
 } // namespace cm
+
+namespace std {
+template <>
+struct formatter<cm::Version, char> : formatter<std::string_view>
+{
+    template <class FormatContext>
+    auto format(const cm::Version& version, FormatContext& ctx) const
+    {
+        return std::format_to(ctx.out(), "{}.{}.{}", version.major, version.minor, version.patch);
+    }
+};
+} // namespace std

@@ -46,6 +46,8 @@ export struct FillLevelView
     std::optional<units::Grams> level;
     std::optional<units::Percent> percent;
     bool suspected_empty{};
+    /// The Pod says this dispenser has no load cell, which is normal for some dispensers.
+    bool no_load_cell{};
 };
 
 /// Who says that a bottle has been refilled.
@@ -96,7 +98,8 @@ export class FillLevelTracker
     [[nodiscard]] std::optional<FillLevelRecord> record(const PodDispenser& address) const;
     [[nodiscard]] FillLevelView view(const PodDispenser& address) const;
 
-    /// Works out the correction for this dispenser, as its load cell may have lost its zero point.
+    /// Works out the correction for this dispenser, as its load cell may have lost its zero point. It reads every dispenser
+    /// once, so that one without a load cell shows as such.
     Task<void> correct_on_connect(const PodDispenser& address, Dispenser& dispenser);
 
     /// Forgets the corrections of a Pod, as nobody knows what happens to its load cells until it connects again.
@@ -120,7 +123,7 @@ export class FillLevelTracker
   private:
     using Records = std::map<PodDispenser, FillLevelRecord>;
 
-    Task<std::optional<units::Grams>> read_weight(Dispenser& dispenser);
+    Task<std::optional<units::Grams>> read_weight(const PodDispenser& address, Dispenser& dispenser);
     void apply_reading(const PodDispenser& address, units::Grams reading);
     void changed(const PodDispenser& address);
     void write_file(const Records& records) const;
@@ -131,6 +134,7 @@ export class FillLevelTracker
     FillLevelOptions options_;
     Records records_;
     std::map<PodDispenser, units::Grams> corrections_;
+    std::set<PodDispenser> without_load_cell_;
     ChangeHandler change_handler_;
     std::atomic<std::uint64_t> save_generation_{0};
     boost::asio::thread_pool writer_{1};

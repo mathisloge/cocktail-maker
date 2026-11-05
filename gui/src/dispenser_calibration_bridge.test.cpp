@@ -35,21 +35,32 @@ TEST_CASE("Calibration errors become text an operator can act on", "[gui][calibr
           "Auf diesem Dispenser läuft noch eine andere Aktion. Bitte warten und erneut versuchen.");
 
     CHECK(text_for(CalibrationStep::reference_weight, nak(ErrorCode::UnsupportedInCurrentState)) ==
-          "Die Last war nicht ruhig oder die Tara ist älter als 5 Minuten. Bitte die Waage nicht berühren und erneut versuchen, "
-          "sonst zuerst neu tarieren.");
+          "Der Pod kann das gerade nicht ausführen. Bitte erneut versuchen.");
+
+    CHECK(text_for(CalibrationStep::clear_scale_tare, nak(ErrorCode::LoadNotSteady)) ==
+          "Die Last war nicht ruhig. Bitte die Waage nicht berühren und erneut versuchen.");
+
+    CHECK(text_for(CalibrationStep::reference_weight, nak(ErrorCode::TareTooOld)) ==
+          "Die Tara der leeren Waage fehlt oder ist älter als 5 Minuten. Bitte zuerst neu tarieren.");
+
+    CHECK(text_for(CalibrationStep::reference_weight, nak(ErrorCode::ImplausibleReference)) ==
+          "Das Referenzgewicht lag vermutlich nicht auf der Waage. Bitte auflegen und erneut versuchen.");
 
     CHECK(text_for(CalibrationStep::reference_weight, nak(ErrorCode::InvalidParameter)) ==
-          "Das Referenzgewicht lag vermutlich nicht auf der Waage. Bitte auflegen und erneut versuchen.");
+          "Das Referenzgewicht muss größer als 0 g sein.");
+
+    CHECK(text_for(CalibrationStep::dispenser_run, nak(ErrorCode::NoLoadCell)) ==
+          "Dieser Dispenser hat keine Wägezelle und lässt sich nicht kalibrieren.");
 
     CHECK(text_for(CalibrationStep::dispenser_run, nak(ErrorCode::InvalidParameter)) ==
           "Die Laufzeit ist ungültig. Erlaubt sind 1 bis 30 Sekunden.");
 
     CHECK(text_for(CalibrationStep::empty_bottle_tare, nak(ErrorCode::HardwareFault)) ==
-          "Keine Wägezelle, kein Motorstrom, oder ein Sensor- oder Treiberfehler.");
+          "Kein Motorstrom, oder ein Sensor- oder Treiberfehler.");
 
     CHECK(text_for(CalibrationStep::dispenser_run, nak(ErrorCode::HardwareFault)) ==
-          "Keine Wägezelle, kein Motorstrom, ein Sensor- oder Treiberfehler, oder der Lauf wurde gestoppt. Der Pod nutzt weiter "
-          "die bisherige Kalibrierung. Bitte den Lauf wiederholen.");
+          "Kein Motorstrom, ein Sensor- oder Treiberfehler, oder der Lauf wurde gestoppt. Der Pod nutzt weiter die bisherige "
+          "Kalibrierung. Bitte den Lauf wiederholen.");
 
     CHECK(text_for(CalibrationStep::dispenser_run, cm::PodTimeoutError{cm::PodId{"Pod"}}) ==
           "Der Pod hat nicht geantwortet. Bitte die USB-Verbindung prüfen.");

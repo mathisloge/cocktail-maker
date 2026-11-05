@@ -38,7 +38,7 @@ class FakeDispenser final : public cm::Dispenser
             throw std::runtime_error{"Pod lifetime exceeded"};
         }
         if (no_load_cell) {
-            throw cm::PodReceiveError{cm::PodId{"Fake"}, proto::field::ErrorCodeVal::HardwareFault};
+            throw cm::PodReceiveError{cm::PodId{"Fake"}, proto::field::ErrorCodeVal::NoLoadCell};
         }
         co_return reading;
     }

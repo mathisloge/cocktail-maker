@@ -231,7 +231,7 @@ TEST_CASE_METHOD(ClientFixture, "A reference calibration needs a recent tare", "
     create();
     run_test([this]() -> cm::Task<void> {
         const auto without_tare = co_await ack_of(reference(kDispenser, 100));
-        CHECK(error_of(without_tare) == ErrorCode::UnsupportedInCurrentState);
+        CHECK(error_of(without_tare) == ErrorCode::TareTooOld);
 
         std::ignore = co_await ack_of(tare(kDispenser));
         const auto with_tare = co_await ack_of(reference(kDispenser, 100));
@@ -376,13 +376,13 @@ TEST_CASE_METHOD(ClientFixture, "A dispenser without a load cell refuses everyth
     using Finished = cm::InDispenserFinishedCalibrationResponse;
     run_test([this]() -> cm::Task<void> {
         const auto tare_reply = co_await ack_of(tare(kWithoutLoadCell));
-        CHECK(error_of(tare_reply) == ErrorCode::HardwareFault);
+        CHECK(error_of(tare_reply) == ErrorCode::NoLoadCell);
         const auto reference_reply = co_await ack_of(reference(kWithoutLoadCell, 100));
-        CHECK(error_of(reference_reply) == ErrorCode::HardwareFault);
+        CHECK(error_of(reference_reply) == ErrorCode::NoLoadCell);
         const auto pour_reply = co_await ack_of(dispense(kWithoutLoadCell, 5));
-        CHECK(error_of(pour_reply) == ErrorCode::HardwareFault);
+        CHECK(error_of(pour_reply) == ErrorCode::NoLoadCell);
         const auto calibration_reply = co_await action_of<Finished>(calibration(kWithoutLoadCell, 100ms));
-        CHECK(error_of(calibration_reply) == ErrorCode::HardwareFault);
+        CHECK(error_of(calibration_reply) == ErrorCode::NoLoadCell);
 
         cm::OutLoadCellWeightRequest weight;
         weight.field_dispenserId().setValue(kWithoutLoadCell.raw());
@@ -390,7 +390,7 @@ TEST_CASE_METHOD(ClientFixture, "A dispenser without a load cell refuses everyth
         auto reply = session->async_receive<cm::InLoadCellWeightResponse, cm::InNak>(id, kReplyTimeout);
         co_await session->async_send(std::move(weight), id);
         const auto weight_reply = co_await std::move(reply);
-        CHECK(error_of(weight_reply) == ErrorCode::HardwareFault);
+        CHECK(error_of(weight_reply) == ErrorCode::NoLoadCell);
     });
 }
 

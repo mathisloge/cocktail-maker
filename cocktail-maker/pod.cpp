@@ -150,6 +150,10 @@ void process_nak(const InNak& nak, const MessageEnvironment& env)
     case proto::field::ErrorCodeCommon::ValueType::Busy:
     case proto::field::ErrorCodeCommon::ValueType::NotCalibrated:
     case proto::field::ErrorCodeCommon::ValueType::InternalError:
+    case proto::field::ErrorCodeCommon::ValueType::NoLoadCell:
+    case proto::field::ErrorCodeCommon::ValueType::LoadNotSteady:
+    case proto::field::ErrorCodeCommon::ValueType::TareTooOld:
+    case proto::field::ErrorCodeCommon::ValueType::ImplausibleReference:
     case proto::field::ErrorCodeCommon::ValueType::ValuesLimit:
         throw PodReceiveError{env.pod_id, nak.field_errorCode().value()};
     }

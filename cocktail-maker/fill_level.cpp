@@ -3,6 +3,7 @@ module;
 #include <boost/asio/steady_timer.hpp>
 #include <exec/asio/use_sender.hpp>
 #include <fcntl.h>
+#include <proto/field/ErrorCodeCommon.h>
 #include <simdjson.h>
 #include <spdlog/spdlog.h>
 #include <stdexec/execution.hpp>
@@ -248,14 +249,16 @@ std::optional<FillLevelRecord> FillLevelTracker::record(const PodDispenser& addr
 
 FillLevelView FillLevelTracker::view(const PodDispenser& address) const
 {
+    const bool no_load_cell = without_load_cell_.contains(address);
     const auto found = record(address);
     if (not found.has_value()) {
-        return FillLevelView{};
+        return FillLevelView{.no_load_cell = no_load_cell};
     }
 
     FillLevelView view{.level = std::max(found->level, 0.0 * units::si::gram),
                        .percent = std::nullopt,
-                       .suspected_empty = found->suspected_empty};
+                       .suspected_empty = found->suspected_empty,
+                       .no_load_cell = no_load_cell};
     if (found->capacity.has_value() && *found->capacity > 0.0 * units::si::gram) {
         view.percent = in_grams(*view.level) / in_grams(*found->capacity) * 100.0 * units::percent;
     }
@@ -265,10 +268,8 @@ FillLevelView FillLevelTracker::view(const PodDispenser& address) const
 Task<void> FillLevelTracker::correct_on_connect(const PodDispenser& address, Dispenser& dispenser)
 {
     corrections_.erase(address);
-    if (const auto it = records_.find(address); it != records_.end()) {
-        if (const auto reading = co_await read_weight(dispenser)) {
-            apply_reading(address, *reading);
-        }
+    if (const auto reading = co_await read_weight(address, dispenser)) {
+        apply_reading(address, *reading);
     }
     changed(address);
 }
@@ -276,6 +277,7 @@ Task<void> FillLevelTracker::correct_on_connect(const PodDispenser& address, Dis
 void FillLevelTracker::pod_disconnected(const PodId& pod_id)
 {
     std::erase_if(corrections_, [&pod_id](const auto& entry) { return entry.first.pod_id == pod_id; });
+    std::erase_if(without_load_cell_, [&pod_id](const PodDispenser& address) { return address.pod_id == pod_id; });
 }
 
 Task<void> FillLevelTracker::refresh(const PodDispenser& address, Dispenser& dispenser)
@@ -283,7 +285,7 @@ Task<void> FillLevelTracker::refresh(const PodDispenser& address, Dispenser& dis
     if (not records_.contains(address)) {
         co_return;
     }
-    if (const auto reading = co_await read_weight(dispenser)) {
+    if (const auto reading = co_await read_weight(address, dispenser)) {
         apply_reading(address, *reading);
         changed(address);
     }
@@ -294,7 +296,7 @@ Task<void> FillLevelTracker::pour_finished(const PodDispenser& address, Dispense
     if (not records_.contains(address)) {
         co_return;
     }
-    const auto reading = co_await read_weight(dispenser);
+    const auto reading = co_await read_weight(address, dispenser);
 
     const auto it = records_.find(address);
     if (it == records_.end()) {
@@ -345,7 +347,7 @@ Task<void> FillLevelTracker::refilled(const PodDispenser& address, Dispenser& di
     asio::steady_timer timer{executor_, options_.refill_settle_time};
     co_await timer.async_wait(exec::asio::use_sender);
 
-    const auto reading = co_await read_weight(dispenser);
+    const auto reading = co_await read_weight(address, dispenser);
     const auto it = records_.find(address);
     if (not reading.has_value() || it == records_.end()) {
         co_return;
@@ -376,14 +378,21 @@ Task<void> FillLevelTracker::refilled(const PodDispenser& address, Dispenser& di
     changed(address);
 }
 
-Task<std::optional<units::Grams>> FillLevelTracker::read_weight(Dispenser& dispenser)
+Task<std::optional<units::Grams>> FillLevelTracker::read_weight(const PodDispenser& address, Dispenser& dispenser)
 {
     try {
-        co_return co_await dispenser.load_cell_weight();
+        const units::Grams reading = co_await dispenser.load_cell_weight();
+        without_load_cell_.erase(address);
+        co_return reading;
     }
     catch (const PodReceiveError& error) {
-        // This is what a dispenser without a load cell answers, which is normal.
-        SPDLOG_LOGGER_DEBUG(logger_, "No weight available: {}", error.what());
+        if (error.error_code() == proto::field::ErrorCodeCommon::ValueType::NoLoadCell) {
+            // That is normal for some dispensers.
+            without_load_cell_.insert(address);
+        }
+        else {
+            SPDLOG_LOGGER_WARN(logger_, "No weight available: {}", error.what());
+        }
     }
     catch (const std::exception& error) {
         SPDLOG_LOGGER_WARN(logger_, "Could not read a weight: {}", error.what());

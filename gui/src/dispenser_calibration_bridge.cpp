@@ -25,11 +25,18 @@ std::string receive_error_text(const CalibrationStep step, const PodReceiveError
     case ErrorCode::Busy:
         return "Auf diesem Dispenser läuft noch eine andere Aktion. Bitte warten und erneut versuchen.";
     case ErrorCode::UnsupportedInCurrentState:
-        return "Die Last war nicht ruhig oder die Tara ist älter als 5 Minuten. Bitte die Waage nicht berühren und erneut "
-               "versuchen, sonst zuerst neu tarieren.";
+        return "Der Pod kann das gerade nicht ausführen. Bitte erneut versuchen.";
+    case ErrorCode::LoadNotSteady:
+        return "Die Last war nicht ruhig. Bitte die Waage nicht berühren und erneut versuchen.";
+    case ErrorCode::TareTooOld:
+        return "Die Tara der leeren Waage fehlt oder ist älter als 5 Minuten. Bitte zuerst neu tarieren.";
+    case ErrorCode::ImplausibleReference:
+        return "Das Referenzgewicht lag vermutlich nicht auf der Waage. Bitte auflegen und erneut versuchen.";
+    case ErrorCode::NoLoadCell:
+        return "Dieser Dispenser hat keine Wägezelle und lässt sich nicht kalibrieren.";
     case ErrorCode::InvalidParameter:
         if (step == CalibrationStep::reference_weight) {
-            return "Das Referenzgewicht lag vermutlich nicht auf der Waage. Bitte auflegen und erneut versuchen.";
+            return "Das Referenzgewicht muss größer als 0 g sein.";
         }
         if (step == CalibrationStep::dispenser_run) {
             return "Die Laufzeit ist ungültig. Erlaubt sind 1 bis 30 Sekunden.";
@@ -37,11 +44,10 @@ std::string receive_error_text(const CalibrationStep step, const PodReceiveError
         break;
     case ErrorCode::HardwareFault:
         if (step == CalibrationStep::dispenser_run) {
-            return std::string{
-                       "Keine Wägezelle, kein Motorstrom, ein Sensor- oder Treiberfehler, oder der Lauf wurde gestoppt."} +
+            return std::string{"Kein Motorstrom, ein Sensor- oder Treiberfehler, oder der Lauf wurde gestoppt."} +
                    kKeepsCalibrationText;
         }
-        return "Keine Wägezelle, kein Motorstrom, oder ein Sensor- oder Treiberfehler.";
+        return "Kein Motorstrom, oder ein Sensor- oder Treiberfehler.";
     case ErrorCode::DispenserNotFound:
     case ErrorCode::NotCalibrated:
     case ErrorCode::InternalError:

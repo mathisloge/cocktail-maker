@@ -25,6 +25,9 @@ Task<void> async_mark_dispenser_refilled(const PodRegistry& pod_registry,
 
 std::string format_fill_level(const FillLevelView& view)
 {
+    if (view.no_load_cell) {
+        return "keine Wägezelle";
+    }
     if (view.suspected_empty) {
         return "vermutlich leer";
     }

@@ -175,7 +175,7 @@ TEST_CASE_METHOD(SimPodFixture, "A refused weight read is a Nak and not a protoc
             FAIL("Expected a PodReceiveError");
         }
         catch (const cm::PodReceiveError& error) {
-            CHECK(error.error_code() == ErrorCode::HardwareFault);
+            CHECK(error.error_code() == ErrorCode::NoLoadCell);
         }
     });
 }
@@ -451,7 +451,9 @@ TEST_CASE_METHOD(SimFillLevelFixture,
         co_await cm::sync_pod_fill_levels(info, registry, fill_levels);
 
         CHECK(fill_levels.record(without_cell)->level == 0 * units::si::gram);
-        CHECK(client->stats().weight_requests == 2);
+        CHECK(fill_levels.view(without_cell).no_load_cell);
+        CHECK_FALSE(fill_levels.view(cm::PodDispenser{info.id, cm::DispenserId{5}}).no_load_cell);
+        CHECK(client->stats().weight_requests == 8);
     });
 }
 
@@ -470,7 +472,7 @@ TEST_CASE_METHOD(SimFillLevelFixture, "The weights at connect are read one after
 
         co_await cm::sync_pod_fill_levels(info, registry, fill_levels);
 
-        CHECK(client->stats().weight_requests == 4);
+        CHECK(client->stats().weight_requests == 8);
         CHECK(client->stats().max_outstanding_weight_requests == 1);
     });
 }

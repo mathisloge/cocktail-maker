@@ -322,7 +322,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
             refused = ErrorCode::InvalidParameter;
         }
         if (!refused.has_value() && !has_recent_tare(dispensers_.at(id))) {
-            refused = ErrorCode::UnsupportedInCurrentState;
+            refused = ErrorCode::TareTooOld;
         }
         if (refused.has_value()) {
             co_await delay(config_.quick_reply);
@@ -559,7 +559,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
             return ErrorCode::DispenserNotFound;
         }
         if (!has_load_cell(id)) {
-            return ErrorCode::HardwareFault;
+            return ErrorCode::NoLoadCell;
         }
         return std::nullopt;
     }

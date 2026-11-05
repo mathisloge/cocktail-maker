@@ -239,9 +239,22 @@ ErrorPageData make(const PodReceiveError& ex, const cm::StationConfig&, const In
             .item_details = item_details.c_str(),
         };
     }
+    case ErrorCode::NoLoadCell: {
+        const auto item_details = std::format("{} - Bitte die Zutat einem Dispenser mit Wägezelle zuweisen.", pod_label);
+        return ErrorPageData{
+            .technical_title = "Keine Wägezelle!",
+            .technical_description = "Der Dispenser hat keine Wägezelle und kann deshalb nicht dosieren.",
+            .item_category = ErrorItemCategory::Unknown,
+            .item_name = "Dispenser",
+            .item_details = item_details.c_str(),
+        };
+    }
     case ErrorCode::InvalidParameter:
     case ErrorCode::InternalError:
     case ErrorCode::DispenserEmpty:
+    case ErrorCode::LoadNotSteady:
+    case ErrorCode::TareTooOld:
+    case ErrorCode::ImplausibleReference:
     case ErrorCode::ValuesLimit:
         break;
     }

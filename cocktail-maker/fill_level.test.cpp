@@ -170,6 +170,16 @@ TEST_CASE_METHOD(FillLevelFixture, "Connecting a dispenser without a record keep
     CHECK_FALSE(changes.front().second.level.has_value());
 }
 
+TEST_CASE_METHOD(FillLevelFixture, "A dispenser without a load cell says so after the read at connect", "[fill_level]")
+{
+    dispenser.no_load_cell = true;
+    connect(0);
+
+    CHECK(tracker->view(kAddress).no_load_cell);
+    CHECK_FALSE(tracker->view(kAddress).level.has_value());
+    CHECK(dispenser.weight_reads == 1);
+}
+
 TEST_CASE_METHOD(FillLevelFixture, "A failed read after a pour subtracts the reported amount", "[fill_level]")
 {
     start_at(100);

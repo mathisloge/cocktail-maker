@@ -196,6 +196,7 @@ TEST_CASE("format_fill_level words what is known about a bottle", "[gui][Station
     const auto grams = [](double value) { return value * units::si::gram; };
 
     CHECK(cm::gui::format_fill_level(cm::FillLevelView{}) == "unbekannt");
+    CHECK(cm::gui::format_fill_level(cm::FillLevelView{.no_load_cell = true}) == "keine Wägezelle");
     CHECK(cm::gui::format_fill_level(cm::FillLevelView{.level = grams(640), .percent = std::nullopt, .suspected_empty = false}) ==
           "ca. 640 mL");
     CHECK(cm::gui::format_fill_level(cm::FillLevelView{

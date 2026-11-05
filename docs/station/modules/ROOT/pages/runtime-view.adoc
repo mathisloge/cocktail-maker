@@ -19,8 +19,18 @@ sequenceDiagram
 
     PodComm->>PodComm: Discover a Pod
     PodComm->>Domain: Register Pod, query device info
-    Domain->>UI: Pod connected
+    alt Same protocol release as the Station
+        Domain->>UI: Pod connected
+    else Another release
+        Domain->>UI: Pod unused, with both releases
+    end
 ....
+
+A Pod on another protocol release stays unused, and the maintenance area shows something like
+"Protokoll 2.2.0, erwartet 2.1.0".
+It doesn't hold back the other Pods, just like an unplugged one.
+A Pod that never answers the device info may speak a release whose reply doesn't decode, and the log
+says so (xref:system::protocol.adoc#_versioning[Versioning]).
 
 Once a Pod is connected, the Station also brings the fill level of its dispensers up to date. See
 <<A Pod Comes Back After a Power Loss>>.
@@ -63,20 +73,29 @@ It doesn't block a drink, and it stays out of the way for a dispenser with no kn
 
 A Pod reports a pour that came up short as a pour with less than the requested amount, not as an
 error.
-There are two reasons for that, and protocol 2.0.0 doesn't say which one it was, so the Station goes by how long the pour took.
+`DispenseFinished` says why.
 
 [cols="1,3", options="header"]
 |===
 | Pour ended | What the Station does
 
-| After 30 s or more
-| The Pod's time limit ended it. The Station pours the rest without asking, unless the pour moved less
-than 20 mL, which points at a problem.
+| `Completed`
+| Nothing more.
 
-| Earlier
+| `BottleEmpty`
 | The bottle ran empty or the pump is blocked, which look the same. The Station asks for a refill and
 pours the rest. See <<A Bottle Runs Empty and Gets Refilled>>.
+
+| `TimedOut`
+| The Pod's time limit of 30 s ended it. The Station pours the rest without asking, unless the pour
+moved less than 20 mL. That points at a problem, so the pour then counts as an empty bottle.
+
+| `StillShort`
+| The trims ran out a few grams before the amount. The Station pours the rest without asking, unless
+less than half came out. That pour then counts as an empty bottle.
 |===
+
+The Station ignores the `DispenseProgress` that arrives while a pour runs.
 
 If a dispense fails or the guest cancels partway through, the Station stops the remaining actions,
 sends an `EmergencyStop` to every Pod, and returns the guest to a known-good screen naming the

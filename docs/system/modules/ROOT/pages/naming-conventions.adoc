@@ -36,7 +36,9 @@ serial protocol.
 
 A machine can contain *one or more Pods*, each identified by a unique `PodId` assigned
 when the Pod connects to the Station.
-Today every Pod still reports the same name, so a second Pod needs the firmware's unique name first.
+The Pod reports it as its name in `DeviceInfoResponse`.
+The firmware derives that name from the controller's unique ID, so it differs between Pods and stays the
+same across power cycles.
 
 .Responsibilities
 * Controls its actuators (steppers, servos, and valves) on command

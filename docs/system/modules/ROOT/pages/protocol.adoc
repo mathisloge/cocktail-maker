@@ -134,8 +134,7 @@ sequenceDiagram
 | This Pod has no dispenser with the given `DispenserId`.
 
 | `UnsupportedInCurrentState`
-| The Pod can't do this in its current state, for example a load cell calibration without a recent
-tare or with a load that wasn't steady.
+| The Pod can't do this in its current state.
 
 | `HardwareFault`
 | An actuator or sensor failed or didn't answer, or an `EmergencyStop` interrupted the action.
@@ -151,6 +150,19 @@ tare or with a load that wasn't steady.
 
 | `DispenserEmpty`
 | Next to nothing came out of the dispenser, most likely because its bottle is empty.
+
+| `NoLoadCell`
+| This dispenser has no load cell, which is normal for some dispensers. Everything that weighs gets
+this, including `Dispense` and `DispenserStartCalibration`.
+
+| `LoadNotSteady`
+| The load moved while the load cell measured it. Keep the scale still and retry.
+
+| `TareTooOld`
+| A load cell calibration needs a tare of the empty scale shortly before. Tare and retry.
+
+| `ImplausibleReference`
+| The reference weight gave an implausible reading, most likely because it wasn't on the scale.
 |===
 
 === Request / Acknowledgement / Event
@@ -167,6 +179,12 @@ Used by `Dispense` (followed by `DispenseFinished`) and `DispenserStartCalibrati
 `DispenserFinishedCalibrationResponse`). The completion event must reuse the `TransactionId` of the
 request that triggered it.
 
+While the action runs, the Pod sends a `DispenseProgress` about four times a second under the same
+`TransactionId`.
+It only comes between the `Ack` and the final reply, and it is only for display.
+The final reply alone holds the real amount.
+The Station drops it for now, so that it can't crowd out the final reply.
+
 [mermaid, target="pattern-request-ack-event", format="svg"]
 ....
 sequenceDiagram
@@ -175,12 +193,40 @@ sequenceDiagram
 
     Station->>Pod: Dispense (TransactionId=N)
     Pod-->>Station: Ack (TransactionId=N)
-    Note over Pod: Pod dispenses the ingredient
+    loop About four times a second while the dispenser runs
+        Pod-->>Station: DispenseProgress (TransactionId=N)
+    end
+    Note over Pod: Pod measures the amount at rest
     Pod-->>Station: DispenseFinished (TransactionId=N)
 ....
 
 A `Nak` can still arrive in place of the event if the action fails after having been accepted, so a
 caller of this pattern must be prepared to receive either outcome under the same `TransactionId`.
+
+`DispenseFinished` says how the pour ended:
+
+.DispenseResult values
+[cols="1,3", options="header"]
+|===
+| Value | Meaning
+
+| `Completed`
+| The requested amount came out, within the Pod's tolerance.
+
+| `BottleEmpty`
+| The weight stopped falling while the dispenser ran, most likely because the bottle is empty. A blocked
+hose looks the same.
+
+| `TimedOut`
+| The pour hit its time limit of 30 s while the weight was still falling.
+
+| `StillShort`
+| All trims are used up and the amount is still below the target.
+|===
+
+Only `Completed` reaches the requested amount.
+None of them is an error, so a pour that came up short still ends with `DispenseFinished` and not with a
+`Nak`.
 
 === Reply Times
 
@@ -235,9 +281,14 @@ xref:adr:007-calibration-and-fill-level.adoc[ADR-007].
 == Versioning
 
 The schema is released with semantic version numbers.
-Its `version` attribute carries the same number as `0xMMmmpp`, so `0x020000` is release 2.0.0.
-Neither side checks the other's version at runtime, so the Station and every Pod must be built against
-the same release.
+Its `version` attribute carries the same number as `0xMMmmpp`, so `0x020100` is release 2.1.0.
+`DeviceInfoResponse` starts with `ProtocolVersion` in that form, and it stays the first field in every
+release.
+
+The Station accepts exactly the release it was built against.
+A Pod on another release stays unused, and the Station names both releases.
+A Pod on 2.0.0 has no `ProtocolVersion` yet, so its `DeviceInfoResponse` doesn't decode at all.
+The Station then only sees no answer and logs a hint that the Pod may speak another release.
 
 == Messages
 
@@ -275,7 +326,7 @@ out.
 | `DeviceInfoResponse`
 | Pod → Station
 | Request / Response
-| Hardware revision, firmware version, number of pumps and valves, and the Pod's name.
+| Protocol release, hardware revision, firmware version, number of pumps and valves, and the Pod's name.
 
 | `EmergencyStop`
 | Station → Pod
@@ -331,6 +382,10 @@ keeps it across power cycles.
 | `DispenseFinished`
 | Pod → Station
 | Request / Acknowledgement / Event
-| Reports the amount poured, measured at rest. It is less than requested if the bottle ran empty or the
-pour hit its time limit.
+| Reports the amount poured, measured at rest, and how the pour ended as a `DispenseResult`.
+
+| `DispenseProgress`
+| Pod → Station
+| Request / Acknowledgement / Event
+| The amount so far during a pour or a calibration run. Never negative and only for display.
 |===

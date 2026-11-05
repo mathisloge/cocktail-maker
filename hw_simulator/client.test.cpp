@@ -562,3 +562,16 @@ TEST_CASE_METHOD(ClientFixture, "A pour and a calibration run report their progr
         CHECK(client->stats().progress_reports >= after_pour + 5);
     });
 }
+
+TEST_CASE_METHOD(ClientFixture, "A shortfall larger than the pour leaves the bottle as it is", "[sim][client]")
+{
+    auto config = fast_config();
+    config.trim_shortfall = 10 * units::si::gram;
+    create(config);
+    run_test([this]() -> cm::Task<void> {
+        const auto reply = co_await action_of<cm::InDispenseFinished>(dispense(kDispenser, 5));
+        REQUIRE(std::holds_alternative<cm::InDispenseFinished>(reply));
+        CHECK(std::get<cm::InDispenseFinished>(reply).field_millilitre().value() == 0);
+        CHECK(client->bottle(kDispenser).liquid == 500 * units::si::gram);
+    });
+}

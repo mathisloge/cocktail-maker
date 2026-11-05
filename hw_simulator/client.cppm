@@ -436,7 +436,8 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
         }
         co_await async_send(Ack{}, trid);
 
-        const units::Grams target = requested * units::si::gram - config_.trim_shortfall.value_or(units::Grams{});
+        const units::Grams target =
+            std::max(requested * units::si::gram - config_.trim_shortfall.value_or(units::Grams{}), 0.0 * units::si::gram);
         const auto result = co_await run_dispenser(state, generation, target, config_.pour_limit);
         if (!result.has_value()) {
             co_return;

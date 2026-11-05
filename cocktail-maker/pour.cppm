@@ -10,7 +10,8 @@ import :fill_level;
 
 namespace cm {
 
-/// A pour that reached the Pod's time limit with less than this points at a problem.
+/// A pour that reached the Pod's time limit with less than this points at a problem. Above it a pour still short is judged by
+/// the share that came out.
 export inline constexpr units::Litre kMinTimedOutProgress = 20.0 * units::milli_litre;
 
 /// Completes once somebody has confirmed the refill. A stop request completes it with `set_stopped`.

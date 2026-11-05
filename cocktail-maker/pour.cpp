@@ -35,10 +35,13 @@ Task<void> pour_with_refill(Dispenser& dispenser,
     for (;;) {
         auto report = co_await dispense_or_empty(dispenser, remaining);
         // A full time limit with hardly anything poured points at a problem. Trims running out only means the pour
-        // came close, unless less than half of it came out.
+        // came close, unless less than half of a larger pour came out. Below that the load cell is too coarse to tell,
+        // so only a pour with nothing at all counts, which also keeps the loop from running forever.
         const bool barely_moved_in_time_limit =
             report.outcome == DispenseOutcome::timed_out && report.amount < kMinTimedOutProgress;
-        const bool far_short_after_trims = report.outcome == DispenseOutcome::still_short && report.amount < remaining / 2;
+        const bool far_short_after_trims =
+            report.outcome == DispenseOutcome::still_short &&
+            (remaining > kMinTimedOutProgress ? report.amount < remaining / 2 : report.amount <= 0.0 * units::milli_litre);
         if (barely_moved_in_time_limit || far_short_after_trims) {
             report.outcome = DispenseOutcome::bottle_empty;
         }
@@ -52,6 +55,9 @@ Task<void> pour_with_refill(Dispenser& dispenser,
         }
 
         remaining -= std::max<units::Litre>(report.amount, 0.0 * units::milli_litre);
+        if (remaining <= kDispenseTolerance) {
+            co_return;
+        }
         if (report.outcome == DispenseOutcome::bottle_empty) {
             co_await prompt();
             co_await fill_levels.refilled(address, dispenser, RefillSource::mix_dialog);

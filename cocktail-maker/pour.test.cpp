@@ -139,6 +139,40 @@ TEST_CASE_METHOD(PourFixture, "A small pour still short after its trims continue
     CHECK(prompts == 0);
 }
 
+TEST_CASE_METHOD(PourFixture, "A small rest still short continues without a prompt", "[pour]")
+{
+    dispenser.steps.emplace_back(report(37, still_short));
+    dispenser.steps.emplace_back(report(1, still_short));
+    dispenser.steps.emplace_back(report(2, completed));
+
+    pour(40);
+
+    CHECK(requests() == std::vector<long>{40, 3, 2});
+    CHECK(prompts == 0);
+}
+
+TEST_CASE_METHOD(PourFixture, "A small pour still short with nothing poured prompts", "[pour]")
+{
+    tracker.empty_bottle_tared(kAddress);
+    dispenser.steps.emplace_back(report(0, still_short));
+    dispenser.steps.emplace_back(report(10, completed));
+
+    pour(10);
+
+    CHECK(requests() == std::vector<long>{10, 10});
+    CHECK(prompts == 1);
+}
+
+TEST_CASE_METHOD(PourFixture, "A rest within the tolerance ends the pour", "[pour]")
+{
+    dispenser.steps.emplace_back(report(39, still_short));
+
+    pour(40);
+
+    CHECK(requests() == std::vector<long>{40});
+    CHECK(prompts == 0);
+}
+
 TEST_CASE_METHOD(PourFixture, "A pour still short that barely moved prompts", "[pour]")
 {
     tracker.empty_bottle_tared(kAddress);

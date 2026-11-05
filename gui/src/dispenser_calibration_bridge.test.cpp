@@ -56,10 +56,10 @@ TEST_CASE("Calibration errors become text an operator can act on", "[gui][calibr
           "Die Laufzeit ist ungültig. Erlaubt sind 1 bis 30 Sekunden.");
 
     CHECK(text_for(CalibrationStep::empty_bottle_tare, nak(ErrorCode::HardwareFault)) ==
-          "Kein Motorstrom, oder ein Sensor- oder Treiberfehler.");
+          "Kein Motorstrom oder ein Sensor- oder Treiberfehler.");
 
     CHECK(text_for(CalibrationStep::dispenser_run, nak(ErrorCode::HardwareFault)) ==
-          "Kein Motorstrom, ein Sensor- oder Treiberfehler, oder der Lauf wurde gestoppt. Der Pod nutzt weiter die bisherige "
+          "Kein Motorstrom, ein Sensor- oder Treiberfehler oder der Lauf wurde gestoppt. Der Pod nutzt weiter die bisherige "
           "Kalibrierung. Bitte den Lauf wiederholen.");
 
     CHECK(text_for(CalibrationStep::dispenser_run, cm::PodTimeoutError{cm::PodId{"Pod"}}) ==

@@ -44,10 +44,10 @@ std::string receive_error_text(const CalibrationStep step, const PodReceiveError
         break;
     case ErrorCode::HardwareFault:
         if (step == CalibrationStep::dispenser_run) {
-            return std::string{"Kein Motorstrom, ein Sensor- oder Treiberfehler, oder der Lauf wurde gestoppt."} +
+            return std::string{"Kein Motorstrom, ein Sensor- oder Treiberfehler oder der Lauf wurde gestoppt."} +
                    kKeepsCalibrationText;
         }
-        return "Kein Motorstrom, oder ein Sensor- oder Treiberfehler.";
+        return "Kein Motorstrom oder ein Sensor- oder Treiberfehler.";
     case ErrorCode::DispenserNotFound:
     case ErrorCode::NotCalibrated:
     case ErrorCode::InternalError:

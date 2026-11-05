@@ -44,6 +44,8 @@ export struct ClientConfig
     /// Makes every pour stop this far short and report that its trims are used up.
     std::optional<units::Grams> trim_shortfall{};
     Version protocol_version{station_protocol_version()};
+    /// The firmware reports the amount so far about four times a second while a dispenser runs.
+    std::chrono::milliseconds progress_interval{250ms};
 };
 
 /// A bottle on a scale. Tests change it directly, as nothing else reaches the simulated pod but protocol messages.
@@ -63,6 +65,8 @@ export struct ClientStats
     int weight_requests{};
     int max_outstanding_weight_requests{};
     int emergency_stops{};
+    int progress_reports{};
+    int last_progress_ml{};
 };
 
 /**
@@ -92,6 +96,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
     using Nak = proto::message::Nak<Message, Options>;
     using CalibrationFinished = proto::message::DispenserFinishedCalibrationResponse<Message, Options>;
     using DispenseFinished = proto::message::DispenseFinished<Message, Options>;
+    using DispenseProgress = proto::message::DispenseProgress<Message, Options>;
     using WeightResponse = proto::message::LoadCellWeightResponse<Message, Options>;
     using ErrorCode = proto::field::ErrorCodeCommon::ValueType;
     using DispenseResult = proto::field::DispenseResultCommon::ValueType;
@@ -480,6 +485,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
         const auto end_of_run = start + time_limit;
         auto last_tick = start;
         auto last_progress = start;
+        auto last_report = start;
         units::Grams amount = 0 * units::si::gram;
         bool stalled = false;
         bool reached_target = false;
@@ -514,6 +520,10 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
                 stalled = true;
                 break;
             }
+            if (now - last_report >= config_.progress_interval) {
+                last_report = now;
+                co_await send_progress(state, amount);
+            }
         }
 
         co_await delay(config_.settle);
@@ -521,6 +531,16 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
             co_return std::nullopt;
         }
         co_return RunResult{.amount = amount, .stalled = stalled, .reached_target = reached_target};
+    }
+
+    Task<void> send_progress(const DispenserState& state, const units::Grams amount)
+    {
+        const auto millilitre = static_cast<int>(std::lround(amount.numerical_value_in(units::si::gram)));
+        ++stats_.progress_reports;
+        stats_.last_progress_ml = millilitre;
+        DispenseProgress progress{};
+        progress.field_millilitre().setValue(millilitre);
+        co_await async_send(std::move(progress), state.transaction_id);
     }
 
     Task<void> send_nak(const TransactionId::ValueType transaction_id, const ErrorCode error)

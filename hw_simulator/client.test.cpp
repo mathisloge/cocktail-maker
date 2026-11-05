@@ -537,3 +537,28 @@ TEST_CASE_METHOD(ClientFixture, "An old refill doesn't fill a bottle that is in 
         CHECK(client->bottle(kDispenser).liquid == 40 * units::si::gram);
     });
 }
+
+TEST_CASE_METHOD(ClientFixture, "A pour and a calibration run report their progress", "[sim][client]")
+{
+    auto config = fast_config();
+    config.flow = 100.0 * units::milli_litre / units::si::second;
+    config.progress_interval = 1ms;
+    create(config);
+    using Finished = cm::InDispenserFinishedCalibrationResponse;
+    run_test([this]() -> cm::Task<void> {
+        const auto refused = co_await action_of<cm::InDispenseFinished>(dispense(kWithoutLoadCell, 100));
+        CHECK(error_of(refused) == ErrorCode::NoLoadCell);
+        CHECK(client->stats().progress_reports == 0);
+
+        const auto poured = co_await action_of<cm::InDispenseFinished>(dispense(kDispenser, 100));
+        REQUIRE(std::holds_alternative<cm::InDispenseFinished>(poured));
+        CHECK(std::get<cm::InDispenseFinished>(poured).field_millilitre().value() == 100);
+        const auto after_pour = client->stats().progress_reports;
+        CHECK(after_pour >= 5);
+        CHECK(client->stats().last_progress_ml <= 100);
+
+        const auto calibrated = co_await action_of<Finished>(calibration(kDispenser, 1s));
+        REQUIRE(std::holds_alternative<Finished>(calibrated));
+        CHECK(client->stats().progress_reports >= after_pour + 5);
+    });
+}

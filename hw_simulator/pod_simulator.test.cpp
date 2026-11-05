@@ -614,3 +614,19 @@ TEST_CASE("The Station speaks the protocol it was built against", "[sim][pod]")
     CHECK(cm::station_protocol_version() == cm::Version{.major = 2, .minor = 1, .patch = 0});
     CHECK(std::format("{}", cm::station_protocol_version()) == "2.1.0");
 }
+
+TEST_CASE_METHOD(SimPodFixture, "Progress during a pour doesn't get in the way of its result", "[sim][pod]")
+{
+    auto config = fast_config();
+    config.flow = 100.0 * units::milli_litre / units::si::second;
+    config.progress_interval = 1ms;
+    configure(config);
+    run_test([this]() -> cm::Task<void> {
+        co_await connected();
+        const auto report = co_await pod->dispense(kDispenser, 100 * units::milli_litre);
+
+        CHECK(report.outcome == cm::DispenseOutcome::completed);
+        CHECK(report.amount == 100 * units::milli_litre);
+        CHECK(client->stats().progress_reports >= 5);
+    });
+}

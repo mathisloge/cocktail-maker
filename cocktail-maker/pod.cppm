@@ -28,11 +28,11 @@ export constexpr Version station_protocol_version()
     };
 }
 
-/// Reads a protocol release from its wire form 0xMMmmpp.
+/// Reads a protocol release from its wire form 0xMMmmpp. Bits above the major version end up in it, so they never match.
 export constexpr Version protocol_version_from_wire(std::uint32_t wire)
 {
     return Version{
-        .major = static_cast<int>((wire >> 16U) & 0xFFU),
+        .major = static_cast<int>(wire >> 16U),
         .minor = static_cast<int>((wire >> 8U) & 0xFFU),
         .patch = static_cast<int>(wire & 0xFFU),
     };
@@ -47,6 +47,7 @@ export constexpr std::uint32_t protocol_version_to_wire(const Version& version)
 
 static_assert(protocol_version_to_wire(station_protocol_version()) == proto::specVersion());
 static_assert(protocol_version_from_wire(proto::specVersion()) == station_protocol_version());
+static_assert(protocol_version_from_wire(0x01000000U | proto::specVersion()) != station_protocol_version());
 
 export class PodReceiveError : public std::runtime_error
 {

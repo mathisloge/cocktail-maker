@@ -216,9 +216,9 @@ TEST_CASE("StationStateBridge - A pod on another protocol release shows why it i
     SlintFlusher flusher;
 
     auto pod = bridge->create_pod_state();
-    pod->update_info(cm::PodInfo{.id = cm::PodId{"Old"},
+    pod->update_info(cm::PodInfo{.id = cm::PodId{"Newer"},
                                  .firmware_version = {},
-                                 .protocol_version = cm::Version{.major = 2, .minor = 0, .patch = 0},
+                                 .protocol_version = cm::Version{.major = 2, .minor = 2, .patch = 0},
                                  .num_pumps = 1,
                                  .num_valves = 0});
     pod->update_state(cm::PodState::ConnectionState::incompatible);
@@ -227,8 +227,23 @@ TEST_CASE("StationStateBridge - A pod on another protocol release shows why it i
     const auto row = bridge->pod_model()->row_data(0);
     REQUIRE(row.has_value());
     CHECK(row->connection_state == cm::gui::ConnectionState::Incompatible);
-    CHECK(std::string{row->status_text.data()} == "Protokoll 2.0.0, erwartet 2.1.0");
+    CHECK(std::string{row->status_text.data()} == "Protokoll 2.2.0, erwartet 2.1.0");
+    REQUIRE(row->dispensers != nullptr);
+    CHECK(row->dispensers->row_count() == 0);
     CHECK_FALSE(ui->global<cm::gui::StationStateContext>().get_station_ready());
 
+    auto usable = bridge->create_pod_state();
+    usable->update_info(cm::PodInfo{.id = cm::PodId{"Current"},
+                                    .firmware_version = {},
+                                    .protocol_version = cm::station_protocol_version(),
+                                    .num_pumps = 1,
+                                    .num_valves = 0});
+    usable->update_state(cm::PodState::ConnectionState::connected);
+    flush_slint_events();
+
+    // The unused Pod doesn't hold back the one that works, just like an unplugged one.
+    CHECK(ui->global<cm::gui::StationStateContext>().get_station_ready());
+
+    usable.reset();
     pod.reset();
 }

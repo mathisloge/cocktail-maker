@@ -48,7 +48,7 @@ DispenseOutcome to_dispense_outcome(const proto::field::DispenseResultVal result
     case Result::ValuesLimit:
         break;
     }
-    // Only a Pod on another protocol release can send this, and guessing could pour the wrong amount.
+    // The version check keeps other releases out, so only a faulty Pod sends this, and guessing could pour the wrong amount.
     throw ProtocolError{comms::ErrorStatus::InvalidMsgData,
                         std::format("Unknown dispense result {}", std::to_underlying(result))};
 }

@@ -133,19 +133,22 @@ class PodUiModel : public slint::Model<gui::Pod>
                 changed = true;
             }
 
-            if ((gui_pod.dispensers == nullptr) or
-                gui_pod.dispensers->row_count() != (state_pod.info.num_pumps + state_pod.info.num_valves)) {
+            // An incompatible Pod offers nothing to assign, calibrate or identify, because it stays unused.
+            const bool usable = state_pod.connection_state != gui::ConnectionState::Incompatible;
+            const int num_pumps = usable ? state_pod.info.num_pumps : 0;
+            const int num_valves = usable ? state_pod.info.num_valves : 0;
+            if ((gui_pod.dispensers == nullptr) or gui_pod.dispensers->row_count() != (num_pumps + num_valves)) {
                 auto dispenser_model = std::make_shared<slint::VectorModel<gui::Dispenser>>();
-                for (int i = 0; i < state_pod.info.num_pumps; ++i) {
+                for (int i = 0; i < num_pumps; ++i) {
                     dispenser_model->push_back(gui::Dispenser{
                         .id = i,
                         .type = DispenserType::Pump,
                         .fill_text = "unbekannt",
                     });
                 }
-                for (int i = 0; i < state_pod.info.num_valves; ++i) {
+                for (int i = 0; i < num_valves; ++i) {
                     dispenser_model->push_back(gui::Dispenser{
-                        .id = (state_pod.info.num_pumps + i),
+                        .id = (num_pumps + i),
                         .type = DispenserType::Valve,
                         .fill_text = "unbekannt",
                     });
@@ -257,13 +260,14 @@ std::unique_ptr<PodState> StationStateBridge::create_pod_state()
 void StationStateBridge::pod_connection_state_changed(const PodStateImpl& pod)
 {
     update_pod_model(pod);
-    const bool all_connected = (not pods_.empty()) and std::ranges::all_of(pods_, [](const auto& p) {
-                                   return p->data().connection_state == gui::ConnectionState::Connected;
-                               });
+    const auto is_connected = [](const auto* p) { return p->data().connection_state == gui::ConnectionState::Connected; };
+    // An incompatible Pod stays unused like an unplugged one, so it doesn't hold back the others.
+    const auto is_settled = [&is_connected](const auto* p) {
+        return is_connected(p) or p->data().connection_state == gui::ConnectionState::Incompatible;
+    };
+    const bool ready = std::ranges::any_of(pods_, is_connected) and std::ranges::all_of(pods_, is_settled);
 
-    // update device ready to all_connected
-    slint::invoke_from_event_loop(
-        [connected = all_connected, ui = ui_]() { ui->global<cm::gui::StationStateContext>().set_station_ready(connected); });
+    slint::invoke_from_event_loop([ready, ui = ui_]() { ui->global<cm::gui::StationStateContext>().set_station_ready(ready); });
 }
 
 void StationStateBridge::pod_about_to_removed(const PodStateImpl& pod)

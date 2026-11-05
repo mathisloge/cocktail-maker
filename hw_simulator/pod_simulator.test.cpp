@@ -599,7 +599,7 @@ TEST_CASE("The application reads the fill levels of a pod that connects", "[sim]
 TEST_CASE_METHOD(SimPodFixture, "A pod on another protocol release is incompatible and pours nothing", "[sim][pod]")
 {
     auto config = fast_config();
-    config.protocol_version = cm::Version{.major = 2, .minor = 0, .patch = 0};
+    config.protocol_version = cm::Version{.major = 2, .minor = 2, .patch = 0};
     configure(config);
     run_test([this]() -> cm::Task<void> {
         co_await is_incompatible.async_wait();

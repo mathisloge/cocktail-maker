@@ -64,5 +64,7 @@ export class ProcessContextBridge
     std::shared_ptr<AwaitableBool> active_recipe_abort_;
     /// The mix whose warning is open. It is only accessed on the io thread.
     std::optional<PendingMix> pending_mix_;
+    /// Tells a running check that the guest has left the page it started from. It is only accessed on the io thread.
+    std::uint64_t check_generation_{0};
 };
 } // namespace cm::gui

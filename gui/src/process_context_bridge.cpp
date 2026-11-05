@@ -337,6 +337,9 @@ ProcessContextBridge::ProcessContextBridge(AsyncScope& async_scope,
 void ProcessContextBridge::init()
 {
     ui_->global<ProcessContext>().on_process_active_recipe([this]() {
+        if (ui_->global<ProcessContext>().get_checking_fill_level()) {
+            return;
+        }
         const auto recipe_to_create = ui_->global<RecipeContext>().get_active_recipe();
         const auto boost = ui_->global<ProcessContext>().get_boost() * units::percent;
         const auto target_volume = ui_->global<ProcessContext>().get_glass_volume() * units::milli_litre;
@@ -373,9 +376,16 @@ void ProcessContextBridge::init()
     });
 
     ui_->global<StationStateContext>().on_navigated_to([this](Page from, Page to) {
-        if (from == Page::MixPage and to != Page::MixSuccessPage) {
+        if (from == Page::MixPage and to != Page::MixSuccessPage and to != Page::MixPage) {
             SPDLOG_LOGGER_INFO(logger_, "Cancelling recipe processing...");
             boost::asio::post(async_scope_.executor(), [this]() { abort_active_recipe(); });
+        }
+        // A guest who has left the page while the fill levels are checked no longer wants this drink.
+        if (to != Page::MixPage) {
+            boost::asio::post(async_scope_.executor(), [this]() {
+                ++check_generation_;
+                pending_mix_.reset();
+            });
         }
     });
 }
@@ -389,7 +399,19 @@ Commands ProcessContextBridge::prepare_commands(const Recipe& recipe,
 
 Task<void> ProcessContextBridge::async_check_and_start(PendingMix mix)
 {
+    // The confirm button has to come back however this ends.
+    struct CheckFinished
+    {
+        slint::ComponentHandle<AppWindow> ui;
+
+        ~CheckFinished()
+        {
+            slint::invoke_from_event_loop([ui = ui]() { ui->global<ProcessContext>().set_checking_fill_level(false); });
+        }
+    } check_finished{ui_};
+
     pending_mix_.reset();
+    const auto generation = ++check_generation_;
 
     const auto commands = prepare_commands(mix.recipe, mix.boost, mix.target_volume);
     for (const auto& address : involved_dispensers(commands, station_config_)) {
@@ -397,6 +419,10 @@ Task<void> ProcessContextBridge::async_check_and_start(PendingMix mix)
         if (dispenser.has_value()) {
             co_await fill_levels_.refresh(address, **dispenser);
         }
+    }
+
+    if (generation != check_generation_) {
+        co_return;
     }
 
     const auto shortages = find_fill_shortages(commands, station_config_, fill_levels_);
@@ -422,17 +448,13 @@ Task<void> ProcessContextBridge::async_check_and_start(PendingMix mix)
             model->push_back(slint::SharedString{line});
         }
         ui->global<ProcessContext>().set_fill_warning_lines(std::move(model));
-        ui->global<ProcessContext>().set_checking_fill_level(false);
         ui->invoke_open_fill_warning_popup();
     });
 }
 
 void ProcessContextBridge::start_mix(PendingMix mix)
 {
-    slint::invoke_from_event_loop([ui = ui_]() {
-        ui->global<ProcessContext>().set_checking_fill_level(false);
-        ui->global<StationStateContext>().invoke_navigate_to(Page::MixPage);
-    });
+    slint::invoke_from_event_loop([ui = ui_]() { ui->global<StationStateContext>().invoke_navigate_to(Page::MixPage); });
     start_recipe_processing(std::move(mix.recipe), mix.boost, mix.target_volume);
 }
 

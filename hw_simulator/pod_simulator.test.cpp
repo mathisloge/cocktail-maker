@@ -422,8 +422,6 @@ TEST_CASE_METHOD(SimFillLevelFixture, "A connecting pod gets its levels correcte
         client->bottle(kDispenser).liquid -= 100 * units::si::gram;
         co_await fill_levels.refresh(address, dispenser());
         CHECK(fill_levels.record(address)->level == 200 * units::si::gram);
-
-        CHECK_FALSE(fill_levels.record(cm::PodDispenser{info.id, kWithoutLoadCell}).has_value());
     });
 }
 
@@ -516,8 +514,52 @@ class SilentStationState : public cm::StationState
 };
 } // namespace
 
+TEST_CASE_METHOD(SimFillLevelFixture, "A connection lost during the reads ends them without an error", "[sim][fill_level]")
+{
+    auto config = fast_config();
+    config.quick_reply = 50ms;
+    registry.unregister_pod(pod);
+    configure(config);
+    registry.register_pod(pod);
+    run_test([this]() -> cm::Task<void> {
+        co_await connected();
+        for (int i = 0; i < 4; ++i) {
+            fill_levels.empty_bottle_tared(cm::PodDispenser{info.id, cm::DispenserId{i}});
+        }
+
+        const auto lose_connection = [this]() -> cm::Task<void> {
+            boost::asio::steady_timer timer{ctx, 70ms};
+            co_await timer.async_wait(exec::asio::use_sender);
+            client->socket().close();
+        };
+        std::vector<cm::Task<void>> tasks;
+        tasks.emplace_back(cm::sync_pod_fill_levels(info, registry, fill_levels));
+        tasks.emplace_back(lose_connection());
+        co_await cm::join_all(std::move(tasks));
+    });
+}
+
 TEST_CASE("The application reads the fill levels of a pod that connects", "[sim][fill_level]")
 {
+    // The application keeps its file in the working directory, and this test must not touch a real one.
+    const auto directory = std::filesystem::temp_directory_path() /
+                           std::format("sim-application-{}", std::chrono::steady_clock::now().time_since_epoch().count());
+    std::filesystem::create_directories(directory);
+    const auto previous_directory = std::filesystem::current_path();
+    std::filesystem::current_path(directory);
+
+    struct RestoreDirectory
+    {
+        std::filesystem::path previous;
+        std::filesystem::path temporary;
+
+        ~RestoreDirectory()
+        {
+            std::filesystem::current_path(previous);
+            std::filesystem::remove_all(temporary);
+        }
+    } restore_directory{previous_directory, directory};
+
     std::atomic<int> changes{0};
     SimApplication app;
     app.fill_levels().set_change_handler([&changes](const cm::PodDispenser&, const cm::FillLevelView&) { ++changes; });

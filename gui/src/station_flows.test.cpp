@@ -408,7 +408,8 @@ struct WarningStation : SimStation
     cm::gui::ProcessContextBridge bridge{scope, ui, recipes, ingredients, config, registry, fill_levels};
     std::optional<cm::gui::Page> last_page;
 
-    WarningStation()
+    explicit WarningStation(cm::sim::ClientConfig client_config = fast_config())
+        : SimStation{std::move(client_config)}
     {
         use_recipe("drink", rum);
         bridge.init();
@@ -572,6 +573,63 @@ TEST_CASE_METHOD(WarningStation, "The confirm button waits for the check", "[flo
     CHECK_FALSE(ui->global<cm::gui::ProcessContext>().get_checking_fill_level());
 }
 
+TEST_CASE_METHOD(WarningStation, "The confirm button comes back when a warning opens", "[flow][warning]")
+{
+    fill_rum_to(15);
+
+    confirm_glass();
+
+    REQUIRE(pump_until([this]() { return warning_open(); }));
+    CHECK_FALSE(ui->global<cm::gui::ProcessContext>().get_checking_fill_level());
+}
+
+namespace {
+cm::sim::ClientConfig slow_reply_config()
+{
+    auto config = fast_config();
+    config.quick_reply = 200ms;
+    return config;
+}
+
+struct SlowCheckStation : WarningStation
+{
+    SlowCheckStation()
+        : WarningStation{slow_reply_config()}
+    {
+    }
+};
+} // namespace
+
+TEST_CASE_METHOD(SlowCheckStation, "A guest who leaves during the check gets no drink", "[flow][warning]")
+{
+    fill_rum_to(200);
+
+    confirm_glass();
+    ui->global<cm::gui::StationStateContext>().invoke_navigate_to(cm::gui::Page::CocktailListPage);
+
+    pump_for(600ms);
+
+    CHECK(last_page == cm::gui::Page::CocktailListPage);
+    CHECK(client->stats().dispense_requests == 0);
+    CHECK_FALSE(warning_open());
+    CHECK_FALSE(ui->global<cm::gui::ProcessContext>().get_checking_fill_level());
+}
+
+TEST_CASE_METHOD(SlowCheckStation, "A second press during the check starts one mix", "[flow][warning]")
+{
+    fill_rum_to(200);
+
+    confirm_glass();
+    confirm_glass();
+
+    REQUIRE(pump_until([this]() { return client->stats().dispense_requests > 0; }));
+    pump_for(300ms);
+
+    CHECK(client->stats().dispense_requests == 1);
+    CHECK(client->stats().emergency_stops == 0);
+    CHECK(last_page == cm::gui::Page::MixPage);
+}
+
 namespace {
 cm::sim::ClientConfig calibration_config()
 {
@@ -589,8 +647,8 @@ struct CalibrationStation : SimStation
     cm::gui::Pod gui_pod;
     cm::gui::Dispenser gui_dispenser;
 
-    CalibrationStation()
-        : SimStation{calibration_config()}
+    explicit CalibrationStation(cm::sim::ClientConfig client_config = calibration_config())
+        : SimStation{std::move(client_config)}
     {
         bridge.init();
         gui_pod.id = slint::SharedString{rum_address.pod_id.raw()};
@@ -645,8 +703,10 @@ struct CalibrationStation : SimStation
 TEST_CASE_METHOD(CalibrationStation, "The whole calibration procedure succeeds", "[flow][calibration]")
 {
     REQUIRE(clear_scale_tare());
+    client->bottle(rum_address.dispenser_id).glass += 100 * units::si::gram;
     REQUIRE(reference());
-    CHECK(pump_until([this]() { return not state().reference_reading.empty(); }));
+    CHECK(pump_until([this]() { return std::string{state().reference_reading.data()} == "100 g"; }));
+    client->bottle(rum_address.dispenser_id).glass -= 100 * units::si::gram;
 
     REQUIRE(empty_bottle_tare());
     client->bottle(rum_address.dispenser_id).liquid = 500 * units::si::gram;
@@ -718,16 +778,57 @@ TEST_CASE_METHOD(CalibrationStation, "A valve calibrates like a pump", "[flow][c
     CHECK(run_finished_with(Status::Success));
 }
 
+TEST_CASE_METHOD(CalibrationStation, "A failed reference attempt doesn't keep the old reading", "[flow][calibration]")
+{
+    REQUIRE(clear_scale_tare());
+    REQUIRE(reference());
+    REQUIRE(pump_until([this]() { return not state().reference_reading.empty(); }));
+
+    // The first calibration has used up its tare, so the Pod refuses this one.
+    context().invoke_calibrate_load_cell_ref_weight(gui_pod, gui_dispenser, 100);
+    REQUIRE(pump_until([this]() { return state().load_cell_status == Status::Error; }));
+
+    CHECK(state().reference_reading.empty());
+}
+
+namespace {
+cm::sim::ClientConfig late_ack_config()
+{
+    auto config = calibration_config();
+    config.ack_delay = 700ms;
+    return config;
+}
+
+struct LateAckStation : CalibrationStation
+{
+    LateAckStation()
+        : CalibrationStation{late_ack_config()}
+    {
+    }
+};
+} // namespace
+
+TEST_CASE_METHOD(LateAckStation, "A run whose Ack is late gets stopped, as it may already be pouring", "[flow][calibration]")
+{
+    start_run(1);
+
+    REQUIRE(run_finished_with(Status::Error));
+    CHECK(pump_until([this]() { return client->stats().emergency_stops == 1; }));
+}
+
 // codespell:ignore-next-line
 TEST_CASE_METHOD(CalibrationStation, "Stopp ends a running calibration", "[flow][calibration]")
 {
+    CHECK_FALSE(context().invoke_is_busy());
     start_run(5);
     REQUIRE(run_finished_with(Status::Running));
     pump_for(100ms);
+    CHECK(context().invoke_is_busy());
 
     context().invoke_stop_calibration();
 
     REQUIRE(run_finished_with(Status::Error));
+    CHECK_FALSE(context().invoke_is_busy());
     CHECK(std::string{state().error_message.data()}.contains("der Lauf wurde gestoppt"));
 }
 

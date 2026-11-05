@@ -56,7 +56,7 @@ export class DispenserCalibrationBridge
 
     void update_dispenser_measured_amount(units::Litre amount);
 
-    void update_reference_reading(units::Grams reading);
+    void update_reference_reading(std::string reading);
 
   private:
     AsyncScope& async_scope_;

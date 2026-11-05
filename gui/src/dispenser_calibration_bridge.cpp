@@ -136,6 +136,7 @@ Task<void> DispenserCalibrationBridge::async_dispatch_calibrate_load_cell_ref_we
 {
     update_load_cell_calibration_status(CalibrationStepStatus::Running);
     update_ui_error("");
+    update_reference_reading("");
     auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
     if (not dispenser.has_value()) {
         update_load_cell_calibration_status(CalibrationStepStatus::Error);
@@ -154,7 +155,8 @@ Task<void> DispenserCalibrationBridge::async_dispatch_calibrate_load_cell_ref_we
 
     // The scale should now show the known weight, which lets the operator check the result.
     try {
-        update_reference_reading(co_await (*dispenser)->load_cell_weight());
+        const units::Grams reading = co_await (*dispenser)->load_cell_weight();
+        update_reference_reading(std::format("{} g", std::lround(reading.numerical_value_in(units::si::gram))));
     }
     catch (const std::exception&) {
         update_ui_error(calibration_error_text(CalibrationStep::reference_weight, std::current_exception()));
@@ -195,18 +197,32 @@ Task<void> DispenserCalibrationBridge::async_calibrate_dispenser(const PodId pod
         co_return;
     }
 
+    std::optional<units::Litre> amount;
     try {
-        const units::Litre amount = co_await (*dispenser)->calibrate(run_time);
-        update_dispenser_measured_amount(amount);
+        amount = co_await (*dispenser)->calibrate(run_time);
+        update_dispenser_measured_amount(*amount);
         update_dispenser_status(CalibrationStepStatus::Success);
+    }
+    catch (const PodTimeoutError&) {
+        // The Pod starts the dispenser before it replies, so it may be pouring with nobody watching.
+        async_scope_.spawn(pod_registry_.force_safe_state_all_pods());
+        update_dispenser_status(CalibrationStepStatus::Error);
+        update_ui_error(calibration_error_text(CalibrationStep::dispenser_run, std::current_exception()));
     }
     catch (const std::exception&) {
         update_dispenser_status(CalibrationStepStatus::Error);
         update_ui_error(calibration_error_text(CalibrationStep::dispenser_run, std::current_exception()));
     }
 
-    // Liquid may have come out even if the run failed.
-    co_await fill_levels_.refresh(PodDispenser{pod_id, dispenser_id}, **dispenser);
+    const PodDispenser address{pod_id, dispenser_id};
+    if (amount.has_value()) {
+        co_await fill_levels_.pour_finished(
+            address, **dispenser, DispenseReport{.amount = *amount, .outcome = DispenseOutcome::completed});
+    }
+    else {
+        // Liquid may have come out even though the run failed.
+        co_await fill_levels_.refresh(address, **dispenser);
+    }
 }
 
 void DispenserCalibrationBridge::update_ui_error(std::string error_str)
@@ -250,10 +266,9 @@ void DispenserCalibrationBridge::update_dispenser_measured_amount(units::Litre a
     });
 }
 
-void DispenserCalibrationBridge::update_reference_reading(units::Grams reading)
+void DispenserCalibrationBridge::update_reference_reading(std::string reading)
 {
-    const auto text = std::format("{} g", std::lround(reading.numerical_value_in(units::si::gram)));
-    slint::invoke_from_event_loop([ui = ui_, text = slint::SharedString{text.c_str()}]() {
+    slint::invoke_from_event_loop([ui = ui_, text = slint::SharedString{reading.c_str()}]() {
         ui->global<DispenserCalibrationContext>().invoke_update_reference_reading(text);
     });
 }

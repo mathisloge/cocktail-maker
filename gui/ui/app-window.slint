@@ -43,6 +43,7 @@ import { AdminArea } from "admin-area.slint";
 import { StationStateContext } from "./globals/station-state-context.slint";
 import { ProcessContext } from "./globals/process-context.slint";
 import { GlassContext } from "globals/glass-context.slint";
+import { DispenserCalibrationContext } from "./globals/dispenser-calibration-context.slint";
 
 
 export component AppWindow inherits Window {
@@ -130,6 +131,7 @@ export component AppWindow inherits Window {
                 x: 0px;
                 width: 120px;
                 visible: StationStateContext.active-screen != Page.cocktail-list-page && StationStateContext.active-screen != Page.finished-page;
+                enabled: !DispenserCalibrationContext.is-busy();
                 clicked => {
                     operation_canceled();
                 }

@@ -115,6 +115,7 @@ component DispenserCalibrationContent inherits Rectangle {
     in property <Pod> active-pod;
     in property <Dispenser> active-dispenser;
     private property <int> reference-weight-g: 100;
+    callback close-requested();
     private property <int> run-time-s: DispenserCalibrationContext.default-run-time-s;
 
     background: Palette.background;
@@ -140,11 +141,30 @@ component DispenserCalibrationContent inherits Rectangle {
                         ? "Pumpe " + root.active-dispenser.id + " kalibrieren"
                         : "Ventil " + root.active-dispenser.id + " kalibrieren";
                 }
+
+                Rectangle {
+                    horizontal-stretch: 1;
+                }
+
+                Button {
+                    text: "Schließen";
+                    height: Layout.touch-height-sm;
+                    enabled: !DispenserCalibrationContext.is-busy();
+                    clicked => {
+                        root.close-requested();
+                    }
+                }
             }
 
             SmallText {
                 text: "Pod " + root.active-pod.id;
                 color: Palette.text-secondary;
+            }
+
+            if DispenserCalibrationContext.state.error-message != "": SmallText {
+                text: DispenserCalibrationContext.state.error-message;
+                color: Palette.log-error;
+                wrap: word-wrap;
             }
 
             ScrollView {
@@ -157,7 +177,7 @@ component DispenserCalibrationContent inherits Rectangle {
                         step-number: "1";
                         title: "Wägezelle";
                         description: "Nur beim Einbau der Wägezelle nötig. Waage leeren und tarieren, danach das Referenzgewicht auflegen und kalibrieren.";
-                        status: DispenserCalibrationContext.state.load-cell-status;
+                        status: DispenserCalibrationContext.load-cell-card-status();
 
                         Button {
                             text: DispenserCalibrationContext.state.load-cell-tare-status == CalibrationStepStatus.running
@@ -284,11 +304,6 @@ component DispenserCalibrationContent inherits Rectangle {
                         }
                     }
 
-                    if DispenserCalibrationContext.state.error-message != "": SmallText {
-                        text: DispenserCalibrationContext.state.error-message;
-                        color: Palette.log-error;
-                        wrap: word-wrap;
-                    }
                 }
             }
         }
@@ -299,7 +314,8 @@ export component DispenserCalibrationPopup inherits PopupWindow {
     in property <Pod> active-pod;
     in property <Dispenser> active-dispenser;
 
-    close-policy: PopupClosePolicy.close-on-click-outside;
+    // It must not close while something runs, as the way to stop a run is in here.
+    close-policy: PopupClosePolicy.no-auto-close;
     Rectangle {
         width: 100%;
         height: 100%;
@@ -313,5 +329,8 @@ export component DispenserCalibrationPopup inherits PopupWindow {
         y: (root.height - self.height) / 2;
         active-pod: root.active-pod;
         active-dispenser: root.active-dispenser;
+        close-requested => {
+            root.close();
+        }
     }
 }

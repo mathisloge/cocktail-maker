@@ -35,6 +35,25 @@ export global DispenserCalibrationContext {
         error-message: "",
     };
 
+    /// Something is running, and leaving now would take the way to stop it away.
+    public pure function is-busy() -> bool {
+        return state.load-cell-status == CalibrationStepStatus.running
+            || state.load-cell-tare-status == CalibrationStepStatus.running
+            || state.empty-bottle-tare-status == CalibrationStepStatus.running
+            || state.dispenser-status == CalibrationStepStatus.running;
+    }
+
+    /// The load cell card holds two steps, and a problem in either has to show.
+    public pure function load-cell-card-status() -> CalibrationStepStatus {
+        if (state.load-cell-tare-status == CalibrationStepStatus.running || state.load-cell-status == CalibrationStepStatus.running) {
+            return CalibrationStepStatus.running;
+        }
+        if (state.load-cell-tare-status == CalibrationStepStatus.error || state.load-cell-status == CalibrationStepStatus.error) {
+            return CalibrationStepStatus.error;
+        }
+        return state.load-cell-status;
+    }
+
     public function update-calibration-error(error: string) {
         self.state.error-message = error;
     }

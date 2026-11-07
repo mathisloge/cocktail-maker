@@ -147,19 +147,19 @@ export component PodConfigTab inherits Rectangle {
 
                     Button {
                         text: "Nachgefüllt";
-                        height: Layout.touch-height-sm;
+                        compact: true;
                         clicked => { StationStateContext.mark-dispenser-refilled(active-pod, dispenser); }
                     }
 
                     Button {
                         text: "Identify";
-                        height: Layout.touch-height-sm;
+                        compact: true;
                         clicked => { StationStateContext.highlight-dispenser(active-pod, dispenser); }
                     }
 
                     Button {
                         text: "Calibrate";
-                        height: Layout.touch-height-sm;
+                        compact: true;
                         clicked => {
                             root.active-dispenser = dispenser;
                             DispenserCalibrationContext.reset-state();

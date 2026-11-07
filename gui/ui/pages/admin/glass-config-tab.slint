@@ -26,6 +26,7 @@ export component GlassConfigTab inherits Rectangle {
             }
 
             Button {
+                compact: true;
                 text: "Add";
                 clicked => {
                     GlassContext.add-glass(glass-chooser.current-value)
@@ -49,7 +50,7 @@ export component GlassConfigTab inherits Rectangle {
                         x: parent.width - self.width - Layout.spacing-sm;
                         y: Layout.spacing-sm;
                         min-width: Layout.touch-height-sm;
-                        min-height: Layout.touch-height-sm;
+                        compact: true;
                         text: "x";
                         clicked => {
                             GlassContext.remove-glass(descriptor.id);
@@ -70,6 +71,7 @@ export component GlassConfigTab inherits Rectangle {
             }
 
             Button {
+                compact: true;
                 text: "Add";
                 clicked => {
                     GlassContext.add-volume-from-glass(selected-glass.id, volume-box.current-value.to-float())

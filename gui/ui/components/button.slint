@@ -6,6 +6,8 @@ import { Typography } from "../theme/typography.slint";
 export component Button {
     in property <string> text;
     in property <bool> secondary;
+    // 48 px instead of 75 px, for rows and tool bars.
+    in property <bool> compact;
     in property <bool> enabled <=> i-touch-area.enabled;
     out property <bool> pressed: self.enabled && i-touch-area.pressed;
 
@@ -14,7 +16,7 @@ export component Button {
     private property <brush> text-color: self.secondary ? Palette.text-interactive : Palette.text-on-accent;
 
     min-width: max(32px, i-layout.min-width);
-    min-height: max(Layout.touch-height, i-layout.min-height);
+    min-height: max(root.compact ? Layout.touch-height-sm : Layout.touch-height, i-layout.min-height);
     horizontal-stretch: 0;
     vertical-stretch: 0;
     forward-focus: i-focus-scope;
@@ -26,9 +28,9 @@ export component Button {
 
     states [
         disabled when !root.enabled : {
-            i-background.background: root.secondary ? Palette.surface : Palette.accent-dim;
-            i-border.border-color: Palette.border-subtle;
-            root.text-color: Palette.text-on-accent;
+            i-background.background: Palette.surface-disabled;
+            i-border.border-color: Palette.border;
+            root.text-color: Palette.text-disabled;
         }
         pressed when root.pressed : {
             i-background.background: Palette.accent;

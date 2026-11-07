@@ -18,6 +18,21 @@ target_link_libraries(
 
 target_sources(
     cocktail-maker-lib
+    PRIVATE
+        application.cpp
+        execute_recipe.cpp
+        fill_level.cpp
+        glass.cpp
+        ingredient.cpp
+        pod.cpp
+        pod_discovery.cpp
+        pod_protocol_session.cpp
+        pod_registry.cpp
+        pour.cpp
+        recipe.cpp
+        serial.cpp
+        state_file.cpp
+        station_config.cpp
     PUBLIC
         FILE_SET CXX_MODULES
             FILES
@@ -25,40 +40,26 @@ target_sources(
                 comms_adapter.cppm
                 dispenser.cppm
                 fill_level.cppm
-                fill_level.cpp
                 pour.cppm
-                pour.cpp
                 execute_recipe.cppm
-                execute_recipe.cpp
                 glass.cppm
-                glass.cpp
                 ingredient.cppm
-                ingredient.cpp
                 lib.cppm
                 pod_discovery.cppm
-                pod_discovery.cpp
                 pod_types.cppm
                 pod_protocol_session.cppm
-                pod_protocol_session.cpp
                 pod_registry.cppm
-                pod_registry.cpp
                 pod_dispatcher.cppm
                 pod.cppm
-                pod.cpp
                 pod_algorithms.cppm
                 recipe_boost.cppm
                 recipe_scale.cppm
                 recipe.cppm
-                recipe.cpp
                 station_config.cppm
-                station_config.cpp
                 station_state.cppm
                 state_file.cppm
-                state_file.cpp
                 serial.cppm
-                serial.cpp
                 application.cppm
-                application.cpp
 )
 
 if(BUILD_TESTING)

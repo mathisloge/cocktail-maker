@@ -25,15 +25,14 @@ target_link_libraries(
 
 target_sources(
     cocktail-maker-core
+    PRIVATE async_algorithms.cpp async_scope.cpp sleep.cpp
     PUBLIC
         FILE_SET CXX_MODULES
             FILES
                 lib.cppm
                 any_io_stream.cppm
                 async_algorithms.cppm
-                async_algorithms.cpp
                 async_scope.cppm
-                async_scope.cpp
                 awaitable_bool.cppm
                 channel.cppm
                 io_scheduler.cppm
@@ -43,7 +42,6 @@ target_sources(
                 units.cppm
                 retry.cppm
                 sleep.cppm
-                sleep.cpp
                 task.cppm
 )
 

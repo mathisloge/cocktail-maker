@@ -1,11 +1,10 @@
 module;
 #include <proto/field/ErrorCodeCommon.h>
 
-module cm.gui:mix_error_page_impl;
+module cm.gui;
 
 import std;
 import cm;
-import :mix_error_page;
 
 namespace cm::gui {
 namespace {

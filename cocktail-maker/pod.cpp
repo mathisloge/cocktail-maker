@@ -9,10 +9,9 @@ module;
 #include <spdlog/spdlog.h>
 #include <stdexec/execution.hpp>
 
-module cm:pod_impl;
+module cm;
 import std;
 import cm.core;
-import :pod;
 
 namespace cm {
 

@@ -1,13 +1,11 @@
 module;
 #include <spdlog/spdlog.h>
 
-module cm:pour_impl;
+module cm;
 
 import std;
 import mp_units;
 import cm.core;
-import :pod;
-import :pour;
 
 namespace cm {
 

@@ -4,13 +4,10 @@ cm_enable_compile_time_trace(cocktail-maker-simulator)
 target_link_libraries(cocktail-maker-simulator PUBLIC cm::lib PRIVATE proto)
 target_sources(
     cocktail-maker-simulator
+    PRIVATE simulated_pod_discovery.cpp
     PUBLIC
         FILE_SET CXX_MODULES
-            FILES
-                lib.cppm
-                client.cppm
-                simulated_pod_discovery.cppm
-                simulated_pod_discovery.cpp
+            FILES lib.cppm client.cppm simulated_pod_discovery.cppm
 )
 
 if(BUILD_TESTING)

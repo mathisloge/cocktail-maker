@@ -6,13 +6,10 @@ module;
 #include <stdexec/execution.hpp>
 #include "app-window.h"
 
-module cm.gui:machine_adapter_impl;
+module cm.gui;
 import std;
 import cm.core;
 import cm;
-import :async_ui;
-import :recipe_adapter;
-import :machine_adapter;
 
 namespace cm::gui {
 

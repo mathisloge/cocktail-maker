@@ -3,14 +3,9 @@ module;
 #include <spdlog/spdlog.h>
 #include <stdexec/execution.hpp>
 
-module cm:application_impl;
+module cm;
 import std;
 import cm.core;
-import :application;
-import :pod_discovery;
-import :pod_registry;
-import :station_state;
-import :fill_level;
 
 namespace cm {
 

@@ -2,12 +2,9 @@ module;
 #include <spdlog/spdlog.h>
 #include "app-window.h"
 
-module cm.gui:gui_application_impl;
+module cm.gui;
 import cm.core;
 import cm;
-import :gui_application;
-import :ui_log_sink;
-import :station_state_bridge;
 
 namespace cm::gui {
 

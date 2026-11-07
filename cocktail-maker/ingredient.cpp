@@ -1,11 +1,10 @@
 module;
 #include <simdjson.h>
 
-module cm:ingredient_impl;
+module cm;
 import std;
 import mp_units;
 import cm.core;
-import :ingredient;
 import :catalog_loader;
 
 namespace cm {

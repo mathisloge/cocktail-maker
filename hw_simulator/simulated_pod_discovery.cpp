@@ -3,12 +3,10 @@ module;
 #include <spdlog/spdlog.h>
 #include <stdexec/execution.hpp>
 
-module cm.sim:simulated_pod_discovery_impl;
+module cm.sim;
 import std;
 import cm.core;
 import cm;
-import :client;
-import :simulated_pod_discovery;
 
 namespace cm::sim {
 namespace {

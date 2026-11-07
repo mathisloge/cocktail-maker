@@ -3,9 +3,8 @@ module;
 #include <boost/asio/steady_timer.hpp>
 #include <exec/asio/use_sender.hpp>
 
-module cm.core:sleep_impl;
+module cm.core;
 import std;
-import :sleep;
 
 namespace cm {
 Task<void> async_sleep(boost::asio::any_io_executor executor, const std::chrono::steady_clock::duration duration)

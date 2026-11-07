@@ -2,12 +2,10 @@ module;
 #include <simdjson.h>
 #include <spdlog/spdlog.h>
 
-module cm:glass_impl;
+module cm;
 import std;
 import mp_units;
 import cm.core;
-import :glass;
-import :state_file;
 import :catalog_loader;
 
 namespace cm {

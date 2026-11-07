@@ -2,15 +2,10 @@ module;
 #include <simdjson.h>
 #include <spdlog/spdlog.h>
 
-module cm:station_config_impl;
+module cm;
 
 import std;
 import cm.core;
-import :pod_types;
-import :ingredient;
-import :dispenser;
-import :station_config;
-import :state_file;
 
 namespace cm {
 

@@ -5,15 +5,12 @@ module;
 #include <spdlog/spdlog.h>
 #include "app-window.h"
 
-module cm.gui:recipe_context_bridge_impl;
+module cm.gui;
 
 import std;
 import mp_units;
 import cm.core;
 import cm;
-import :recipe_adapter;
-import :machine_adapter;
-import :recipe_context_bridge;
 
 namespace cm::gui {
 

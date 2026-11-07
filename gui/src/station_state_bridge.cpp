@@ -3,14 +3,12 @@ module;
 #include <spdlog/spdlog.h>
 #include "app-window.h"
 
-module cm.gui:station_state_bridge_impl;
+module cm.gui;
 
 import std;
 import mp_units;
 import cm.core;
 import cm;
-import :station_state_bridge;
-import :operator_auth;
 
 namespace cm::gui {
 

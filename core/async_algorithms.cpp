@@ -1,10 +1,8 @@
 module;
 #include <stdexec/execution.hpp>
 
-module cm.core:async_algorithms_impl;
+module cm.core;
 import std;
-import :task;
-import :async_algorithms;
 
 namespace cm {
 namespace {

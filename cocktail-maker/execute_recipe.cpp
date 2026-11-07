@@ -1,11 +1,9 @@
 module;
 #include <stdexec/execution.hpp>
 
-module cm:execute_recipe_impl;
+module cm;
 import std;
 import cm.core;
-import :recipe;
-import :execute_recipe;
 
 namespace cm {
 

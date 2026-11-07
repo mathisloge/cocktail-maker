@@ -5,11 +5,10 @@ module;
 #include <spdlog/spdlog.h>
 #include <unistd.h>
 
-module cm:state_file_impl;
+module cm;
 
 import std;
 import cm.core;
-import :state_file;
 
 namespace cm {
 

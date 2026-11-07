@@ -1,8 +1,7 @@
 module;
 #include <stdexec/execution.hpp>
 
-module cm.core:async_scope_impl;
-import :async_scope;
+module cm.core;
 
 namespace cm {
 Task<void> AsyncScope::join()

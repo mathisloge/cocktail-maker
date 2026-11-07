@@ -5,13 +5,11 @@ module;
 #include <spdlog/spdlog.h>
 #include <stdexec/execution.hpp>
 
-module cm:fill_level_impl;
+module cm;
 
 import std;
 import mp_units;
 import cm.core;
-import :pod;
-import :fill_level;
 
 namespace asio = boost::asio;
 

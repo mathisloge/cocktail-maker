@@ -6,16 +6,12 @@ module;
 #include <stdexec/execution.hpp>
 #include "app-window.h"
 
-module cm.gui:process_context_bridge_impl;
+module cm.gui;
 
 import std;
 import mp_units;
 import cm.core;
 import cm;
-import :recipe_adapter;
-import :machine_adapter;
-import :process_context_bridge;
-import :mix_error_page;
 
 namespace cm::gui {
 slint::SharedString to_slint_string(ErrorItemCategory category)

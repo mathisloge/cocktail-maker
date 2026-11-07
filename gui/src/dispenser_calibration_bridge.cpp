@@ -3,13 +3,12 @@ module;
 #include <stdexec/execution.hpp>
 #include "app-window.h"
 
-module cm.gui:dispenser_calibration_bridge_impl;
+module cm.gui;
 
 import std;
 import cm;
 import cm.core;
 import mp_units;
-import :dispenser_calibration_bridge;
 
 namespace cm::gui {
 

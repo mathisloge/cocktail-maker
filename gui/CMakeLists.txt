@@ -20,6 +20,14 @@ set_target_properties(
 target_link_libraries(cocktail-maker-gui PUBLIC cm::ui cm::lib Boost::hash2)
 target_sources(
     cocktail-maker-gui
+    PRIVATE
+        src/dispenser_calibration_bridge.cpp
+        src/gui_application.cpp
+        src/maschine_adapter.cpp
+        src/mix_error_page.cpp
+        src/process_context_bridge.cpp
+        src/recipe_context_bridge.cpp
+        src/station_state_bridge.cpp
     PUBLIC
         FILE_SET CXX_MODULES
             FILES
@@ -27,21 +35,14 @@ target_sources(
                 src/recipe_adapter.cppm
                 src/async_ui.cppm
                 src/maschine_adapter.cppm
-                src/maschine_adapter.cpp
                 src/ui_log_sink.cppm
                 src/station_state_bridge.cppm
-                src/station_state_bridge.cpp
                 src/dispenser_calibration_bridge.cppm
-                src/dispenser_calibration_bridge.cpp
                 src/recipe_context_bridge.cppm
-                src/recipe_context_bridge.cpp
                 src/process_context_bridge.cppm
-                src/process_context_bridge.cpp
                 src/mix_error_page.cppm
-                src/mix_error_page.cpp
                 src/glass_context_bridge.cppm
                 src/gui_application.cppm
-                src/gui_application.cpp
                 src/operator_auth.cppm
 )
 

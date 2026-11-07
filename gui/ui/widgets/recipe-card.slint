@@ -1,7 +1,7 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Typography } from "../theme/typography.slint";
-import { MediumText } from "../components/medium-text.slint";
+import { TitleText } from "../components/text.slint";
 import { RecipeView } from "../types/recipe.slint";
 import { RecipeTags } from "./recipe-tags.slint";
 
@@ -50,11 +50,8 @@ export component RecipeCard inherits Rectangle {
 
             VerticalLayout {
                 padding: Layout.spacing-lg;
-                MediumText {
-                    font-size: Typography.title-size;
-                    font-weight: FontWeight.bold;
+                TitleText {
                     text: recipe.name;
-                    primary: true;
                 }
 
                 RecipeTags {

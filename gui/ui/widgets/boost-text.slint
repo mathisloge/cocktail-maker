@@ -1,6 +1,6 @@
-import { MediumText } from "../components/medium-text.slint";
+import { BodyText } from "../components/text.slint";
 
-export component BoostText inherits MediumText {
+export component BoostText inherits BodyText {
     in property <int> boost;
     private property <string> boost-text: get-boost-slogan(boost);
      // codespell:ignore-begin

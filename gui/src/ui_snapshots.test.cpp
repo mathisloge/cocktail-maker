@@ -26,7 +26,7 @@ void write_ppm(const std::filesystem::path& file, const slint::SharedPixelBuffer
 void snapshot(const slint::ComponentHandle<cm::gui::AppWindow>& ui, const std::filesystem::path& dir, std::string_view name)
 {
     // Pages fade in after mounting, so the loop has to run until their animations are over.
-    slint::Timer::single_shot(std::chrono::milliseconds{500}, [] { slint::quit_event_loop(); });
+    slint::Timer::single_shot(std::chrono::milliseconds{2500}, [] { slint::quit_event_loop(); });
     slint::run_event_loop(slint::EventLoopMode::RunUntilQuit);
     const auto buffer = ui->window().take_snapshot();
     REQUIRE(buffer.has_value());

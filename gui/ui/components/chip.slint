@@ -1,7 +1,7 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Motion } from "../theme/motion.slint";
-import { MediumText } from "./medium-text.slint";
+import { BodyText } from "./text.slint";
 
 export component Chip inherits Rectangle {
     in property <string> text;
@@ -17,10 +17,10 @@ export component Chip inherits Rectangle {
 
     animate background, border-color { duration: Motion.mount-duration / 3; }
 
-    MediumText {
+    BodyText {
         text: root.text;
-        font-weight: root.selected ? 600 : 400;
-        primary: root.selected;
+        emphasized: root.selected;
+        tone: root.selected ? TextTone.primary : TextTone.interactive;
         horizontal-alignment: center;
         vertical-alignment: center;
     }

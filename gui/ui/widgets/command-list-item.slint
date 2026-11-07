@@ -1,6 +1,6 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
-import { MediumText } from "../components/medium-text.slint";
+import { BodyText } from "../components/text.slint";
 import { Command } from "../types/recipe.slint";
 
 export component CommandListItem {
@@ -9,12 +9,12 @@ export component CommandListItem {
         spacing: Layout.spacing-sm;
         HorizontalLayout {
             alignment: LayoutAlignment.space-between;
-            MediumText {
+            BodyText {
                 text: command.text;
-                primary: true;
             }
 
-            MediumText {
+            BodyText {
+                tone: TextTone.interactive;
                 text: command.value;
             }
         }

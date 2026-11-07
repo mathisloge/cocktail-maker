@@ -1,15 +1,14 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Typography } from "../theme/typography.slint";
 import { Button } from "../components/button.slint";
 import { CornerDeco } from "../components/corner-deco.slint";
-import { LargeText } from "../components/large-text.slint";
 import { LoadingSpinner } from "../components/loading-spinner.slint";
 import { ProgressBar } from "../components/progress-bar.slint";
 import { PulseDot } from "../components/pulse-dot.slint";
 import { ScrollArea } from "../components/scroll-area.slint";
 import { Separator } from "../components/separator.slint";
-import { SmallText } from "../components/small-text.slint";
+import { DisplayText, CaptionText } from "../components/text.slint";
 import { LogEntry, LogLevel } from "../types/log.slint";
 import { StationStateContext } from "../globals/station-state-context.slint";
 import { SystemLog } from "../widgets/system-log.slint";
@@ -48,17 +47,18 @@ export component BootScreen inherits PageBase {
                 padding: Layout.spacing-xl * 1.3;
                 spacing: 0;
 
-                SmallText {
+                CaptionText {
+                    horizontal-alignment: center;
                     text: "COCKTAIL MACHINE";
-                    font-size: Typography.caption-size;
-                    letter-spacing: 4px;
                 }
 
                 Rectangle {
                     height: Layout.spacing-md;
                 }
 
-                LargeText {
+                DisplayText {
+                    tone: TextTone.interactive;
+                    horizontal-alignment: center;
                     text: StationStateContext.station-name;
                     font-italic: true;
                 }
@@ -92,9 +92,10 @@ export component BootScreen inherits PageBase {
                     background: transparent;
                 }
 
-                SmallText {
+                CaptionText {
+                    tone: root.is-loading ? TextTone.interactive : TextTone.success;
+                    horizontal-alignment: center;
                     text: root.is-loading ? "WIRD GESTARTET …" : "BEREIT";
-                    color: root.is-loading ? Palette.accent : Palette.text-success;
                     animate color { duration: 400ms; }
                 }
             }
@@ -130,10 +131,9 @@ export component BootScreen inherits PageBase {
                             background: root.is-loading ? Palette.accent : Palette.text-success;
                         }
 
-                        SmallText {
+                        CaptionText {
+                            horizontal-alignment: center;
                             text: "SYSTEM LOG";
-                            font-size: Typography.caption-size;
-                            letter-spacing: 3.5px;
                         }
 
                         Rectangle {
@@ -141,11 +141,10 @@ export component BootScreen inherits PageBase {
                             background: transparent;
                         }
 
-                        SmallText {
+                        CaptionText {
+                            tone: TextTone.interactive;
+                            horizontal-alignment: center;
                             text: root.log-entries.length + " ZEILEN";
-                            font-size: Typography.caption-size;
-                            letter-spacing: 2px;
-                            highlight: true;
                             vertical-alignment: center;
                         }
                     }

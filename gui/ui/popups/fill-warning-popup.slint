@@ -1,8 +1,8 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Button } from "../components/button.slint";
 import { CornerDeco } from "../components/corner-deco.slint";
-import { SmallText } from "../components/small-text.slint";
+import { CaptionText } from "../components/text.slint";
 import { ProcessContext } from "../globals/process-context.slint";
 
 export component FillWarningPopup inherits PopupWindow {
@@ -39,17 +39,20 @@ export component FillWarningPopup inherits PopupWindow {
             spacing: Layout.spacing-md;
             alignment: center;
 
-            SmallText {
+            CaptionText {
+                tone: TextTone.interactive;
+                horizontal-alignment: center;
                 // codespell:ignore-next-line
                 text: "DAS KÖNNTE KNAPP WERDEN";
-                highlight: true;
             }
 
-            for line in ProcessContext.fill-warning-lines: SmallText {
+            for line in ProcessContext.fill-warning-lines: CaptionText {
+                horizontal-alignment: center;
                 text: line;
             }
 
-            SmallText {
+            CaptionText {
+                horizontal-alignment: center;
                 // codespell:ignore-next-line
                 text: "Bitte Personal rufen";
             }

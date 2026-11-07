@@ -28,11 +28,20 @@ global Primitives {
 export enum TextTone {
     primary,
     interactive,
+    highlight,
     label,
     muted,
     on-accent,
     error,
     success,
+    boost-negative,
+    boost-positive,
+    log-trace,
+    log-debug,
+    log-info,
+    log-warn,
+    log-error,
+    log-critical,
 }
 
 export global Palette {
@@ -94,6 +103,9 @@ export global Palette {
         if (tone == TextTone.interactive) {
             return root.text-interactive;
         }
+        if (tone == TextTone.highlight) {
+            return root.accent-light;
+        }
         if (tone == TextTone.label) {
             return root.text-label;
         }
@@ -108,6 +120,30 @@ export global Palette {
         }
         if (tone == TextTone.success) {
             return root.text-success;
+        }
+        if (tone == TextTone.boost-negative) {
+            return root.boost-negative-text;
+        }
+        if (tone == TextTone.boost-positive) {
+            return root.boost-positive-text;
+        }
+        if (tone == TextTone.log-trace) {
+            return root.log-trace;
+        }
+        if (tone == TextTone.log-debug) {
+            return root.log-debug;
+        }
+        if (tone == TextTone.log-info) {
+            return root.log-info;
+        }
+        if (tone == TextTone.log-warn) {
+            return root.log-warn;
+        }
+        if (tone == TextTone.log-error) {
+            return root.log-error;
+        }
+        if (tone == TextTone.log-critical) {
+            return root.log-critical;
         }
         return root.text-primary;
     }

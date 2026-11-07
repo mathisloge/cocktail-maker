@@ -1,0 +1,68 @@
+import { Palette, TextTone } from "../theme/colors.slint";
+import { Typography } from "../theme/typography.slint";
+
+// Text roles. Size, weight and letter-spacing come from Typography, the color from the tone.
+// Users set text, tone, emphasized, alignment, wrap and overflow, never font-size, font-weight, letter-spacing or color.
+component RoleText inherits Text {
+    in property <TextTone> tone;
+    in property <bool> emphasized;
+    in property <int> role-weight;
+    color: Palette.text-color(root.tone);
+    font-weight: root.emphasized ? max(root.role-weight, Typography.emphasized-weight) : root.role-weight;
+}
+
+export component DisplayText inherits RoleText {
+    tone: TextTone.primary;
+    role-weight: Typography.display-weight;
+    font-size: Typography.display-size;
+    letter-spacing: Typography.display-spacing;
+}
+
+export component HeadlineText inherits RoleText {
+    tone: TextTone.primary;
+    role-weight: Typography.headline-weight;
+    font-size: Typography.headline-size;
+    letter-spacing: Typography.headline-spacing;
+}
+
+export component BrandText inherits RoleText {
+    tone: TextTone.interactive;
+    role-weight: Typography.brand-weight;
+    font-size: Typography.brand-size;
+    letter-spacing: Typography.brand-spacing;
+}
+
+export component TitleText inherits RoleText {
+    tone: TextTone.primary;
+    role-weight: Typography.title-weight;
+    font-size: Typography.title-size;
+    letter-spacing: Typography.title-spacing;
+}
+
+export component BodyText inherits RoleText {
+    tone: TextTone.primary;
+    role-weight: Typography.body-weight;
+    font-size: Typography.body-size;
+    letter-spacing: Typography.body-spacing;
+}
+
+export component LabelText inherits RoleText {
+    tone: TextTone.primary;
+    role-weight: Typography.label-weight;
+    font-size: Typography.label-size;
+    letter-spacing: Typography.label-spacing;
+}
+
+export component CaptionText inherits RoleText {
+    tone: TextTone.muted;
+    role-weight: Typography.caption-weight;
+    font-size: Typography.caption-size;
+    letter-spacing: Typography.caption-spacing;
+}
+
+export component DataText inherits RoleText {
+    tone: TextTone.muted;
+    role-weight: Typography.data-weight;
+    font-size: Typography.data-size;
+    letter-spacing: Typography.data-spacing;
+}

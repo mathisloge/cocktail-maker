@@ -1,12 +1,10 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Typography } from "../theme/typography.slint";
 import { Button } from "../components/button.slint";
 import { CornerDeco } from "../components/corner-deco.slint";
-import { LargeText } from "../components/large-text.slint";
-import { MediumText } from "../components/medium-text.slint";
 import { SeparatorText } from "../components/separator-text.slint";
-import { SmallText } from "../components/small-text.slint";
+import { LabelText, DisplayText, CaptionText, BodyText } from "../components/text.slint";
 import { ProcessContext } from "../globals/process-context.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
 import { CommandItem } from "../widgets/command-item.slint";
@@ -33,10 +31,10 @@ component ErrorDetailRow inherits Rectangle {
         Rectangle {
             width: 30px;
             horizontal-stretch: 0;
-            SmallText {
+            BodyText {
+                tone: TextTone.muted;
+                horizontal-alignment: center;
                 text: root.icon;
-                font-size: Typography.body-size;
-                letter-spacing: 0px;
                 vertical-alignment: center;
             }
         }
@@ -44,19 +42,15 @@ component ErrorDetailRow inherits Rectangle {
         VerticalLayout {
             alignment: center;
             spacing: Layout.spacing-xs;
-            MediumText {
+            LabelText {
+                emphasized: true;
                 text: root.label;
                 font-italic: false;
-                font-weight: FontWeight.semi-bold;
-                font-size: Typography.label-size;
-                color: Palette.text-primary;
             }
 
-            SmallText {
+            CaptionText {
+                horizontal-alignment: center;
                 text: root.sub-label;
-                font-size: Typography.caption-size;
-                letter-spacing: 1.5px;
-                color: Palette.text-muted;
             }
         }
 
@@ -72,12 +66,11 @@ component ErrorDetailRow inherits Rectangle {
             border-color: Palette.text-error;
             HorizontalLayout {
                 padding: Layout.spacing-xs;
-                SmallText {
+                CaptionText {
+                    tone: TextTone.error;
+                    emphasized: true;
+                    horizontal-alignment: center;
                     text: "FAILED";
-                    font-size: Typography.caption-size;
-                    letter-spacing: 2px;
-                    font-weight: FontWeight.semi-bold;
-                    color: Palette.text-error;
                     vertical-alignment: center;
                 }
             }
@@ -206,15 +199,15 @@ export component MixErrorPage inherits PageBase {
                         delay: 280ms;
                     }
 
-                    SmallText {
+                    CaptionText {
+                        tone: TextTone.error;
                         text: "ZUBEREITUNG UNTERBROCHEN";
-                        color: Palette.text-error;
                         horizontal-alignment: center;
                     }
 
-                    MediumText {
+                    BodyText {
+                        tone: TextTone.interactive;
                         text: root.cocktail-name;
-                        primary: false;
                         horizontal-alignment: center;
                     }
                 }
@@ -233,7 +226,9 @@ export component MixErrorPage inherits PageBase {
                 spacing: 0;
                 alignment: center;
 
-                LargeText {
+                DisplayText {
+                    tone: TextTone.interactive;
+                    horizontal-alignment: center;
                     text: root.customer-title;
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
@@ -247,10 +242,9 @@ export component MixErrorPage inherits PageBase {
                     background: transparent;
                 }
 
-                MediumText {
+                BodyText {
                     text: root.customer-message;
                     wrap: word-wrap;
-                    primary: true;
 
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
@@ -276,9 +270,10 @@ export component MixErrorPage inherits PageBase {
 
                     HorizontalLayout {
                         alignment: start;
-                        SmallText {
+                        CaptionText {
+                            tone: root.details-expanded ? TextTone.interactive : TextTone.muted;
+                            horizontal-alignment: center;
                             text: (root.details-expanded ? "▾ " : "▸ ") + "Technische Details";
-                            highlight: root.details-expanded;
                         }
                     }
                 }
@@ -287,14 +282,15 @@ export component MixErrorPage inherits PageBase {
                     spacing: Layout.spacing-sm;
                     padding-top: Layout.spacing-sm;
 
-                    SmallText {
+                    CaptionText {
+                        horizontal-alignment: center;
                         text: root.technical-title;
                     }
 
-                    MediumText {
+                    BodyText {
+                        tone: TextTone.interactive;
                         text: root.technical-reason;
                         wrap: word-wrap;
-                        primary: false;
                     }
 
                     // ── Failed-at-step detail ─────────────────────
@@ -302,7 +298,8 @@ export component MixErrorPage inherits PageBase {
                         spacing: Layout.spacing-sm;
                         padding-top: Layout.spacing-xs;
 
-                        SmallText {
+                        CaptionText {
+                            horizontal-alignment: center;
                             text: "UNTERBROCHEN BEI";
                         }
 

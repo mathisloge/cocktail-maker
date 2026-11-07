@@ -1,13 +1,14 @@
+import { TextTone } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
-import { SmallText } from "../components/small-text.slint";
+import { CaptionText } from "../components/text.slint";
 
 export component RecipeTags inherits HorizontalLayout {
     in property <[string]> tags;
     padding-top: Layout.spacing-sm;
     alignment: LayoutAlignment.start;
-    for t[i] in tags: SmallText {
+    for t[i] in tags: CaptionText {
+        tone: TextTone.interactive;
         text: t + ((i < (tags.length - 1)) ? " | " : "");
-        highlight: true;
         horizontal-alignment: left;
         wrap: TextWrap.no-wrap;
         overflow: ((i < (tags.length - 1)) ? TextOverflow.clip : elide);

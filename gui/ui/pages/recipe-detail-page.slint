@@ -1,12 +1,10 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Motion } from "../theme/motion.slint";
 import { Button } from "../components/button.slint";
-import { LargeText } from "../components/large-text.slint";
-import { MediumText } from "../components/medium-text.slint";
 import { ScrollArea } from "../components/scroll-area.slint";
 import { SeparatorText } from "../components/separator-text.slint";
-import { SmallText } from "../components/small-text.slint";
+import { DisplayText, CaptionText, BodyText } from "../components/text.slint";
 import { ValueSlider } from "../components/value-slider.slint";
 import { RecipeView } from "../types/recipe.slint";
 import { ProcessContext } from "../globals/process-context.slint";
@@ -49,9 +47,9 @@ export component RecipeDetailPage inherits PageBase {
             spacing: Layout.spacing-sm;
             cross-axis-alignment: center;
             alignment: center;
-            LargeText {
+            DisplayText {
+                horizontal-alignment: center;
                 text: recipe.name;
-                primary: true;
                 wrap: word-wrap;
             }
 
@@ -86,9 +84,9 @@ export component RecipeDetailPage inherits PageBase {
 
         VerticalLayout {
             spacing: content.spacing;
-            MediumText {
+            BodyText {
+                tone: TextTone.muted;
                 text: recipe.description;
-                color: Palette.text-muted;
                 wrap: word-wrap;
             }
 
@@ -111,18 +109,18 @@ export component RecipeDetailPage inherits PageBase {
                 text: "ALKOHOL BOOST:";
             }
 
-            if recipe.is-boostable: MediumText {
+            if recipe.is-boostable: BodyText {
                 text: "💪 Alkoholgehalt boosten (" + boost-value + "%)";
-                primary: true;
             }
 
             if recipe.is-boostable: HorizontalLayout {
                 padding: Layout.spacing-sm;
                 spacing: Layout.spacing-sm;
                 cross-axis-alignment: center;
-                SmallText {
+                CaptionText {
+                    tone: TextTone.boost-negative;
+                    horizontal-alignment: center;
                     text: "milde";
-                    color: Palette.boost-negative-text;
                 }
 
                 booster := ValueSlider {
@@ -137,9 +135,10 @@ export component RecipeDetailPage inherits PageBase {
                     }
                 }
 
-                SmallText {
+                CaptionText {
+                    tone: TextTone.boost-positive;
+                    horizontal-alignment: center;
                     text: "stark";
-                    color: Palette.boost-positive-text;
                 }
             }
         }
@@ -147,7 +146,6 @@ export component RecipeDetailPage inherits PageBase {
         if recipe.is-boostable: BoostText {
             boost: root.boost-value;
             horizontal-alignment: center;
-            primary: true;
         }
 
         Button {

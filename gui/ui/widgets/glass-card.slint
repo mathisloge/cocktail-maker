@@ -1,7 +1,7 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Motion } from "../theme/motion.slint";
-import { MediumText } from "../components/medium-text.slint";
+import { BodyText } from "../components/text.slint";
 import { GlassDescriptor } from "../types/glass.slint";
 import { GlassIcon } from "./glass-icon.slint";
 
@@ -38,10 +38,10 @@ export component GlassCard inherits Rectangle {
             horizontal-stretch: 0;
         }
 
-        MediumText {
+        BodyText {
             text: root.descriptor.display-name;
-            font-weight: root.selected ? 600 : 400;
-            primary: root.selected;
+            emphasized: root.selected;
+            tone: root.selected ? TextTone.primary : TextTone.interactive;
             horizontal-alignment: center;
         }
     }

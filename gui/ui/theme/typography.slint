@@ -10,19 +10,37 @@ export global Typography {
     out property <int> headline-weight: 700;
     out property <length> headline-spacing: 1.5pt;
 
+    // The station name in the header.
+    out property <length> brand-size: 20pt;
+    out property <int> brand-weight: 800;
+    out property <relative-font-size> brand-spacing: 0.38rem;
+
     out property <length> title-size: 20pt;
-    out property <int> title-weight: 800;
-    out property <relative-font-size> title-spacing: 0.38rem;
+    out property <int> title-weight: 700;
+    out property <length> title-spacing: 1.5pt;
 
     out property <length> body-size: 14pt;
     out property <int> body-weight: 400;
     out property <length> body-spacing: 1.5pt;
 
     out property <length> label-size: 12pt;
-    out property <int> label-weight: 600;
+    out property <int> label-weight: 400;
     out property <length> label-spacing: 2pt;
 
     out property <length> caption-size: 10pt;
     out property <int> caption-weight: 400;
     out property <length> caption-spacing: 2pt;
+
+    // Dense tabular data such as log lines.
+    out property <length> data-size: 10pt;
+    out property <int> data-weight: 400;
+    out property <length> data-spacing: 0.5px;
+
+    // Labels inside buttons, see components/button.slint.
+    out property <length> button-size: 12pt;
+    out property <int> button-weight: 400;
+    out property <length> button-spacing: 0px;
+
+    // Weight of emphasized text in the roles whose own weight is lighter.
+    out property <int> emphasized-weight: 600;
 }

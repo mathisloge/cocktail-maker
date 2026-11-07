@@ -1,6 +1,7 @@
-import { Palette } from "../../theme/colors.slint";
+import { TextTone, Palette } from "../../theme/colors.slint";
 import { Layout } from "../../theme/layout.slint";
 import { Typography } from "../../theme/typography.slint";
+import { LabelText } from "../../components/text.slint";
 import { StationStateContext } from "../../globals/station-state-context.slint";
 import { SystemLog } from "../../widgets/system-log.slint";
 import { GlassConfigTab } from "./glass-config-tab.slint";
@@ -15,14 +16,12 @@ component AdminTab inherits Rectangle {
     horizontal-stretch: 1;
     background: root.active ? Palette.accent-dim : touch.pressed ? Palette.surface-elevated : transparent;
 
-    Text {
+    LabelText {
         text: root.title;
-        font-size: Typography.label-size;
-        font-weight: root.active ? FontWeight.bold : FontWeight.normal;
-        letter-spacing: 2px;
+        emphasized: root.active;
         horizontal-alignment: center;
         vertical-alignment: center;
-        color: root.active ? Palette.text-interactive : Palette.text-muted;
+        tone: root.active ? TextTone.interactive : TextTone.muted;
     }
 
     Rectangle {

@@ -1,8 +1,8 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Typography } from "../theme/typography.slint";
 import { LoadingSpinner } from "../components/loading-spinner.slint";
-import { MediumText } from "../components/medium-text.slint";
+import { BodyText } from "../components/text.slint";
 import { Command, CommandStatus } from "../types/recipe.slint";
 
 export component CommandItem inherits Rectangle {
@@ -16,12 +16,12 @@ export component CommandItem inherits Rectangle {
         alignment: LayoutAlignment.space-between;
         cross-axis-alignment: center;
         padding: Layout.spacing-sm;
-        MediumText {
+        BodyText {
             text: command.text + " - " + command.value;
-            primary: true;
         }
 
-        if command.status == CommandStatus.not-started: MediumText {
+        if command.status == CommandStatus.not-started: BodyText {
+            tone: TextTone.interactive;
             text: "not started";
         }
 
@@ -30,7 +30,8 @@ export component CommandItem inherits Rectangle {
             indeterminate: true;
         }
 
-        if command.status == CommandStatus.finished: MediumText {
+        if command.status == CommandStatus.finished: BodyText {
+            tone: TextTone.interactive;
             text: "✓";
         }
     }

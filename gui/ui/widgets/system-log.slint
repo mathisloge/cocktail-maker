@@ -1,11 +1,10 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Typography } from "../theme/typography.slint";
-import { SmallText } from "../components/small-text.slint";
+import { LabelText, DataText } from "../components/text.slint";
 import { LogEntry, LogLevel } from "../types/log.slint";
 
-component LogCell inherits SmallText {
-    letter-spacing: 0.5px;
+component LogCell inherits DataText {
     horizontal-alignment: left;
     vertical-alignment: center;
     horizontal-stretch: 0;
@@ -22,6 +21,13 @@ component LogRow inherits Rectangle {
         : root.entry.level == LogLevel.err ? Palette.log-error
         : root.entry.level == LogLevel.critical ? Palette.log-critical
         : Palette.log-info;
+    private property <TextTone> level-tone: root.entry.level == LogLevel.trace ? TextTone.log-trace
+        : root.entry.level == LogLevel.debug ? TextTone.log-debug
+        : root.entry.level == LogLevel.info ? TextTone.log-info
+        : root.entry.level == LogLevel.warn ? TextTone.log-warn
+        : root.entry.level == LogLevel.err ? TextTone.log-error
+        : root.entry.level == LogLevel.critical ? TextTone.log-critical
+        : TextTone.log-info;
     private property <bool> is-problem: root.entry.level == LogLevel.warn || root.entry.level == LogLevel.err || root.entry.level == LogLevel.critical;
 
     background: root.is-problem ? root.level-color.with-alpha(0.08) : transparent;
@@ -59,28 +65,26 @@ component LogRow inherits Rectangle {
                 : root.entry.level == LogLevel.err ? "ERROR"
                 : root.entry.level == LogLevel.critical ? "CRIT"
                 : "INFO";
-            letter-spacing: 1.5px;
-            font-weight: FontWeight.bold;
-            color: root.level-color;
+            emphasized: true;
+            tone: root.level-tone;
         }
 
         LogCell {
             width: 120px;
             text: root.entry.component;
-            color: Palette.text-label;
+            tone: TextTone.label;
         }
 
         LogCell {
             horizontal-stretch: 1;
             text: root.entry.message;
-            color: root.entry.level == LogLevel.err || root.entry.level == LogLevel.critical ? Palette.log-error : Palette.text-primary;
+            tone: root.entry.level == LogLevel.err || root.entry.level == LogLevel.critical ? TextTone.log-error : TextTone.primary;
 
             Tooltip {
-                Text {
+                LabelText {
                     text: root.entry.message;
                     wrap: word-wrap;
                     width: 300px;
-                    font-size: Typography.label-size;
                     horizontal-alignment: start;
                 }
             }

@@ -1,11 +1,10 @@
-import { Palette } from "../../theme/colors.slint";
+import { TextTone, Palette } from "../../theme/colors.slint";
 import { Layout } from "../../theme/layout.slint";
 import { Button } from "../../components/button.slint";
-import { MediumText } from "../../components/medium-text.slint";
 import { NumberBox } from "../../components/number-box.slint";
 import { PulseDot } from "../../components/pulse-dot.slint";
 import { ScrollArea } from "../../components/scroll-area.slint";
-import { SmallText } from "../../components/small-text.slint";
+import { CaptionText, BodyText } from "../../components/text.slint";
 import { Pod, Dispenser, DispenserType } from "../../types/pod.slint";
 import { DispenserCalibrationContext, CalibrationStepStatus } from "../../globals/dispenser-calibration-context.slint";
 
@@ -60,14 +59,15 @@ component StepCard inherits Rectangle {
                 border-radius: self.height / 2;
                 background: Palette.surface-elevated;
 
-                Text {
+                CaptionText {
+                    tone: TextTone.primary;
+                    emphasized: true;
                     text: root.step-number;
-                    color: Palette.text-primary;
-                    font-weight: 700;
                 }
             }
 
-            MediumText {
+            BodyText {
+                tone: TextTone.interactive;
                 text: root.title;
             }
 
@@ -83,17 +83,19 @@ component StepCard inherits Rectangle {
                     status: root.status;
                 }
 
-                SmallText {
+                CaptionText {
+                    tone: TextTone.interactive;
+                    horizontal-alignment: center;
                     text: root.status-label();
-                    color: Palette.text-interactive;
                 }
             }
         }
 
-        SmallText {
+        CaptionText {
+            tone: TextTone.interactive;
+            horizontal-alignment: center;
             text: root.description;
             wrap: word-wrap;
-            color: Palette.text-interactive;
         }
 
         @children
@@ -127,7 +129,8 @@ component DispenserCalibrationContent inherits Rectangle {
                 padding: Layout.spacing-sm;
                 spacing: Layout.spacing-sm;
                 cross-axis-alignment: center;
-                MediumText {
+                BodyText {
+                    tone: TextTone.interactive;
                     text: root.active-dispenser.type == DispenserType.pump
                         ? "Pumpe " + root.active-dispenser.id + " kalibrieren"
                         : "Ventil " + root.active-dispenser.id + " kalibrieren";
@@ -147,14 +150,16 @@ component DispenserCalibrationContent inherits Rectangle {
                 }
             }
 
-            SmallText {
+            CaptionText {
+                tone: TextTone.interactive;
+                horizontal-alignment: center;
                 text: "Pod " + root.active-pod.id;
-                color: Palette.text-interactive;
             }
 
-            if DispenserCalibrationContext.state.error-message != "": SmallText {
+            if DispenserCalibrationContext.state.error-message != "": CaptionText {
+                tone: TextTone.log-error;
+                horizontal-alignment: center;
                 text: DispenserCalibrationContext.state.error-message;
-                color: Palette.log-error;
                 wrap: word-wrap;
             }
 
@@ -186,7 +191,8 @@ component DispenserCalibrationContent inherits Rectangle {
                             padding: Layout.spacing-sm;
                             cross-axis-alignment: center;
                             spacing: Layout.spacing-md;
-                            SmallText {
+                            CaptionText {
+                                horizontal-alignment: center;
                                 text: "Gewicht (g):";
                             }
 
@@ -213,9 +219,10 @@ component DispenserCalibrationContent inherits Rectangle {
                             }
                         }
 
-                        if DispenserCalibrationContext.state.reference-reading != "": SmallText {
+                        if DispenserCalibrationContext.state.reference-reading != "": CaptionText {
+                            tone: TextTone.log-info;
+                            horizontal-alignment: center;
                             text: "Waage zeigt: " + DispenserCalibrationContext.state.reference-reading;
-                            color: Palette.log-info;
                         }
                     }
 
@@ -249,7 +256,8 @@ component DispenserCalibrationContent inherits Rectangle {
                             padding: Layout.spacing-sm;
                             cross-axis-alignment: center;
                             spacing: Layout.spacing-md;
-                            SmallText {
+                            CaptionText {
+                                horizontal-alignment: center;
                                 text: "Laufzeit (s):";
                             }
 
@@ -284,16 +292,18 @@ component DispenserCalibrationContent inherits Rectangle {
                             }
                         }
 
-                        if DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.success: SmallText {
+                        if DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.success: CaptionText {
+                            tone: TextTone.log-info;
+                            horizontal-alignment: center;
                             text: "Gemessen: " + DispenserCalibrationContext.state.measured-amount;
-                            color: Palette.log-info;
                         }
 
                         if DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.success
-                            && DispenserCalibrationContext.state.below-recommended-amount: SmallText {
+                            && DispenserCalibrationContext.state.below-recommended-amount: CaptionText {
+                            tone: TextTone.interactive;
+                            horizontal-alignment: center;
                             text: "Für eine genauere Kalibrierung eine längere Laufzeit wählen.";
                             wrap: word-wrap;
-                            color: Palette.text-interactive;
                         }
                     }
 

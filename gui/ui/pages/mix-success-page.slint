@@ -1,12 +1,10 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Motion } from "../theme/motion.slint";
 import { Typography } from "../theme/typography.slint";
 import { Button } from "../components/button.slint";
 import { CornerDeco } from "../components/corner-deco.slint";
-import { LargeText } from "../components/large-text.slint";
-import { MediumText } from "../components/medium-text.slint";
-import { SmallText } from "../components/small-text.slint";
+import { LabelText, HeadlineText, CaptionText } from "../components/text.slint";
 import { ProcessContext } from "../globals/process-context.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
 import { BoostText } from "../widgets/boost-text.slint";
@@ -15,7 +13,7 @@ import { PageBase } from "./page-base.slint";
 component StatChip inherits Rectangle {
     in property <string> label;
     in property <string> value;
-    in property <color> value-color: Palette.text-primary;
+    in property <TextTone> value-tone: TextTone.primary;
 
     background: Palette.surface-card;
     border-width: 1px;
@@ -29,20 +27,16 @@ component StatChip inherits Rectangle {
         spacing: Layout.spacing-xs;
         alignment: center;
 
-        SmallText {
+        CaptionText {
             text: root.label;
-            font-size: Typography.caption-size;
-            letter-spacing: 2.5px;
-            color: Palette.text-muted;
             horizontal-alignment: center;
         }
 
-        MediumText {
+        LabelText {
             text: root.value;
             font-italic: false;
-            font-weight: FontWeight.semi-bold;
-            font-size: Typography.label-size;
-            color: root.value-color;
+            emphasized: true;
+            tone: root.value-tone;
             horizontal-alignment: center;
         }
     }
@@ -69,9 +63,10 @@ export component MixSuccessPage inherits PageBase {
         spacing: 0;
         alignment: center;
 
-        LargeText {
+        HeadlineText {
+            tone: TextTone.interactive;
+            horizontal-alignment: center;
             text: root.cocktail-name;
-            font-size: Typography.headline-size;
             font-italic: true;
             opacity: root.mounted ? 1 : 0;
             animate opacity {
@@ -90,7 +85,6 @@ export component MixSuccessPage inherits PageBase {
             boost: root.boost-value;
             horizontal-alignment: center;
             opacity: root.mounted ? 1 : 0;
-            primary: true;
             animate opacity {
                 duration: Motion.mount-duration;
                 easing: Motion.mount-easing;
@@ -112,10 +106,9 @@ export component MixSuccessPage inherits PageBase {
                 delay: 420ms;
             }
 
-            SmallText {
+            CaptionText {
+                horizontal-alignment: center;
                 text: "ZUSAMMENFASSUNG";
-                font-size: Typography.caption-size;
-                letter-spacing: 3.5px;
             }
 
             HorizontalLayout {
@@ -126,15 +119,15 @@ export component MixSuccessPage inherits PageBase {
                     value: root.boost-value == 0
                         ? "Normal"
                         : (root.boost-value > 0 ? "+" : "") + Math.round(root.boost-value) + "%";
-                    value-color: root.boost-value > 0 ? Palette.boost-positive-text
-                        : root.boost-value < 0 ? Palette.boost-negative-text
-                        : Palette.accent-light;
+                    value-tone: root.boost-value > 0 ? TextTone.boost-positive
+                        : root.boost-value < 0 ? TextTone.boost-negative
+                        : TextTone.highlight;
                 }
 
                 StatChip {
                     label: "ZEIT";
                     value: root.prep-time-seconds / 1s + "s";
-                    value-color: Palette.text-success;
+                    value-tone: TextTone.success;
                 }
             }
         }
@@ -170,11 +163,9 @@ export component MixSuccessPage inherits PageBase {
                 }
             }
 
-            SmallText {
+            CaptionText {
+                horizontal-alignment: center;
                 text: "ALLES ERFOLGREICH GEMIXT";
-                font-size: Typography.caption-size;
-                letter-spacing: 2px;
-                color: Palette.text-muted;
             }
         }
 

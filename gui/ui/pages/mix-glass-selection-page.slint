@@ -1,10 +1,8 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Button } from "../components/button.slint";
 import { Chip } from "../components/chip.slint";
-import { LargeText } from "../components/large-text.slint";
-import { MediumText } from "../components/medium-text.slint";
-import { SmallText } from "../components/small-text.slint";
+import { DisplayText, CaptionText, BodyText } from "../components/text.slint";
 import { GlassDescriptor } from "../types/glass.slint";
 import { GlassContext } from "../globals/glass-context.slint";
 import { ProcessContext } from "../globals/process-context.slint";
@@ -29,12 +27,13 @@ export component MixGlassSelectionPage inherits PageBase {
             alignment: center;
             spacing: Layout.spacing-xs;
 
-            LargeText {
+            DisplayText {
+                horizontal-alignment: center;
                 text: "Wähle dein Glas";
-                primary: true;
             }
 
-            MediumText {
+            BodyText {
+                tone: TextTone.interactive;
                 text: "Für " + RecipeContext.active-recipe.name;
             }
         }
@@ -58,7 +57,7 @@ export component MixGlassSelectionPage inherits PageBase {
 
         // Volume picker, only once a glass is chosen
         if root.has-glass-selected && (ProcessContext.glass.active-volumes-ml.length > 1): VerticalLayout {
-            SmallText {
+            CaptionText {
                 horizontal-alignment: start;
                 text: "Volumen:";
             }

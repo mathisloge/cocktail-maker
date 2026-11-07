@@ -3,6 +3,7 @@ import { Layout } from "./theme/layout.slint";
 import { Typography } from "./theme/typography.slint";
 import { Button } from "./components/button.slint";
 import { ScrollArea } from "./components/scroll-area.slint";
+import { BrandText } from "./components/text.slint";
 import { ValueSlider } from "./components/value-slider.slint";
 import { LogEntry } from "./types/log.slint";
 import { Page } from "./types/navigation.slint";
@@ -131,12 +132,8 @@ export component AppWindow inherits Window {
                 }
             }
 
-            Text {
+            BrandText {
                 text: StationStateContext.station-name;
-                font-size: Typography.title-size;
-                font-weight: FontWeight.extra-bold;
-                letter-spacing: 0.38rem;
-                color: Palette.text-interactive;
 
                 horizontal-alignment: TextHorizontalAlignment.center;
                 vertical-alignment: TextVerticalAlignment.center;

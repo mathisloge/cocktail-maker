@@ -1,10 +1,9 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Button } from "../components/button.slint";
 import { CornerDeco } from "../components/corner-deco.slint";
-import { LargeText } from "../components/large-text.slint";
 import { PulseDot } from "../components/pulse-dot.slint";
-import { SmallText } from "../components/small-text.slint";
+import { DisplayText, CaptionText } from "../components/text.slint";
 import { Command, CommandStatus } from "../types/recipe.slint";
 import { ProcessContext } from "../globals/process-context.slint";
 
@@ -46,10 +45,11 @@ export component ManualCommandPopup inherits PopupWindow {
             alignment: center;
 
             // Header-Label
-            SmallText {
+            CaptionText {
+                tone: TextTone.interactive;
+                horizontal-alignment: center;
                 // codespell:ignore-next-line
                 text: "MANUELLE AKTION ERFORDERLICH";
-                highlight: true;
             }
 
             Rectangle {
@@ -57,9 +57,9 @@ export component ManualCommandPopup inherits PopupWindow {
                 background: transparent;
             }
 
-            LargeText {
+            DisplayText {
+                horizontal-alignment: center;
                 text: command.text;
-                primary: true;
             }
 
             Rectangle {
@@ -82,7 +82,8 @@ export component ManualCommandPopup inherits PopupWindow {
                 spacing: Layout.spacing-sm;
                 PulseDot { }
 
-                SmallText {
+                CaptionText {
+                    horizontal-alignment: center;
                     // codespell:ignore-next-line
                     text: "MASCHINE PAUSIERT";
                 }

@@ -1,7 +1,7 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Button } from "../components/button.slint";
-import { MediumText } from "../components/medium-text.slint";
+import { CaptionText, BodyText } from "../components/text.slint";
 import { StationStateContext } from "../globals/station-state-context.slint";
 
 component PopupContent {
@@ -35,9 +35,8 @@ component PopupContent {
             padding: Layout.spacing-lg;
             spacing: Layout.spacing-md;
 
-            MediumText {
+            BodyText {
                 text: "Wartungszugriff";
-                primary: true;
                 horizontal-alignment: center;
             }
 
@@ -54,15 +53,15 @@ component PopupContent {
                 }
             }
 
-            if StationStateContext.operator-locked-out: Text {
+            if StationStateContext.operator-locked-out: CaptionText {
+                tone: TextTone.error;
                 text: "Gesperrt. Bitte in \{StationStateContext.operator-lockout-seconds-remaining}s erneut versuchen.";
-                color: Palette.text-error;
                 horizontal-alignment: center;
             }
 
-            if !StationStateContext.operator-locked-out && StationStateContext.operator-remaining-attempts < 5: Text {
+            if !StationStateContext.operator-locked-out && StationStateContext.operator-remaining-attempts < 5: CaptionText {
+                tone: TextTone.interactive;
                 text: "\{StationStateContext.operator-remaining-attempts} Versuche übrig.";
-                color: Palette.text-interactive;
                 horizontal-alignment: center;
             }
 

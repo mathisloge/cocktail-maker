@@ -1,13 +1,11 @@
-import { Palette } from "../theme/colors.slint";
+import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Button } from "../components/button.slint";
 import { Chip } from "../components/chip.slint";
-import { LargeText } from "../components/large-text.slint";
 import { LoadingSpinner } from "../components/loading-spinner.slint";
-import { MediumText } from "../components/medium-text.slint";
 import { ProgressBar } from "../components/progress-bar.slint";
 import { SeparatorText } from "../components/separator-text.slint";
-import { SmallText } from "../components/small-text.slint";
+import { DisplayText, CaptionText } from "../components/text.slint";
 import { Page } from "../types/navigation.slint";
 import { RecipeView, CommandStatus } from "../types/recipe.slint";
 import { ProcessContext } from "../globals/process-context.slint";
@@ -32,15 +30,15 @@ export component MixProgressPage inherits PageBase {
                 alignment: start;
                 cross-axis-alignment: center;
                 spacing: Layout.spacing-sm;
-                SmallText {
+                CaptionText {
+                    tone: TextTone.interactive;
+                    horizontal-alignment: center;
                     text: "WIRD ZUBEREITET";
-                    letter-spacing: 2pt;
-                    highlight: true;
                 }
 
-                LargeText {
+                DisplayText {
+                    horizontal-alignment: center;
                     text: recipe.name;
-                    primary: true;
                     wrap: word-wrap;
                 }
             }
@@ -53,9 +51,9 @@ export component MixProgressPage inherits PageBase {
                     width: 90%;
                 }
 
-                SmallText {
+                CaptionText {
+                    horizontal-alignment: center;
                     text: "rezept wird zubereitet...";
-                    color: Palette.text-muted;
                 }
             }
 

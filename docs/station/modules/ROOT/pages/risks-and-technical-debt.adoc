@@ -46,3 +46,6 @@ xref:adr:003-asynchronous-execution-model.adoc[ADR-003].
   stays without effect until both are extended.
 * *Restarting a Pod:* the protocol has no message that restarts a Pod. The maintenance area will offer
   a restart per Pod, and it stays without effect until the protocol and the Pod firmware support it.
+* *Reconnecting a Pod:* discovery only reports a port when it appears, so a Pod whose session ended
+  stays away until it is unplugged. The maintenance area will offer a reconnect per Pod. It needs the
+  Station to end that Pod's session and open its port again.

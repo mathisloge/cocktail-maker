@@ -52,7 +52,11 @@ export struct MixErrorPage
     std::string item_details;
 };
 
-/// Words the error a mix failed with for the error page. An error it doesn't know gets a generic page with its details.
+/**
+ * Words the error a mix failed with for the error page. An error it doesn't know gets a generic page with its details.
+ *
+ * @pre `error` holds an exception.
+ */
 export [[nodiscard]] MixErrorPage mix_error_page(const std::exception_ptr& error,
                                                  const StationConfig& station_config,
                                                  const IngredientStore& ingredient_store);

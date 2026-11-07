@@ -9,6 +9,7 @@ import :mix_error_page;
 
 namespace cm::gui {
 namespace {
+// codespell:ignore-begin
 struct CustomerFacingText
 {
     std::string title;
@@ -29,7 +30,6 @@ CustomerFacingText customer_text_for(ErrorItemCategory category)
 }
 
 namespace error_page {
-// codespell:ignore-begin
 MixErrorPage make(const DispenserEmptyError& ex, const cm::StationConfig& station_config, const IngredientStore& ingredient_store)
 {
     const auto dispenser = PodDispenser{ex.pod_id(), ex.dispenser_id()};

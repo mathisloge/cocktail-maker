@@ -101,3 +101,20 @@ TEST_CASE("The application reads its state from the directory it was given", "[a
     REQUIRE(assigned.has_value());
     CHECK(*assigned == address);
 }
+
+TEST_CASE("A broken catalog file keeps the stored fill levels", "[application]")
+{
+    cm::testing::TempDir dir;
+    for (const auto* catalog : {"glasses", "ingredients", "recipes"}) {
+        std::filesystem::create_directories(dir.path() / "db" / catalog);
+    }
+    dir.write_file("db/recipes/broken.json", R"({"name": "Broken", "steps": []})");
+    dir.write_file("dispenser_fill_levels.json",
+                   R"({"version": 1, "fill_levels": [{"pod_id": "Pod", "dispenser_id": 0, "level_g": 250,
+                       "low_water_g": 0, "suspected_empty": false}]})");
+
+    TestApplication app{dir.path()};
+    REQUIRE_THROWS(app.init(dir.path() / "db"));
+
+    CHECK(app.fill_levels().record(cm::PodDispenser{cm::PodId{"Pod"}, cm::DispenserId{0}}).has_value());
+}

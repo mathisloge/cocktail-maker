@@ -26,7 +26,7 @@ export class AnyIoStream
     virtual ~AnyIoStream() = default;
     [[nodiscard]] virtual auto async_read(asio::mutable_buffer buffer)
         -> Task<std::tuple<boost::system::error_code, std::size_t>> = 0;
-    /// @returns Nothing on success, `asio::error::timed_out` once `timeout` has passed, or the error of the write.
+    /// @returns An empty code on success, `asio::error::timed_out` once `timeout` has passed, or the error of the write.
     [[nodiscard]] virtual auto async_write(asio::const_buffer buffer, std::chrono::milliseconds timeout)
         -> Task<boost::system::error_code> = 0;
     [[nodiscard]] virtual auto close() -> boost::system::error_code = 0;

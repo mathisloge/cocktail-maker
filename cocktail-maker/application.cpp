@@ -108,11 +108,13 @@ void Application::init(const std::filesystem::path& db_dir)
     const auto glass_db_path = db_dir / "glasses";
     const auto ingredients_db_path = db_dir / "ingredients";
     const auto recipe_db_path = db_dir / "recipes";
+    // The fill levels depend on no catalog. Loaded first, they survive a broken catalog file, which would otherwise leave
+    // them empty until the first Pod connects and saves that empty state over the stored one.
+    fill_levels_.init();
     glass_store_.init_glasses(load_glasses_from_dir(glass_db_path));
     ingredient_store_.init_ingredients(load_ingredients_from_dir(ingredients_db_path));
-    recipe_store_.init_recipes(load_recipes_from_dir(recipe_db_path, ingredient_store_));
     station_config_.init();
-    fill_levels_.init();
+    recipe_store_.init_recipes(load_recipes_from_dir(recipe_db_path, ingredient_store_));
 }
 
 void Application::run(std::shared_ptr<StationState> station_state, std::unique_ptr<PodDiscovery> pod_discovery)

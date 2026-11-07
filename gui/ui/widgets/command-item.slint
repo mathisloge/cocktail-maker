@@ -1,5 +1,6 @@
 import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Motion } from "../theme/motion.slint";
 import { Typography } from "../theme/typography.slint";
 import { LoadingSpinner } from "../components/loading-spinner.slint";
 import { BodyText } from "../components/text.slint";
@@ -8,7 +9,7 @@ import { Command, CommandStatus } from "../types/recipe.slint";
 export component CommandItem inherits Rectangle {
     in property <Command> command;
     background: Palette.surface-card;
-    animate background { duration: 200ms; }
+    animate background { duration: Motion.normal; }
     border-color: Palette.border;
     border-width: 1px;
 

@@ -1,5 +1,6 @@
 import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Motion } from "../theme/motion.slint";
 import { Typography } from "../theme/typography.slint";
 import { Button } from "../components/button.slint";
 import { CornerDeco } from "../components/corner-deco.slint";
@@ -96,7 +97,7 @@ export component BootScreen inherits PageBase {
                     tone: root.is-loading ? TextTone.interactive : TextTone.success;
                     horizontal-alignment: center;
                     text: root.is-loading ? "WIRD GESTARTET …" : "BEREIT";
-                    animate color { duration: 400ms; }
+                    animate color { duration: Motion.reveal; }
                 }
             }
         }

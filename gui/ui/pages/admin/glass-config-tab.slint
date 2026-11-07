@@ -34,7 +34,7 @@ export component GlassConfigTab inherits Rectangle {
         }
 
         Flickable {
-            height: 232px;
+            height: Layout.glass-card-height;
             glass-row := HorizontalLayout {
                 spacing: Layout.spacing-md;
 
@@ -84,7 +84,7 @@ export component GlassConfigTab inherits Rectangle {
                 spacing: Layout.spacing-md;
 
                 for volume in selected-glass.active-volumes-ml: Chip {
-                    width: 110px;
+                    width: Layout.volume-chip-width;
                     text: volume;
                     clicked => { GlassContext.remove-volume-from-glass(selected-glass.id, volume.to-float()); }
                 }

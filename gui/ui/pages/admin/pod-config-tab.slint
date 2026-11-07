@@ -1,5 +1,6 @@
 import { TextTone, Palette } from "../../theme/colors.slint";
 import { Layout } from "../../theme/layout.slint";
+import { Motion } from "../../theme/motion.slint";
 import { Button } from "../../components/button.slint";
 import { PulseDot } from "../../components/pulse-dot.slint";
 import { ScrollArea } from "../../components/scroll-area.slint";
@@ -21,7 +22,7 @@ component PodListDelegate inherits Rectangle {
     background: Palette.surface-card;
     border-width: 1px;
     border-color: root.selected ? Palette.border-strong : Palette.border-subtle;
-    animate background, border-color { duration: 100ms; }
+    animate background, border-color { duration: Motion.quick; }
 
     HorizontalLayout {
         padding: Layout.spacing-sm;
@@ -39,7 +40,7 @@ component PodListDelegate inherits Rectangle {
             title := CaptionText {
                 horizontal-alignment: center;
                 text: pod.id;
-                animate color { duration: 100ms; }
+                animate color { duration: Motion.quick; }
             }
 
             if pod.status-text != "": CaptionText {
@@ -81,7 +82,7 @@ export component PodConfigTab inherits Rectangle {
             VerticalLayout {
                 alignment: start;
                 for pod in StationStateContext.pods: PodListDelegate {
-                    height: 50px;
+                    height: Layout.list-row-height;
                     pod: pod;
                     selected: root.active-pod == pod;
                     clicked => { root.active-pod = pod; }

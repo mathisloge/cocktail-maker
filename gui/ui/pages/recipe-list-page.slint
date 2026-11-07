@@ -24,7 +24,7 @@ export component RecipeListPage inherits PageBase {
                 recipe: recipe;
                 opacity: root.mounted ? 1 : 0;
                 animate opacity {
-                    delay: index * 50ms;
+                    delay: index * Motion.stagger;
                     duration: Motion.mount-duration;
                     easing: Motion.mount-easing;
                 }

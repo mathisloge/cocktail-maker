@@ -1,10 +1,11 @@
 import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
 import { GlassIconData } from "../types/glass.slint";
 
 export component GlassIcon {
     in property <GlassIconData> data;
     in property <color> stroke-color: Palette.accent;
-    in property <length> stroke-width: 2px;
+    in property <length> stroke-width: Layout.border-width-strong;
 
     Path {
         width: 100%;

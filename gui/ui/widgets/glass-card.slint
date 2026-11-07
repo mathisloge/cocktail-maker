@@ -10,16 +10,16 @@ export component GlassCard inherits Rectangle {
     in property <bool> selected;
     callback clicked();
 
-    width: 168px;
-    height: 232px;
+    width: Layout.glass-card-width;
+    height: Layout.glass-card-height;
     border-radius: Layout.radius-md;
     background: root.selected ? Palette.accent-dim : (ta.pressed ? Palette.surface-elevated : Palette.surface-card);
-    border-width: root.selected ? 2px : 1px;
+    border-width: root.selected ? Layout.border-width-strong : 1px;
     border-color: root.selected ? Palette.border-strong : (ta.pressed ? Palette.border-strong : Palette.border);
 
     drop-shadow-color: Palette.shadow;
-    drop-shadow-blur: 8px;
-    drop-shadow-offset-y: 2px;
+    drop-shadow-blur: Layout.shadow-card-blur;
+    drop-shadow-offset-y: Layout.shadow-card-offset;
 
     animate background, border-color, border-width { duration: Motion.mount-duration / 3; }
 
@@ -32,9 +32,9 @@ export component GlassCard inherits Rectangle {
         GlassIcon {
             data: root.descriptor.icon;
             stroke-color: root.selected ? Palette.accent : Palette.text-muted;
-            stroke-width: root.selected ? 2.5px : 2px;
-            width: 84px;
-            height: 84px * root.descriptor.icon.viewbox-height / max(1, root.descriptor.icon.viewbox-width);
+            stroke-width: root.selected ? Layout.accent-bar : Layout.border-width-strong;
+            width: Layout.glass-icon-size;
+            height: Layout.glass-icon-size * root.descriptor.icon.viewbox-height / max(1, root.descriptor.icon.viewbox-width);
             horizontal-stretch: 0;
         }
 

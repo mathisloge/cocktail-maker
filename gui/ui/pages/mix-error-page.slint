@@ -1,5 +1,6 @@
 import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Motion } from "../theme/motion.slint";
 import { Typography } from "../theme/typography.slint";
 import { Button } from "../components/button.slint";
 import { CornerDeco } from "../components/corner-deco.slint";
@@ -88,12 +89,14 @@ export component MixErrorPage inherits PageBase {
     private property <string> failed-ingredient-name:   ProcessContext.error-item-name;
     private property <string> failed-pod-label:         ProcessContext.error-item-details;
     private property <bool> details-expanded: false;
+    private property <length> ring-size: 168px;
+    private property <length> icon-size: 112px;
     callback cancel();
 
     // ── Continuous slow breathing pulse on the broken ring ───────
     property <bool> pulse: false;
     Timer {
-        interval: 1700ms;
+        interval: Motion.breathe;
         running: true;
         triggered => { root.pulse = !root.pulse; }
     }
@@ -104,7 +107,7 @@ export component MixErrorPage inherits PageBase {
         //  LEFT  —  status icon
         // ════════════════════════════════════════════════════
         Rectangle {
-            width: 380px;
+            width: Layout.side-panel-width;
             horizontal-stretch: 0;
             background: Palette.surface;
 
@@ -127,29 +130,29 @@ export component MixErrorPage inherits PageBase {
                 HorizontalLayout {
                     alignment: center;
                     icon-stack := Rectangle {
-                        width: 168px;
-                        height: 168px;
+                        width: root.ring-size;
+                        height: root.ring-size;
                         background: transparent;
 
                         // Static amber base ring (the "glass rim")
                         Rectangle {
-                            width: 112px;
-                            height: 112px;
+                            width: root.icon-size;
+                            height: root.icon-size;
                             x: (parent.width - self.width) / 2;
                             y: (parent.height - self.height) / 2;
                             border-radius: self.height / 2;
-                            border-width: root.pulse ? 1px : 3px;
+                            border-width: root.pulse ? 1px : Layout.accent-bar;
                             border-color: root.pulse ? Palette.border : Palette.text-error;
                             background: Palette.surface-elevated;
                             animate border-color, border-width {
-                                duration: 400ms;
+                                duration: Motion.reveal;
                                 easing: ease-in-out;
                             }
                         }
 
                         Path {
-                            width: 112px;
-                            height: 112px;
+                            width: root.icon-size;
+                            height: root.icon-size;
                             x: (parent.width - self.width) / 2;
                             y: (parent.height - self.height) / 2;
                             viewbox-width: 100;
@@ -158,17 +161,17 @@ export component MixErrorPage inherits PageBase {
                             commands: "M 50 32 Q 52 32 53 34 L 64 58 Q 66 62 62 62 L 38 62 Q 34 62 36 58 L 47 34 Q 48 32 50 32 Z";
                             fill: transparent;
                             stroke: root.pulse ? Palette.border : Palette.text-error;
-                            stroke-width: 2px;
+                            stroke-width: Layout.border-width-strong;
                             opacity: root.mounted ? 1 : 0;
                             animate opacity, stroke {
-                                duration: 400ms;
+                                duration: Motion.reveal;
                                 easing: ease-in-out;
                             }
                         }
 
                         Path {
-                            width: 112px;
-                            height: 112px;
+                            width: root.icon-size;
+                            height: root.icon-size;
                             x: (parent.width - self.width) / 2;
                             y: (parent.height - self.height) / 2;
                             viewbox-width: 100;
@@ -179,7 +182,7 @@ export component MixErrorPage inherits PageBase {
                             stroke: transparent;
                             opacity: root.mounted ? 1 : 0;
                             animate opacity, fill {
-                                duration: 400ms;
+                                duration: Motion.reveal;
                                 easing: ease-in-out;
                             }
                         }
@@ -195,7 +198,7 @@ export component MixErrorPage inherits PageBase {
                     spacing: Layout.spacing-sm;
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
-                        duration: 400ms;
+                        duration: Motion.reveal;
                         delay: 280ms;
                     }
 
@@ -232,7 +235,7 @@ export component MixErrorPage inherits PageBase {
                     text: root.customer-title;
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
-                        duration: 400ms;
+                        duration: Motion.reveal;
                         delay: 320ms;
                     }
                 }
@@ -248,7 +251,7 @@ export component MixErrorPage inherits PageBase {
 
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
-                        duration: 400ms;
+                        duration: Motion.reveal;
                         delay: 360ms;
                     }
                 }
@@ -263,7 +266,7 @@ export component MixErrorPage inherits PageBase {
                     height: Layout.touch-height-sm;
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
-                        duration: 400ms;
+                        duration: Motion.reveal;
                         delay: 420ms;
                     }
                     clicked => { root.details-expanded = !root.details-expanded; }
@@ -321,7 +324,7 @@ export component MixErrorPage inherits PageBase {
                     text: "ABBRECHEN";
                     opacity: root.mounted ? 1 : 0;
                     animate opacity {
-                        duration: 400ms;
+                        duration: Motion.reveal;
                         delay: 520ms;
                     }
                     clicked => { root.cancel(); }

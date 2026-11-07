@@ -1,5 +1,6 @@
 import { TextTone, Palette } from "../../theme/colors.slint";
 import { Layout } from "../../theme/layout.slint";
+import { Motion } from "../../theme/motion.slint";
 import { Button } from "../../components/button.slint";
 import { NumberBox } from "../../components/number-box.slint";
 import { PulseDot } from "../../components/pulse-dot.slint";
@@ -30,7 +31,7 @@ component StepCard inherits Rectangle {
     border-width: 1px;
     border-color: Palette.border-subtle;
     opacity: root.enabled ? 1.0 : 0.45;
-    animate opacity { duration: 150ms; }
+    animate opacity { duration: Motion.quick; }
 
     function status-label() -> string {
         if (root.status == CalibrationStepStatus.success) {
@@ -119,7 +120,7 @@ component DispenserCalibrationContent inherits Rectangle {
         border-color: Palette.border-strong;
 
         drop-shadow-color: Palette.shadow;
-        drop-shadow-blur: 24px;
+        drop-shadow-blur: Layout.shadow-popup-blur;
 
         VerticalLayout {
             padding: Layout.spacing-lg;

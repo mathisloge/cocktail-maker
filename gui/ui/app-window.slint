@@ -1,5 +1,6 @@
 import { Palette } from "./theme/colors.slint";
 import { Layout } from "./theme/layout.slint";
+import { Motion } from "./theme/motion.slint";
 import { Typography } from "./theme/typography.slint";
 import { Button } from "./components/button.slint";
 import { ScrollArea } from "./components/scroll-area.slint";
@@ -43,8 +44,8 @@ export {
 
 export component AppWindow inherits Window {
     default-font-family: Typography.font-family;
-    preferred-width: 1280px;
-    preferred-height: 720px;
+    preferred-width: Layout.window-width;
+    preferred-height: Layout.window-height;
     private property <bool> device_ready: StationStateContext.station-ready;
     in-out property <bool> boot-screen-confirmed: false;
     out property <Command> popup_command;
@@ -124,7 +125,7 @@ export component AppWindow inherits Window {
                 secondary: true;
                 text: "← Zurück";
                 x: 0px;
-                width: 120px;
+                width: Layout.back-button-width;
                 visible: StationStateContext.active-screen != Page.cocktail-list-page && StationStateContext.active-screen != Page.finished-page;
                 enabled: !DispenserCalibrationContext.is-busy();
                 clicked => {
@@ -140,7 +141,7 @@ export component AppWindow inherits Window {
 
                 TouchArea {
                     long-press-timer := Timer {
-                        interval: 4s;
+                        interval: Motion.long-press;
                         running: false;
                         triggered => {
                             self.running = false;

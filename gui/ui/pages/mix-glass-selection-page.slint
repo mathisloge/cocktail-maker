@@ -40,7 +40,7 @@ export component MixGlassSelectionPage inherits PageBase {
 
         // Glass shelf
         Flickable {
-            height: 232px;
+            height: Layout.glass-card-height;
             glass-row := HorizontalLayout {
                 spacing: Layout.spacing-md;
 
@@ -69,7 +69,7 @@ export component MixGlassSelectionPage inherits PageBase {
                     spacing: Layout.spacing-md;
 
                     for volume in ProcessContext.glass.active-volumes-ml: Chip {
-                        width: 110px;
+                        width: Layout.volume-chip-width;
                         text: volume + " mL";
                         selected: volume == ProcessContext.glass-volume;
                         clicked => { ProcessContext.glass-volume = volume.to-float(); }

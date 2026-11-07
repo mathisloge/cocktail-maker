@@ -1,5 +1,6 @@
 import { TextTone, Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Motion } from "../theme/motion.slint";
 import { Typography } from "../theme/typography.slint";
 import { TitleText } from "../components/text.slint";
 import { RecipeView } from "../types/recipe.slint";
@@ -13,13 +14,13 @@ export component RecipeCard inherits Rectangle {
     };
     callback clicked();
     border-color: Palette.border;
-    border-width: 2px;
+    border-width: Layout.border-width-strong;
     background: Palette.surface-card;
-    animate background, border-color { duration: 200ms; }
+    animate background, border-color { duration: Motion.normal; }
 
     drop-shadow-color: Palette.shadow;
-    drop-shadow-blur: 10px;
-    drop-shadow-offset-y: 3px;
+    drop-shadow-blur: Layout.shadow-card-blur;
+    drop-shadow-offset-y: Layout.shadow-card-offset;
 
     preferred-width: 250px;
     height: self.width;
@@ -45,7 +46,7 @@ export component RecipeCard inherits Rectangle {
 
         Rectangle {
             border-color: Palette.border;
-            border-width: 2px;
+            border-width: Layout.border-width-strong;
             background: Palette.surface-elevated;
 
             VerticalLayout {

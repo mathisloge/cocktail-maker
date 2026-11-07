@@ -1,5 +1,6 @@
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Motion } from "../theme/motion.slint";
 import { Typography } from "../theme/typography.slint";
 
 export component Button {
@@ -44,7 +45,7 @@ export component Button {
         border-radius: 0px;
         background: root.secondary ? Palette.surface : Palette.accent;
 
-        animate background, border-color { duration: 150ms; }
+        animate background, border-color { duration: Motion.quick; }
 
         i-border := Rectangle {
             border-radius: parent.border-radius;
@@ -68,7 +69,7 @@ export component Button {
                 vertical-alignment: center;
                 text: root.text;
                 color: root.text-color;
-                animate color { duration: 150ms; }
+                animate color { duration: Motion.quick; }
                 accessible-role: none;
             }
         }

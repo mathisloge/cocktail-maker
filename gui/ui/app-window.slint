@@ -51,13 +51,13 @@ export component AppWindow inherits Window {
     preferred-width: 1280px;
     preferred-height: 720px;
     private property <bool> device_ready: StationStateContext.station-ready;
-    private property <bool> boot_screen_confirmed: false;
+    in-out property <bool> boot-screen-confirmed: false;
     out property <Command> popup_command;
     out property <bool> manual-command-popup-open: false;
     out property <bool> fill-warning-popup-open: false;
     changed device_ready => {
         if (!device_ready) {
-            boot_screen_confirmed = false;
+            boot-screen-confirmed = false;
         }
     }
 
@@ -116,13 +116,13 @@ export component AppWindow inherits Window {
     }
 
     background: Palette.background;
-    if !device_ready || !boot_screen_confirmed: BootScreen {
+    if !device_ready || !boot-screen-confirmed: BootScreen {
         is-loading: !device_ready;
         boot-complete => {
-            root.boot_screen_confirmed = true;
+            root.boot-screen-confirmed = true;
         }
     }
-    if device_ready && boot_screen_confirmed: VerticalLayout {
+    if device_ready && boot-screen-confirmed: VerticalLayout {
         Rectangle {
             height: Layout.touch-height;
             Button {

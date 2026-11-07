@@ -48,6 +48,10 @@ target_sources(
 
 if(BUILD_TESTING)
     add_executable(cocktail-maker-gui-tests)
+    set_target_properties(
+        cocktail-maker-gui-tests
+        PROPERTIES CXX_MODULE_STD ON CXX_SCAN_FOR_MODULES ON
+    )
     add_sanitizers(cocktail-maker-gui-tests)
     cm_enable_compile_time_trace(cocktail-maker-gui-tests)
     target_link_libraries(
@@ -76,6 +80,7 @@ if(BUILD_TESTING)
             src/station_flows.test.cpp
             src/dispenser_calibration_bridge.test.cpp
             src/mix_error_page.test.cpp
+            src/ui_snapshots.test.cpp
     )
 endif()
 

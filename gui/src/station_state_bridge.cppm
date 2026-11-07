@@ -35,16 +35,17 @@ export class StationStateBridge : public StationState, public std::enable_shared
     void update_pod_model(const PodStateImpl& pod);
     void on_navigate_to(Page target);
     void on_submit_operator_pin(const slint::SharedString& pin);
-    Task<void> async_handle_operator_lockout();
+    void publish_operator_state(std::chrono::steady_clock::time_point now);
 
   private:
     log::Logger logger_{log::create_or_get("station_state_bridge")};
-    AsyncScope& async_scope_;
     slint::ComponentHandle<AppWindow> ui_;
     std::vector<PodStateImpl*> pods_;
     std::shared_ptr<PodUiModel> pod_model_;
     OperatorAuth operator_auth_;
     bool operator_authenticated_{false};
+    // The countdown runs on the UI thread, which is the only one that touches operator_auth_.
+    slint::Timer lockout_timer_;
 };
 
 } // namespace cm::gui

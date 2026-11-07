@@ -1,9 +1,6 @@
 module;
-#include <boost/asio/steady_timer.hpp>
-#include <exec/asio/use_sender.hpp>
 #include <slint.h>
 #include <spdlog/spdlog.h>
-#include <stdexec/execution.hpp>
 #include "app-window.h"
 
 module cm.gui:station_state_bridge_impl;
@@ -222,8 +219,7 @@ StationStateBridge::StationStateBridge(slint::ComponentHandle<AppWindow> ui,
                                        const PodRegistry& pod_registry,
                                        AsyncScope& async_scope,
                                        FillLevelTracker& fill_levels)
-    : async_scope_{async_scope}
-    , ui_{std::move(ui)}
+    : ui_{std::move(ui)}
     , pod_model_{std::make_shared<PodUiModel>()}
     , operator_auth_{OperatorAuthConfig{
           .pin_hash = hash_pin("000000", kSalt),
@@ -355,46 +351,35 @@ void StationStateBridge::on_submit_operator_pin(const slint::SharedString& pin)
 {
     const auto now = std::chrono::steady_clock::now();
     operator_authenticated_ = operator_auth_.verify(std::string{pin}, now);
-    const bool locked_out = operator_auth_.is_locked_out(now);
+    publish_operator_state(now);
 
-    const auto& ctx = ui_->global<StationStateContext>();
-    ctx.set_operator_locked_out(operator_auth_.is_locked_out(now));
-    ctx.set_operator_remaining_attempts(operator_auth_.remaining_attempts());
-    ctx.set_operator_lockout_seconds_remaining(static_cast<int>(operator_auth_.lockout_remaining(now).count()));
     if (operator_authenticated_) {
         ui_->invoke_close_operator_pin_popup();
         on_navigate_to(Page::AdminAreaPage);
     }
     else {
-        SPDLOG_LOGGER_WARN(
-            logger_, "Entered wrong operator pin {}. Remaining: {}", pin.data(), operator_auth_.remaining_attempts());
+        SPDLOG_LOGGER_WARN(logger_, "Operator entered a wrong PIN. Remaining attempts: {}", operator_auth_.remaining_attempts());
     }
-    if (locked_out) {
-        async_scope_.spawn(async_handle_operator_lockout());
+
+    if (operator_auth_.is_locked_out(now) && not lockout_timer_.running()) {
+        SPDLOG_LOGGER_DEBUG(logger_, "Starting operator lockout countdown.");
+        lockout_timer_.start(slint::TimerMode::Repeated, std::chrono::seconds{1}, [this]() {
+            const auto now = std::chrono::steady_clock::now();
+            publish_operator_state(now);
+            if (not operator_auth_.is_locked_out(now)) {
+                SPDLOG_LOGGER_DEBUG(logger_, "Finished operator lockout countdown.");
+                lockout_timer_.stop();
+            }
+        });
     }
 }
 
-Task<void> StationStateBridge::async_handle_operator_lockout()
+void StationStateBridge::publish_operator_state(const std::chrono::steady_clock::time_point now)
 {
-    SPDLOG_LOGGER_DEBUG(logger_, "Starting operator lockout timeout.");
-    for (auto now = std::chrono::steady_clock::now(); operator_auth_.is_locked_out(now); now = std::chrono::steady_clock::now()) {
-        boost::asio::steady_timer timer{async_scope_.executor()};
-        timer.expires_after(std::chrono::seconds{1});
-        co_await timer.async_wait(exec::asio::use_sender);
-        slint::invoke_from_event_loop([this]() {
-            const auto now = std::chrono::steady_clock::now();
-            const auto& ctx = ui_->global<StationStateContext>();
-            ctx.set_operator_lockout_seconds_remaining(static_cast<int>(operator_auth_.lockout_remaining(now).count()));
-        });
-    }
-    slint::invoke_from_event_loop([this]() {
-        const auto now = std::chrono::steady_clock::now();
-        const auto& ctx = ui_->global<StationStateContext>();
-        ctx.set_operator_locked_out(operator_auth_.is_locked_out(now));
-        ctx.set_operator_remaining_attempts(operator_auth_.remaining_attempts());
-        ctx.set_operator_lockout_seconds_remaining(static_cast<int>(operator_auth_.lockout_remaining(now).count()));
-    });
-    SPDLOG_LOGGER_DEBUG(logger_, "Finished operator lockout timeout.");
+    const auto& ctx = ui_->global<StationStateContext>();
+    ctx.set_operator_locked_out(operator_auth_.is_locked_out(now));
+    ctx.set_operator_remaining_attempts(operator_auth_.remaining_attempts());
+    ctx.set_operator_lockout_seconds_remaining(static_cast<int>(operator_auth_.lockout_remaining(now).count()));
 }
 
 PodStateImpl::~PodStateImpl()

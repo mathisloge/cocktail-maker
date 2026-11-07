@@ -247,3 +247,29 @@ TEST_CASE("StationStateBridge - A pod on another protocol release shows why it i
     usable.reset();
     pod.reset();
 }
+
+TEST_CASE("StationStateBridge - An operator lockout counts down on the UI thread alone", "[gui][StationStateBridge][operator]")
+{
+    boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
+    auto ui = cm::gui::AppWindow::create();
+    cm::PodRegistry pod_registry;
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
+    SlintFlusher flusher;
+    const auto& context = ui->global<cm::gui::StationStateContext>();
+
+    for (int attempt = 0; attempt < 4; ++attempt) {
+        context.invoke_submit_operator_pin(slint::SharedString{"111111"});
+    }
+
+    CHECK(context.get_operator_locked_out());
+    CHECK(context.get_operator_remaining_attempts() == 0);
+    CHECK(context.get_operator_lockout_seconds_remaining() > 0);
+    // OperatorAuth isn't shared with the execution context, so nothing of the lockout may run there.
+    CHECK(ctx.poll() == 0);
+
+    // A scope has to be joined before it goes away, also when a failed check above left work in it.
+    scope.request_stop();
+    cm::run_until_complete(ctx, scope.join());
+}

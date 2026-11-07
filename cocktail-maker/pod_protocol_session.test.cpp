@@ -438,3 +438,58 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
         CHECK(std::holds_alternative<cm::InDispenseFinished>(second));
     });
 }
+
+namespace {
+/// Reads like a socket, but every write fails as if the Pod had gone away.
+class FailingWriteStream final : public cm::AnyIoStream
+{
+  public:
+    explicit FailingWriteStream(Socket socket)
+        : inner_{std::move(socket)}
+    {
+    }
+
+    auto async_read(boost::asio::mutable_buffer buffer) -> cm::Task<std::tuple<boost::system::error_code, std::size_t>> override
+    {
+        return inner_.async_read(buffer);
+    }
+
+    auto async_write(boost::asio::const_buffer /*buffer*/, std::chrono::milliseconds /*timeout*/)
+        -> cm::Task<boost::system::error_code> override
+    {
+        co_return boost::asio::error::broken_pipe;
+    }
+
+    auto close() -> boost::system::error_code override
+    {
+        return inner_.close();
+    }
+
+    auto get_executor() -> boost::asio::any_io_executor override
+    {
+        return inner_.get_executor();
+    }
+
+  private:
+    cm::SocketIoStream<Socket> inner_;
+};
+} // namespace
+
+TEST_CASE("PodProtocolSession - A failed write ends the session", "[send][lifecycle]")
+{
+    boost::asio::io_context ioc;
+    Socket peer{ioc};
+    Socket session_socket{ioc};
+    boost::asio::local::connect_pair(peer, session_socket);
+    Session session{std::make_unique<FailingWriteStream>(std::move(session_socket))};
+
+    bool ended = false;
+    auto send_and_wait = [&]() -> cm::Task<void> {
+        co_await session.async_send(TestTxMsg{}, kTestTransaction);
+        boost::asio::steady_timer timer{ioc, 2s};
+        co_await timer.async_wait(exec::asio::use_sender);
+    };
+    cm::run_until_complete(ioc, exec::when_any(session.run() | stdexec::then([&] { ended = true; }), send_and_wait()));
+
+    CHECK(ended);
+}

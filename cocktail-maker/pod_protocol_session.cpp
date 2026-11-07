@@ -153,11 +153,8 @@ Task<void> PodProtocolSession::write_loop()
             break; // Queue closed due to shutdown_channels()
         }
 
-        try {
-            co_await stream_->async_write(asio::buffer(data), std::chrono::milliseconds(500));
-        }
-        catch (const boost::system::system_error& e) {
-            SPDLOG_LOGGER_ERROR(logger_, "Write aborted: {}", e.what());
+        if (const auto ec = co_await stream_->async_write(asio::buffer(data), std::chrono::milliseconds(500))) {
+            SPDLOG_LOGGER_ERROR(logger_, "Could not write to the Pod, ending the session: {}", ec.message());
             break;
         }
     }

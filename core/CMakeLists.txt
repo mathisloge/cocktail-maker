@@ -60,6 +60,7 @@ if(BUILD_TESTING)
     target_sources(
         cocktail-maker-core-tests
         PRIVATE
+            any_io_stream.test.cpp
             async_algorithms.test.cpp
             awaitable_bool.test.cpp
             comms_adapter.test.cpp

@@ -655,17 +655,18 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
                 data = co_await cm::async_receive(write_queue_);
             }
             catch (...) {
-                break; // Queue closed due to shutdown_channels()
+                break;
             }
 
-            try {
-                co_await asio::async_write(
-                    stream_,
-                    asio::buffer(data),
-                    asio::cancel_after(std::chrono::milliseconds(500), asio::as_tuple(exec::asio::use_sender)));
+            auto [ec, bytes_written] = co_await asio::async_write(
+                stream_,
+                asio::buffer(data),
+                asio::cancel_after(std::chrono::milliseconds(500), asio::as_tuple(exec::asio::use_sender)));
+            if (ec == asio::error::operation_aborted && (co_await stdexec::read_env(stdexec::get_stop_token)).stop_requested()) {
+                co_yield stdexec::with_stopped{};
             }
-            catch (const boost::system::system_error& e) {
-                SPDLOG_LOGGER_ERROR(logger_, "Write aborted: {}", e.what());
+            if (ec) {
+                SPDLOG_LOGGER_ERROR(logger_, "Could not write to the Station, ending the session: {}", ec.message());
                 break;
             }
         }

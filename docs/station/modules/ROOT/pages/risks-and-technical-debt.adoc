@@ -34,3 +34,13 @@ xref:adr:003-asynchronous-execution-model.adoc[ADR-003].
   context. A per-exchange timeout bounds any single exchange, but a very slow or misbehaving exchange
   can still delay unrelated work until its own timeout elapses, since nothing runs in parallel to it
   today.
+
+== Open Points
+
+* *Running a pump until stopped:* cleaning a pump with hot water needs it to run until someone stops
+  it. The protocol only has `Dispense`, which pours a fixed amount, and the calibration run, which
+  runs for a fixed time. The maintenance area will offer the action per pump. It needs a new protocol
+  message and support in the Pod firmware before it does anything.
+* *Running a pump backwards:* emptying the tubes needs a pump to run in reverse. Neither the protocol
+  nor the Pod firmware can do this yet. The maintenance area will offer the action per pump, and it
+  stays without effect until both are extended.

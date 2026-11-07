@@ -20,6 +20,11 @@ message(STATUS "Project version: ${PROJECT_VERSION}")
 
 option(BUILD_SIMULATED "Use simulated pods" OFF)
 option(
+    CM_SLINT_MCP
+    "Build Slint with its embedded MCP server, which starts when SLINT_MCP_PORT is set"
+    OFF
+)
+option(
     CM_COMPILE_TIME_TRACE
     "Collect clang -ftime-trace data for the first-party targets"
     OFF
@@ -116,6 +121,7 @@ cpmaddpackage(
   URI "gh:slint-ui/slint@1.18.1"
   NAME Slint
   SOURCE_SUBDIR api/cpp
+  OPTIONS "SLINT_FEATURE_MCP ${CM_SLINT_MCP}"
 )
 cpmaddpackage(URI "gh:commschamp/comms@5.5.3" NAME LibComms)
 cpmaddpackage(URI "gh:mathisloge/cocktail-maker-protocol@2.1.0" SOURCE_SUBDIR generated

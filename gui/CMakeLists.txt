@@ -3,6 +3,10 @@ add_library(cm::ui ALIAS generated-ui)
 add_sanitizers(generated-ui)
 target_compile_features(generated-ui PUBLIC cxx_std_26)
 target_link_libraries(generated-ui PUBLIC Slint::Slint)
+# The MCP server can only name elements and their ids when the compiler emits debug info.
+if(CM_SLINT_MCP)
+    set(SLINT_COMPILER_ENV_VARS SLINT_EMIT_DEBUG_INFO=1)
+endif()
 slint_target_sources(generated-ui
   ui/app-window.slint NAMESPACE cm::gui
 )

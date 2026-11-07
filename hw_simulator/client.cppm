@@ -1,5 +1,5 @@
 module;
-#include <boost/asio.hpp>
+#include <boost/asio/local/stream_protocol.hpp>
 #include <proto/FrameInterface.h>
 #include <proto/frame/Frame.h>
 #include <proto/input/AllMessages.h>

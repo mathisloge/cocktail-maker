@@ -1,5 +1,4 @@
 module;
-#include <boost/asio.hpp>
 #include <spdlog/spdlog.h>
 #include <stdexec/execution.hpp>
 

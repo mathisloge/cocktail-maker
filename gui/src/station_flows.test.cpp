@@ -1,4 +1,5 @@
-#include <boost/asio.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <exec/when_any.hpp>
 #include <proto/field/ErrorCodeCommon.h>

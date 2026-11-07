@@ -1,4 +1,11 @@
-#include <boost/asio.hpp>
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/as_tuple.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/error.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/local/connect_pair.hpp>
+#include <boost/asio/local/stream_protocol.hpp>
+#include <boost/asio/write.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <comms/ErrorStatus.h>
 #include <exec/asio/use_sender.hpp>

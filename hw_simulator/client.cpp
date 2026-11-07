@@ -1,5 +1,11 @@
 module;
-#include <boost/asio.hpp>
+#include <boost/asio/as_tuple.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/cancel_after.hpp>
+#include <boost/asio/error.hpp>
+#include <boost/asio/local/connect_pair.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/system/system_error.hpp>
 #include <comms/process.h>
 #include <exec/asio/use_sender.hpp>
 #include <exec/when_any.hpp>

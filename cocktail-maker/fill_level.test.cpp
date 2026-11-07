@@ -1,4 +1,4 @@
-#include <boost/asio.hpp>
+#include <boost/asio/io_context.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <exec/asio/use_sender.hpp>
 #include <exec/when_any.hpp>

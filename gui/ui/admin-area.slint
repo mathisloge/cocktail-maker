@@ -1,25 +1,85 @@
-import { LogEntry, Pod, Dispenser } from "./data.slint";
-import { TabWidget } from "std-widgets.slint";
 import { PodConfigTab } from "./admin/pod-config-tab.slint";
 import { GlassConfigTab } from "./admin/glass-config-tab.slint";
 import { SystemLog } from "components.slint";
+import { Palette, Layout } from "./palette.slint";
 import { StationStateContext } from "./globals/station-state-context.slint";
 
+component AdminTab inherits Rectangle {
+    in property <string> title;
+    in property <bool> active;
+    callback clicked();
+
+    min-height: Layout.touch-height-sm;
+    horizontal-stretch: 1;
+    background: root.active ? Palette.accent-dim : touch.pressed ? Palette.background-elevated : transparent;
+
+    Text {
+        text: root.title;
+        font-size: Layout.font-size-sm;
+        font-weight: root.active ? FontWeight.bold : FontWeight.normal;
+        letter-spacing: 2px;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        color: root.active ? Palette.text-secondary : Palette.text-muted;
+    }
+
+    Rectangle {
+        y: parent.height - self.height;
+        height: 3px;
+        background: root.active ? Palette.accent : transparent;
+    }
+
+    touch := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
 export component AdminArea {
-    TabWidget {
-        Tab {
-            title: "Pod config";
-            PodConfigTab { }
+    private property <int> current-tab: 0;
+
+    VerticalLayout {
+        Rectangle {
+            background: Palette.background-card;
+
+            HorizontalLayout {
+                for title[index] in ["POD CONFIG", "GLASS CONFIG", "SYSTEM LOGS"]: AdminTab {
+                    title: title;
+                    active: root.current-tab == index;
+                    clicked => {
+                        root.current-tab = index;
+                    }
+                }
+            }
+
+            Rectangle {
+                y: parent.height - 1px;
+                height: 1px;
+                background: Palette.border;
+            }
         }
 
-        Tab {
-            title: "Glass config";
-            GlassConfigTab { }
-        }
+        // All tabs stay instantiated so that switching keeps their state.
+        Rectangle {
+            vertical-stretch: 1;
 
-        Tab {
-            title: "System logs";
+            PodConfigTab {
+                width: 100%;
+                height: 100%;
+                visible: root.current-tab == 0;
+            }
+
+            GlassConfigTab {
+                width: 100%;
+                height: 100%;
+                visible: root.current-tab == 1;
+            }
+
             SystemLog {
+                width: 100%;
+                height: 100%;
+                visible: root.current-tab == 2;
                 log-entries: StationStateContext.log-entries;
             }
         }

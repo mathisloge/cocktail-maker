@@ -15,7 +15,6 @@ import cm.sim;
 using namespace std::chrono_literals;
 
 namespace {
-using Socket = cm::sim::Socket;
 namespace units = cm::units;
 using ErrorCode = proto::field::ErrorCodeVal;
 
@@ -82,8 +81,7 @@ struct SimPodFixture
     cm::AsyncScope scope{ctx};
     cm::AwaitableBool is_connected{ctx.get_executor()};
     cm::AwaitableBool is_incompatible{ctx.get_executor()};
-    std::shared_ptr<cm::sim::Client<Socket>> client =
-        std::make_shared<cm::sim::Client<Socket>>(scope, "SimPod", cm::Version{.major = 2});
+    std::shared_ptr<cm::sim::Client> client = std::make_shared<cm::sim::Client>(scope, "SimPod", cm::Version{.major = 2});
     std::shared_ptr<cm::Pod> pod = make_pod();
 
     std::shared_ptr<cm::Pod> make_pod()
@@ -94,7 +92,7 @@ struct SimPodFixture
     /// Replaces the client and the pod, so it has to be called before `run_test`.
     void configure(cm::sim::ClientConfig config)
     {
-        client = std::make_shared<cm::sim::Client<Socket>>(scope, "SimPod", cm::Version{.major = 2}, std::move(config));
+        client = std::make_shared<cm::sim::Client>(scope, "SimPod", cm::Version{.major = 2}, std::move(config));
         pod = make_pod();
     }
 

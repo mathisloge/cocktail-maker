@@ -20,8 +20,6 @@ using namespace std::chrono_literals;
 namespace units = cm::units;
 
 namespace {
-using Socket = cm::sim::Socket;
-
 class TestPodState final : public cm::PodState
 {
   public:
@@ -124,7 +122,7 @@ struct SimStation
     cm::StationConfig config{ingredients, dir.file("mapping.json")};
     cm::FillLevelTracker fill_levels{
         ctx.get_executor(), dir.file("levels.json"), cm::FillLevelOptions{.refill_settle_time = 1ms}};
-    std::shared_ptr<cm::sim::Client<Socket>> client;
+    std::shared_ptr<cm::sim::Client> client;
     std::shared_ptr<cm::Pod> pod;
 
     const cm::IngredientId rum{"rum"};
@@ -133,7 +131,7 @@ struct SimStation
     const cm::PodDispenser lime_address{cm::PodId{"SimPod"}, cm::DispenserId{1}};
 
     explicit SimStation(cm::sim::ClientConfig client_config = fast_config())
-        : client{std::make_shared<cm::sim::Client<Socket>>(scope, "SimPod", cm::Version{.major = 2}, std::move(client_config))}
+        : client{std::make_shared<cm::sim::Client>(scope, "SimPod", cm::Version{.major = 2}, std::move(client_config))}
     {
         ingredients.init_ingredients({
             cm::Ingredient{.id = rum, .display_name = "Rum", .type = {}, .boost_category = cm::BoostCategory::fixed},

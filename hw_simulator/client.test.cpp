@@ -15,7 +15,6 @@ import cm.sim;
 using namespace std::chrono_literals;
 
 namespace {
-using Socket = cm::sim::Socket;
 using Clock = std::chrono::steady_clock;
 using ErrorCode = proto::field::ErrorCodeVal;
 namespace units = cm::units;
@@ -74,12 +73,12 @@ struct ClientFixture
 {
     boost::asio::io_context ctx;
     cm::AsyncScope scope{ctx};
-    std::shared_ptr<cm::sim::Client<Socket>> client;
+    std::shared_ptr<cm::sim::Client> client;
     std::unique_ptr<cm::PodProtocolSession> session;
 
     void create(cm::sim::ClientConfig config = cm::sim::fast_test_config())
     {
-        client = std::make_shared<cm::sim::Client<Socket>>(scope, "SimPod", cm::Version{.major = 2}, std::move(config));
+        client = std::make_shared<cm::sim::Client>(scope, "SimPod", cm::Version{.major = 2}, std::move(config));
         session = std::make_unique<cm::PodProtocolSession>(cm::sim::open_station_stream(*client));
     }
 

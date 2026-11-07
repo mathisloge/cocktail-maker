@@ -1,4 +1,42 @@
-import { ProgressIndicator } from "std-widgets.slint";
+import { ProgressIndicatorInterface } from "std-widget-interfaces.slint";
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+import { Motion } from "../theme/motion.slint";
 
-// The only place that uses the std-widget, so that theming it later is a change in this file.
-export component ProgressBar inherits ProgressIndicator { }
+// An amber light sweep while indeterminate, otherwise an amber fill for the progress from 0 to 1.
+export component ProgressBar {
+    implement ProgressIndicatorInterface <=> self;
+
+    in property <float> progress;
+    in property <bool> indeterminate;
+
+    private property <bool> started;
+    private property <length> sweep-width: root.width * 0.3;
+    init => {
+        root.started = true;
+    }
+
+    height: Layout.progress-height;
+
+    Rectangle {
+        background: Palette.surface-elevated;
+        clip: true;
+
+        if !root.indeterminate: Rectangle {
+            x: 0;
+            width: parent.width * max(0, min(1, root.progress));
+            background: Palette.accent;
+        }
+
+        if root.indeterminate: Rectangle {
+            x: root.started ? parent.width : -root.sweep-width;
+            width: root.sweep-width;
+            background: @linear-gradient(90deg, transparent 0%, Palette.accent 50%, transparent 100%);
+            animate x {
+                duration: Motion.sweep;
+                iteration-count: -1;
+                easing: ease-in-out;
+            }
+        }
+    }
+}

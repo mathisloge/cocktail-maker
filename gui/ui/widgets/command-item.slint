@@ -27,8 +27,7 @@ export component CommandItem inherits Rectangle {
         }
 
         if command.status == CommandStatus.in-progress: LoadingSpinner {
-            height: Typography.label-size;
-            indeterminate: true;
+            dot-size: Layout.spinner-dot-size-sm;
         }
 
         if command.status == CommandStatus.finished: BodyText {

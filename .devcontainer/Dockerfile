@@ -25,7 +25,7 @@ RUN curl -fsSL https://apt.llvm.org/llvm.sh -o /tmp/llvm.sh \
     && rm -f /tmp/llvm.sh \
     && rm -rf /var/lib/apt/lists/*
 
-# apt.llvm.org installs version-suffixed binaries (clang-22, ...). The developer
+# apt.llvm.org installs version-suffixed binaries (clang-23, ...). The developer
 # preset asks for plain clang/clang++, so alias whichever major landed above.
 #
 # The symlink works around Ubuntu's multiarch layout: clang resolves libc++'s

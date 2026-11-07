@@ -207,8 +207,6 @@ export class Pod : public IPod, public std::enable_shared_from_this<Pod>
 
     std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> create_dispenser(DispenserId dispenser_id) override;
 
-    Task<PodInfo> aquire_device_info(std::chrono::milliseconds timeout = 100ms);
-
     Task<void> load_cell_calibrate_with_ref_weight(const DispenserId dispenser_id, const units::Grams grams) override;
 
     Task<void> load_cell_tare(DispenserId dispenser_id) override;
@@ -224,6 +222,8 @@ export class Pod : public IPod, public std::enable_shared_from_this<Pod>
     Task<void> force_safe_state() override;
 
   private:
+    Task<PodInfo> acquire_device_info(std::chrono::milliseconds timeout);
+
     Task<void> monitor_device();
 
     Task<void> keep_alive();
@@ -232,6 +232,7 @@ export class Pod : public IPod, public std::enable_shared_from_this<Pod>
     log::Logger logger_{log::create_or_get("pod")};
     std::unique_ptr<PodState> state_{std::make_unique<NoopPodState>()};
     PodProtocolSession session_;
-    AwaitableBool device_ready_;
+    // The Pod keeps what it reported itself, so that its identity doesn't depend on the observer.
+    PodInfo info_;
 };
 } // namespace cm

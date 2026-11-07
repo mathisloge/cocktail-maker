@@ -66,11 +66,6 @@ class PodStateImpl final : public PodState
 
     void update_info(PodInfo info) override;
 
-    PodInfo info() const override
-    {
-        return data_.info;
-    }
-
     void update_state(ConnectionState state) override;
 
   private:

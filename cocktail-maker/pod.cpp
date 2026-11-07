@@ -248,13 +248,12 @@ auto send_action_with_response(PodProtocolSession& session,
 
 Pod::Pod(std::unique_ptr<AnyIoStream> stream)
     : session_{std::move(stream)}
-    , device_ready_{session_.get_executor()}
 {
 }
 
 PodId Pod::pod_id() const
 {
-    return state_->info().id;
+    return info_.id;
 }
 
 Task<void> Pod::run(std::unique_ptr<PodState> state)
@@ -265,18 +264,17 @@ Task<void> Pod::run(std::unique_ptr<PodState> state)
 
 std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> Pod::create_dispenser(DispenserId dispenser_id)
 {
-    const auto info = state_->info();
     // A Pod on another protocol release hands out no dispenser, because the Station can't read its replies safely.
-    if (info.protocol_version != station_protocol_version() || dispenser_id.raw() >= (info.num_pumps + info.num_valves)) {
+    if (info_.protocol_version != station_protocol_version() || dispenser_id.raw() >= (info_.num_pumps + info_.num_valves)) {
         return std::unexpected{DispenserNotFoundError{pod_id(), dispenser_id}};
     }
-    if (dispenser_id.raw() >= info.num_pumps) {
+    if (dispenser_id.raw() >= info_.num_pumps) {
         return std::make_unique<Valve>(this->shared_from_this(), dispenser_id);
     }
     return std::make_unique<Pump>(this->shared_from_this(), dispenser_id);
 }
 
-Task<PodInfo> Pod::aquire_device_info(std::chrono::milliseconds timeout)
+Task<PodInfo> Pod::acquire_device_info(std::chrono::milliseconds timeout)
 {
     InDeviceInfoResponse msg =
         co_await send_and_receive<InDeviceInfoResponse>(session_, OutDeviceInfoRequest{}, default_env(this, timeout));
@@ -373,7 +371,6 @@ Task<void> Pod::monitor_device()
         ~Cleanup()
         {
             SPDLOG_LOGGER_DEBUG(p_.logger_, "monitor device loop finished.");
-            p_.device_ready_ = false;
             p_.state_->update_state(PodState::ConnectionState::disconnected);
         }
     };
@@ -383,7 +380,7 @@ Task<void> Pod::monitor_device()
     PodInfo pod_info{};
     try {
         pod_info = co_await retry_on_timeout(
-            5, [this](auto timeout) { return aquire_device_info(timeout); }, ExponentialBackoffPolicy{.maximum = 10s});
+            5, [this](auto timeout) { return acquire_device_info(timeout); }, ExponentialBackoffPolicy{.maximum = 10s});
     }
     catch (const TimeoutError&) {
         // A Pod on another protocol release sends a device info the Station can't decode, so it looks like silence.
@@ -392,6 +389,7 @@ Task<void> Pod::monitor_device()
                             station_protocol_version());
         throw;
     }
+    info_ = pod_info;
     state_->update_info(pod_info);
     if (pod_info.protocol_version != station_protocol_version()) {
         SPDLOG_LOGGER_ERROR(logger_,
@@ -406,14 +404,12 @@ Task<void> Pod::monitor_device()
     }
     SPDLOG_LOGGER_INFO(logger_, "Device '{}' is ready.", pod_info.id);
     state_->update_state(PodState::ConnectionState::connected);
-    device_ready_ = true;
 
     co_await keep_alive();
 }
 
 Task<void> Pod::keep_alive()
 {
-    co_await device_ready_.async_wait();
     // The loop only ends through a stop request, which completes the pending ping or sleep with set_stopped.
     for (;;) {
         co_await retry_on_timeout(

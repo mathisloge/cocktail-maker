@@ -32,27 +32,24 @@ class FillLevelPodState final : public PodState
 
     void update_info(PodInfo info) override
     {
+        info_ = info;
         inner_->update_info(std::move(info));
-    }
-
-    PodInfo info() const override
-    {
-        return inner_->info();
     }
 
     void update_state(ConnectionState state) override
     {
         inner_->update_state(state);
         if (state == ConnectionState::connected) {
-            scope_.spawn(sync_pod_fill_levels(inner_->info(), registry_, fill_levels_));
+            scope_.spawn(sync_pod_fill_levels(info_, registry_, fill_levels_));
         }
         else if (state == ConnectionState::disconnected) {
-            fill_levels_.pod_disconnected(inner_->info().id);
+            fill_levels_.pod_disconnected(info_.id);
         }
     }
 
   private:
     std::unique_ptr<PodState> inner_;
+    PodInfo info_;
     AsyncScope& scope_;
     const PodRegistry& registry_;
     FillLevelTracker& fill_levels_;

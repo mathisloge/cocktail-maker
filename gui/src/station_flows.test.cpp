@@ -25,22 +25,13 @@ using Socket = cm::sim::Socket;
 class TestPodState final : public cm::PodState
 {
   public:
-    void update_info(cm::PodInfo info) override
+    void update_info(cm::PodInfo /*info*/) override
     {
-        info_ = std::move(info);
-    }
-
-    cm::PodInfo info() const override
-    {
-        return info_;
     }
 
     void update_state(ConnectionState /*state*/) override
     {
     }
-
-  private:
-    cm::PodInfo info_;
 };
 
 /// A pod that refuses every pour and counts how often it was stopped.

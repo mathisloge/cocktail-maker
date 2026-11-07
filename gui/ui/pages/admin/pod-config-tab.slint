@@ -1,8 +1,10 @@
-import { TabWidget, ListView, HorizontalBox, ComboBox, VerticalBox, Button, ScrollView } from "std-widgets.slint";
 import { Palette } from "../../theme/colors.slint";
 import { Layout } from "../../theme/layout.slint";
+import { Button } from "../../components/button.slint";
 import { MediumText } from "../../components/medium-text.slint";
 import { PulseDot } from "../../components/pulse-dot.slint";
+import { ScrollArea } from "../../components/scroll-area.slint";
+import { SelectBox } from "../../components/select-box.slint";
 import { SmallText } from "../../components/small-text.slint";
 import { Pod, Dispenser, ConnectionState, DispenserType } from "../../types/pod.slint";
 import { Ingredient } from "../../types/recipe.slint";
@@ -22,7 +24,9 @@ component PodListDelegate inherits Rectangle {
     border-color: root.selected ? Palette.border-strong : Palette.border-subtle;
     animate background, border-color { duration: 100ms; }
 
-    HorizontalBox {
+    HorizontalLayout {
+        padding: Layout.spacing-sm;
+        spacing: Layout.spacing-sm;
         cross-axis-alignment: center;
         PulseDot {
             pulse: pod.connection-state == ConnectionState.connecting;
@@ -72,13 +76,15 @@ export component PodConfigTab inherits Rectangle {
         y: 0;
         width: 33%;
 
-        ListView {
-            for pod in StationStateContext.pods: PodListDelegate {
-                width: parent.width;
-                height: 50px;
-                pod: pod;
-                selected: root.active-pod == pod;
-                clicked => { root.active-pod = pod; }
+        ScrollArea {
+            VerticalLayout {
+                alignment: start;
+                for pod in StationStateContext.pods: PodListDelegate {
+                    height: 50px;
+                    pod: pod;
+                    selected: root.active-pod == pod;
+                    clicked => { root.active-pod = pod; }
+                }
             }
         }
     }
@@ -91,7 +97,9 @@ export component PodConfigTab inherits Rectangle {
         background: Palette.border;
     }
 
-    content := VerticalBox {
+    content := VerticalLayout {
+        padding: Layout.spacing-sm;
+        spacing: Layout.spacing-sm;
         x: split.x + split.width;
         y: 0;
         width: root.width - sidebar.width - split.width;
@@ -106,9 +114,13 @@ export component PodConfigTab inherits Rectangle {
             color: Palette.log-error;
         }
 
-        ScrollView {
-            VerticalBox {
-                for dispenser in root.active-pod.dispensers: HorizontalBox {
+        ScrollArea {
+            VerticalLayout {
+                padding: Layout.spacing-sm;
+                spacing: Layout.spacing-sm;
+                for dispenser in root.active-pod.dispensers: HorizontalLayout {
+                    padding: Layout.spacing-sm;
+                    spacing: Layout.spacing-sm;
                     cross-axis-alignment: center;
                     SmallText {
                         text: "Dispenser " + dispenser.id;
@@ -119,7 +131,7 @@ export component PodConfigTab inherits Rectangle {
                         color: Palette.text-interactive;
                     }
 
-                    ComboBox {
+                    SelectBox {
                         height: Layout.touch-height-sm;
                         model: RecipeContext.ingredient-ids;
                         selected(current-value) => {

@@ -1,8 +1,10 @@
-import { VerticalBox, HorizontalBox, Button, SpinBox, ScrollView } from "std-widgets.slint";
 import { Palette } from "../../theme/colors.slint";
 import { Layout } from "../../theme/layout.slint";
+import { Button } from "../../components/button.slint";
 import { MediumText } from "../../components/medium-text.slint";
+import { NumberBox } from "../../components/number-box.slint";
 import { PulseDot } from "../../components/pulse-dot.slint";
+import { ScrollArea } from "../../components/scroll-area.slint";
 import { SmallText } from "../../components/small-text.slint";
 import { Pod, Dispenser, DispenserType } from "../../types/pod.slint";
 import { DispenserCalibrationContext, CalibrationStepStatus } from "../../globals/dispenser-calibration-context.slint";
@@ -73,7 +75,8 @@ component StepCard inherits Rectangle {
                 horizontal-stretch: 1;
             }
 
-            HorizontalBox {
+            HorizontalLayout {
+                padding: Layout.spacing-sm;
                 spacing: Layout.spacing-xs;
                 cross-axis-alignment: center;
                 StatusDot {
@@ -116,11 +119,13 @@ component DispenserCalibrationContent inherits Rectangle {
         drop-shadow-color: Palette.shadow;
         drop-shadow-blur: 24px;
 
-        VerticalBox {
+        VerticalLayout {
             padding: Layout.spacing-lg;
             spacing: Layout.spacing-md;
 
-            HorizontalBox {
+            HorizontalLayout {
+                padding: Layout.spacing-sm;
+                spacing: Layout.spacing-sm;
                 cross-axis-alignment: center;
                 MediumText {
                     text: root.active-dispenser.type == DispenserType.pump
@@ -153,7 +158,7 @@ component DispenserCalibrationContent inherits Rectangle {
                 wrap: word-wrap;
             }
 
-            ScrollView {
+            ScrollArea {
                 vertical-stretch: 1;
 
                 VerticalLayout {
@@ -177,14 +182,15 @@ component DispenserCalibrationContent inherits Rectangle {
                             }
                         }
 
-                        HorizontalBox {
+                        HorizontalLayout {
+                            padding: Layout.spacing-sm;
                             cross-axis-alignment: center;
                             spacing: Layout.spacing-md;
                             SmallText {
                                 text: "Gewicht (g):";
                             }
 
-                            SpinBox {
+                            NumberBox {
                                 height: Layout.touch-height-sm;
                                 minimum: 1;
                                 maximum: 20000;
@@ -239,14 +245,15 @@ component DispenserCalibrationContent inherits Rectangle {
                         description: "Gefüllte Flasche auf der Waage und ein Glas unter den Auslauf stellen. Es fließt echte Flüssigkeit.";
                         status: DispenserCalibrationContext.state.dispenser-status;
 
-                        HorizontalBox {
+                        HorizontalLayout {
+                            padding: Layout.spacing-sm;
                             cross-axis-alignment: center;
                             spacing: Layout.spacing-md;
                             SmallText {
                                 text: "Laufzeit (s):";
                             }
 
-                            SpinBox {
+                            NumberBox {
                                 height: Layout.touch-height-sm;
                                 minimum: DispenserCalibrationContext.min-run-time-s;
                                 maximum: DispenserCalibrationContext.max-run-time-s;

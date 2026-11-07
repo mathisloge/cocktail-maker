@@ -1,9 +1,10 @@
-import { ComboBox, VerticalBox, Button, HorizontalBox } from "std-widgets.slint";
 import { Palette } from "../../theme/colors.slint";
 import { Layout } from "../../theme/layout.slint";
+import { Button } from "../../components/button.slint";
 import { Chip } from "../../components/chip.slint";
 import { MediumText } from "../../components/medium-text.slint";
 import { PulseDot } from "../../components/pulse-dot.slint";
+import { SelectBox } from "../../components/select-box.slint";
 import { GlassDescriptor } from "../../types/glass.slint";
 import { GlassContext } from "../../globals/glass-context.slint";
 import { GlassCard } from "../../widgets/glass-card.slint";
@@ -11,11 +12,15 @@ import { GlassIcon } from "../../widgets/glass-icon.slint";
 
 export component GlassConfigTab inherits Rectangle {
     private property <GlassDescriptor> selected-glass;
-    VerticalBox {
+    VerticalLayout {
+        padding: Layout.spacing-sm;
+        spacing: Layout.spacing-sm;
         alignment: LayoutAlignment.start;
-        HorizontalBox {
+        HorizontalLayout {
+            padding: Layout.spacing-sm;
+            spacing: Layout.spacing-sm;
             vertical-stretch: 0;
-            glass-chooser := ComboBox {
+            glass-chooser := SelectBox {
                 width: 100px;
                 height: Layout.touch-height-sm;
                 model: GlassContext.available-glasses;
@@ -55,9 +60,11 @@ export component GlassConfigTab inherits Rectangle {
             }
         }
 
-        HorizontalBox {
+        HorizontalLayout {
+            padding: Layout.spacing-sm;
+            spacing: Layout.spacing-sm;
             vertical-stretch: 0;
-            volume-box := ComboBox {
+            volume-box := SelectBox {
                 width: 100px;
                 height: Layout.touch-height-sm;
                 model: selected-glass.common-volumes-ml;

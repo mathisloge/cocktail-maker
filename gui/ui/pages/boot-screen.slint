@@ -1,11 +1,13 @@
-import { ProgressIndicator, Spinner, ScrollView } from "std-widgets.slint";
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Typography } from "../theme/typography.slint";
 import { Button } from "../components/button.slint";
 import { CornerDeco } from "../components/corner-deco.slint";
 import { LargeText } from "../components/large-text.slint";
+import { LoadingSpinner } from "../components/loading-spinner.slint";
+import { ProgressBar } from "../components/progress-bar.slint";
 import { PulseDot } from "../components/pulse-dot.slint";
+import { ScrollArea } from "../components/scroll-area.slint";
 import { Separator } from "../components/separator.slint";
 import { SmallText } from "../components/small-text.slint";
 import { LogEntry, LogLevel } from "../types/log.slint";
@@ -73,7 +75,7 @@ export component BootScreen inherits PageBase {
                     height: Layout.spacing-xl * 1.3;
                 }
 
-                if root.is-loading:  Spinner {
+                if root.is-loading:  LoadingSpinner {
                     indeterminate: true;
                     width: Layout.spacing-xl * 1.3;
                     height: Layout.spacing-xl * 1.3;

@@ -32,6 +32,16 @@ void snapshot(const slint::ComponentHandle<cm::gui::AppWindow>& ui, const std::f
     REQUIRE(buffer.has_value());
     write_ppm(dir / std::format("{}.ppm", name), *buffer);
 }
+
+constexpr std::array<std::pair<cm::gui::Page, std::string_view>, 7> kPages{{
+    {cm::gui::Page::CocktailListPage, "cocktail_list_page"},
+    {cm::gui::Page::CocktailDetailPage, "cocktail_detail_page"},
+    {cm::gui::Page::MixPage, "mix_page"},
+    {cm::gui::Page::MixGlassSelectionPage, "mix_glass_selection_page"},
+    {cm::gui::Page::MixErrorPage, "mix_error_page"},
+    {cm::gui::Page::MixSuccessPage, "mix_success_page"},
+    {cm::gui::Page::AdminAreaPage, "admin_area_page"},
+}};
 } // namespace
 
 TEST_CASE("ui snapshots", "[.snapshot]")
@@ -56,22 +66,12 @@ TEST_CASE("ui snapshots", "[.snapshot]")
     station.set_station_ready(true);
     ui->set_boot_screen_confirmed(true);
 
-    using cm::gui::Page;
-    const std::array<std::pair<Page, std::string_view>, 7> pages{{
-        {Page::CocktailListPage, "cocktail_list_page"},
-        {Page::CocktailDetailPage, "cocktail_detail_page"},
-        {Page::MixPage, "mix_page"},
-        {Page::MixGlassSelectionPage, "mix_glass_selection_page"},
-        {Page::MixErrorPage, "mix_error_page"},
-        {Page::MixSuccessPage, "mix_success_page"},
-        {Page::AdminAreaPage, "admin_area_page"},
-    }};
-    for (const auto& [page, name] : pages) {
+    for (const auto& [page, name] : kPages) {
         station.set_active_screen(page);
         snapshot(ui, dir, name);
     }
 
-    station.set_active_screen(Page::CocktailListPage);
+    station.set_active_screen(cm::gui::Page::CocktailListPage);
     ui->invoke_open_fill_warning_popup();
     snapshot(ui, dir, "fill_warning_popup");
     ui->invoke_close_fill_warning_popup();
@@ -86,4 +86,26 @@ TEST_CASE("ui snapshots", "[.snapshot]")
 
     ui->hide();
     SlintFlusher flusher;
+}
+
+// Opens one screen and keeps the window open until it is closed, so that it can be inspected through Slint's MCP
+// server (CM_SLINT_MCP). Screens such as the admin area are otherwise only reachable through a long press.
+// Run it with CM_INSPECT_PAGE=admin_area_page SLINT_MCP_PORT=<port> ./cocktail-maker-gui-tests "[.inspect]".
+TEST_CASE("ui inspect", "[.inspect]")
+{
+    const char* const env_page = std::getenv("CM_INSPECT_PAGE");
+    if (env_page == nullptr) {
+        SUCCEED("CM_INSPECT_PAGE is not set");
+        return;
+    }
+    const auto entry = std::ranges::find(kPages, std::string_view{env_page}, &std::pair<cm::gui::Page, std::string_view>::second);
+    REQUIRE(entry != kPages.end());
+
+    auto ui = cm::gui::AppWindow::create();
+    ui->window().set_size(slint::PhysicalSize({1280, 720}));
+    auto& station = ui->global<cm::gui::StationStateContext>();
+    station.set_station_ready(true);
+    ui->set_boot_screen_confirmed(true);
+    station.set_active_screen(entry->first);
+    ui->run();
 }

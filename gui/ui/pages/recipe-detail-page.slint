@@ -1,12 +1,13 @@
-import { ScrollView, HorizontalBox, Slider } from "std-widgets.slint";
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Motion } from "../theme/motion.slint";
 import { Button } from "../components/button.slint";
 import { LargeText } from "../components/large-text.slint";
 import { MediumText } from "../components/medium-text.slint";
+import { ScrollArea } from "../components/scroll-area.slint";
 import { SeparatorText } from "../components/separator-text.slint";
 import { SmallText } from "../components/small-text.slint";
+import { ValueSlider } from "../components/value-slider.slint";
 import { RecipeView } from "../types/recipe.slint";
 import { ProcessContext } from "../globals/process-context.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
@@ -115,14 +116,16 @@ export component RecipeDetailPage inherits PageBase {
                 primary: true;
             }
 
-            if recipe.is-boostable: HorizontalBox {
+            if recipe.is-boostable: HorizontalLayout {
+                padding: Layout.spacing-sm;
+                spacing: Layout.spacing-sm;
                 cross-axis-alignment: center;
                 SmallText {
                     text: "milde";
                     color: Palette.boost-negative-text;
                 }
 
-                booster := Slider {
+                booster := ValueSlider {
                     height: Layout.touch-height-sm;
                     minimum: -80;
                     maximum: 80;

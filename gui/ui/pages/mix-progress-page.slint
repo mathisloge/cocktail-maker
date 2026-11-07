@@ -1,10 +1,11 @@
-import { ProgressIndicator, Spinner } from "std-widgets.slint";
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Button } from "../components/button.slint";
 import { Chip } from "../components/chip.slint";
 import { LargeText } from "../components/large-text.slint";
+import { LoadingSpinner } from "../components/loading-spinner.slint";
 import { MediumText } from "../components/medium-text.slint";
+import { ProgressBar } from "../components/progress-bar.slint";
 import { SeparatorText } from "../components/separator-text.slint";
 import { SmallText } from "../components/small-text.slint";
 import { Page } from "../types/navigation.slint";
@@ -46,7 +47,7 @@ export component MixProgressPage inherits PageBase {
 
             VerticalLayout {
                 spacing: Layout.spacing-sm;
-                ProgressIndicator {
+                ProgressBar {
                     indeterminate: true;
                     height: 2px;
                     width: 90%;

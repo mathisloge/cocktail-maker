@@ -1,7 +1,7 @@
-import { Spinner } from "std-widgets.slint";
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Typography } from "../theme/typography.slint";
+import { LoadingSpinner } from "../components/loading-spinner.slint";
 import { MediumText } from "../components/medium-text.slint";
 import { Command, CommandStatus } from "../types/recipe.slint";
 
@@ -25,7 +25,7 @@ export component CommandItem inherits Rectangle {
             text: "not started";
         }
 
-        if command.status == CommandStatus.in-progress: Spinner {
+        if command.status == CommandStatus.in-progress: LoadingSpinner {
             height: Typography.label-size;
             indeterminate: true;
         }

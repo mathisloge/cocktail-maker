@@ -8,7 +8,7 @@ if(CM_SLINT_MCP)
     set(SLINT_COMPILER_ENV_VARS SLINT_EMIT_DEBUG_INFO=1)
 endif()
 slint_target_sources(generated-ui
-  ui/app-window.slint NAMESPACE cm::gui
+  ui/slint-project.json NAMESPACE cm::gui
 )
 target_include_directories(generated-ui PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 

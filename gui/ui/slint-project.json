@@ -1,0 +1,7 @@
+{
+    "edition": "1.18",
+    "main": "app-window.slint",
+    "experimental-features": [
+        "interfaces"
+    ]
+}

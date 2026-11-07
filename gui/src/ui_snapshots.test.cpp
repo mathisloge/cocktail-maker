@@ -110,3 +110,49 @@ TEST_CASE("ui inspect", "[.inspect]")
     station.set_active_screen(entry->first);
     ui->run();
 }
+
+namespace {
+[[nodiscard]] slint::SharedPixelBuffer<slint::Rgba8Pixel> frame_after(const slint::ComponentHandle<cm::gui::AppWindow>& ui,
+                                                                      std::chrono::milliseconds wait)
+{
+    slint::Timer::single_shot(wait, [] { slint::quit_event_loop(); });
+    slint::run_event_loop(slint::EventLoopMode::RunUntilQuit);
+    auto buffer = ui->window().take_snapshot();
+    REQUIRE(buffer.has_value());
+    return *buffer;
+}
+
+[[nodiscard]] bool same_pixels(const slint::SharedPixelBuffer<slint::Rgba8Pixel>& a,
+                               const slint::SharedPixelBuffer<slint::Rgba8Pixel>& b)
+{
+    return std::ranges::equal(std::span{a.begin(), a.end()}, std::span{b.begin(), b.end()}, [](const auto& x, const auto& y) {
+        return x.r == y.r && x.g == y.g && x.b == y.b;
+    });
+}
+} // namespace
+
+// The spinner and the progress sweep animate for ever, so two frames a moment apart must differ.
+// Run it on its own, like the snapshot test: ./cocktail-maker-gui-tests "[.animation]".
+TEST_CASE("ui animations run", "[.animation]")
+{
+    ::setenv("SLINT_BACKEND", "winit-software", 0);
+    auto ui = cm::gui::AppWindow::create();
+    ui->window().set_size(slint::PhysicalSize({1280, 720}));
+    ui->show();
+    auto& station = ui->global<cm::gui::StationStateContext>();
+
+    station.set_station_ready(false);
+    const auto boot_first = frame_after(ui, std::chrono::milliseconds{2500});
+    const auto boot_second = frame_after(ui, std::chrono::milliseconds{400});
+    CHECK_FALSE(same_pixels(boot_first, boot_second));
+
+    station.set_station_ready(true);
+    ui->set_boot_screen_confirmed(true);
+    station.set_active_screen(cm::gui::Page::MixPage);
+    const auto mix_first = frame_after(ui, std::chrono::milliseconds{2500});
+    const auto mix_second = frame_after(ui, std::chrono::milliseconds{400});
+    CHECK_FALSE(same_pixels(mix_first, mix_second));
+
+    ui->hide();
+    SlintFlusher flusher;
+}

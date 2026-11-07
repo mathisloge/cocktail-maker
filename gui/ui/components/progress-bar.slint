@@ -10,11 +10,7 @@ export component ProgressBar {
     in property <float> progress;
     in property <bool> indeterminate;
 
-    private property <bool> started;
     private property <length> sweep-width: root.width * 0.3;
-    init => {
-        root.started = true;
-    }
 
     height: Layout.progress-height;
 
@@ -28,15 +24,12 @@ export component ProgressBar {
             background: Palette.accent;
         }
 
+        // An `animate` binding only starts on a later change, and this sweep is created after init,
+        // so its position follows animation-tick().
         if root.indeterminate: Rectangle {
-            x: root.started ? parent.width : -root.sweep-width;
+            x: -root.sweep-width + (parent.width + root.sweep-width) * Math.mod(animation-tick() / Motion.sweep, 1);
             width: root.sweep-width;
             background: @linear-gradient(90deg, transparent 0%, Palette.accent 50%, transparent 100%);
-            animate x {
-                duration: Motion.sweep;
-                iteration-count: -1;
-                easing: ease-in-out;
-            }
         }
     }
 }

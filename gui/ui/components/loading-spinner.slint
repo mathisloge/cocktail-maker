@@ -3,22 +3,24 @@ import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
 import { Motion } from "../theme/motion.slint";
 
-component Dot inherits Rectangle {
-    in property <bool> running;
+component Dot {
     in property <duration> delay;
     in property <length> size;
 
+    // An `animate` binding only starts on a later change, and the dots are created after init, so the pulse
+    // follows animation-tick() like the std spinners do.
+    private property <float> phase: Math.mod((animation-tick() - root.delay) / Motion.spinner-cycle + 1, 1);
+    private property <float> pulse: 0.5 - 0.5 * Math.cos(root.phase * 360deg);
+
     width: root.size;
     height: root.size;
-    border-radius: root.size / 2;
-    background: Palette.accent;
-    opacity: root.running ? 1 : 0.25;
-    animate opacity {
-        duration: Motion.spinner-cycle / 2;
-        delay: root.delay;
-        iteration-count: -1;
-        direction: alternate;
-        easing: ease-in-out;
+
+    Rectangle {
+        width: root.size * (0.8 + 0.2 * root.pulse);
+        height: self.width;
+        border-radius: self.width / 2;
+        background: Palette.accent;
+        opacity: 0.25 + 0.75 * root.pulse;
     }
 }
 
@@ -30,11 +32,6 @@ export component LoadingSpinner {
     in property <float> progress;
     in property <length> dot-size: Layout.spinner-dot-size;
 
-    private property <bool> started;
-    init => {
-        root.started = true;
-    }
-
     HorizontalLayout {
         alignment: center;
         spacing: root.dot-size;
@@ -42,7 +39,6 @@ export component LoadingSpinner {
             alignment: center;
             Dot {
                 size: root.dot-size;
-                running: root.started;
                 delay: Motion.spinner-cycle / 3 * index;
             }
         }

@@ -72,7 +72,7 @@ class UiLogSink : public spdlog::sinks::base_sink<Mutex>
   private:
     LogEntry transform(const spdlog::details::log_msg& msg) const
     {
-        auto formatted_time = std::format("{}", msg.time);
+        auto formatted_time = std::format("{:%T}", std::chrono::floor<std::chrono::milliseconds>(msg.time));
         return LogEntry{
             .time_stamp = slint::SharedString{formatted_time.c_str()},
             .level = static_cast<LogLevel>(msg.level),

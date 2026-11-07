@@ -2,18 +2,33 @@ import { LogEntry, LogLevel } from "../data.slint";
 import { Palette, Layout } from "../palette.slint";
 import { SmallText } from "./small-text.slint";
 
-component Separator inherits SmallText {
-    text: "│";
-    font-size: Layout.font-size-lg;
-    letter-spacing: 0px;
-    color: Palette.border;
+component LogCell inherits SmallText {
+    letter-spacing: 0.5px;
+    horizontal-alignment: left;
     vertical-alignment: center;
     horizontal-stretch: 0;
+    overflow: elide;
 }
 
 component LogRow inherits Rectangle {
     in property <LogEntry> entry;
-    background: transparent;
+
+    private property <color> level-color: root.entry.level == LogLevel.trace ? Palette.log-trace
+        : root.entry.level == LogLevel.debug ? Palette.log-debug
+        : root.entry.level == LogLevel.info ? Palette.log-info
+        : root.entry.level == LogLevel.warn ? Palette.log-warn
+        : root.entry.level == LogLevel.err ? Palette.log-error
+        : root.entry.level == LogLevel.critical ? Palette.log-critical
+        : Palette.log-info;
+    private property <bool> is-problem: root.entry.level == LogLevel.warn || root.entry.level == LogLevel.err || root.entry.level == LogLevel.critical;
+
+    background: root.is-problem ? root.level-color.with-alpha(0.08) : transparent;
+
+    Rectangle {
+        x: 0;
+        width: 3px;
+        background: root.level-color.with-alpha(root.is-problem ? 1.0 : 0.45);
+    }
 
     Rectangle {
         y: parent.height - 1px;
@@ -22,21 +37,19 @@ component LogRow inherits Rectangle {
     }
 
     HorizontalLayout {
-        alignment: LayoutAlignment.start;
-        padding-left: Layout.spacing-lg;
-        padding-right: Layout.spacing-lg;
-        spacing: 0;
-        SmallText {
+        padding-left: Layout.spacing-md;
+        padding-right: Layout.spacing-md;
+        padding-top: Layout.spacing-xs;
+        padding-bottom: Layout.spacing-xs;
+        spacing: Layout.spacing-md;
+
+        LogCell {
+            width: 100px;
             text: root.entry.time-stamp;
-            letter-spacing: 0.8px;
-            vertical-alignment: center;
         }
 
-        Separator { }
-
-        SmallText {
-            width: 44px;
-            horizontal-stretch: 0;
+        LogCell {
+            width: 52px;
             text: root.entry.level == LogLevel.trace ? "TRACE"
                 : root.entry.level == LogLevel.debug ? "DEBUG"
                 : root.entry.level == LogLevel.info ? "INFO"
@@ -45,40 +58,20 @@ component LogRow inherits Rectangle {
                 : root.entry.level == LogLevel.critical ? "CRIT"
                 : "INFO";
             letter-spacing: 1.5px;
-            vertical-alignment: center;
-            color: root.entry.level == LogLevel.trace ? Palette.log-trace
-                : root.entry.level == LogLevel.debug ? Palette.log-debug
-                : root.entry.level == LogLevel.info ? Palette.log-info
-                : root.entry.level == LogLevel.warn ? Palette.log-warn
-                : root.entry.level == LogLevel.err ? Palette.log-error
-                : root.entry.level == LogLevel.critical ? Palette.log-critical
-                : Palette.log-info;
+            font-weight: FontWeight.bold;
+            color: root.level-color;
         }
 
-        Separator { }
-
-        SmallText {
+        LogCell {
+            width: 120px;
             text: root.entry.component;
-            letter-spacing: 0.8px;
-            vertical-alignment: center;
-            overflow: clip;
+            color: Palette.text-label;
         }
 
-        Separator { }
-
-        Rectangle {
-            width: Layout.spacing-md;
-            horizontal-stretch: 0;
-            background: transparent;
-        }
-
-        SmallText {
+        LogCell {
+            horizontal-stretch: 1;
             text: root.entry.message;
-            letter-spacing: 0.8px;
-            vertical-alignment: center;
-            overflow: elide;
-            color: root.entry.level == LogLevel.err || root.entry.level == LogLevel.critical ? Palette.boost-positive-text
-                : Palette.text-primary;
+            color: root.entry.level == LogLevel.err || root.entry.level == LogLevel.critical ? Palette.log-error : Palette.text-primary;
 
             Tooltip {
                 Text {
@@ -96,37 +89,37 @@ component LogRow inherits Rectangle {
 export component SystemLog inherits Flickable {
     in property <[LogEntry]> log-entries: [
         {
-            time_stamp: "2025-07-10 10:10:10.00000",
+            time_stamp: "10:10:10.000",
             level: LogLevel.trace,
             component: "some-longer-component",
             message:"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
         },
         {
-            time_stamp: "2025-07-10 10:10:10.00000",
+            time_stamp: "10:10:10.000",
             level: LogLevel.debug,
             component: "some-longer-component",
             message:"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
         },
         {
-            time_stamp: "2025-07-10 10:10:10.00000",
+            time_stamp: "10:10:10.000",
             level: LogLevel.info,
             component: "some-longer-component",
             message:"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
         },
         {
-            time_stamp: "2025-07-10 10:10:10.00000",
+            time_stamp: "10:10:10.000",
             level: LogLevel.warn,
             component: "some-longer-component",
             message:"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
         },
         {
-            time_stamp: "2025-07-10 10:10:10.00000",
+            time_stamp: "10:10:10.000",
             level: LogLevel.err,
             component: "some-longer-component",
             message:"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."
         },
         {
-            time_stamp: "2025-07-10 10:10:10.00000",
+            time_stamp: "10:10:10.000",
             level: LogLevel.critical,
             component: "some-longer-component",
             message:"Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua."

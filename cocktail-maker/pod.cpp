@@ -1,4 +1,6 @@
 module;
+#include <boost/asio/experimental/channel_error.hpp>
+#include <boost/system/system_error.hpp>
 #include <comms/ErrorStatus.h>
 #include <exec/when_any.hpp>
 #include <proto/field/DispenseResultCommon.h>
@@ -49,10 +51,11 @@ DispenseOutcome to_dispense_outcome(const proto::field::DispenseResultVal result
                         std::format("Unknown dispense result {}", std::to_underlying(result))};
 }
 
-DispenserPodImpl::DispenserPodImpl(std::weak_ptr<IPod> pod, DispenserId dispenser_id, std::string logger_name)
-    : dispenser_id_{dispenser_id}
+DispenserPodImpl::DispenserPodImpl(std::weak_ptr<IPod> pod, PodId pod_id, DispenserId dispenser_id, std::string logger_name)
+    : logger_{log::create_or_get(std::move(logger_name))}
+    , pod_id_{std::move(pod_id)}
+    , dispenser_id_{dispenser_id}
     , pod_{std::move(pod)}
-    , logger_{log::create_or_get(std::move(logger_name))}
 {
 }
 
@@ -97,7 +100,7 @@ std::shared_ptr<IPod> DispenserPodImpl::pod()
 {
     auto p = pod_.lock();
     if (p == nullptr) {
-        throw std::runtime_error("Pod lifetime exceeded");
+        throw PodDisconnectedError{pod_id_};
     }
     return p;
 }
@@ -107,13 +110,13 @@ DispenserId DispenserPodImpl::id() const
     return dispenser_id_;
 }
 
-Pump::Pump(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
-    : DispenserPodImpl{std::move(pod), dispenser_id, std::format("pump_{}", dispenser_id)}
+Pump::Pump(std::weak_ptr<IPod> pod, PodId pod_id, DispenserId dispenser_id)
+    : DispenserPodImpl{std::move(pod), std::move(pod_id), dispenser_id, std::format("pump_{}", dispenser_id)}
 {
 }
 
-Valve::Valve(std::weak_ptr<IPod> pod, DispenserId dispenser_id)
-    : DispenserPodImpl{std::move(pod), dispenser_id, std::format("valve_{}", dispenser_id)}
+Valve::Valve(std::weak_ptr<IPod> pod, PodId pod_id, DispenserId dispenser_id)
+    : DispenserPodImpl{std::move(pod), std::move(pod_id), dispenser_id, std::format("valve_{}", dispenser_id)}
 {
 }
 
@@ -157,92 +160,66 @@ void process_nak(const InNak& nak, const MessageEnvironment& env)
     throw PodReceiveError{env.pod_id, nak.field_errorCode().value()};
 }
 
-template <typename TxMsg>
-auto send_with_ack(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvironment env) -> Task<void>
+/// Turns what a failed exchange threw into the errors of the Pod, so that the caller learns which Pod it was.
+[[noreturn]] void rethrow_as_pod_error(const MessageEnvironment& env)
 {
-    const auto transaction_id = session.generate_new_transaction_id();
-
-    // register queue at first
-    auto rx_action = session.async_receive<InAck, InNak>(transaction_id, env.timeout);
-
-    co_await session.async_send(std::move(tx_msg), transaction_id);
     try {
-        const auto nak_or_ack = co_await std::move(rx_action);
-        if (std::holds_alternative<InNak>(nak_or_ack)) {
-            process_nak(std::get<InNak>(nak_or_ack), env);
-        }
+        throw;
     }
     catch (const TimeoutError&) {
         throw PodTimeoutError{env.pod_id};
+    }
+    catch (const boost::system::system_error& error) {
+        // The session closes its channels when it ends, which is how a Pod that went away shows up.
+        if (error.code() == boost::asio::experimental::error::channel_closed) {
+            throw PodDisconnectedError{env.pod_id};
+        }
+        throw;
     }
 }
 
-template <typename RxMsg, typename TxMsg>
-auto send_and_receive(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvironment env) -> Task<RxMsg>
+template <typename Reply>
+Reply reply_or_throw(std::variant<Reply, InNak> reply, const MessageEnvironment& env)
 {
-    const auto transaction_id = session.generate_new_transaction_id();
-
-    // register queue at first
-    auto rx_action = session.async_receive<RxMsg>(transaction_id, env.timeout);
-
-    co_await session.async_send(std::move(tx_msg), transaction_id);
-    try {
-        co_return co_await std::move(rx_action);
+    if (const auto* nak = std::get_if<InNak>(&reply)) {
+        process_nak(*nak, env);
     }
-    catch (const TimeoutError&) {
-        throw PodTimeoutError{env.pod_id};
+    return std::get<Reply>(std::move(reply));
+}
+
+/// Sends `tx_msg` and waits for `Reply`. The reply is registered before the send, so a quick one can't get lost.
+template <typename Reply, typename TxMsg>
+auto request(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvironment env) -> Task<Reply>
+{
+    try {
+        const auto transaction_id = session.generate_new_transaction_id();
+        auto reply = session.async_receive<Reply, InNak>(transaction_id, env.timeout);
+        co_await session.async_send(std::move(tx_msg), transaction_id);
+        co_return reply_or_throw(co_await std::move(reply), env);
+    }
+    catch (...) {
+        rethrow_as_pod_error(env);
     }
 }
 
-/// Like `send_and_receive`, but for a request the Pod can answer with a Nak.
-template <typename RxMsg, typename TxMsg>
-auto send_and_receive_or_nak(PodProtocolSession& session, TxMsg tx_msg, const MessageEnvironment env) -> Task<RxMsg>
+/// Like `request`, for a command that the Pod acknowledges first and finishes later with `Final`.
+template <typename Final, typename TxMsg>
+auto request_action(PodProtocolSession& session,
+                    TxMsg tx_msg,
+                    std::chrono::milliseconds action_timeout,
+                    const MessageEnvironment env) -> Task<Final>
 {
-    const auto transaction_id = session.generate_new_transaction_id();
-
-    // register queue at first
-    auto rx_action = session.async_receive<RxMsg, InNak>(transaction_id, env.timeout);
-
-    co_await session.async_send(std::move(tx_msg), transaction_id);
     try {
-        const auto nak_or_response = co_await std::move(rx_action);
-        if (std::holds_alternative<InNak>(nak_or_response)) {
-            process_nak(std::get<InNak>(nak_or_response), env);
-        }
-        co_return std::get<RxMsg>(nak_or_response);
+        const auto transaction_id = session.generate_new_transaction_id();
+        // Both are registered before the send, so a final reply right behind the Ack can't get lost.
+        auto ack = session.async_receive<InAck, InNak>(transaction_id, env.timeout);
+        auto final_reply = session.async_receive<Final, InNak>(transaction_id, action_timeout);
+        co_await session.async_send(std::move(tx_msg), transaction_id);
+        std::ignore = reply_or_throw(co_await std::move(ack), env);
+        co_return reply_or_throw(co_await std::move(final_reply), env);
     }
-    catch (const TimeoutError&) {
-        throw PodTimeoutError{env.pod_id};
-    }
-}
-
-template <typename RxMsg, typename TxMsg>
-auto send_action_with_response(PodProtocolSession& session,
-                               TxMsg tx_msg,
-                               std::chrono::milliseconds action_timeout,
-                               const MessageEnvironment env) -> Task<RxMsg>
-{
-    const auto transaction_id = session.generate_new_transaction_id();
-
-    // Both are registered before the send, so a final reply right behind the Ack can't get lost.
-    auto ack_action = session.async_receive<InAck, InNak>(transaction_id, env.timeout);
-    auto final_action = session.async_receive<RxMsg, InNak>(transaction_id, action_timeout);
-
-    co_await session.async_send(std::move(tx_msg), transaction_id);
-    try {
-        const auto nak_or_ack = co_await std::move(ack_action);
-        if (std::holds_alternative<InNak>(nak_or_ack)) {
-            process_nak(std::get<InNak>(nak_or_ack), env);
-        }
-
-        const auto nak_or_action = co_await std::move(final_action);
-        if (std::holds_alternative<InNak>(nak_or_action)) {
-            process_nak(std::get<InNak>(nak_or_action), env);
-        }
-        co_return std::get<RxMsg>(nak_or_action);
-    }
-    catch (const TimeoutError&) {
-        throw PodTimeoutError{env.pod_id};
+    catch (...) {
+        rethrow_as_pod_error(env);
     }
 }
 
@@ -269,15 +246,15 @@ std::expected<std::unique_ptr<Dispenser>, DispenserNotFoundError> Pod::create_di
         return std::unexpected{DispenserNotFoundError{pod_id(), dispenser_id}};
     }
     if (dispenser_id.raw() >= info_.num_pumps) {
-        return std::make_unique<Valve>(this->shared_from_this(), dispenser_id);
+        return std::make_unique<Valve>(this->shared_from_this(), pod_id(), dispenser_id);
     }
-    return std::make_unique<Pump>(this->shared_from_this(), dispenser_id);
+    return std::make_unique<Pump>(this->shared_from_this(), pod_id(), dispenser_id);
 }
 
 Task<PodInfo> Pod::acquire_device_info(std::chrono::milliseconds timeout)
 {
     InDeviceInfoResponse msg =
-        co_await send_and_receive<InDeviceInfoResponse>(session_, OutDeviceInfoRequest{}, default_env(this, timeout));
+        co_await request<InDeviceInfoResponse>(session_, OutDeviceInfoRequest{}, default_env(this, timeout));
     co_return PodInfo{
         .id = PodId{msg.field_deviceName().getValue()},
         .firmware_version =
@@ -297,14 +274,14 @@ Task<void> Pod::load_cell_calibrate_with_ref_weight(const DispenserId dispenser_
     auto tx = OutLoadCellCalibrateWithRefWeight{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
     tx.field_gram().setValue(std::lround(grams.numerical_value_in(units::si::gram)));
-    co_await send_with_ack(session_, std::move(tx), dispenser_env(this, dispenser_id, kLoadCellActionTimeout));
+    std::ignore = co_await request<InAck>(session_, std::move(tx), dispenser_env(this, dispenser_id, kLoadCellActionTimeout));
 }
 
 Task<void> Pod::load_cell_tare(DispenserId dispenser_id)
 {
     auto tx = OutLoadCellTare{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
-    co_await send_with_ack(session_, std::move(tx), dispenser_env(this, dispenser_id, kLoadCellActionTimeout));
+    std::ignore = co_await request<InAck>(session_, std::move(tx), dispenser_env(this, dispenser_id, kLoadCellActionTimeout));
 }
 
 Task<units::Grams> Pod::load_cell_weight(const DispenserId dispenser_id)
@@ -312,7 +289,7 @@ Task<units::Grams> Pod::load_cell_weight(const DispenserId dispenser_id)
     auto tx = OutLoadCellWeightRequest{};
     tx.field_dispenserId().setValue(dispenser_id.raw());
 
-    const InLoadCellWeightResponse response = co_await send_and_receive_or_nak<InLoadCellWeightResponse>(
+    const InLoadCellWeightResponse response = co_await request<InLoadCellWeightResponse>(
         session_, std::move(tx), dispenser_env(this, dispenser_id, kLoadCellWeightTimeout));
     co_return response.field_gram().value() * units::si::gram;
 }
@@ -329,7 +306,7 @@ Task<DispenseReport> Pod::dispense(DispenserId dispenser_id, units::Litre volume
     tx.field_dispenserId().setValue(dispenser_id.raw());
     tx.field_millilitre().setValue(millilitres);
 
-    const InDispenseFinished finish_result = co_await send_action_with_response<InDispenseFinished>(
+    const InDispenseFinished finish_result = co_await request_action<InDispenseFinished>(
         session_, std::move(tx), kDispenseFinishedTimeout, dispenser_env(this, dispenser_id, kActionAckTimeout));
 
     co_return DispenseReport{.amount = finish_result.field_millilitre().value() * units::milli_litre,
@@ -342,9 +319,8 @@ Task<units::Litre> Pod::dispenser_calibrate(const DispenserId dispenser_id, cons
     tx.field_dispenserId().setValue(dispenser_id.raw());
     tx.field_milliseconds().setValue(run_time.count());
 
-    const InDispenserFinishedCalibrationResponse finish_result =
-        co_await send_action_with_response<InDispenserFinishedCalibrationResponse>(
-            session_, std::move(tx), run_time + kCalibrationAllowance, dispenser_env(this, dispenser_id, kActionAckTimeout));
+    const InDispenserFinishedCalibrationResponse finish_result = co_await request_action<InDispenserFinishedCalibrationResponse>(
+        session_, std::move(tx), run_time + kCalibrationAllowance, dispenser_env(this, dispenser_id, kActionAckTimeout));
     co_return finish_result.field_millilitre().value() * units::milli_litre;
 }
 
@@ -354,12 +330,12 @@ Task<void> Pod::highlight_dispenser(DispenserId dispenser_id, std::chrono::milli
     tx.field_dispenserId().setValue(dispenser_id.raw());
     tx.field_ledEffect().setValue(proto::field::LedEffectVal::Highlight);
     tx.field_milliseconds().setValue(duration.count());
-    co_await send_with_ack(session_, std::move(tx), dispenser_env(this, dispenser_id, kHighlightAckTimeout));
+    std::ignore = co_await request<InAck>(session_, std::move(tx), dispenser_env(this, dispenser_id, kHighlightAckTimeout));
 }
 
 Task<void> Pod::force_safe_state()
 {
-    co_await send_with_ack(session_, OutEmergencyStop{}, default_env(this, kEmergencyStopAckTimeout));
+    std::ignore = co_await request<InAck>(session_, OutEmergencyStop{}, default_env(this, kEmergencyStopAckTimeout));
 }
 
 Task<void> Pod::monitor_device()
@@ -414,7 +390,7 @@ Task<void> Pod::keep_alive()
     for (;;) {
         co_await retry_on_timeout(
             3,
-            [this](auto timeout) { return send_and_receive<InPong>(session_, OutPing{}, default_env(this, timeout)); },
+            [this](auto timeout) { return request<InPong>(session_, OutPing{}, default_env(this, timeout)); },
             ExponentialBackoffPolicy{.maximum = 1s});
         co_await async_sleep(session_.get_executor(), 2s);
     }

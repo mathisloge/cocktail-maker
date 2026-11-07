@@ -99,6 +99,25 @@ export class PodTimeoutError : public TimeoutError
     PodId pod_id_;
 };
 
+/// The Pod went away before or during an exchange, for example because it was unplugged.
+export class PodDisconnectedError : public std::runtime_error
+{
+  public:
+    explicit PodDisconnectedError(PodId pod_id)
+        : runtime_error{std::format("Pod '{}' is not connected", pod_id)}
+        , pod_id_{pod_id}
+    {
+    }
+
+    PodId pod_id() const
+    {
+        return pod_id_;
+    }
+
+  private:
+    PodId pod_id_;
+};
+
 export class DispenserEmptyError : public std::runtime_error
 {
   public:
@@ -156,7 +175,7 @@ class NoopPodState final : public PodState
 class DispenserPodImpl : public Dispenser
 {
   public:
-    explicit DispenserPodImpl(std::weak_ptr<IPod> pod, DispenserId dispenser_id, std::string logger_name);
+    explicit DispenserPodImpl(std::weak_ptr<IPod> pod, PodId pod_id, DispenserId dispenser_id, std::string logger_name);
 
     Task<DispenseReport> dispense(units::Litre volume) override;
 
@@ -179,6 +198,7 @@ class DispenserPodImpl : public Dispenser
     log::Logger logger_;
 
   private:
+    const PodId pod_id_;
     const DispenserId dispenser_id_;
     std::weak_ptr<IPod> pod_;
 };
@@ -187,13 +207,13 @@ export class Pump final : public DispenserPodImpl
 {
 
   public:
-    Pump(std::weak_ptr<IPod> pod, DispenserId dispenser_id);
+    Pump(std::weak_ptr<IPod> pod, PodId pod_id, DispenserId dispenser_id);
 };
 
 export class Valve final : public DispenserPodImpl
 {
   public:
-    Valve(std::weak_ptr<IPod> pod, DispenserId dispenser_id);
+    Valve(std::weak_ptr<IPod> pod, PodId pod_id, DispenserId dispenser_id);
 };
 
 export class Pod : public IPod, public std::enable_shared_from_this<Pod>

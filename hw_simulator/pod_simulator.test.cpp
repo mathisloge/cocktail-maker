@@ -136,6 +136,25 @@ struct SimPodFixture
 };
 } // namespace
 
+TEST_CASE_METHOD(SimPodFixture, "A dispenser of a Pod that is gone fails as disconnected", "[sim][pod]")
+{
+    std::unique_ptr<cm::Dispenser> dispenser;
+    run_test([&]() -> cm::Task<void> {
+        co_await connected();
+        dispenser = pod->create_dispenser(kDispenser).value();
+    });
+    pod.reset();
+
+    REQUIRE_THROWS_AS(cm::run_until_complete(ctx, dispenser->load_cell_weight()), cm::PodDisconnectedError);
+}
+
+TEST_CASE_METHOD(SimPodFixture, "A request after the connection ended fails as disconnected", "[sim][pod]")
+{
+    run_test([this]() -> cm::Task<void> { co_await connected(); });
+
+    REQUIRE_THROWS_AS(cm::run_until_complete(ctx, pod->load_cell_weight(kDispenser)), cm::PodDisconnectedError);
+}
+
 TEST_CASE_METHOD(SimPodFixture, "A Pod knows its id without its state observer", "[sim][pod]")
 {
     run_test_with(std::make_unique<ForgetfulPodState>(is_connected), [this]() -> cm::Task<void> {

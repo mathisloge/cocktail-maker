@@ -225,11 +225,11 @@ TEST_CASE_METHOD(PourFixture, "A failed weight read doesn't stop a pour", "[pour
 
 TEST_CASE_METHOD(PourFixture, "A pod that is gone reaches the caller", "[pour]")
 {
-    dispenser.steps.emplace_back(std::make_exception_ptr(std::runtime_error{"Pod lifetime exceeded"}));
+    dispenser.steps.emplace_back(std::make_exception_ptr(cm::PodDisconnectedError{cm::PodId{"Pod"}}));
 
-    REQUIRE_THROWS_WITH(
+    REQUIRE_THROWS_AS(
         cm::run_until_complete(ctx, cm::pour_with_refill(dispenser, kAddress, 40 * units::milli_litre, tracker, prompt())),
-        "Pod lifetime exceeded");
+        cm::PodDisconnectedError);
 }
 
 TEST_CASE_METHOD(PourFixture, "A stop during the prompt ends the pour", "[pour]")

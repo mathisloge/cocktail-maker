@@ -281,6 +281,18 @@ ErrorPageData make(const PodTimeoutError& ex, const cm::StationConfig&, const In
     };
 }
 
+ErrorPageData make(const PodDisconnectedError& ex, const cm::StationConfig&, const IngredientStore&)
+{
+    const auto item_details = std::format("Pod '{}' - Bitte USB-Verbindung prüfen.", ex.pod_id());
+    return ErrorPageData{
+        .technical_title = "Pod nicht verbunden!",
+        .technical_description = "Die Verbindung zum Pod ist abgebrochen.",
+        .item_category = ErrorItemCategory::Unknown,
+        .item_name = "Verbindung",
+        .item_details = item_details.c_str(),
+    };
+}
+
 ErrorPageData make(const ProtocolError&, const cm::StationConfig&, const IngredientStore&)
 {
     return ErrorPageData{
@@ -540,6 +552,10 @@ Task<void> ProcessContextBridge::async_process_recipe(Recipe recipe, const units
     }
     catch (const PodTimeoutError& ex) {
         SPDLOG_LOGGER_ERROR(logger_, "Pod timed out while processing recipe: {}", ex.what());
+        mix_failed(ex);
+    }
+    catch (const PodDisconnectedError& ex) {
+        SPDLOG_LOGGER_ERROR(logger_, "Pod went away while processing recipe: {}", ex.what());
         mix_failed(ex);
     }
     catch (const ProtocolError& ex) {

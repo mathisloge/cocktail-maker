@@ -31,6 +31,9 @@ TEST_CASE("Calibration errors become text an operator can act on", "[gui][calibr
           "Es ist fast nichts geflossen. Bitte Flasche, Schlauch und Motorstrom prüfen oder eine längere Laufzeit wählen. Die "
           "bisherige Kalibrierung bleibt gültig.");
 
+    CHECK(text_for(CalibrationStep::dispenser_run, cm::PodDisconnectedError{cm::PodId{"Pod"}}) ==
+          "Der Pod ist nicht mehr verbunden. Bitte die USB-Verbindung prüfen.");
+
     CHECK(text_for(CalibrationStep::clear_scale_tare, nak(ErrorCode::Busy)) ==
           "Auf diesem Dispenser läuft noch eine andere Aktion. Bitte warten und erneut versuchen.");
 

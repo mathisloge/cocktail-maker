@@ -77,6 +77,9 @@ std::string calibration_error_text(const CalibrationStep step, const std::except
     catch (const PodTimeoutError&) {
         return "Der Pod hat nicht geantwortet. Bitte die USB-Verbindung prüfen.";
     }
+    catch (const PodDisconnectedError&) {
+        return "Der Pod ist nicht mehr verbunden. Bitte die USB-Verbindung prüfen.";
+    }
     catch (const std::exception& other) {
         return other.what();
     }

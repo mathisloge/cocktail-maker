@@ -50,7 +50,7 @@ class RefusingPod final : public cm::IPod, public std::enable_shared_from_this<R
 
     std::expected<std::unique_ptr<cm::Dispenser>, cm::DispenserNotFoundError> create_dispenser(cm::DispenserId id) override
     {
-        return std::make_unique<cm::Pump>(weak_from_this(), id);
+        return std::make_unique<cm::Pump>(weak_from_this(), pod_id(), id);
     }
 
     cm::Task<void> highlight_dispenser(cm::DispenserId /*id*/, std::chrono::milliseconds /*duration*/) override

@@ -104,9 +104,11 @@ Recipe parse_recipe(simdjson::ondemand::document& doc,
     img_path.replace_extension(".png");
     recipe.image_path = img_path;
 
-    // Nominal Serving Volume (Optional, defaults to 0.0 Litres)
+    // Scaling divides by it, so it has to be there and above 0.
     double nominal_vol_ml = 0.0;
-    obj["nominal_serving_volume"].get(nominal_vol_ml);
+    if (obj["nominal_serving_volume"].get(nominal_vol_ml) != simdjson::SUCCESS || nominal_vol_ml <= 0.0) {
+        throw std::runtime_error("nominal_serving_volume has to be a number above 0");
+    }
     recipe.nominal_serving_volume = nominal_vol_ml * units::milli_litre;
 
     // Steps (Required array)
@@ -129,6 +131,9 @@ Recipe parse_recipe(simdjson::ondemand::document& doc,
             }
 
             cmd.volume = step_obj["volume"].get_double().value() * units::milli_litre;
+            if (cmd.volume < 1 * units::milli_litre) {
+                throw std::runtime_error(std::format("The volume of '{}' has to be at least 1 mL", cmd.ingredient));
+            }
             recipe.commands.emplace_back(Command{cmd});
         }
         else if (kind == "manual") {
@@ -159,6 +164,9 @@ Recipe parse_recipe(simdjson::ondemand::document& doc,
                 }
 
                 cmd.volume = inner_obj["volume"].get_double().value() * units::milli_litre;
+                if (cmd.volume < 1 * units::milli_litre) {
+                    throw std::runtime_error(std::format("The volume of '{}' has to be at least 1 mL", cmd.ingredient));
+                }
                 pcmd.emplace_back(Command{cmd});
             }
             recipe.commands.emplace_back(pcmd);

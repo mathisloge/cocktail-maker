@@ -42,7 +42,13 @@ export struct Recipe
     friend struct std::formatter<Recipe>;
 };
 
-std::vector<Recipe> load_recipes_from_dir(const std::filesystem::path& path, const IngredientStore& ingredient_store);
+/**
+ * Loads every recipe file in `path`.
+ *
+ * @throws std::runtime_error naming the file, if a recipe can't be read, names an unknown ingredient, or has a value
+ * the Station can't work with: a serving volume of 0 or less, or a dispense step below 1 mL.
+ */
+export std::vector<Recipe> load_recipes_from_dir(const std::filesystem::path& path, const IngredientStore& ingredient_store);
 
 export class RecipeStore final
 {

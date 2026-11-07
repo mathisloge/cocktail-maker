@@ -1,24 +1,22 @@
-
-import { Palette, Layout } from "../palette.slint";
-import { RecipeView, CommandStatus, Page } from "../data.slint";
 import { ProgressIndicator, Spinner } from "std-widgets.slint";
-import {
-    SeparatorText,
-    CommandItem,
-    SmallText,
-    MediumText,
-    LargeText,
-    GlassCard,
-    Chip,
-    Button,
-} from "../components.slint";
-import { StationStateContext } from "../globals/station-state-context.slint";
-import { RecipeContext } from "../globals/recipe-context.slint";
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+import { Button } from "../components/button.slint";
+import { Chip } from "../components/chip.slint";
+import { LargeText } from "../components/large-text.slint";
+import { MediumText } from "../components/medium-text.slint";
+import { SeparatorText } from "../components/separator-text.slint";
+import { SmallText } from "../components/small-text.slint";
+import { Page } from "../types/navigation.slint";
+import { RecipeView, CommandStatus } from "../types/recipe.slint";
 import { ProcessContext } from "../globals/process-context.slint";
-import { Page } from "page.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
+import { StationStateContext } from "../globals/station-state-context.slint";
+import { CommandItem } from "../widgets/command-item.slint";
+import { GlassCard } from "../widgets/glass-card.slint";
+import { PageBase } from "./page-base.slint";
 
-
-export component MixProgressPage inherits Page {
+export component MixProgressPage inherits PageBase {
     private property <RecipeView> recipe: RecipeContext.active-recipe;
     GridLayout {
         VerticalLayout {

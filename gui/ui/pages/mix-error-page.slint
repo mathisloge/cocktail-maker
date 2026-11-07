@@ -1,17 +1,15 @@
-
-import { Palette, Layout } from "../palette.slint";
-import { ProcessContext } from "../globals/process-context.slint";
-import {
-    SeparatorText,
-    CommandItem,
-    SmallText,
-    MediumText,
-    LargeText,
-    CornerDeco,
-} from "../components.slint";
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
 import { Button } from "../components/button.slint";
-import { Page } from "page.slint";
+import { CornerDeco } from "../components/corner-deco.slint";
+import { LargeText } from "../components/large-text.slint";
+import { MediumText } from "../components/medium-text.slint";
+import { SeparatorText } from "../components/separator-text.slint";
+import { SmallText } from "../components/small-text.slint";
+import { ProcessContext } from "../globals/process-context.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
+import { CommandItem } from "../widgets/command-item.slint";
+import { PageBase } from "./page-base.slint";
 
 // ─────────────────────────────────────────────────────────────────────
 //  Small local helper — one "what failed" detail row
@@ -86,7 +84,7 @@ component ErrorDetailRow inherits Rectangle {
     }
 }
 
-export component MixErrorPage inherits Page {
+export component MixErrorPage inherits PageBase {
     private property <string> cocktail-name:            RecipeContext.active-recipe.name;
     private property <string> customer-title:           ProcessContext.customer-title;
     private property <string> customer-message:         ProcessContext.customer-message;

@@ -1,8 +1,9 @@
-
-import { Palette, Layout } from "../palette.slint";
-import { RecipeView } from "../data.slint";
-import { MediumText } from "./medium-text.slint";
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+import { MediumText } from "../components/medium-text.slint";
+import { RecipeView } from "../types/recipe.slint";
 import { RecipeTags } from "./recipe-tags.slint";
+
 export component RecipeCard inherits Rectangle {
     in property <RecipeView> recipe: {
         name: "ExampleName",

@@ -1,18 +1,18 @@
-import { Palette, Layout } from "../palette.slint";
-import {
-    LargeText,
-    SmallText,
-    Separator,
-    Button,
-    PulseDot,
-} from "../components.slint";
 import { ProgressIndicator, Spinner, ScrollView } from "std-widgets.slint";
-import { LogEntry, LogLevel } from "../data.slint";
-import { CornerDeco, SystemLog } from "../components.slint";
-import { StationStateContext } from "./../globals/station-state-context.slint";
-import { Page } from "page.slint";
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+import { Button } from "../components/button.slint";
+import { CornerDeco } from "../components/corner-deco.slint";
+import { LargeText } from "../components/large-text.slint";
+import { PulseDot } from "../components/pulse-dot.slint";
+import { Separator } from "../components/separator.slint";
+import { SmallText } from "../components/small-text.slint";
+import { LogEntry, LogLevel } from "../types/log.slint";
+import { StationStateContext } from "../globals/station-state-context.slint";
+import { SystemLog } from "../widgets/system-log.slint";
+import { PageBase } from "./page-base.slint";
 
-export component BootScreen inherits Page {
+export component BootScreen inherits PageBase {
     in property <bool> is-loading:   false;
     private property <[LogEntry]> log-entries: StationStateContext.log-entries;
 

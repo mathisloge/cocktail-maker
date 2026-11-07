@@ -1,8 +1,9 @@
-import { PodConfigTab } from "./admin/pod-config-tab.slint";
-import { GlassConfigTab } from "./admin/glass-config-tab.slint";
-import { SystemLog } from "components.slint";
-import { Palette, Layout } from "./palette.slint";
-import { StationStateContext } from "./globals/station-state-context.slint";
+import { Palette } from "../../theme/colors.slint";
+import { Layout } from "../../theme/layout.slint";
+import { StationStateContext } from "../../globals/station-state-context.slint";
+import { SystemLog } from "../../widgets/system-log.slint";
+import { GlassConfigTab } from "./glass-config-tab.slint";
+import { PodConfigTab } from "./pod-config-tab.slint";
 
 component AdminTab inherits Rectangle {
     in property <string> title;

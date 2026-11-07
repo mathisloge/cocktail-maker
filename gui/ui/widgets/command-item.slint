@@ -1,7 +1,8 @@
-import { Palette, Layout } from "../palette.slint";
-import { Command, CommandStatus } from "../data.slint";
 import { Spinner } from "std-widgets.slint";
-import { MediumText } from "medium-text.slint";
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+import { MediumText } from "../components/medium-text.slint";
+import { Command, CommandStatus } from "../types/recipe.slint";
 
 export component CommandItem inherits Rectangle {
     in property <Command> command;

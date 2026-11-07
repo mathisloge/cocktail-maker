@@ -1,15 +1,14 @@
-import {
-    SmallText,
-    MediumText,
-    CornerDeco,
-    LargeText,
-    Button,
-    BoostText,
-} from "../components.slint";
-import { Palette, Layout } from "../palette.slint";
-import { Page } from "page.slint";
-import { RecipeContext } from "../globals/recipe-context.slint";
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+import { Button } from "../components/button.slint";
+import { CornerDeco } from "../components/corner-deco.slint";
+import { LargeText } from "../components/large-text.slint";
+import { MediumText } from "../components/medium-text.slint";
+import { SmallText } from "../components/small-text.slint";
 import { ProcessContext } from "../globals/process-context.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
+import { BoostText } from "../widgets/boost-text.slint";
+import { PageBase } from "./page-base.slint";
 
 component StatChip inherits Rectangle {
     in property <string> label;
@@ -48,7 +47,7 @@ component StatChip inherits Rectangle {
 }
 
 
-export component MixSuccessPage inherits Page {
+export component MixSuccessPage inherits PageBase {
     private property <string> cocktail-name: RecipeContext.active-recipe.name;
     private property <duration> prep-time-seconds: ProcessContext.elapsed-time;
     private property <int> boost-value: ProcessContext.boost;

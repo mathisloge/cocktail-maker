@@ -1,5 +1,6 @@
-import { Layout } from "../palette.slint";
-import { SmallText } from "./small-text.slint";
+import { Layout } from "../theme/layout.slint";
+import { SmallText } from "../components/small-text.slint";
+
 export component RecipeTags inherits HorizontalLayout {
     in property <[string]> tags;
     padding-top: Layout.spacing-sm;

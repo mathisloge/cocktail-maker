@@ -1,32 +1,16 @@
-import {
-    TabWidget,
-    ListView,
-    HorizontalBox,
-    ComboBox,
-    VerticalBox,
-    Button,
-    ScrollView,
-} from "std-widgets.slint";
-import {
-    SystemLog,
-    SmallText,
-    PulseDot,
-    MediumText,
-} from "../components.slint";
-import {
-    Pod,
-    Dispenser,
-    ConnectionState,
-    DispenserType,
-    Ingredient,
-} from "../data.slint";
+import { TabWidget, ListView, HorizontalBox, ComboBox, VerticalBox, Button, ScrollView } from "std-widgets.slint";
+import { Palette } from "../../theme/colors.slint";
+import { Layout } from "../../theme/layout.slint";
+import { MediumText } from "../../components/medium-text.slint";
+import { PulseDot } from "../../components/pulse-dot.slint";
+import { SmallText } from "../../components/small-text.slint";
+import { Pod, Dispenser, ConnectionState, DispenserType } from "../../types/pod.slint";
+import { Ingredient } from "../../types/recipe.slint";
+import { DispenserCalibrationContext } from "../../globals/dispenser-calibration-context.slint";
+import { RecipeContext } from "../../globals/recipe-context.slint";
+import { StationStateContext } from "../../globals/station-state-context.slint";
+import { SystemLog } from "../../widgets/system-log.slint";
 import { DispenserCalibrationPopup } from "./dispenser-calibration.slint";
-import { Palette, Layout } from "../palette.slint";
-import {
-    DispenserCalibrationContext,
-} from "../globals/dispenser-calibration-context.slint";
-import { StationStateContext } from "../globals/station-state-context.slint";
-import { RecipeContext } from "../globals/recipe-context.slint";
 
 component PodListDelegate inherits Rectangle {
     in property <Pod> pod;

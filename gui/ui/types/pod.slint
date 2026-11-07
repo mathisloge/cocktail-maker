@@ -1,0 +1,19 @@
+export enum DispenserType {
+    pump,
+    valve,
+}
+
+export struct Dispenser {
+    id: int,
+    type: DispenserType,
+    fill-text: string,
+}
+
+export enum ConnectionState {
+    disconnected,
+    connecting,
+    connected,
+    incompatible,
+}
+
+export struct Pod { id: string, connection_state: ConnectionState, status-text: string, dispensers: [Dispenser] }

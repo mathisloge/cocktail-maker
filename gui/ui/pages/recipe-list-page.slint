@@ -1,10 +1,11 @@
 import { ScrollView } from "std-widgets.slint";
-import { RecipeCard } from "../components.slint";
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
-import { Page } from "page.slint";
-import { Palette, Layout } from "../palette.slint";
+import { RecipeCard } from "../widgets/recipe-card.slint";
+import { PageBase } from "./page-base.slint";
 
-export component RecipeListPage inherits Page {
+export component RecipeListPage inherits PageBase {
     callback recipe-selected();
 
     ScrollView {

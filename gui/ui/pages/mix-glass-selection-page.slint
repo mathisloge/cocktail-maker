@@ -1,19 +1,18 @@
-import { Palette, Layout } from "../palette.slint";
-import {
-    Button,
-    Chip,
-    GlassCard,
-    SmallText,
-    MediumText,
-    LargeText,
-} from "../components.slint";
-import { Page } from "./page.slint";
-import { GlassDescriptor } from "../data.slint";
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+import { Button } from "../components/button.slint";
+import { Chip } from "../components/chip.slint";
+import { LargeText } from "../components/large-text.slint";
+import { MediumText } from "../components/medium-text.slint";
+import { SmallText } from "../components/small-text.slint";
+import { GlassDescriptor } from "../types/glass.slint";
 import { GlassContext } from "../globals/glass-context.slint";
-import { RecipeContext } from "../globals/recipe-context.slint";
 import { ProcessContext } from "../globals/process-context.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
+import { GlassCard } from "../widgets/glass-card.slint";
+import { PageBase } from "./page-base.slint";
 
-export component MixGlassSelectionPage inherits Page {
+export component MixGlassSelectionPage inherits PageBase {
     callback glass-confirmed();
 
     property <bool> has-glass-selected: ProcessContext.glass.id != "";

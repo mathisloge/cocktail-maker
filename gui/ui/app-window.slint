@@ -1,4 +1,28 @@
-import "./SpaceGrotesk.ttf";
+import { VerticalBox, ScrollView, HorizontalBox, Slider } from "std-widgets.slint";
+import { Palette } from "./theme/colors.slint";
+import { Layout } from "./theme/layout.slint";
+import { Button } from "./components/button.slint";
+import { LogEntry } from "./types/log.slint";
+import { Page } from "./types/navigation.slint";
+import { Pod, Dispenser } from "./types/pod.slint";
+import { RecipeView, Command, CommandStatus } from "./types/recipe.slint";
+import { DispenserCalibrationContext } from "./globals/dispenser-calibration-context.slint";
+import { GlassContext } from "./globals/glass-context.slint";
+import { ProcessContext } from "./globals/process-context.slint";
+import { StationStateContext } from "./globals/station-state-context.slint";
+import { AdminArea } from "./pages/admin/admin-area.slint";
+import { BootScreen } from "./pages/boot-screen.slint";
+import { MixErrorPage } from "./pages/mix-error-page.slint";
+import { MixGlassSelectionPage } from "./pages/mix-glass-selection-page.slint";
+import { MixProgressPage } from "./pages/mix-progress-page.slint";
+import { MixSuccessPage } from "./pages/mix-success-page.slint";
+import { RecipeDetailPage } from "./pages/recipe-detail-page.slint";
+import { RecipeListPage } from "./pages/recipe-list-page.slint";
+import { FillWarningPopup } from "./popups/fill-warning-popup.slint";
+import { ManualCommandPopup } from "./popups/manual-command-popup.slint";
+import { OperatorPinPopup } from "./popups/operator-pin-popup.slint";
+
+import "./theme/SpaceGrotesk.ttf";
 
 export { StationStateContext }from "./globals/station-state-context.slint";
 export { RecipeContext }from "./globals/recipe-context.slint";
@@ -12,38 +36,6 @@ export {
     GlassContext,
 }from "./globals/glass-context.slint";
 
-import {
-    VerticalBox,
-    ScrollView,
-    HorizontalBox,
-    Slider,
-} from "std-widgets.slint";
-import { Palette, Layout } from "palette.slint";
-import {
-    Page,
-    RecipeView,
-    Command,
-    CommandStatus,
-    LogEntry,
-    Pod,
-    Dispenser,
-} from "data.slint";
-import { Button } from "components.slint";
-import {
-    RecipeDetailPage,
-    RecipeListPage,
-    BootScreen,
-    MixProgressPage,
-    MixErrorPage,
-    MixSuccessPage,
-    MixGlassSelectionPage,
-} from "pages.slint";
-import { ManualCommandPopup, FillWarningPopup, OperatorPinPopup } from "popups.slint";
-import { AdminArea } from "admin-area.slint";
-import { StationStateContext } from "./globals/station-state-context.slint";
-import { ProcessContext } from "./globals/process-context.slint";
-import { GlassContext } from "globals/glass-context.slint";
-import { DispenserCalibrationContext } from "./globals/dispenser-calibration-context.slint";
 
 
 export component AppWindow inherits Window {

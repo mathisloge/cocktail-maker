@@ -1,5 +1,7 @@
-import { Palette, Layout } from "../palette.slint";
-import { MediumText } from "medium-text.slint";
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+import { MediumText } from "./medium-text.slint";
+
 export component Chip inherits Rectangle {
     in property <string> text;
     in property <bool> selected;

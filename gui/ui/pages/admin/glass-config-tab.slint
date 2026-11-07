@@ -1,19 +1,13 @@
-import { Palette, Layout } from "../palette.slint";
-import {
-    GlassIcon,
-    GlassCard,
-    PulseDot,
-    MediumText,
-    Chip,
-} from "../components.slint";
-import { GlassDescriptor } from "../data.slint";
-import { GlassContext } from "../globals/glass-context.slint";
-import {
-    ComboBox,
-    VerticalBox,
-    Button,
-    HorizontalBox,
-} from "std-widgets.slint";
+import { ComboBox, VerticalBox, Button, HorizontalBox } from "std-widgets.slint";
+import { Palette } from "../../theme/colors.slint";
+import { Layout } from "../../theme/layout.slint";
+import { Chip } from "../../components/chip.slint";
+import { MediumText } from "../../components/medium-text.slint";
+import { PulseDot } from "../../components/pulse-dot.slint";
+import { GlassDescriptor } from "../../types/glass.slint";
+import { GlassContext } from "../../globals/glass-context.slint";
+import { GlassCard } from "../../widgets/glass-card.slint";
+import { GlassIcon } from "../../widgets/glass-icon.slint";
 
 export component GlassConfigTab inherits Rectangle {
     private property <GlassDescriptor> selected-glass;

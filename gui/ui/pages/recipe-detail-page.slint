@@ -1,21 +1,20 @@
 import { ScrollView, HorizontalBox, Slider } from "std-widgets.slint";
-import { RecipeView } from "../data.slint";
-import { Palette, Layout } from "../palette.slint";
-import {
-    CommandListItem,
-    Button,
-    SeparatorText,
-    LargeText,
-    MediumText,
-    SmallText,
-    RecipeTags,
-    BoostText,
-} from "../components.slint";
-import { RecipeContext } from "../globals/recipe-context.slint";
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+import { Button } from "../components/button.slint";
+import { LargeText } from "../components/large-text.slint";
+import { MediumText } from "../components/medium-text.slint";
+import { SeparatorText } from "../components/separator-text.slint";
+import { SmallText } from "../components/small-text.slint";
+import { RecipeView } from "../types/recipe.slint";
 import { ProcessContext } from "../globals/process-context.slint";
-import { Page } from "page.slint";
+import { RecipeContext } from "../globals/recipe-context.slint";
+import { BoostText } from "../widgets/boost-text.slint";
+import { CommandListItem } from "../widgets/command-list-item.slint";
+import { RecipeTags } from "../widgets/recipe-tags.slint";
+import { PageBase } from "./page-base.slint";
 
-export component RecipeDetailPage inherits Page {
+export component RecipeDetailPage inherits PageBase {
     private property <RecipeView> recipe: RecipeContext.active-recipe;
     private property <int> boost-value: 0;
     callback process-recipe();

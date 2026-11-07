@@ -1,25 +1,11 @@
-import {
-    VerticalBox,
-    HorizontalBox,
-    Button,
-    SpinBox,
-    ScrollView,
-} from "std-widgets.slint";
-import {
-    SmallText,
-    MediumText,
-    PulseDot,
-} from "../components.slint";
-import {
-    Pod,
-    Dispenser,
-    DispenserType,
-} from "../data.slint";
-import { Palette, Layout } from "../palette.slint";
-import {
-    DispenserCalibrationContext,
-    CalibrationStepStatus,
-} from "../globals/dispenser-calibration-context.slint";
+import { VerticalBox, HorizontalBox, Button, SpinBox, ScrollView } from "std-widgets.slint";
+import { Palette } from "../../theme/colors.slint";
+import { Layout } from "../../theme/layout.slint";
+import { MediumText } from "../../components/medium-text.slint";
+import { PulseDot } from "../../components/pulse-dot.slint";
+import { SmallText } from "../../components/small-text.slint";
+import { Pod, Dispenser, DispenserType } from "../../types/pod.slint";
+import { DispenserCalibrationContext, CalibrationStepStatus } from "../../globals/dispenser-calibration-context.slint";
 
 component StatusDot inherits PulseDot {
     in property <CalibrationStepStatus> status;

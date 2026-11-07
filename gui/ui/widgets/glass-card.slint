@@ -1,7 +1,9 @@
-import { GlassDescriptor } from "../data.slint";
-import { Palette, Layout } from "../palette.slint";
-import { GlassIcon } from "glass-icon.slint";
-import { MediumText } from "medium-text.slint";
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+import { MediumText } from "../components/medium-text.slint";
+import { GlassDescriptor } from "../types/glass.slint";
+import { GlassIcon } from "./glass-icon.slint";
+
 export component GlassCard inherits Rectangle {
     in property <GlassDescriptor> descriptor;
     in property <bool> selected;

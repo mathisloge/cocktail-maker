@@ -1,11 +1,7 @@
-import {
-    LogEntry,
-    Pod,
-    RecipeView,
-    Dispenser,
-    ConnectionState,
-    DispenserType,
-} from "./../data.slint";
+import { LogEntry } from "../types/log.slint";
+import { Pod, Dispenser, ConnectionState, DispenserType } from "../types/pod.slint";
+import { RecipeView } from "../types/recipe.slint";
+
 export global RecipeContext {
     in-out property <[RecipeView]> recipes: [
         {

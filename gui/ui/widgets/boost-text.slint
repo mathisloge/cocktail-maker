@@ -1,4 +1,5 @@
-import { MediumText } from "medium-text.slint";
+import { MediumText } from "../components/medium-text.slint";
+
 export component BoostText inherits MediumText {
     in property <int> boost;
     private property <string> boost-text: get-boost-slogan(boost);

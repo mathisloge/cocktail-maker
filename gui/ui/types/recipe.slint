@@ -1,0 +1,27 @@
+export enum CommandStatus {
+    not_started,
+    in_progress,
+    finished,
+}
+
+export struct Command {
+    id: int,
+    status: CommandStatus,
+    text: string,
+    value: string,
+}
+
+export struct RecipeView {
+    id: string,
+    name: string,
+    tag_line: [string],
+    description: string,
+    image: image,
+    commands: [Command],
+    is-boostable: bool
+}
+
+export struct Ingredient {
+    id: string,
+    name: string,
+}

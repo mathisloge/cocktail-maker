@@ -1,0 +1,15 @@
+export enum LogLevel {
+    trace,
+    debug,
+    info,
+    warn,
+    err,
+    critical,
+}
+
+export struct LogEntry {
+    time_stamp: string,
+    level: LogLevel,
+    component: string,
+    message: string,
+}

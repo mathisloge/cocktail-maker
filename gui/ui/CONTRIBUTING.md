@@ -80,8 +80,10 @@ CM_SNAPSHOT_DIR=/tmp/after ./build/runtime/cocktail-maker-gui-tests "[.snapshot]
 ```
 
 Compare the two directories with any image diff tool.
-The boot screen spinner, the progress bar and the pulse dots animate,
-so they differ by a few pixels between two runs.
+Some screens animate all the time and differ between two runs without any change.
+The boot screen spinner, the progress bar and the pulse dots differ by a few hundred pixels.
+The breathing ring of the error page and the success page can differ by more than ten thousand pixels,
+so compare those two by eye.
 
 Screens that need interaction, such as a selected Pod in the admin area, can be inspected live through
 Slint's embedded MCP server.
@@ -94,3 +96,4 @@ CM_INSPECT_PAGE=admin_area_page SLINT_MCP_PORT=8765 ./build/runtime/cocktail-mak
 The server answers MCP requests at `http://127.0.0.1:8765/mcp`.
 It can take screenshots, list elements by id and click them.
 `CM_INSPECT_PAGE` takes the snake_case name of a `Page` value, such as `cocktail_detail_page`.
+The test selects the software renderer, because the FemtoVG renderer cannot take screenshots.

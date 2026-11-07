@@ -100,6 +100,7 @@ TEST_CASE("ui inspect", "[.inspect]")
     }
     const auto entry = std::ranges::find(kPages, std::string_view{env_page}, &std::pair<cm::gui::Page, std::string_view>::second);
     REQUIRE(entry != kPages.end());
+    ::setenv("SLINT_BACKEND", "winit-software", 0);
 
     auto ui = cm::gui::AppWindow::create();
     ui->window().set_size(slint::PhysicalSize({1280, 720}));

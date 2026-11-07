@@ -91,6 +91,7 @@ export component MixErrorPage inherits PageBase {
     private property <bool> details-expanded: false;
     private property <length> ring-size: 168px;
     private property <length> icon-size: 112px;
+    private property <length> ring-border: 3px;
     callback cancel();
 
     // ── Continuous slow breathing pulse on the broken ring ───────
@@ -141,7 +142,7 @@ export component MixErrorPage inherits PageBase {
                             x: (parent.width - self.width) / 2;
                             y: (parent.height - self.height) / 2;
                             border-radius: self.height / 2;
-                            border-width: root.pulse ? 1px : Layout.accent-bar;
+                            border-width: root.pulse ? 1px : root.ring-border;
                             border-color: root.pulse ? Palette.border : Palette.text-error;
                             background: Palette.surface-elevated;
                             animate border-color, border-width {
@@ -161,7 +162,7 @@ export component MixErrorPage inherits PageBase {
                             commands: "M 50 32 Q 52 32 53 34 L 64 58 Q 66 62 62 62 L 38 62 Q 34 62 36 58 L 47 34 Q 48 32 50 32 Z";
                             fill: transparent;
                             stroke: root.pulse ? Palette.border : Palette.text-error;
-                            stroke-width: Layout.border-width-strong;
+                            stroke-width: Layout.icon-stroke;
                             opacity: root.mounted ? 1 : 0;
                             animate opacity, stroke {
                                 duration: Motion.reveal;

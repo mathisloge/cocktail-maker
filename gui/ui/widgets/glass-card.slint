@@ -32,7 +32,7 @@ export component GlassCard inherits Rectangle {
         GlassIcon {
             data: root.descriptor.icon;
             stroke-color: root.selected ? Palette.accent : Palette.text-muted;
-            stroke-width: root.selected ? Layout.accent-bar : Layout.border-width-strong;
+            stroke-width: root.selected ? Layout.icon-stroke-selected : Layout.icon-stroke;
             width: Layout.glass-icon-size;
             height: Layout.glass-icon-size * root.descriptor.icon.viewbox-height / max(1, root.descriptor.icon.viewbox-width);
             horizontal-stretch: 0;

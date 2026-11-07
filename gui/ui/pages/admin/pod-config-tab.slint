@@ -61,7 +61,7 @@ component PodListDelegate inherits Rectangle {
         pressed when touch-area.pressed: {
             root.background: Palette.surface-elevated.brighter(1);
             root.border-color: Palette.border;
-            title.color: Palette.text-primary;
+            title.tone: TextTone.primary;
         }
         hover when touch-area.has-hover: {
             root.background: Palette.surface-elevated;

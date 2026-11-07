@@ -92,7 +92,7 @@ cpmaddpackage(
 cpmaddpackage(
   NAME stdexec
   GITHUB_REPOSITORY NVIDIA/stdexec
-  GIT_TAG ead186b1d8db3ebe37a946ff84a6ce08bf795153
+  GIT_TAG 15ef61ea39433abba50acaeb92b0eeeb885798aa
   SYSTEM ON
   OPTIONS
     "STDEXEC_BUILD_TESTS OFF"

@@ -6,29 +6,24 @@
 
 import std;
 import cm.core;
+import cm.testing;
 import cm;
 import cm.gui;
 
-namespace {
-
-inline void flush_slint_events()
-{
-    slint::invoke_from_event_loop([]() { slint::quit_event_loop(); });
-    slint::run_event_loop(slint::EventLoopMode::RunUntilQuit);
-}
-
-} // namespace
+#include "slint_events.test.hpp"
 
 TEST_CASE("MachineAdapter - manual command opens and resolves through the popup", "[gui][MachineAdapter]")
 {
     auto ui = cm::gui::AppWindow::create();
     cm::IngredientStore ingredient_store;
     cm::PodRegistry pod_registry;
-    cm::StationConfig station_config{ingredient_store, ""};
+    cm::testing::TempDir dir;
+    cm::StationConfig station_config{ingredient_store, dir.file("mapping.json")};
 
     boost::asio::io_context ctx;
     cm::AsyncScope scope{ctx};
-    cm::gui::MachineAdapter adapter{ui, ctx.get_executor(), ingredient_store, pod_registry, station_config};
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    cm::gui::MachineAdapter adapter{ui, ctx.get_executor(), ingredient_store, pod_registry, station_config, fill_levels};
 
     bool completed = false;
 
@@ -55,10 +50,12 @@ TEST_CASE("MachineAdapter - update_command_status updates the active recipe", "[
     auto ui = cm::gui::AppWindow::create();
     cm::IngredientStore ingredient_store;
     cm::PodRegistry pod_registry;
-    cm::StationConfig station_config{ingredient_store, ""};
+    cm::testing::TempDir dir;
+    cm::StationConfig station_config{ingredient_store, dir.file("mapping.json")};
 
     boost::asio::io_context ctx;
-    cm::gui::MachineAdapter adapter{ui, ctx.get_executor(), ingredient_store, pod_registry, station_config};
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    cm::gui::MachineAdapter adapter{ui, ctx.get_executor(), ingredient_store, pod_registry, station_config, fill_levels};
 
     auto active = ui->global<cm::gui::RecipeContext>().get_active_recipe();
 

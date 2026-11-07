@@ -1,4 +1,3 @@
-#define CATCH_CONFIG_MAIN
 #include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -9,16 +8,13 @@ struct MeterTag
 {
 };
 
-using Meter = cm::
-    strong_type<double, MeterTag, cm::Comparable, cm::Additive, cm::Subtractive, cm::Arithmetic, cm::Formattable, cm::Hashable>;
+using Meter = cm::strong_type<double, MeterTag, cm::Comparable, cm::Formattable, cm::Hashable>;
 
-using Second = cm::strong_type<double, struct SecondTag, cm::Comparable, cm::Additive, cm::Subtractive>;
+using Second = cm::strong_type<double, struct SecondTag, cm::Comparable>;
 
 using Id = cm::strong_type<std::uint32_t, struct IdTag, cm::Comparable, cm::Hashable>;
 
 using Counter = cm::strong_type<int, struct CounterTag, cm::Comparable, cm::Incrementable, cm::Decrementable>;
-
-using SaturatingInt = cm::strong_type<int, struct SaturatingTag, cm::Comparable, cm::SaturatingArithmetic>;
 
 template <class L, class R>
 concept plusable = requires(L l, R r) { l + r; };
@@ -34,6 +30,8 @@ static_assert(std::is_constructible_v<Meter, double>);
 static_assert(!std::is_convertible_v<double, Meter>);
 static_assert(!std::is_convertible_v<Meter, double>);
 static_assert(!plusable<Meter, Second>);
+// Quantities are mp-units types (ADR-004), so a strong type offers no arithmetic.
+static_assert(!plusable<Meter, Meter>);
 static_assert(!comparable_to<Meter, Second>);
 static_assert(!std::same_as<Meter, Second>);
 static_assert(std::three_way_comparable<Meter>);
@@ -67,20 +65,6 @@ TEST_CASE("strong_type comparison works only inside the same strong type", "[str
     (void)s;
 }
 
-TEST_CASE("strong_type additive and subtractive behavior is type-safe", "[strong_type]")
-{
-    Meter a{5.0};
-    Meter b{2.5};
-
-    REQUIRE((a + b).raw() == Catch::Approx(7.5));
-    REQUIRE((a - b).raw() == Catch::Approx(2.5));
-
-    a += b;
-    REQUIRE(a.raw() == Catch::Approx(7.5));
-    a -= Meter{1.5};
-    REQUIRE(a.raw() == Catch::Approx(6.0));
-}
-
 TEST_CASE("strong_type increment and decrement work for discrete domains", "[strong_type]")
 {
     Counter c{7};
@@ -92,20 +76,6 @@ TEST_CASE("strong_type increment and decrement work for discrete domains", "[str
     REQUIRE(--c == Counter{8});
     REQUIRE(c-- == Counter{8});
     REQUIRE(c == Counter{7});
-}
-
-TEST_CASE("strong_type arithmetic skill exposes scalar multiplication and division", "[strong_type]")
-{
-    Meter m{3.0};
-
-    REQUIRE((m * 2.0).raw() == Catch::Approx(6.0));
-    REQUIRE((2.0 * m).raw() == Catch::Approx(6.0));
-    REQUIRE((m / 2.0).raw() == Catch::Approx(1.5));
-
-    m *= 4.0;
-    REQUIRE(m.raw() == Catch::Approx(12.0));
-    m /= 3.0;
-    REQUIRE(m.raw() == Catch::Approx(4.0));
 }
 
 TEST_CASE("strong_type hashable work in unordered containers", "[strong_type]")
@@ -124,19 +94,6 @@ TEST_CASE("strong_type formattable format through std::format", "[strong_type]")
 {
     Meter m{12.5};
     REQUIRE(std::format("{}", m) == std::format("{}", 12.5));
-}
-
-TEST_CASE("strong_type saturating arithmetic clamps at the numeric bounds", "[strong_type]")
-{
-    SaturatingInt hi{std::numeric_limits<int>::max()};
-    SaturatingInt one{1};
-
-    auto saturated = saturating_add(hi, one);
-    REQUIRE(saturated.raw() == std::numeric_limits<int>::max());
-
-    SaturatingInt lo{std::numeric_limits<int>::min()};
-    auto saturated_sub = saturating_sub(lo, one);
-    REQUIRE(saturated_sub.raw() == std::numeric_limits<int>::min());
 }
 
 TEST_CASE("strong_type different tags stay incompatible even when the underlying type matches", "[strong_type]")

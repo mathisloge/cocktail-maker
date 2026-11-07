@@ -150,9 +150,12 @@ TEST_CASE("RecipeModel general conversion from std::vector<Recipe>", "[recipe_ad
     SECTION("recipes with identical names are stored as distinct rows")
     {
         cm::RecipeStore recipe_store;
+        // The id comes from the file name and has to be unique, while two files may well carry the same name.
+        auto copy = make_recipe("Clone", {"copy"});
+        copy.id = cm::RecipeId{"clone_copy"};
         recipe_store.init_recipes({
             make_recipe("Clone", {"original"}),
-            make_recipe("Clone", {"copy"}),
+            std::move(copy),
         });
         RecipeModel model(recipe_store, ingredient_store);
 

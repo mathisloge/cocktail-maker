@@ -1,4 +1,11 @@
-#include <boost/asio.hpp>
+#include <boost/asio/any_io_executor.hpp>
+#include <boost/asio/as_tuple.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/error.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/local/connect_pair.hpp>
+#include <boost/asio/local/stream_protocol.hpp>
+#include <boost/asio/write.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <comms/ErrorStatus.h>
 #include <exec/asio/use_sender.hpp>
@@ -7,7 +14,10 @@
 
 import std;
 import cm.core;
+import cm.testing;
 import cm;
+
+using namespace std::chrono_literals;
 
 using Socket = boost::asio::local::stream_protocol::socket;
 using Session = cm::PodProtocolSession;
@@ -62,28 +72,11 @@ struct PodProtocolSessionTestFixture
         session = std::make_unique<Session>(std::make_unique<cm::SocketIoStream<Socket>>(std::move(session_socket)));
     }
 
-    // Safely executes tests and guarantees graceful session shutdown even if assertions fail
+    /// Runs `test_coro` while the session runs. The session ends with the test, and a failure is rethrown.
     template <typename CoroutineFunc>
     void run_test(CoroutineFunc&& test_coro)
     {
-        std::exception_ptr err;
-
-        auto test_wrapper = [&]() -> cm::Task<void> {
-            try {
-                // The session runs until the test coroutine has finished and stops it.
-                co_await exec::when_any(test_coro(), session->run());
-            }
-            catch (...) {
-                // Catch2 REQUIRE failures throw an exception to abort the execution path
-                err = std::current_exception();
-            }
-        };
-
-        cm::run_until_complete(ioc, test_wrapper());
-
-        if (err) {
-            std::rethrow_exception(err);
-        }
+        cm::run_until_complete(ioc, exec::when_any(test_coro(), session->run()));
     }
 
     // Encodes msg as an on-wire frame tagged with transaction_id. Does not
@@ -122,8 +115,10 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Lifecycle 
 TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Sends Messages over Socket", "[send]")
 {
     run_test([this]() -> cm::Task<void> {
+        constexpr cm::TransactionId::ValueType kWideTransaction = 0x1234;
+
         TestTxMsg msg;
-        REQUIRE_NOTHROW(co_await session->async_send(msg, kTestTransaction));
+        REQUIRE_NOTHROW(co_await session->async_send(msg, kWideTransaction));
 
         std::vector<uint8_t> buffer(1024);
         auto [ec, bytes_read] =
@@ -132,7 +127,9 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Sends Mess
         REQUIRE(!ec);
         CHECK(bytes_read > 0);
 
-        CHECK(static_cast<int>(buffer[6]) == kTestTransaction);
+        // Sync, Size and MsgId take 6 bytes, and the frame is little endian.
+        CHECK(buffer[6] == 0x34);
+        CHECK(buffer[7] == 0x12);
     });
 }
 
@@ -169,8 +166,7 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Receive Fr
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer.data(), half), exec::asio::use_sender);
 
         // Introduce a slight delay before writing the second half
-        boost::asio::steady_timer delay_timer(ioc, std::chrono::milliseconds(10));
-        co_await delay_timer.async_wait(exec::asio::use_sender);
+        co_await cm::async_sleep(ioc.get_executor(), 10ms);
 
         co_await boost::asio::async_write(
             client_socket, boost::asio::buffer(buffer.data() + half, buffer.size() - half), exec::asio::use_sender);
@@ -191,18 +187,14 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
 
         auto recv_task = session->async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(500));
 
-        boost::asio::steady_timer delay_timer(ioc);
-
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer.data(), third), exec::asio::use_sender);
 
-        delay_timer.expires_after(std::chrono::milliseconds(5));
-        co_await delay_timer.async_wait(exec::asio::use_sender);
+        co_await cm::async_sleep(ioc.get_executor(), 5ms);
 
         co_await boost::asio::async_write(
             client_socket, boost::asio::buffer(buffer.data() + third, third), exec::asio::use_sender);
 
-        delay_timer.expires_after(std::chrono::milliseconds(5));
-        co_await delay_timer.async_wait(exec::asio::use_sender);
+        co_await cm::async_sleep(ioc.get_executor(), 5ms);
 
         co_await boost::asio::async_write(
             client_socket, boost::asio::buffer(buffer.data() + 2 * third, buffer.size() - 2 * third), exec::asio::use_sender);
@@ -344,4 +336,145 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
         REQUIRE(std::holds_alternative<TestRxMsg>(variant_res));
         CHECK(std::get<TestRxMsg>(variant_res).transportField_transactionId().value() == kTestTransaction);
     });
+}
+
+// ---------------------------------------------------------------------------
+// One transaction with several replies
+// ---------------------------------------------------------------------------
+
+TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Ack And Final Reply In One Read", "[receive][transaction]")
+{
+    run_test([this]() -> cm::Task<void> {
+        auto ack = session->async_receive<cm::InAck, cm::InNak>(kTestTransaction, 500ms);
+        auto final_reply = session->async_receive<cm::InDispenseFinished, cm::InNak>(kTestTransaction, 500ms);
+
+        auto bytes = encode_message(cm::InAck{}, kTestTransaction);
+        std::ranges::copy(encode_message(cm::InNak{}, kTestTransaction), std::back_inserter(bytes));
+        co_await boost::asio::async_write(client_socket, boost::asio::buffer(bytes), exec::asio::use_sender);
+
+        const auto first = co_await std::move(ack);
+        CHECK(std::holds_alternative<cm::InAck>(first));
+        const auto second = co_await std::move(final_reply);
+        CHECK(std::holds_alternative<cm::InNak>(second));
+    });
+}
+
+TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - New Ids Skip Registered Ones", "[transaction]")
+{
+    run_test([this]() -> cm::Task<void> {
+        const auto first = session->generate_new_transaction_id();
+        const auto taken = static_cast<cm::TransactionId::ValueType>(first + 1);
+        auto pending = session->async_receive<TestRxMsg>(taken, 10ms);
+
+        CHECK(session->generate_new_transaction_id() == static_cast<cm::TransactionId::ValueType>(first + 2));
+        REQUIRE_THROWS_AS(co_await std::move(pending), cm::TimeoutError);
+    });
+}
+
+TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - A Wrapped Counter Skips Registered Ids", "[transaction]")
+{
+    run_test([this]() -> cm::Task<void> {
+        constexpr auto kLast = std::numeric_limits<cm::TransactionId::ValueType>::max();
+        while (session->generate_new_transaction_id() != kLast - 1) {
+        }
+        auto last = session->async_receive<TestRxMsg>(kLast, 10ms);
+        auto zero = session->async_receive<TestRxMsg>(0, 10ms);
+
+        CHECK(session->generate_new_transaction_id() == 1);
+        REQUIRE_THROWS_AS(co_await std::move(last), cm::TimeoutError);
+        REQUIRE_THROWS_AS(co_await std::move(zero), cm::TimeoutError);
+    });
+}
+
+TEST_CASE_METHOD(PodProtocolSessionTestFixture,
+                 "PodProtocolSession - A Wait That Never Starts Releases Its Id",
+                 "[transaction][cleanup]")
+{
+    run_test([this]() -> cm::Task<void> {
+        const auto first = session->generate_new_transaction_id();
+        const auto next = static_cast<cm::TransactionId::ValueType>(first + 1);
+        {
+            auto ack = session->async_receive<TestRxMsg>(next, 500ms);
+            auto final_reply = session->async_receive<TestRxMsg>(next, 500ms);
+            co_await send_message(TestRxMsg{}, next);
+            std::ignore = co_await std::move(ack);
+        }
+        CHECK(session->generate_new_transaction_id() == next);
+    });
+}
+
+TEST_CASE_METHOD(PodProtocolSessionTestFixture,
+                 "PodProtocolSession - Progress Never Pushes The Final Reply Out",
+                 "[receive][transaction]")
+{
+    run_test([this]() -> cm::Task<void> {
+        auto ack = session->async_receive<cm::InAck, cm::InNak>(kTestTransaction, 500ms);
+        auto final_reply = session->async_receive<cm::InDispenseFinished, cm::InNak>(kTestTransaction, 500ms);
+
+        auto bytes = encode_message(cm::InAck{}, kTestTransaction);
+        for (int i = 0; i < 3; ++i) {
+            std::ranges::copy(encode_message(cm::InDispenseProgress{}, kTestTransaction), std::back_inserter(bytes));
+        }
+        std::ranges::copy(encode_message(cm::InDispenseFinished{}, kTestTransaction), std::back_inserter(bytes));
+        co_await boost::asio::async_write(client_socket, boost::asio::buffer(bytes), exec::asio::use_sender);
+
+        const auto first = co_await std::move(ack);
+        CHECK(std::holds_alternative<cm::InAck>(first));
+        const auto second = co_await std::move(final_reply);
+        CHECK(std::holds_alternative<cm::InDispenseFinished>(second));
+    });
+}
+
+namespace {
+/// Reads like a socket, but every write fails as if the Pod had gone away.
+class FailingWriteStream final : public cm::AnyIoStream
+{
+  public:
+    explicit FailingWriteStream(Socket socket)
+        : inner_{std::move(socket)}
+    {
+    }
+
+    auto async_read(boost::asio::mutable_buffer buffer) -> cm::Task<std::tuple<boost::system::error_code, std::size_t>> override
+    {
+        return inner_.async_read(buffer);
+    }
+
+    auto async_write(boost::asio::const_buffer /*buffer*/, std::chrono::milliseconds /*timeout*/)
+        -> cm::Task<boost::system::error_code> override
+    {
+        co_return boost::asio::error::broken_pipe;
+    }
+
+    auto close() -> boost::system::error_code override
+    {
+        return inner_.close();
+    }
+
+    auto get_executor() -> boost::asio::any_io_executor override
+    {
+        return inner_.get_executor();
+    }
+
+  private:
+    cm::SocketIoStream<Socket> inner_;
+};
+} // namespace
+
+TEST_CASE("PodProtocolSession - A failed write ends the session", "[send][lifecycle]")
+{
+    boost::asio::io_context ioc;
+    Socket peer{ioc};
+    Socket session_socket{ioc};
+    boost::asio::local::connect_pair(peer, session_socket);
+    Session session{std::make_unique<FailingWriteStream>(std::move(session_socket))};
+
+    bool ended = false;
+    auto send_and_wait = [&]() -> cm::Task<void> {
+        co_await session.async_send(TestTxMsg{}, kTestTransaction);
+        co_await cm::async_sleep(ioc.get_executor(), 2s);
+    };
+    cm::run_until_complete(ioc, exec::when_any(session.run() | stdexec::then([&] { ended = true; }), send_and_wait()));
+
+    CHECK(ended);
 }

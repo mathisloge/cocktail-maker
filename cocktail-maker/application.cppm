@@ -13,16 +13,21 @@ import :recipe;
 import :glass;
 import :station_config;
 import :station_state;
+import :fill_level;
 
 namespace cm {
 export class Application
 {
   public:
+    /// @param state_dir The directory that holds the Station's state: the ingredient assignment, the active glass volumes
+    /// and the fill levels.
+    explicit Application(const std::filesystem::path& state_dir);
     virtual ~Application();
 
     virtual void init(const std::filesystem::path& db_dir);
     boost::asio::any_io_executor get_executor();
     AsyncScope& async_scope();
+    FillLevelTracker& fill_levels();
 
     /**
      * Stops all asynchronous work, waits until it has finished and ends the execution thread.
@@ -40,7 +45,7 @@ export class Application
     IngredientStore ingredient_store_;
     RecipeStore recipe_store_;
     PodRegistry pod_registry_;
-    StationConfig station_config_{ingredient_store_, "./station_config.json"};
+    StationConfig station_config_;
 
   private:
     log::Logger logger_{log::create_or_get("app")};
@@ -48,6 +53,7 @@ export class Application
     boost::asio::executor_work_guard<decltype(execution_context_.get_executor())> work_guard_{
         boost::asio::make_work_guard(execution_context_.get_executor())};
     AsyncScope async_scope_{execution_context_};
+    FillLevelTracker fill_levels_;
     std::unique_ptr<std::jthread> execution_thread_;
 };
 

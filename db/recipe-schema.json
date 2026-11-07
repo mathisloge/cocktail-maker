@@ -4,6 +4,7 @@
     "type": "object",
     "required": [
         "name",
+        "nominal_serving_volume",
         "steps"
     ],
     "properties": {
@@ -27,6 +28,7 @@
         },
         "nominal_serving_volume": {
             "type": "number",
+            "exclusiveMinimum": 0,
             "description": "The expected total serving volume in milliliters"
         },
         "steps": {

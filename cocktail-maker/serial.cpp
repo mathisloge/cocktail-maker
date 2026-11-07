@@ -18,10 +18,9 @@ module;
 #warning "USB hotplug discovery is only implemented for Linux; discovery fails immediately on other systems."
 #endif
 
-module cm:serial_impl;
+module cm;
 import std;
 import cm.core;
-import :serial;
 
 namespace cm {
 

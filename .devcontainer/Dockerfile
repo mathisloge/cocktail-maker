@@ -16,16 +16,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxkbcommon-x11-0 libgl1 libegl1 libinput10 \
     && rm -rf /var/lib/apt/lists/*
 
-# Latest stable LLVM. Passing only "all" (no version) keeps llvm.sh on its own
-# CURRENT_LLVM_STABLE, and "all" is what pulls in libc++/libc++abi (required for
-# `import std`) and libclang-rt (required for the sanitizers).
+# LLVM 23, pinned to match CI. "all" is what pulls in libc++/libc++abi (required
+# for `import std`) and libclang-rt (required for the sanitizers).
 RUN curl -fsSL https://apt.llvm.org/llvm.sh -o /tmp/llvm.sh \
     && chmod +x /tmp/llvm.sh \
     && /tmp/llvm.sh 23 all \
     && rm -f /tmp/llvm.sh \
     && rm -rf /var/lib/apt/lists/*
 
-# apt.llvm.org installs version-suffixed binaries (clang-22, ...). The developer
+# apt.llvm.org installs version-suffixed binaries (clang-23, ...). The developer
 # preset asks for plain clang/clang++, so alias whichever major landed above.
 #
 # The symlink works around Ubuntu's multiarch layout: clang resolves libc++'s

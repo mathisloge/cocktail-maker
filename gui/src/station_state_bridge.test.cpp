@@ -5,30 +5,13 @@
 #include "app-window.h"
 
 import std;
+import mp_units;
 import cm.core;
+import cm.testing;
 import cm;
 import cm.gui;
 
-namespace {
-// Helper to flush Slint's event loop queue.
-inline void flush_slint_events()
-{
-    slint::invoke_from_event_loop([]() { slint::quit_event_loop(); });
-    slint::run_event_loop(slint::EventLoopMode::RunUntilQuit);
-}
-
-// RAII guard: Local variables are destroyed in reverse order of declaration.
-// When a SECTION finishes, `pod` (section) is destructed first (pushing cleanup tasks to Slint).
-// Then this `flusher` is destructed, running those pending tasks and freeing the captured
-// `shared_ptr<StationStateBridge>`, allowing `bridge` and `ui` to be cleanly destroyed.
-struct SlintFlusher
-{
-    ~SlintFlusher()
-    {
-        flush_slint_events();
-    }
-};
-} // namespace
+#include "slint_events.test.hpp"
 
 TEST_CASE("StationStateBridge - Initialization", "[gui][StationStateBridge]")
 {
@@ -36,7 +19,8 @@ TEST_CASE("StationStateBridge - Initialization", "[gui][StationStateBridge]")
     cm::AsyncScope scope{ctx};
     auto ui = cm::gui::AppWindow::create();
     cm::PodRegistry pod_registry;
-    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope);
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
     SlintFlusher flusher;
 
     SECTION("Pod UI model is created and initially empty")
@@ -56,7 +40,8 @@ TEST_CASE("StationStateBridge - Pod Lifecycle", "[gui][StationStateBridge]")
     cm::AsyncScope scope{ctx};
     auto ui = cm::gui::AppWindow::create();
     cm::PodRegistry pod_registry;
-    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope);
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
     auto model = bridge->pod_model();
     SlintFlusher flusher;
 
@@ -135,7 +120,8 @@ TEST_CASE("StationStateBridge - Readiness Status and Multiple Pods", "[gui][Stat
     cm::AsyncScope scope{ctx};
     auto ui = cm::gui::AppWindow::create();
     cm::PodRegistry pod_registry;
-    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope);
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
     auto model = bridge->pod_model();
 
     SlintFlusher flusher;
@@ -184,4 +170,87 @@ TEST_CASE("StationStateBridge - Readiness Status and Multiple Pods", "[gui][Stat
         REQUIRE(model->row_count() == 0);
         REQUIRE(model->row_data(0) == std::nullopt);
     }
+}
+
+TEST_CASE("format_fill_level words what is known about a bottle", "[gui][StationStateBridge]")
+{
+    namespace units = cm::units;
+    const auto grams = [](double value) { return value * units::si::gram; };
+
+    CHECK(cm::gui::format_fill_level(cm::FillLevelView{}) == "unbekannt");
+    CHECK(cm::gui::format_fill_level(cm::FillLevelView{.no_load_cell = true}) == "keine Wägezelle");
+    CHECK(cm::gui::format_fill_level(cm::FillLevelView{.level = grams(640), .percent = std::nullopt, .suspected_empty = false}) ==
+          "ca. 640 mL");
+    CHECK(cm::gui::format_fill_level(cm::FillLevelView{
+              .level = grams(640), .percent = 64.0 * units::percent, .suspected_empty = false}) == "ca. 640 mL · 64 %");
+    CHECK(cm::gui::format_fill_level(cm::FillLevelView{
+              .level = grams(30), .percent = 3.0 * units::percent, .suspected_empty = true}) == "vermutlich leer");
+}
+
+TEST_CASE("StationStateBridge - A pod on another protocol release shows why it isn't used", "[gui][StationStateBridge]")
+{
+    boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
+    auto ui = cm::gui::AppWindow::create();
+    cm::PodRegistry pod_registry;
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
+    SlintFlusher flusher;
+
+    auto pod = bridge->create_pod_state();
+    pod->update_info(cm::PodInfo{.id = cm::PodId{"Newer"},
+                                 .firmware_version = {},
+                                 .protocol_version = cm::Version{.major = 2, .minor = 2, .patch = 0},
+                                 .num_pumps = 1,
+                                 .num_valves = 0});
+    pod->update_state(cm::PodState::ConnectionState::incompatible);
+    flush_slint_events();
+
+    const auto row = bridge->pod_model()->row_data(0);
+    REQUIRE(row.has_value());
+    CHECK(row->connection_state == cm::gui::ConnectionState::Incompatible);
+    CHECK(std::string{row->status_text.data()} == "Protokoll 2.2.0, erwartet 2.1.0");
+    REQUIRE(row->dispensers != nullptr);
+    CHECK(row->dispensers->row_count() == 0);
+    CHECK_FALSE(ui->global<cm::gui::StationStateContext>().get_station_ready());
+
+    auto usable = bridge->create_pod_state();
+    usable->update_info(cm::PodInfo{.id = cm::PodId{"Current"},
+                                    .firmware_version = {},
+                                    .protocol_version = cm::station_protocol_version(),
+                                    .num_pumps = 1,
+                                    .num_valves = 0});
+    usable->update_state(cm::PodState::ConnectionState::connected);
+    flush_slint_events();
+
+    // The unused Pod doesn't hold back the one that works, just like an unplugged one.
+    CHECK(ui->global<cm::gui::StationStateContext>().get_station_ready());
+
+    usable.reset();
+    pod.reset();
+}
+
+TEST_CASE("StationStateBridge - An operator lockout counts down on the UI thread alone", "[gui][StationStateBridge][operator]")
+{
+    boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
+    auto ui = cm::gui::AppWindow::create();
+    cm::PodRegistry pod_registry;
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
+    SlintFlusher flusher;
+    const auto& context = ui->global<cm::gui::StationStateContext>();
+
+    for (int attempt = 0; attempt < 4; ++attempt) {
+        context.invoke_submit_operator_pin(slint::SharedString{"111111"});
+    }
+
+    CHECK(context.get_operator_locked_out());
+    CHECK(context.get_operator_remaining_attempts() == 0);
+    CHECK(context.get_operator_lockout_seconds_remaining() > 0);
+    // OperatorAuth isn't shared with the execution context, so nothing of the lockout may run there.
+    CHECK(ctx.poll() == 0);
+
+    // A scope has to be joined before it goes away, also when a failed check above left work in it.
+    cm::run_until_complete(ctx, scope.stop_and_join());
 }

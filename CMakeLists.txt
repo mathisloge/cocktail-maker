@@ -19,6 +19,35 @@ cmake_policy(SET CMP0167 NEW)
 message(STATUS "Project version: ${PROJECT_VERSION}")
 
 option(BUILD_SIMULATED "Use simulated pods" OFF)
+option(
+    CM_COMPILE_TIME_TRACE
+    "Collect clang -ftime-trace data for the first-party targets"
+    OFF
+)
+
+# Only the first-party targets get -ftime-trace. The instrumentation still wraps every compile command, so turning the
+# option on or off rebuilds the dependencies once.
+function(cm_enable_compile_time_trace target)
+    if(CM_COMPILE_TIME_TRACE)
+        target_compile_options(
+            ${target}
+            PRIVATE -ftime-trace -ftime-trace-granularity=500
+        )
+    endif()
+endfunction()
+
+if(CM_COMPILE_TIME_TRACE)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    # compileTrace only collects what -ftime-trace writes. postBuild wouldn't fire under cmake --build.
+    cmake_instrumentation(
+        API_VERSION 1
+        DATA_VERSION 1.1
+        HOOKS postCMakeBuild
+        OPTIONS compileTrace trace dynamicSystemInformation
+        CALLBACK ${Python3_EXECUTABLE}
+        ${PROJECT_SOURCE_DIR}/tools/compile_time/summarize.py
+    )
+endif()
 
 list(
     APPEND CMAKE_MODULE_PATH
@@ -27,8 +56,6 @@ list(
 )
 
 include(CTest)
-include(GenerateExportHeader)
-include(FeatureSummary)
 include(GNUInstallDirs)
 include(FindPkgConfig)
 include(GetGitRevisionDescription)
@@ -65,7 +92,7 @@ cpmaddpackage(
 cpmaddpackage(
   NAME stdexec
   GITHUB_REPOSITORY NVIDIA/stdexec
-  GIT_TAG ead186b1d8db3ebe37a946ff84a6ce08bf795153
+  GIT_TAG 15ef61ea39433abba50acaeb92b0eeeb885798aa
   SYSTEM ON
   OPTIONS
     "STDEXEC_BUILD_TESTS OFF"
@@ -77,33 +104,36 @@ cpmaddpackage(
     "STDEXEC_ASIO_IMPLEMENTATION boost"
 )
 
+# mp-units checks its API contracts with gsl-lite, so nothing in this repository names it.
 cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite)
 cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_USE_STD_FORMAT ON")
 cpmaddpackage(URI "gh:CLIUtils/CLI11@2.7.2" OPTIONS "CLI11_PRECOMPILED ON")
-cpmaddpackage(URI "gh:mpusz/mp-units#daaed987fa55419d0d5daffbad95e4463f2e3f74" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
+cpmaddpackage(URI "gh:mpusz/mp-units#18d759722417168dc103ac951154bf0ad34f3c88" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
 )
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
-cpmaddpackage(URI "gh:simdjson/simdjson@4.6.11" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF")
+cpmaddpackage(URI "gh:simdjson/simdjson@5.1.1" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF")
 cpmaddpackage(
   URI "gh:slint-ui/slint@1.18.1"
   NAME Slint
   SOURCE_SUBDIR api/cpp
 )
 cpmaddpackage(URI "gh:commschamp/comms@5.5.3" NAME LibComms)
-cpmaddpackage(URI "gh:mathisloge/cocktail-maker-protocol@1.2.0" SOURCE_SUBDIR generated
+cpmaddpackage(URI "gh:mathisloge/cocktail-maker-protocol@2.1.0" SOURCE_SUBDIR generated
 )
 cpmaddpackage(URI "gh:jeremy-rifkin/libassert@2.2.1")
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(libudev IMPORTED_TARGET libudev REQUIRED)
 
 if(BUILD_TESTING)
-    cpmaddpackage("gh:catchorg/Catch2@3.16.0")
+    cpmaddpackage("gh:catchorg/Catch2@3.16.1")
     list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
-    include(CTest)
     include(Catch)
 endif()
 
 add_subdirectory(core)
+if(BUILD_TESTING)
+    add_subdirectory(testing)
+endif()
 add_subdirectory(cocktail-maker)
 add_subdirectory(gui)
 add_subdirectory(hw_simulator)

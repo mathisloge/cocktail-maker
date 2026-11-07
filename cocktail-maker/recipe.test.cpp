@@ -1,5 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 import cm;
+import cm.core;
+import mp_units;
+import cm.testing;
 import std;
 using namespace cm;
 
@@ -14,6 +18,13 @@ Recipe make_recipe(std::string name, std::string description = "", int n_command
                   .display_name = std::move(name),
                   .description = std::move(description),
                   .commands = std::move(commands)};
+}
+
+IngredientStore store_with_rum()
+{
+    IngredientStore store;
+    store.init_ingredients({Ingredient{.id = IngredientId{"rum"}, .display_name = "Rum", .type = {}}});
+    return store;
 }
 
 std::vector<Recipe> three_recipes()
@@ -168,4 +179,150 @@ TEST_CASE("RecipeStore::find_by_index", "[RecipeStore]")
         RecipeStore empty{};
         CHECK_FALSE(empty.find_by_index(0).has_value());
     }
+}
+
+// ---------------------------------------------------------------------------
+// load_recipes_from_dir
+// ---------------------------------------------------------------------------
+
+using Catch::Matchers::ContainsSubstring;
+
+TEST_CASE("load_recipes_from_dir refuses a recipe without a serving volume", "[recipe][load]")
+{
+    const cm::testing::TempDir dir{"cm-recipe-test"};
+    const auto store = store_with_rum();
+    dir.write_file("no_volume.json", R"({"name": "X", "steps": [{"kind": "dispense", "ingredient": "rum", "volume": 40}]})");
+
+    CHECK_THROWS_WITH(load_recipes_from_dir(dir.path(), store),
+                      ContainsSubstring("no_volume.json") && ContainsSubstring("nominal_serving_volume"));
+}
+
+TEST_CASE("load_recipes_from_dir refuses a serving volume of 0", "[recipe][load]")
+{
+    const cm::testing::TempDir dir{"cm-recipe-test"};
+    const auto store = store_with_rum();
+    dir.write_file("zero.json",
+                   R"({"name": "X", "nominal_serving_volume": 0,
+                  "steps": [{"kind": "dispense", "ingredient": "rum", "volume": 40}]})");
+
+    CHECK_THROWS_WITH(load_recipes_from_dir(dir.path(), store), ContainsSubstring("nominal_serving_volume"));
+}
+
+TEST_CASE("load_recipes_from_dir refuses a dispense step below 1 mL", "[recipe][load]")
+{
+    const cm::testing::TempDir dir{"cm-recipe-test"};
+    const auto store = store_with_rum();
+    dir.write_file("tiny.json",
+                   R"({"name": "X", "nominal_serving_volume": 200,
+                  "steps": [{"kind": "parallel", "steps": [{"kind": "dispense", "ingredient": "rum", "volume": 0}]}]})");
+
+    CHECK_THROWS_WITH(load_recipes_from_dir(dir.path(), store), ContainsSubstring("at least 1 mL"));
+}
+
+TEST_CASE("load_recipes_from_dir reads the serving volume", "[recipe][load]")
+{
+    const cm::testing::TempDir dir{"cm-recipe-test"};
+    const auto store = store_with_rum();
+    dir.write_file("good.json",
+                   R"({"name": "X", "nominal_serving_volume": 200,
+                  "steps": [{"kind": "dispense", "ingredient": "rum", "volume": 40}]})");
+
+    const auto recipes = load_recipes_from_dir(dir.path(), store);
+
+    REQUIRE(recipes.size() == 1);
+    CHECK(recipes.front().nominal_serving_volume == 200 * units::milli_litre);
+}
+
+TEST_CASE("RecipeStore::init_recipes refuses a duplicate id", "[RecipeStore]")
+{
+    RecipeStore store{};
+
+    CHECK_THROWS_AS(store.init_recipes({make_recipe("Lemon Tart"), make_recipe("Lemon Tart")}), std::invalid_argument);
+    CHECK_THROWS_WITH(store.init_recipes({make_recipe("Lemon Tart"), make_recipe("Lemon Tart")}),
+                      ContainsSubstring("Lemon Tart"));
+}
+
+TEST_CASE("RecipeStore::init_recipes replaces the recipes it held", "[RecipeStore]")
+{
+    RecipeStore store{};
+    store.init_recipes(three_recipes());
+
+    store.init_recipes({make_recipe("Lemon Tart")});
+
+    CHECK(store.recipe_count() == 1);
+}
+
+TEST_CASE("load_recipes_from_dir returns the recipes in file name order", "[recipe][load]")
+{
+    const cm::testing::TempDir dir{"cm-recipe-test"};
+    const auto store = store_with_rum();
+    const std::string_view recipe = R"({"name": "X", "nominal_serving_volume": 200,
+                                        "steps": [{"kind": "dispense", "ingredient": "rum", "volume": 40}]})";
+    dir.write_file("b.json", recipe);
+    dir.write_file("a.json", recipe);
+    dir.write_file("c.json", recipe);
+
+    const auto recipes = load_recipes_from_dir(dir.path(), store);
+
+    REQUIRE(recipes.size() == 3);
+    CHECK(recipes[0].id == RecipeId{"a"});
+    CHECK(recipes[1].id == RecipeId{"b"});
+    CHECK(recipes[2].id == RecipeId{"c"});
+}
+
+TEST_CASE("load_recipes_from_dir refuses a dispense step below 1 mL at the top level", "[recipe][load]")
+{
+    const cm::testing::TempDir dir{"cm-recipe-test"};
+    const auto store = store_with_rum();
+    dir.write_file("tiny.json",
+                   R"({"name": "X", "nominal_serving_volume": 200,
+                       "steps": [{"kind": "dispense", "ingredient": "rum", "volume": 0.5}]})");
+
+    CHECK_THROWS_WITH(load_recipes_from_dir(dir.path(), store),
+                      ContainsSubstring("tiny.json") && ContainsSubstring("at least 1 mL"));
+}
+
+// ---------------------------------------------------------------------------
+// Walking the command tree
+// ---------------------------------------------------------------------------
+
+namespace {
+Commands manual_steps_with_a_group()
+{
+    return Commands{
+        Command{ManualCommand{.id = CommandId{1}}},
+        ParallelCommand{Command{ManualCommand{.id = CommandId{2}}}, Command{ManualCommand{.id = CommandId{3}}}},
+        Command{ManualCommand{.id = CommandId{4}}},
+    };
+}
+} // namespace
+
+TEST_CASE("for_each_command visits every command in order, parallel groups included", "[Recipe][commands]")
+{
+    const Commands commands = manual_steps_with_a_group();
+    std::vector<int> ids;
+
+    for_each_command(commands, [&](const Command& command) { ids.push_back(std::get<ManualCommand>(command).id.raw()); });
+
+    CHECK(ids == std::vector{1, 2, 3, 4});
+}
+
+TEST_CASE("for_each_command lets the commands be changed", "[Recipe][commands]")
+{
+    Commands commands = manual_steps_with_a_group();
+
+    for_each_command(commands, [](Command& command) { std::get<ManualCommand>(command).instruction = "Eis"; });
+
+    for_each_command(commands, [](const Command& command) { CHECK(std::get<ManualCommand>(command).instruction == "Eis"); });
+}
+
+TEST_CASE("transform_commands keeps a parallel group a group", "[Recipe][commands]")
+{
+    const Commands commands = manual_steps_with_a_group();
+
+    const auto result = transform_commands(commands, [](const Command& command) { return command; });
+
+    REQUIRE(result.size() == 3);
+    REQUIRE(std::holds_alternative<ParallelCommand>(result[1]));
+    CHECK(std::get<ParallelCommand>(result[1]).size() == 2);
 }

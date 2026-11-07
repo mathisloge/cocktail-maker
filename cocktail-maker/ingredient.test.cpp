@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 import cm;
+import std;
 
 using namespace cm;
 
@@ -157,4 +159,25 @@ TEST_CASE("IngredientStore preserves all BoostCategory values", "[IngredientStor
         REQUIRE(result.has_value());
         CHECK(result->boost_category == bc);
     }
+}
+
+TEST_CASE("IngredientStore::init_ingredients refuses a duplicate id", "[IngredientStore]")
+{
+    IngredientStore store;
+
+    CHECK_THROWS_AS(store.init_ingredients({make_ingredient(IngredientId{"rum"}), make_ingredient(IngredientId{"rum"})}),
+                    std::invalid_argument);
+    CHECK_THROWS_WITH(store.init_ingredients({make_ingredient(IngredientId{"rum"}), make_ingredient(IngredientId{"rum"})}),
+                      Catch::Matchers::ContainsSubstring("rum"));
+}
+
+TEST_CASE("IngredientStore::init_ingredients keeps the old catalog when it refuses a new one", "[IngredientStore]")
+{
+    IngredientStore store;
+    store.init_ingredients({make_ingredient(IngredientId{"gin"})});
+
+    REQUIRE_THROWS(store.init_ingredients({make_ingredient(IngredientId{"rum"}), make_ingredient(IngredientId{"rum"})}));
+
+    CHECK(store.find_by_id(IngredientId{"gin"}).has_value());
+    CHECK_FALSE(store.find_by_id(IngredientId{"rum"}).has_value());
 }

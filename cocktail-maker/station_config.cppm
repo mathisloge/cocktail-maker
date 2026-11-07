@@ -6,6 +6,7 @@ import cm.core;
 import :pod_types;
 import :ingredient;
 import :dispenser;
+import :state_file;
 
 namespace cm {
 
@@ -52,10 +53,10 @@ export class IngredientNotAssignedError : public std::runtime_error
 /**
  * @brief Persistent assignment of ingredients to pod dispensers.
  *
- * Holds the station's answer to "which dispenser pours this ingredient", and writes every change straight back to a JSON
- * file so the assignment survives a restart.
+ * Holds the station's answer to "which dispenser pours this ingredient", and saves every change to a JSON file so the
+ * assignment survives a restart.
  *
- * Every operation runs synchronously on the calling thread and performs file I/O.
+ * Only `init()` reads the file on the calling thread. Saving happens on a thread of its own.
  */
 export class StationConfig final
 {
@@ -65,12 +66,9 @@ export class StationConfig final
      *
      * @param ingredient_store Catalog used to reject assignments for unknown ingredients. Held by reference and must
      * outlive this object.
-     * @param db_file Path of the configuration database.
-     *
-     * @note `db_file` is currently stored but never read. The mapping is always saved to and loaded from
-     * `ingredient_dispenser_mapping.json` in the working directory.
+     * @param mapping_file The file that holds the assignment.
      */
-    explicit StationConfig(const IngredientStore& ingredient_store, std::filesystem::path db_file);
+    explicit StationConfig(const IngredientStore& ingredient_store, std::filesystem::path mapping_file);
 
     /**
      * @brief Loads the stored assignment, replacing whatever is held in memory.
@@ -84,7 +82,9 @@ export class StationConfig final
     void init();
 
     /**
-     * @brief Assigns an ingredient to a dispenser and persists the change immediately.
+     * @brief Assigns an ingredient to a dispenser and saves the change.
+     *
+     * The file is written atomically on a thread of its own, so the call doesn't block.
      *
      * An existing assignment for the same ingredient is replaced. The pod and dispenser are deliberately not validated
      * against discovered hardware, because the configuration is loaded before any pod is connected.
@@ -110,21 +110,16 @@ export class StationConfig final
      */
     std::expected<IngredientId, std::out_of_range> find_ingredient_by_dispenser(PodDispenser pod_dispenser) const;
 
+    /// Blocks until every saved change has reached the file, so it must not run on the execution context.
+    void flush();
+
   private:
     /**
-     * @brief Resolves the location of the mapping file.
-     *
-     * @returns `ingredient_dispenser_mapping.json` in the current working directory, or the bare relative name if the
-     * working directory cannot be determined.
-     */
-    static std::filesystem::path mapping_file_path();
-
-    /**
-     * @brief Writes the whole assignment to the mapping file, truncating it.
+     * @brief Queues the whole assignment for the mapping file.
      *
      * Serialization and write failures are logged and swallowed, so a caller cannot tell an assignment was lost.
      */
-    void save_config_to_file() const;
+    void save_config_to_file();
 
     /**
      * @brief Replaces the in-memory assignment with the contents of the mapping file.
@@ -136,7 +131,7 @@ export class StationConfig final
   private:
     log::Logger logger_{log::create_or_get("station_config")};
     const IngredientStore& ingredient_store_;
-    const std::filesystem::path db_file_;
     std::unordered_map<IngredientId, PodDispenser> ingredient_dispenser_mapping_;
+    StateFileWriter writer_;
 };
 } // namespace cm

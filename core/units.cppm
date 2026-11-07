@@ -14,16 +14,7 @@ using Percent = quantity<percent>;
 inline constexpr auto gram_per_litre = si::gram / si::litre;
 inline constexpr auto milli_litre = units::si::milli<units::si::litre>;
 using GramPerLitre = quantity<gram_per_litre>;
-
-// vvv Stepper-Motor units
-inline constexpr struct step final : named_unit<"steps", one>
-{
-} step;
-
-using Steps = quantity<step, std::int64_t>;
-inline constexpr auto steps_per_litre = step / si::litre;
-using StepsPerLitre = quantity<steps_per_litre>;
-// ^^^ Stepper-Motor units
+using LitrePerSecond = quantity<si::litre / si::second>;
 
 // NOLINTEND(readability-identifier-naming)
 } // namespace cm::units

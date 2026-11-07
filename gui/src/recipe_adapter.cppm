@@ -49,15 +49,7 @@ export std::shared_ptr<slint::Model<Command>> transform(const cm::Commands& comm
         }
     };
 
-    for (auto&& c : commands) {
-        std::visit(detail::Overloaded{[&](const cm::Command& command) { push_if_valid(command); },
-                                      [&](const cm::ParallelCommand& commands) {
-                                          for (auto&& c : commands) {
-                                              push_if_valid(c);
-                                          }
-                                      }},
-                   c);
-    }
+    cm::for_each_command(commands, push_if_valid);
 
     return model;
 }

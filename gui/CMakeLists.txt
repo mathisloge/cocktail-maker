@@ -11,6 +11,7 @@ target_include_directories(generated-ui PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 add_library(cocktail-maker-gui STATIC)
 add_library(cm::gui ALIAS cocktail-maker-gui)
 add_sanitizers(cocktail-maker-gui)
+cm_enable_compile_time_trace(cocktail-maker-gui)
 target_compile_features(cocktail-maker-gui PUBLIC cxx_std_26)
 set_target_properties(
     cocktail-maker-gui
@@ -19,6 +20,14 @@ set_target_properties(
 target_link_libraries(cocktail-maker-gui PUBLIC cm::ui cm::lib Boost::hash2)
 target_sources(
     cocktail-maker-gui
+    PRIVATE
+        src/dispenser_calibration_bridge.cpp
+        src/gui_application.cpp
+        src/maschine_adapter.cpp
+        src/mix_error_page.cpp
+        src/process_context_bridge.cpp
+        src/recipe_context_bridge.cpp
+        src/station_state_bridge.cpp
     PUBLIC
         FILE_SET CXX_MODULES
             FILES
@@ -26,28 +35,29 @@ target_sources(
                 src/recipe_adapter.cppm
                 src/async_ui.cppm
                 src/maschine_adapter.cppm
-                src/maschine_adapter.cpp
                 src/ui_log_sink.cppm
                 src/station_state_bridge.cppm
-                src/station_state_bridge.cpp
                 src/dispenser_calibration_bridge.cppm
-                src/dispenser_calibration_bridge.cpp
                 src/recipe_context_bridge.cppm
-                src/recipe_context_bridge.cpp
                 src/process_context_bridge.cppm
-                src/process_context_bridge.cpp
+                src/mix_error_page.cppm
                 src/glass_context_bridge.cppm
                 src/gui_application.cppm
-                src/gui_application.cpp
                 src/operator_auth.cppm
 )
 
 if(BUILD_TESTING)
     add_executable(cocktail-maker-gui-tests)
     add_sanitizers(cocktail-maker-gui-tests)
+    cm_enable_compile_time_trace(cocktail-maker-gui-tests)
     target_link_libraries(
         cocktail-maker-gui-tests
-        PRIVATE Catch2::Catch2WithMain cm::gui
+        PRIVATE
+            Catch2::Catch2WithMain
+            cm::gui
+            cocktail-maker-simulator
+            cm::testing
+            proto
     )
     catch_discover_tests(cocktail-maker-gui-tests)
     target_compile_definitions(
@@ -63,11 +73,15 @@ if(BUILD_TESTING)
             src/station_state_bridge.test.cpp
             src/operator_auth.test.cpp
             src/maschine_adapter.test.cpp
+            src/station_flows.test.cpp
+            src/dispenser_calibration_bridge.test.cpp
+            src/mix_error_page.test.cpp
     )
 endif()
 
 add_executable(cocktail-maker src/main.cpp)
 add_sanitizers(cocktail-maker)
+cm_enable_compile_time_trace(cocktail-maker)
 target_link_libraries(
     cocktail-maker
     PRIVATE cm::gui cocktail-maker-simulator CLI11::CLI11

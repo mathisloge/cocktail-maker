@@ -2,7 +2,6 @@ module;
 #include <slint.h>
 #include <spdlog/details/circular_q.h>
 #include <spdlog/details/log_msg_buffer.h>
-#include <spdlog/details/null_mutex.h>
 #include <spdlog/sinks/base_sink.h>
 #include "app-window.h"
 
@@ -87,5 +86,4 @@ class UiLogSink : public spdlog::sinks::base_sink<Mutex>
 };
 
 export using ui_log_sink_mt = UiLogSink<std::mutex>;
-export using ui_log_sink_st = UiLogSink<spdlog::details::null_mutex>;
 } // namespace cm::gui

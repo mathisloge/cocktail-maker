@@ -88,7 +88,7 @@ export component MixGlassSelectionPage inherits Page {
             width: 220px;
             height: Layout.touch-height;
             text: "Weiter  →";
-            enabled: root.can-confirm;
+            enabled: root.can-confirm && !ProcessContext.checking-fill-level;
             clicked => {
                 root.glass-confirmed();
             }

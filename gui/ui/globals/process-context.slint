@@ -13,6 +13,11 @@ export global ProcessContext {
     in-out property <GlassDescriptor> glass;
     in-out property <int> glass-volume;
 
+    in-out property <bool> checking-fill-level: false;
+    in-out property <[string]> fill-warning-lines: [];
+
     callback process-active-recipe();
+    callback fill-warning-confirmed();
+    callback fill-warning-canceled();
     callback abort();
 }

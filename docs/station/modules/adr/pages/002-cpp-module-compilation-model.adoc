@@ -15,7 +15,8 @@ Those boundaries need to be enforced by the compiler rather than by convention a
 * **Technology Exploration:** Since this is an experimental hobby project, a primary driver is the opportunity to evaluate emerging technologies like {cpp}26 modules in a low-risk environment.
 
 == Decision
-We will organize all first-party Station code as {cpp} modules rather than the traditional header-and-source-file split, with each internal library exposed as a single named module assembled from module interface and implementation partitions.
+We will organize all first-party Station code as {cpp} modules rather than the traditional header-and-source-file split, with each internal library exposed as a single named module assembled from module interface partitions and plain module implementation units (`module cm;`).
+Implementation units are deliberately not partitions, because Clang writes a BMI for every partition, even one that nothing imports.
 
 == Alternatives Considered
 

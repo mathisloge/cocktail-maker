@@ -1,12 +1,9 @@
 module;
 #include <stdexec/execution.hpp>
 
-module cm:pod_registry_impl;
+module cm;
 import std;
 import cm.core;
-import :pod;
-import :pod_algorithms;
-import :pod_registry;
 
 namespace cm {
 Task<void> PodRegistry::force_safe_state_all_pods() const

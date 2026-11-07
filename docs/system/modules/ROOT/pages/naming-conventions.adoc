@@ -15,7 +15,7 @@ There is exactly *one Station* per machine.
 * Runs the host application (UI, recipe logic, and session management)
 * Maintains USB connections to all Pods
 * Sends dispensing commands and receives status updates and events from Pods
-* Owns the domain model (recipes, ingredients, and calibration state)
+* Owns the domain model (recipes, ingredients, and fill levels)
 
 .Usage in code
 [source,cpp]
@@ -36,10 +36,14 @@ serial protocol.
 
 A machine can contain *one or more Pods*, each identified by a unique `PodId` assigned
 when the Pod connects to the Station.
+The Pod reports it as its name in `DeviceInfoResponse`.
+The firmware derives that name from the controller's unique ID, so it differs between Pods and stays the
+same across power cycles.
 
 .Responsibilities
 * Controls its actuators (steppers, servos, and valves) on command
 * Reports weight measurements from its load cells
+* Keeps its load cell and dispenser calibration across power cycles
 * Responds to Station requests using the request-response protocol
 * Emits events, such as calibration completion or error conditions
 

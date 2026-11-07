@@ -26,28 +26,7 @@ namespace cm {
 
 [[nodiscard]] auto scale_commands_uniformly(const Commands& commands, const double factor) -> Commands
 {
-    const auto scale_item = [&](const std::variant<Command, ParallelCommand>& item) -> std::variant<Command, ParallelCommand> {
-        return std::visit(
-            [&](const auto& v) -> std::variant<Command, ParallelCommand> {
-                using V = std::decay_t<decltype(v)>;
-                if constexpr (std::is_same_v<V, Command>) {
-                    return scale_command_volume(v, factor);
-                }
-                else { // ParallelCommand
-                    ParallelCommand result;
-                    result.reserve(v.size());
-                    std::ranges::transform(
-                        v, std::back_inserter(result), [&](const Command& cmd) { return scale_command_volume(cmd, factor); });
-                    return result;
-                }
-            },
-            item);
-    };
-
-    Commands result;
-    result.reserve(commands.size());
-    std::ranges::transform(commands, std::back_inserter(result), scale_item);
-    return result;
+    return transform_commands(commands, [factor](const Command& cmd) { return scale_command_volume(cmd, factor); });
 }
 
 /**

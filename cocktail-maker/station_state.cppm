@@ -15,17 +15,14 @@ export class PodState
         connecting,
         connected,
         disconnected,
+        /// The Pod reported another protocol release and stays unused.
+        incompatible,
     };
 
   public:
     virtual ~PodState() = default;
 
     virtual void update_info(PodInfo info) = 0;
-
-    virtual PodInfo info() const
-    {
-        return {};
-    };
 
     virtual void update_state(ConnectionState state) = 0;
 };

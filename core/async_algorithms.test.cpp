@@ -1,21 +1,14 @@
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/steady_timer.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <exec/asio/use_sender.hpp>
 #include <stdexec/execution.hpp>
 import std;
 import cm.core;
+import cm.testing;
 
 using namespace cm;
 using namespace std::chrono_literals;
 
 namespace {
-Task<void> delay(boost::asio::io_context& ioc, std::chrono::milliseconds duration)
-{
-    boost::asio::steady_timer timer{ioc, duration};
-    co_await timer.async_wait(exec::asio::use_sender);
-}
-
 class TestError : public std::runtime_error
 {
   public:
@@ -29,7 +22,7 @@ TEST_CASE("join_all - runs all tasks concurrently", "[async_algorithms][join_all
     int finished = 0;
 
     auto worker = [&](std::chrono::milliseconds duration) -> Task<void> {
-        co_await delay(ioc, duration);
+        co_await async_sleep(ioc.get_executor(), duration);
         ++finished;
     };
 
@@ -54,11 +47,11 @@ TEST_CASE("join_all - the first error stops the siblings and is rethrown", "[asy
     bool sibling_finished = false;
 
     auto failing = [&]() -> Task<void> {
-        co_await delay(ioc, 1ms);
+        co_await async_sleep(ioc.get_executor(), 1ms);
         throw TestError{"boom"};
     };
     auto long_running = [&]() -> Task<void> {
-        co_await delay(ioc, 10s);
+        co_await async_sleep(ioc.get_executor(), 10s);
         sibling_finished = true;
     };
 
@@ -78,11 +71,11 @@ TEST_CASE("gather_all - lets all tasks finish although one fails", "[async_algor
     bool sibling_finished = false;
 
     auto failing = [&]() -> Task<void> {
-        co_await delay(ioc, 1ms);
+        co_await async_sleep(ioc.get_executor(), 1ms);
         throw TestError{"boom"};
     };
     auto slower = [&]() -> Task<void> {
-        co_await delay(ioc, 20ms);
+        co_await async_sleep(ioc.get_executor(), 20ms);
         sibling_finished = true;
     };
 
@@ -101,11 +94,11 @@ TEST_CASE("gather_all - a stop request of the caller reaches every task", "[asyn
     int finished = 0;
 
     auto long_running = [&]() -> Task<void> {
-        co_await delay(ioc, 10s);
+        co_await async_sleep(ioc.get_executor(), 10s);
         ++finished;
     };
     auto stopper = [&]() -> Task<void> {
-        co_await delay(ioc, 1ms);
+        co_await async_sleep(ioc.get_executor(), 1ms);
         stop_source.request_stop();
     };
 
@@ -126,11 +119,11 @@ TEST_CASE("AsyncScope - spawned work runs and join waits for it", "[async_scope]
     int finished = 0;
 
     auto worker = [&]() -> Task<void> {
-        co_await delay(ioc, 5ms);
+        co_await async_sleep(ioc.get_executor(), 5ms);
         ++finished;
     };
     auto failing = [&]() -> Task<void> {
-        co_await delay(ioc, 1ms);
+        co_await async_sleep(ioc.get_executor(), 1ms);
         throw TestError{"logged, not propagated"};
     };
 
@@ -149,7 +142,7 @@ TEST_CASE("AsyncScope - request_stop stops the spawned work", "[async_scope]")
     bool finished = false;
 
     auto long_running = [&]() -> Task<void> {
-        co_await delay(ioc, 10s);
+        co_await async_sleep(ioc.get_executor(), 10s);
         finished = true;
     };
 
@@ -184,7 +177,7 @@ TEST_CASE("Channel - values are received in order and a stop request ends the re
     stdexec::inplace_stop_source stop_source;
     auto waiting_consumer = [&]() -> Task<void> { received.push_back(co_await async_receive(channel)); };
     auto stopper = [&]() -> Task<void> {
-        co_await delay(ioc, 1ms);
+        co_await async_sleep(ioc.get_executor(), 1ms);
         stop_source.request_stop();
     };
     auto stoppable_consumer =

@@ -10,14 +10,10 @@ namespace cm {
 
 // clang-format off
 export struct Comparable {};
-export struct Additive {};
-export struct Subtractive {};
 export struct Incrementable {};
 export struct Decrementable {};
 export struct Hashable {};
 export struct Formattable {};
-export struct Arithmetic {};
-export struct SaturatingArithmetic {};
 
 // clang-format on
 
@@ -41,87 +37,21 @@ consteval bool unique()
 template <class... Ts>
 inline constexpr bool unique_v = unique<Ts...>();
 
-template <class... Skills>
-consteval bool has_conflicts()
-{
-    constexpr bool additive = contains_v<Additive, Skills...>;
-    constexpr bool subtractive = contains_v<Subtractive, Skills...>;
-    constexpr bool saturating = contains_v<SaturatingArithmetic, Skills...>;
-
-    // Saturating arithmetic is intentionally exclusive with regular additive/
-    // subtractive operators to keep the operator contract deterministic.
-    return saturating && (additive || subtractive);
-}
-
-template <class T>
-constexpr T saturating_add(T lhs, T rhs) noexcept
-{
-    static_assert(std::is_integral_v<T>, "saturating arithmetic is only enabled for integral underlying types");
-
-    using limits = std::numeric_limits<T>;
-
-    if constexpr (std::is_signed_v<T>) {
-        if ((rhs > 0) && (lhs > limits::max() - rhs)) {
-            return limits::max();
-        }
-        if ((rhs < 0) && (lhs < limits::min() - rhs)) {
-            return limits::min();
-        }
-    }
-    else {
-        if (lhs > limits::max() - rhs) {
-            return limits::max();
-        }
-    }
-
-    return static_cast<T>(lhs + rhs);
-}
-
-template <class T>
-constexpr T saturating_sub(T lhs, T rhs) noexcept
-{
-    static_assert(std::is_integral_v<T>, "saturating arithmetic is only enabled for integral underlying types");
-
-    using limits = std::numeric_limits<T>;
-
-    if constexpr (std::is_signed_v<T>) {
-        if ((rhs < 0) && (lhs > limits::max() + rhs)) {
-            return limits::max();
-        }
-        if ((rhs > 0) && (lhs < limits::min() + rhs)) {
-            return limits::min();
-        }
-    }
-    else {
-        if (lhs < rhs) {
-            return 0;
-        }
-    }
-
-    return static_cast<T>(lhs - rhs);
-}
-
 } // namespace detail
 
 export template <class T, class Tag, class... Skills>
     requires std::is_object_v<T> && std::is_class_v<Tag> && detail::unique_v<Skills...>
 class strong_type
 {
-    static_assert(!detail::has_conflicts<Skills...>(), "SaturatingArithmetic is exclusive with Additive/Subtractive");
-
   public:
     using underlying_type = T;
     using tag_type = Tag;
 
     static constexpr bool has_comparable = detail::contains_v<Comparable, Skills...>;
-    static constexpr bool has_additive = detail::contains_v<Additive, Skills...>;
-    static constexpr bool has_subtractive = detail::contains_v<Subtractive, Skills...>;
     static constexpr bool has_incrementable = detail::contains_v<Incrementable, Skills...>;
     static constexpr bool has_decrementable = detail::contains_v<Decrementable, Skills...>;
     static constexpr bool has_hashable = detail::contains_v<Hashable, Skills...>;
     static constexpr bool has_formattable = detail::contains_v<Formattable, Skills...>;
-    static constexpr bool has_arithmetic = detail::contains_v<Arithmetic, Skills...>;
-    static constexpr bool has_saturating_arithmetic = detail::contains_v<SaturatingArithmetic, Skills...>;
 
     constexpr strong_type()
         requires std::default_initializable<T>
@@ -193,36 +123,6 @@ class strong_type
         return lhs.value_ == rhs.value_;
     }
 
-    // Additive / subtractive
-
-    friend constexpr strong_type& operator+=(strong_type& lhs, const strong_type& rhs)
-        requires(has_additive && requires(T& a, const T& b) { a += b; })
-    {
-        lhs.value_ += rhs.value_;
-        return lhs;
-    }
-
-    friend constexpr strong_type operator+(strong_type lhs, const strong_type& rhs)
-        requires(has_additive && requires(T& a, const T& b) { a += b; })
-    {
-        lhs += rhs;
-        return lhs;
-    }
-
-    friend constexpr strong_type& operator-=(strong_type& lhs, const strong_type& rhs)
-        requires(has_subtractive && requires(T& a, const T& b) { a -= b; })
-    {
-        lhs.value_ -= rhs.value_;
-        return lhs;
-    }
-
-    friend constexpr strong_type operator-(strong_type lhs, const strong_type& rhs)
-        requires(has_subtractive && requires(T& a, const T& b) { a -= b; })
-    {
-        lhs -= rhs;
-        return lhs;
-    }
-
     // Increment / decrement
 
     friend constexpr strong_type& operator++(strong_type& value)
@@ -253,75 +153,6 @@ class strong_type
         auto copy = value;
         --value;
         return copy;
-    }
-
-    // Multiplicative arithmetic
-
-    friend constexpr strong_type& operator*=(strong_type& lhs, const T& rhs)
-        requires(has_arithmetic && requires(T& a, const T& b) { a *= b; })
-    {
-        lhs.value_ *= rhs;
-        return lhs;
-    }
-
-    friend constexpr strong_type operator*(strong_type lhs, const T& rhs)
-        requires(has_arithmetic && requires(T& a, const T& b) { a *= b; })
-    {
-        lhs *= rhs;
-        return lhs;
-    }
-
-    friend constexpr strong_type operator*(const T& lhs, strong_type rhs)
-        requires(has_arithmetic && requires(T& a, const T& b) { a *= b; })
-    {
-        rhs *= lhs;
-        return rhs;
-    }
-
-    friend constexpr strong_type& operator/=(strong_type& lhs, const T& rhs)
-        requires(has_arithmetic && requires(T& a, const T& b) { a /= b; })
-    {
-        lhs.value_ /= rhs;
-        return lhs;
-    }
-
-    friend constexpr strong_type operator/(strong_type lhs, const T& rhs)
-        requires(has_arithmetic && requires(T& a, const T& b) { a /= b; })
-    {
-        lhs /= rhs;
-        return lhs;
-    }
-
-    // -------------------------------------------------------------------------
-    // Saturating arithmetic
-    // -------------------------------------------------------------------------
-
-    friend constexpr strong_type& saturating_add_assign(strong_type& lhs, const strong_type& rhs)
-        requires(has_saturating_arithmetic)
-    {
-        lhs.value_ = detail::saturating_add(lhs.value_, rhs.value_);
-        return lhs;
-    }
-
-    friend constexpr strong_type saturating_add(strong_type lhs, const strong_type& rhs)
-        requires(has_saturating_arithmetic)
-    {
-        lhs.value_ = detail::saturating_add(lhs.value_, rhs.value_);
-        return lhs;
-    }
-
-    friend constexpr strong_type& saturating_sub_assign(strong_type& lhs, const strong_type& rhs)
-        requires(has_saturating_arithmetic)
-    {
-        lhs.value_ = detail::saturating_sub(lhs.value_, rhs.value_);
-        return lhs;
-    }
-
-    friend constexpr strong_type saturating_sub(strong_type lhs, const strong_type& rhs)
-        requires(has_saturating_arithmetic)
-    {
-        lhs.value_ = detail::saturating_sub(lhs.value_, rhs.value_);
-        return lhs;
     }
 
   private:

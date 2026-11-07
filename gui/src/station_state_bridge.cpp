@@ -1,22 +1,40 @@
 module;
-#include <boost/asio/steady_timer.hpp>
-#include <exec/asio/use_sender.hpp>
 #include <slint.h>
 #include <spdlog/spdlog.h>
-#include <stdexec/execution.hpp>
 #include "app-window.h"
 
-module cm.gui:station_state_bridge_impl;
+module cm.gui;
 
 import std;
+import mp_units;
 import cm.core;
 import cm;
-import :station_state_bridge;
-import :operator_auth;
 
 namespace cm::gui {
 
 Task<void> async_highlight_dispenser(const PodRegistry& pod_registry, const PodId pod_id, const DispenserId dispenser_id);
+Task<void> async_mark_dispenser_refilled(const PodRegistry& pod_registry,
+                                         FillLevelTracker& fill_levels,
+                                         const PodId pod_id,
+                                         const DispenserId dispenser_id);
+
+std::string format_fill_level(const FillLevelView& view)
+{
+    if (view.no_load_cell) {
+        return "keine Wägezelle";
+    }
+    if (view.suspected_empty) {
+        return "vermutlich leer";
+    }
+    if (not view.level.has_value()) {
+        return "unbekannt";
+    }
+    const auto millilitres = std::lround(to_volume(*view.level).numerical_value_in(units::milli_litre));
+    if (not view.percent.has_value()) {
+        return std::format("ca. {} mL", millilitres);
+    }
+    return std::format("ca. {} mL · {} %", millilitres, std::lround(view.percent->numerical_value_in(units::percent)));
+}
 
 struct PodStateData
 {
@@ -46,17 +64,20 @@ class PodStateImpl final : public PodState
 
     void update_info(PodInfo info) override;
 
-    PodInfo info() const override
-    {
-        return data_.info;
-    }
-
     void update_state(ConnectionState state) override;
 
   private:
     std::weak_ptr<StationStateBridge> parent_;
     PodStateData data_;
 };
+
+std::string pod_status_text(const PodStateData& pod)
+{
+    if (pod.connection_state != gui::ConnectionState::Incompatible) {
+        return {};
+    }
+    return std::format("Protokoll {}, erwartet {}", pod.info.protocol_version, station_protocol_version());
+}
 
 class PodUiModel : public slint::Model<gui::Pod>
 {
@@ -97,20 +118,29 @@ class PodUiModel : public slint::Model<gui::Pod>
                 gui_pod.connection_state = state_pod.connection_state;
                 changed = true;
             }
+            if (const auto status = pod_status_text(state_pod); gui_pod.status_text.data() != status) {
+                gui_pod.status_text = slint::SharedString{status};
+                changed = true;
+            }
 
-            if ((gui_pod.dispensers == nullptr) or
-                gui_pod.dispensers->row_count() != (state_pod.info.num_pumps + state_pod.info.num_valves)) {
+            // An incompatible Pod offers nothing to assign, calibrate or identify, because it stays unused.
+            const bool usable = state_pod.connection_state != gui::ConnectionState::Incompatible;
+            const int num_pumps = usable ? state_pod.info.num_pumps : 0;
+            const int num_valves = usable ? state_pod.info.num_valves : 0;
+            if ((gui_pod.dispensers == nullptr) or gui_pod.dispensers->row_count() != (num_pumps + num_valves)) {
                 auto dispenser_model = std::make_shared<slint::VectorModel<gui::Dispenser>>();
-                for (int i = 0; i < state_pod.info.num_pumps; ++i) {
+                for (int i = 0; i < num_pumps; ++i) {
                     dispenser_model->push_back(gui::Dispenser{
                         .id = i,
                         .type = DispenserType::Pump,
+                        .fill_text = "unbekannt",
                     });
                 }
-                for (int i = 0; i < state_pod.info.num_valves; ++i) {
+                for (int i = 0; i < num_valves; ++i) {
                     dispenser_model->push_back(gui::Dispenser{
-                        .id = (state_pod.info.num_pumps + i),
+                        .id = (num_pumps + i),
                         .type = DispenserType::Valve,
+                        .fill_text = "unbekannt",
                     });
                 }
                 gui_pod.dispensers = std::move(dispenser_model);
@@ -135,6 +165,23 @@ class PodUiModel : public slint::Model<gui::Pod>
 
             apply_state_to_ui(inserted, pod);
             this->notify_row_added(row, 1);
+        }
+    }
+
+    void update_dispenser_fill_text(const PodDispenser& address, const std::string& text)
+    {
+        const auto pod_it =
+            std::ranges::find_if(pods_, [&address](const auto& ui_pod) { return ui_pod.id == address.pod_id.raw().c_str(); });
+        if (pod_it == pods_.end() || pod_it->dispensers == nullptr) {
+            return;
+        }
+        for (std::size_t row = 0; row < pod_it->dispensers->row_count(); ++row) {
+            auto dispenser = pod_it->dispensers->row_data(row);
+            if (dispenser.has_value() && dispenser->id == address.dispenser_id.raw()) {
+                dispenser->fill_text = slint::SharedString{text};
+                pod_it->dispensers->set_row_data(row, *dispenser);
+                return;
+            }
         }
     }
 
@@ -163,9 +210,9 @@ constexpr std::string kSalt = "static";
 
 StationStateBridge::StationStateBridge(slint::ComponentHandle<AppWindow> ui,
                                        const PodRegistry& pod_registry,
-                                       AsyncScope& async_scope)
-    : async_scope_{async_scope}
-    , ui_{std::move(ui)}
+                                       AsyncScope& async_scope,
+                                       FillLevelTracker& fill_levels)
+    : ui_{std::move(ui)}
     , pod_model_{std::make_shared<PodUiModel>()}
     , operator_auth_{OperatorAuthConfig{
           .pin_hash = hash_pin("000000", kSalt),
@@ -178,6 +225,15 @@ StationStateBridge::StationStateBridge(slint::ComponentHandle<AppWindow> ui,
     ui_->global<StationStateContext>().on_highlight_dispenser([&pod_registry, &async_scope](const gui::Pod pod,
                                                                                             const gui::Dispenser dispenser) {
         async_scope.spawn(async_highlight_dispenser(pod_registry, PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}));
+    });
+    ui_->global<StationStateContext>().on_mark_dispenser_refilled(
+        [&pod_registry, &async_scope, &fill_levels](const gui::Pod pod, const gui::Dispenser dispenser) {
+            async_scope.spawn(async_mark_dispenser_refilled(
+                pod_registry, fill_levels, PodId{std::string{pod.id.data()}}, DispenserId{dispenser.id}));
+        });
+    fill_levels.set_change_handler([model = pod_model_](const PodDispenser& address, const FillLevelView& view) {
+        slint::invoke_from_event_loop(
+            [model, address, text = format_fill_level(view)]() { model->update_dispenser_fill_text(address, text); });
     });
     ui_->global<StationStateContext>().on_navigate_to([this](Page target) { on_navigate_to(target); });
     ui_->global<StationStateContext>().on_submit_operator_pin([this](slint::SharedString pin) { on_submit_operator_pin(pin); });
@@ -193,13 +249,14 @@ std::unique_ptr<PodState> StationStateBridge::create_pod_state()
 void StationStateBridge::pod_connection_state_changed(const PodStateImpl& pod)
 {
     update_pod_model(pod);
-    const bool all_connected = (not pods_.empty()) and std::ranges::all_of(pods_, [](const auto& p) {
-                                   return p->data().connection_state == gui::ConnectionState::Connected;
-                               });
+    const auto is_connected = [](const auto* p) { return p->data().connection_state == gui::ConnectionState::Connected; };
+    // An incompatible Pod stays unused like an unplugged one, so it doesn't hold back the others.
+    const auto is_settled = [&is_connected](const auto* p) {
+        return is_connected(p) or p->data().connection_state == gui::ConnectionState::Incompatible;
+    };
+    const bool ready = std::ranges::any_of(pods_, is_connected) and std::ranges::all_of(pods_, is_settled);
 
-    // update device ready to all_connected
-    slint::invoke_from_event_loop(
-        [connected = all_connected, ui = ui_]() { ui->global<cm::gui::StationStateContext>().set_station_ready(connected); });
+    slint::invoke_from_event_loop([ready, ui = ui_]() { ui->global<cm::gui::StationStateContext>().set_station_ready(ready); });
 }
 
 void StationStateBridge::pod_about_to_removed(const PodStateImpl& pod)
@@ -255,6 +312,20 @@ Task<void> async_highlight_dispenser(const PodRegistry& pod_registry, const PodI
     }
 }
 
+Task<void> async_mark_dispenser_refilled(const PodRegistry& pod_registry,
+                                         FillLevelTracker& fill_levels,
+                                         const PodId pod_id,
+                                         const DispenserId dispenser_id)
+{
+    log::Logger logger{log::create_or_get("station_state_bridge")};
+    auto dispenser = pod_registry.dispenser_of_pod(pod_id, dispenser_id);
+    if (not dispenser.has_value()) {
+        SPDLOG_LOGGER_ERROR(logger, "Could not find a dispenser with id {} or pod with id {}", dispenser_id, pod_id);
+        co_return;
+    }
+    co_await fill_levels.refilled(PodDispenser{pod_id, dispenser_id}, **dispenser, RefillSource::admin_area);
+}
+
 void StationStateBridge::on_navigate_to(const Page target)
 {
     if (target == Page::AdminAreaPage && !operator_authenticated_) {
@@ -273,46 +344,35 @@ void StationStateBridge::on_submit_operator_pin(const slint::SharedString& pin)
 {
     const auto now = std::chrono::steady_clock::now();
     operator_authenticated_ = operator_auth_.verify(std::string{pin}, now);
-    const bool locked_out = operator_auth_.is_locked_out(now);
+    publish_operator_state(now);
 
-    const auto& ctx = ui_->global<StationStateContext>();
-    ctx.set_operator_locked_out(operator_auth_.is_locked_out(now));
-    ctx.set_operator_remaining_attempts(operator_auth_.remaining_attempts());
-    ctx.set_operator_lockout_seconds_remaining(static_cast<int>(operator_auth_.lockout_remaining(now).count()));
     if (operator_authenticated_) {
         ui_->invoke_close_operator_pin_popup();
         on_navigate_to(Page::AdminAreaPage);
     }
     else {
-        SPDLOG_LOGGER_WARN(
-            logger_, "Entered wrong operator pin {}. Remaining: {}", pin.data(), operator_auth_.remaining_attempts());
+        SPDLOG_LOGGER_WARN(logger_, "Operator entered a wrong PIN. Remaining attempts: {}", operator_auth_.remaining_attempts());
     }
-    if (locked_out) {
-        async_scope_.spawn(async_handle_operator_lockout());
+
+    if (operator_auth_.is_locked_out(now) && not lockout_timer_.running()) {
+        SPDLOG_LOGGER_DEBUG(logger_, "Starting operator lockout countdown.");
+        lockout_timer_.start(slint::TimerMode::Repeated, std::chrono::seconds{1}, [this]() {
+            const auto now = std::chrono::steady_clock::now();
+            publish_operator_state(now);
+            if (not operator_auth_.is_locked_out(now)) {
+                SPDLOG_LOGGER_DEBUG(logger_, "Finished operator lockout countdown.");
+                lockout_timer_.stop();
+            }
+        });
     }
 }
 
-Task<void> StationStateBridge::async_handle_operator_lockout()
+void StationStateBridge::publish_operator_state(const std::chrono::steady_clock::time_point now)
 {
-    SPDLOG_LOGGER_DEBUG(logger_, "Starting operator lockout timeout.");
-    for (auto now = std::chrono::steady_clock::now(); operator_auth_.is_locked_out(now); now = std::chrono::steady_clock::now()) {
-        boost::asio::steady_timer timer{async_scope_.executor()};
-        timer.expires_after(std::chrono::seconds{1});
-        co_await timer.async_wait(exec::asio::use_sender);
-        slint::invoke_from_event_loop([this]() {
-            const auto now = std::chrono::steady_clock::now();
-            const auto& ctx = ui_->global<StationStateContext>();
-            ctx.set_operator_lockout_seconds_remaining(static_cast<int>(operator_auth_.lockout_remaining(now).count()));
-        });
-    }
-    slint::invoke_from_event_loop([this]() {
-        const auto now = std::chrono::steady_clock::now();
-        const auto& ctx = ui_->global<StationStateContext>();
-        ctx.set_operator_locked_out(operator_auth_.is_locked_out(now));
-        ctx.set_operator_remaining_attempts(operator_auth_.remaining_attempts());
-        ctx.set_operator_lockout_seconds_remaining(static_cast<int>(operator_auth_.lockout_remaining(now).count()));
-    });
-    SPDLOG_LOGGER_DEBUG(logger_, "Finished operator lockout timeout.");
+    const auto& ctx = ui_->global<StationStateContext>();
+    ctx.set_operator_locked_out(operator_auth_.is_locked_out(now));
+    ctx.set_operator_remaining_attempts(operator_auth_.remaining_attempts());
+    ctx.set_operator_lockout_seconds_remaining(static_cast<int>(operator_auth_.lockout_remaining(now).count()));
 }
 
 PodStateImpl::~PodStateImpl()
@@ -339,6 +399,8 @@ void PodStateImpl::update_state(ConnectionState state)
             return gui::ConnectionState::Connecting;
         case PodState::ConnectionState::connected:
             return gui::ConnectionState::Connected;
+        case PodState::ConnectionState::incompatible:
+            return gui::ConnectionState::Incompatible;
         }
         std::unreachable();
     }();

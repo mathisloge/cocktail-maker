@@ -1,5 +1,22 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <proto/field/ErrorCodeCommon.h>
 import std;
+import cm.core;
 import cm;
+
+using namespace std::chrono_literals;
+
+TEST_CASE("DispenserEmptyError names the dispenser and the pod", "[pod]")
+{
+    const cm::DispenserEmptyError error{cm::PodId{"Pod"}, cm::DispenserId{3}};
+    CHECK(std::string{error.what()} == "Dispenser '3' of Pod 'Pod' is empty");
+}
+
+TEST_CASE("PodReceiveError copes with an error code it doesn't know", "[pod]")
+{
+    const cm::PodReceiveError error{cm::PodId{"Pod"}, static_cast<proto::field::ErrorCodeVal>(200)};
+    CHECK(std::string_view{error.what()}.contains("unknown"));
+    CHECK(error.error_code() == static_cast<proto::field::ErrorCodeVal>(200));
+}

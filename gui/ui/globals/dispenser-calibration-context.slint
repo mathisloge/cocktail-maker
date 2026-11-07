@@ -10,52 +10,50 @@ export enum CalibrationStepStatus {
 export struct DispenserCalibrationState {
     load-cell-status: CalibrationStepStatus,
     load-cell-tare-status: CalibrationStepStatus,
-    pump-status: CalibrationStepStatus,
-    measured-ml-per-step: string,
+    empty-bottle-tare-status: CalibrationStepStatus,
+    dispenser-status: CalibrationStepStatus,
+    reference-reading: string,
+    measured-amount: string,
+    below-recommended-amount: bool,
     error-message: string,
 }
 
 export global DispenserCalibrationContext {
-    in-out property <DispenserCalibrationState> state: {
-        load-cell-status: CalibrationStepStatus.idle,
-        load-cell-tare-status: CalibrationStepStatus.idle,
-        pump-status: CalibrationStepStatus.idle,
-        measured-ml-per-step: "",
-        error-message: "",
-    };
+    // The reference for this is a run that pours at least 50 mL. Change it here once the pump's real flow is known.
+    out property <int> default-run-time-s: 15;
+    out property <int> min-run-time-s: 1;
+    out property <int> max-run-time-s: 30;
 
-    public function update-calibration-error(error: string) {
-        self.state.error-message = error;
+    // Every field starts at its default, which is idle for a status. The bridge changes the state as a whole.
+    in-out property <DispenserCalibrationState> state;
+
+    /// Something is running, and leaving now would take the way to stop it away.
+    public pure function is-busy() -> bool {
+        return state.load-cell-status == CalibrationStepStatus.running
+            || state.load-cell-tare-status == CalibrationStepStatus.running
+            || state.empty-bottle-tare-status == CalibrationStepStatus.running
+            || state.dispenser-status == CalibrationStepStatus.running;
     }
 
-    public function update-load-cell-ref-weight-status(status: CalibrationStepStatus) {
-        self.state.load-cell-status = status;
-    }
-
-    public function update-load-cell-tare-status(status: CalibrationStepStatus) {
-        self.state.load-cell-tare-status = status;
-    }
-
-    public function update-pump-status(status: CalibrationStepStatus) {
-        self.state.pump-status = status;
-    }
-
-    public function update-pump-measured-calibrated-value(litre_str: string) {
-        self.state.measured-ml-per-step = litre-str;
+    /// The load cell card holds two steps, and a problem in either has to show.
+    public pure function load-cell-card-status() -> CalibrationStepStatus {
+        if (state.load-cell-tare-status == CalibrationStepStatus.running || state.load-cell-status == CalibrationStepStatus.running) {
+            return CalibrationStepStatus.running;
+        }
+        if (state.load-cell-tare-status == CalibrationStepStatus.error || state.load-cell-status == CalibrationStepStatus.error) {
+            return CalibrationStepStatus.error;
+        }
+        return state.load-cell-status;
     }
 
     // implemented by business logic
-    callback calibrate-load-cell-ref-weight(Pod, Dispenser, int /* reference-weight-g */);
     callback load-cell-tare(Pod, Dispenser);
-    callback calibrate-pump(Pod, Dispenser, int /* steps */);
+    callback calibrate-load-cell-ref-weight(Pod, Dispenser, int /* reference-weight-g */);
+    callback empty-bottle-tare(Pod, Dispenser);
+    callback calibrate-dispenser(Pod, Dispenser, int /* run-time-s */);
+    callback stop-calibration();
 
     public function reset-state() {
-        state = {
-            load-cell-status: CalibrationStepStatus.idle,
-            load-cell-tare-status: CalibrationStepStatus.idle,
-            pump-status: CalibrationStepStatus.idle,
-            measured-ml-per-step: 0,
-            error-message: "",
-        };
+        state = {};
     }
 }

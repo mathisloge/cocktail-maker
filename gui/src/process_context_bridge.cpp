@@ -1,58 +1,19 @@
 module;
 #include <boost/asio/post.hpp>
-#include <boost/system/system_error.hpp>
 #include <exec/when_any.hpp>
-#include <proto/field/ErrorCodeCommon.h>
 #include <slint.h>
 #include <spdlog/spdlog.h>
 #include <stdexec/execution.hpp>
 #include "app-window.h"
 
-module cm.gui:process_context_bridge_impl;
+module cm.gui;
 
 import std;
 import mp_units;
 import cm.core;
 import cm;
-import :recipe_adapter;
-import :machine_adapter;
-import :process_context_bridge;
 
 namespace cm::gui {
-class AbortError : public std::runtime_error
-{
-  public:
-    AbortError()
-        : runtime_error{"Prozess wurde abgebrochen."} // codespell:ignore
-    {
-    }
-};
-
-class RecipeNotFoundError : public std::runtime_error
-{
-  public:
-    explicit RecipeNotFoundError(RecipeId recipe_id)
-        : runtime_error{std::format("Recipe '{}' not found", recipe_id)}
-        , recipe_id_{std::move(recipe_id)}
-    {
-    }
-
-    RecipeId recipe_id() const
-    {
-        return recipe_id_;
-    }
-
-  private:
-    RecipeId recipe_id_;
-};
-
-enum class ErrorItemCategory
-{
-    Ingredient,
-    Abort,
-    Unknown
-};
-
 slint::SharedString to_slint_string(ErrorItemCategory category)
 {
     switch (category) {
@@ -66,253 +27,18 @@ slint::SharedString to_slint_string(ErrorItemCategory category)
     return "U";
 }
 
-struct ErrorPageData
+void ProcessContextBridge::show_mix_error(const std::exception_ptr& error) const
 {
-    slint::SharedString technical_title;
-    slint::SharedString technical_description;
-    ErrorItemCategory item_category = ErrorItemCategory::Unknown;
-    slint::SharedString item_name;
-    slint::SharedString item_details;
-};
-
-struct CustomerFacingText
-{
-    slint::SharedString title;
-    slint::SharedString message;
-};
-
-CustomerFacingText customer_text_for(ErrorItemCategory category)
-{
-    switch (category) {
-    case ErrorItemCategory::Ingredient:
-        return {"Zutat nicht verfügbar", "Bitte wende dich kurz an das Personal."};
-    case ErrorItemCategory::Abort:
-        return {"Abgebrochen", "Die Zubereitung wurde abgebrochen."};
-    case ErrorItemCategory::Unknown:
-        return {"Kurze Unterbrechung", "Es gab ein technisches Problem. Bitte wende dich an das Personal."};
-    }
-    return {"Kurze Unterbrechung", "Es gab ein technisches Problem. Bitte wende dich an das Personal."};
-}
-
-namespace error_page {
-// codespell:ignore-begin
-ErrorPageData make(const DispenserEmptyError& ex,
-                   const cm::StationConfig& station_config,
-                   const IngredientStore& ingredient_store)
-{
-    const auto dispenser = PodDispenser{ex.pod_id(), ex.dispenser_id()};
-
-    const std::expected<Ingredient, std::out_of_range> ingredient =
-        station_config.find_ingredient_by_dispenser(dispenser).and_then(
-            [&](IngredientId id) -> std::expected<Ingredient, std::out_of_range> {
-                if (auto opt = ingredient_store.find_by_id(id); opt.has_value()) {
-                    return std::move(opt).value();
-                }
-                return std::unexpected(std::out_of_range{"Konnte Ingredient für Behälter nicht finden"});
-            });
-
-    const auto item_details = std::format("Bitte Behälter '{}' von Pod '{}' befüllen", ex.dispenser_id(), ex.pod_id());
-
-    if (!ingredient.has_value()) {
-        // Dispenser->ingredient mapping missing or ingredient not in store -
-        // still report the dispenser-empty error, just without a friendly name.
-        return ErrorPageData{
-            .technical_title = "Behälter leer!",
-            .technical_description = "Bitte auffüllen.",
-            .item_category = ErrorItemCategory::Ingredient,
-            .item_name = "Unbekannte Zutat",
-            .item_details = item_details.c_str(),
-        };
-    }
-
-    return ErrorPageData{
-        .technical_title = "Behälter leer!",
-        .technical_description = "Bitte auffüllen.",
-        .item_category = ErrorItemCategory::Ingredient,
-        .item_name = ingredient->display_name.c_str(),
-        .item_details = item_details.c_str(),
-    };
-}
-
-ErrorPageData make(const AbortError& ex, const cm::StationConfig&, const IngredientStore&)
-{
-    return ErrorPageData{
-        .technical_title = "Prozess abgebrochen!",
-        .technical_description = ex.what(),
-        .item_category = ErrorItemCategory::Abort,
-        .item_name = "Nutzer",
-        .item_details = "Bitte neustarten.",
-    };
-}
-
-ErrorPageData make(const RecipeNotFoundError&, const cm::StationConfig&, const IngredientStore&)
-{
-    return ErrorPageData{
-        .technical_title = "Rezept nicht gefunden!",
-        .technical_description = "Das ausgewählte Rezept konnte nicht geladen werden.",
-        .item_category = ErrorItemCategory::Unknown,
-        .item_name = "Rezept",
-        .item_details = "Bitte ein anderes Rezept wählen oder die Rezeptdaten prüfen.",
-    };
-}
-
-ErrorPageData make(const DispenserNotFoundError& ex, const cm::StationConfig&, const IngredientStore&)
-{
-    const auto item_details = std::format(
-        "Pod '{}', Dispenser '{}' - Bitte Stationskonfiguration und Verkabelung prüfen.", ex.pod_id(), ex.dispenser_id());
-    return ErrorPageData{
-        .technical_title = "Dispenser nicht gefunden!",
-        .technical_description = "Der für diese Zutat konfigurierte Dispenser konnte am Pod nicht gefunden werden.",
-        .item_category = ErrorItemCategory::Unknown,
-        .item_name = "Konfiguration",
-        .item_details = item_details.c_str(),
-    };
-}
-
-ErrorPageData make(const IngredientNotAssignedError& ex, const cm::StationConfig&, const IngredientStore& ingredient_store)
-{
-    const auto ingredient = ingredient_store.find_by_id(ex.ingredient_id());
-    const auto item_name = ingredient.has_value() ? ingredient->display_name : std::string{ex.ingredient_id().raw()};
-
-    return ErrorPageData{
-        .technical_title = "Zutat nicht zugeordnet!",
-        .technical_description = "Für diese Zutat ist kein Dispenser konfiguriert.",
-        .item_category = ErrorItemCategory::Ingredient,
-        .item_name = item_name.c_str(),
-        .item_details = "Bitte in der Administration einen Dispenser zuweisen.",
-    };
-}
-
-ErrorPageData make(const PodReceiveError& ex, const cm::StationConfig&, const IngredientStore&)
-{
-    using ErrorCode = proto::field::ErrorCodeCommon::ValueType;
-    const auto pod_label = std::format("Pod '{}'", ex.pod_id());
-
-    switch (ex.error_code()) {
-    case ErrorCode::HardwareFault: {
-        const auto item_details = std::format("{} - Bitte Pod prüfen und Support kontaktieren.", pod_label);
-        return ErrorPageData{
-            .technical_title = "Hardwarefehler!",
-            .technical_description = "Der Pod meldet einen Hardwaredefekt.",
-            .item_category = ErrorItemCategory::Unknown,
-            .item_name = "Hardware",
-            .item_details = item_details.c_str(),
-        };
-    }
-    case ErrorCode::Busy: {
-        const auto item_details = std::format("{} - Bitte kurz warten und erneut versuchen.", pod_label);
-        return ErrorPageData{
-            .technical_title = "Pod beschäftigt!",
-            .technical_description = "Der Pod verarbeitet noch einen anderen Befehl.",
-            .item_category = ErrorItemCategory::Unknown,
-            .item_name = "Pod",
-            .item_details = item_details.c_str(),
-        };
-    }
-    case ErrorCode::NotCalibrated: {
-        const auto item_details = std::format("{} - Bitte den Dispenser in den Einstellungen kalibrieren.", pod_label);
-        return ErrorPageData{
-            .technical_title = "Nicht kalibriert!",
-            .technical_description = "Der angesprochene Dispenser wurde noch nicht kalibriert.",
-            .item_category = ErrorItemCategory::Unknown,
-            .item_name = "Kalibrierung",
-            .item_details = item_details.c_str(),
-        };
-    }
-    case ErrorCode::UnsupportedInCurrentState: {
-        const auto item_details = std::format("{} - Bitte Pod neustarten und erneut versuchen.", pod_label);
-        return ErrorPageData{
-            .technical_title = "Aktion nicht möglich!",
-            .technical_description = "Der Pod befindet sich in einem Zustand, der diesen Befehl aktuell nicht zulässt.",
-            .item_category = ErrorItemCategory::Unknown,
-            .item_name = "Pod",
-            .item_details = item_details.c_str(),
-        };
-    }
-    case ErrorCode::DispenserNotFound: {
-        const auto item_details = std::format("{} - Bitte Stationskonfiguration prüfen.", pod_label);
-        return ErrorPageData{
-            .technical_title = "Dispenser unbekannt!",
-            .technical_description = "Der Pod kennt den angesprochenen Dispenser nicht.",
-            .item_category = ErrorItemCategory::Unknown,
-            .item_name = "Dispenser",
-            .item_details = item_details.c_str(),
-        };
-    }
-    case ErrorCode::InvalidParameter:
-    case ErrorCode::InternalError:
-    case ErrorCode::DispenserEmpty:
-    case ErrorCode::ValuesLimit:
-        break;
-    }
-
-    const auto item_details = std::format("{} - Bitte Support kontaktieren.", pod_label);
-    return ErrorPageData{
-        .technical_title = "Unbekannter Pod-Fehler!",
-        .technical_description = "Der Pod hat einen unerwarteten Fehler gemeldet.",
-        .item_category = ErrorItemCategory::Unknown,
-        .item_name = "Pod",
-        .item_details = item_details.c_str(),
-    };
-}
-
-ErrorPageData make(const PodTimeoutError& ex, const cm::StationConfig&, const IngredientStore&)
-{
-    const auto item_details = std::format("Pod '{}' - Bitte USB-Verbindung prüfen und den Pod neu starten.", ex.pod_id());
-    return ErrorPageData{
-        .technical_title = "Pod antwortet nicht!",
-        .technical_description = "Der Pod hat innerhalb der erwarteten Zeit nicht reagiert.",
-        .item_category = ErrorItemCategory::Unknown,
-        .item_name = "Verbindung",
-        .item_details = item_details.c_str(),
-    };
-}
-
-ErrorPageData make(const ProtocolError&, const cm::StationConfig&, const IngredientStore&)
-{
-    return ErrorPageData{
-        .technical_title = "Kommunikationsfehler!",
-        .technical_description = "Die Nachricht an den Pod konnte nicht verarbeitet werden.",
-        .item_category = ErrorItemCategory::Unknown,
-        .item_name = "Verbindung",
-        .item_details = "Bitte USB-Verbindung prüfen. Besteht das Problem weiterhin, Support kontaktieren.",
-    };
-}
-
-// Fallback for any exception without a dedicated overload above.
-ErrorPageData make(const std::exception& ex, const cm::StationConfig&, const IngredientStore&)
-{
-    const auto item_details = std::format("Bitte Support kontaktieren. Details: {}", ex.what());
-    return ErrorPageData{
-        .technical_title = "Unbekannter Fehler!",
-        .technical_description = "Es ist ein unerwarteter Fehler aufgetreten.",
-        .item_category = ErrorItemCategory::Unknown,
-        .item_name = "Fehlerdetails",
-        .item_details = item_details.c_str(),
-    };
-}
-
-} // namespace error_page
-
-// codespell:ignore-end
-
-void display_ui_error(const std::derived_from<std::exception> auto& ex,
-                      slint::ComponentHandle<AppWindow> ui,
-                      const cm::StationConfig& station_config,
-                      const IngredientStore& ingredient_store)
-{
-    auto data = error_page::make(ex, station_config, ingredient_store);
-    auto customer_text = customer_text_for(data.item_category);
-
-    slint::invoke_from_event_loop([ui, data = std::move(data), customer_text = std::move(customer_text)]() mutable {
+    auto page = mix_error_page(error, station_config_, ingredient_store_);
+    slint::invoke_from_event_loop([ui = ui_, page = std::move(page)]() {
         auto& process_ctx = ui->global<ProcessContext>();
-        process_ctx.set_customer_title(std::move(customer_text.title));
-        process_ctx.set_customer_message(std::move(customer_text.message));
-        process_ctx.set_technical_title(std::move(data.technical_title));
-        process_ctx.set_technical_description(std::move(data.technical_description));
-        process_ctx.set_error_item_category(to_slint_string(data.item_category));
-        process_ctx.set_error_item_name(std::move(data.item_name));
-        process_ctx.set_error_item_details(std::move(data.item_details));
+        process_ctx.set_customer_title(slint::SharedString{page.customer_title});
+        process_ctx.set_customer_message(slint::SharedString{page.customer_message});
+        process_ctx.set_technical_title(slint::SharedString{page.technical_title});
+        process_ctx.set_technical_description(slint::SharedString{page.technical_description});
+        process_ctx.set_error_item_category(to_slint_string(page.item_category));
+        process_ctx.set_error_item_name(slint::SharedString{page.item_name});
+        process_ctx.set_error_item_details(slint::SharedString{page.item_details});
         ui->global<StationStateContext>().invoke_navigate_to(Page::MixErrorPage);
     });
 }
@@ -322,46 +48,140 @@ ProcessContextBridge::ProcessContextBridge(AsyncScope& async_scope,
                                            const RecipeStore& recipe_store,
                                            const IngredientStore& ingredient_store,
                                            const cm::StationConfig& station_config,
-                                           const PodRegistry& pod_registry)
+                                           const PodRegistry& pod_registry,
+                                           FillLevelTracker& fill_levels)
     : async_scope_{async_scope}
     , ui_{std::move(ui)}
     , recipe_store_{recipe_store}
     , ingredient_store_{ingredient_store}
     , station_config_{station_config}
     , pod_registry_{pod_registry}
+    , fill_levels_{fill_levels}
 {
 }
 
 void ProcessContextBridge::init()
 {
     ui_->global<ProcessContext>().on_process_active_recipe([this]() {
+        if (ui_->global<ProcessContext>().get_checking_fill_level()) {
+            return;
+        }
         const auto recipe_to_create = ui_->global<RecipeContext>().get_active_recipe();
         const auto boost = ui_->global<ProcessContext>().get_boost() * units::percent;
         const auto target_volume = ui_->global<ProcessContext>().get_glass_volume() * units::milli_litre;
         auto r = recipe_store_.find_by_id(RecipeId{recipe_to_create.id.data()});
         if (r.has_value()) {
-            ui_->global<StationStateContext>().invoke_navigate_to(Page::MixPage);
-            boost::asio::post(async_scope_.executor(), [recipe = std::move(r.value()), boost, target_volume, this]() mutable {
-                start_recipe_processing(std::move(recipe), boost, target_volume);
-            });
+            ui_->global<ProcessContext>().set_checking_fill_level(true);
+            async_scope_.spawn(async_check_and_start(PendingMix{std::move(r.value()), boost, target_volume}));
         }
         else {
-            display_ui_error(RecipeNotFoundError{RecipeId{recipe_to_create.id.data()}}, ui_, station_config_, ingredient_store_);
+            show_mix_error(std::make_exception_ptr(RecipeNotFoundError{RecipeId{recipe_to_create.id.data()}}));
             SPDLOG_LOGGER_ERROR(logger_, "Could not find a recipe {}", recipe_to_create.name.data());
         }
     });
 
+    ui_->global<ProcessContext>().on_fill_warning_confirmed([this]() {
+        ui_->invoke_close_fill_warning_popup();
+        boost::asio::post(async_scope_.executor(), [this]() {
+            if (pending_mix_.has_value()) {
+                auto mix = std::move(*pending_mix_);
+                pending_mix_.reset();
+                start_mix(std::move(mix));
+            }
+        });
+    });
+
+    ui_->global<ProcessContext>().on_fill_warning_canceled([this]() {
+        ui_->invoke_close_fill_warning_popup();
+        boost::asio::post(async_scope_.executor(), [this]() { pending_mix_.reset(); });
+    });
+
     ui_->global<ProcessContext>().on_abort([this]() {
         SPDLOG_LOGGER_INFO(logger_, "Abort recipe processing...");
-        display_ui_error(AbortError{}, ui_, station_config_, ingredient_store_);
+        show_mix_error(std::make_exception_ptr(AbortError{}));
     });
 
     ui_->global<StationStateContext>().on_navigated_to([this](Page from, Page to) {
-        if (from == Page::MixPage and to != Page::MixSuccessPage) {
+        if (from == Page::MixPage and to != Page::MixSuccessPage and to != Page::MixPage) {
             SPDLOG_LOGGER_INFO(logger_, "Cancelling recipe processing...");
             boost::asio::post(async_scope_.executor(), [this]() { abort_active_recipe(); });
         }
+        // A guest who has left the page while the fill levels are checked no longer wants this drink.
+        if (to != Page::MixPage) {
+            boost::asio::post(async_scope_.executor(), [this]() {
+                ++check_generation_;
+                pending_mix_.reset();
+            });
+        }
     });
+}
+
+Commands ProcessContextBridge::prepare_commands(const Recipe& recipe,
+                                                const units::Percent boost,
+                                                const units::Litre target_volume) const
+{
+    return boost_recipe(scale_recipe(recipe.commands, recipe.nominal_serving_volume, target_volume), boost, ingredient_store_);
+}
+
+Task<void> ProcessContextBridge::async_check_and_start(PendingMix mix)
+{
+    // The confirm button has to come back however this ends.
+    struct CheckFinished
+    {
+        slint::ComponentHandle<AppWindow> ui;
+
+        ~CheckFinished()
+        {
+            slint::invoke_from_event_loop([ui = ui]() { ui->global<ProcessContext>().set_checking_fill_level(false); });
+        }
+    } check_finished{ui_};
+
+    pending_mix_.reset();
+    const auto generation = ++check_generation_;
+
+    const auto commands = prepare_commands(mix.recipe, mix.boost, mix.target_volume);
+    for (const auto& address : involved_dispensers(commands, station_config_)) {
+        auto dispenser = pod_registry_.dispenser_of_pod(address.pod_id, address.dispenser_id);
+        if (dispenser.has_value()) {
+            co_await fill_levels_.refresh(address, **dispenser);
+        }
+    }
+
+    if (generation != check_generation_) {
+        co_return;
+    }
+
+    const auto shortages = find_fill_shortages(commands, station_config_, fill_levels_);
+    if (shortages.empty()) {
+        start_mix(std::move(mix));
+        co_return;
+    }
+
+    auto lines = std::make_shared<std::vector<std::string>>();
+    for (const auto& shortage : shortages) {
+        const auto found = ingredient_store_.find_by_id(shortage.ingredient);
+        // codespell:ignore-next-line
+        lines->push_back(std::format("{}: ca. {} mL da, {} mL nötig",
+                                     found.has_value() ? found->display_name : shortage.ingredient.raw(),
+                                     std::lround(shortage.available.numerical_value_in(units::milli_litre)),
+                                     std::lround(shortage.needed.numerical_value_in(units::milli_litre))));
+    }
+
+    pending_mix_ = std::move(mix);
+    slint::invoke_from_event_loop([ui = ui_, lines = std::move(lines)]() {
+        auto model = std::make_shared<slint::VectorModel<slint::SharedString>>();
+        for (const auto& line : *lines) {
+            model->push_back(slint::SharedString{line});
+        }
+        ui->global<ProcessContext>().set_fill_warning_lines(std::move(model));
+        ui->invoke_open_fill_warning_popup();
+    });
+}
+
+void ProcessContextBridge::start_mix(PendingMix mix)
+{
+    slint::invoke_from_event_loop([ui = ui_]() { ui->global<StationStateContext>().invoke_navigate_to(Page::MixPage); });
+    start_recipe_processing(std::move(mix.recipe), mix.boost, mix.target_volume);
 }
 
 void ProcessContextBridge::start_recipe_processing(Recipe recipe, const units::Percent boost, const units::Litre target_volume)
@@ -395,47 +215,26 @@ Task<void> ProcessContextBridge::async_process_recipe(Recipe recipe, const units
 
     SPDLOG_LOGGER_INFO(logger_, "Create {} with boost factor '{}' and target volume '{}'", recipe, boost, target_volume);
     const auto start_tp = Clock::now();
-    recipe.commands = scale_recipe(recipe.commands, recipe.nominal_serving_volume, target_volume);
-    recipe.commands = boost_recipe(recipe.commands, boost, ingredient_store_);
+    recipe.commands = prepare_commands(recipe, boost, target_volume);
     update_ui_recipe(recipe);
-    auto command_executer =
-        std::make_shared<MachineAdapter>(ui_, async_scope_.executor(), ingredient_store_, pod_registry_, station_config_);
+    auto command_executer = std::make_shared<MachineAdapter>(
+        ui_, async_scope_.executor(), ingredient_store_, pod_registry_, station_config_, fill_levels_);
+
+    // Failing a sibling only stops the waiting on the Station's side. The Pods keep pouring until they are told otherwise.
+    const auto mix_failed = [this](const std::exception_ptr& error) {
+        async_scope_.spawn(pod_registry_.force_safe_state_all_pods());
+        show_mix_error(error);
+    };
+
     try {
         co_await execute_commands(std::move(recipe.commands), std::move(command_executer));
         const auto duration = std::chrono::duration_cast<std::chrono::seconds>(Clock::now() - start_tp);
         SPDLOG_LOGGER_INFO(logger_, "Finished {} in '{}'.", recipe, duration);
         display_ui_success(duration);
     }
-    catch (const boost::system::system_error& ex) {
-        SPDLOG_LOGGER_ERROR(logger_, "System error while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
-    }
-    catch (const DispenserEmptyError& ex) {
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
-    }
-    catch (const DispenserNotFoundError& ex) {
-        SPDLOG_LOGGER_ERROR(logger_, "Dispenser not found while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
-    }
-    catch (const IngredientNotAssignedError& ex) {
-        SPDLOG_LOGGER_ERROR(logger_, "Ingredient not assigned while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
-    }
-    catch (const PodReceiveError& ex) {
-        SPDLOG_LOGGER_ERROR(logger_, "Pod rejected command while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
-    }
-    catch (const PodTimeoutError& ex) {
-        SPDLOG_LOGGER_ERROR(logger_, "Pod timed out while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
-    }
-    catch (const ProtocolError& ex) {
-        SPDLOG_LOGGER_ERROR(logger_, "Protocol error while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
-    }
     catch (const std::exception& ex) {
-        SPDLOG_LOGGER_ERROR(logger_, "Unknown error while processing recipe: {}", ex.what());
-        display_ui_error(ex, ui_, station_config_, ingredient_store_);
+        SPDLOG_LOGGER_ERROR(logger_, "Recipe processing failed: {}", ex.what());
+        mix_failed(std::current_exception());
     }
 }
 

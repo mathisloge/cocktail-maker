@@ -1,0 +1,75 @@
+import { Palette, Layout } from "../palette.slint";
+import {
+    Button,
+    SmallText,
+    CornerDeco,
+} from "../components.slint";
+import { ProcessContext } from "../globals/process-context.slint";
+
+export component FillWarningPopup inherits PopupWindow {
+    close-policy: PopupClosePolicy.no-auto-close;
+
+    Rectangle {
+        width: 100%;
+        height: 100%;
+        background: Palette.overlay-scrim;
+    }
+
+    Rectangle {
+        height: 60%;
+        width: 50%;
+        x: root.width / 4;
+        y: root.height / 5;
+        background: Palette.background-elevated;
+        border-width: 1px;
+        border-color: Palette.border-strong;
+
+        drop-shadow-color: Palette.shadow;
+        drop-shadow-blur: 24px;
+
+        CornerDeco {
+            width: 100%;
+            height: 100%;
+        }
+
+        VerticalLayout {
+            padding-top: Layout.spacing-xl;
+            padding-left: Layout.spacing-xl * 1.2;
+            padding-bottom: Layout.spacing-xl;
+            padding-right: Layout.spacing-xl * 1.2;
+            spacing: Layout.spacing-md;
+            alignment: center;
+
+            SmallText {
+                // codespell:ignore-next-line
+                text: "DAS KÖNNTE KNAPP WERDEN";
+                highlight: true;
+            }
+
+            for line in ProcessContext.fill-warning-lines: SmallText {
+                text: line;
+            }
+
+            SmallText {
+                // codespell:ignore-next-line
+                text: "Bitte Personal rufen";
+            }
+
+            Button {
+                // codespell:ignore-next-line
+                text: "TROTZDEM STARTEN";
+                clicked => {
+                    ProcessContext.fill-warning-confirmed();
+                }
+            }
+
+            Button {
+                text: "ABBRECHEN";
+                secondary: true;
+                clicked => {
+                    ProcessContext.fill-warning-canceled();
+                }
+            }
+        }
+    }
+}

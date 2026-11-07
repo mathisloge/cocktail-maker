@@ -32,9 +32,9 @@ xref:adr:001-ui-toolkit.adoc[ADR-001].
 == Configuration and Data as Files
 
 Recipes, ingredients, and glasses are plain data, validated against a published schema, rather than
-code, so they can be authored and changed without a rebuild. The Station's one piece of local
-configuration, which physical dispenser serves which ingredient, is likewise persisted as a plain
-file rather than requiring a database.
+code, so they can be authored and changed without a rebuild. The Station's local state, which physical
+dispenser serves which ingredient and how full each dispenser is, is likewise persisted as plain files
+rather than requiring a database.
 
 == Operator Authentication
 

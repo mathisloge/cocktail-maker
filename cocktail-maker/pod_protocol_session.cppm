@@ -17,6 +17,7 @@ export module cm:pod_protocol_session;
 import std;
 import libassert;
 import cm.core;
+import :comms_adapter;
 
 namespace cm {
 
@@ -35,8 +36,10 @@ export using InPong = proto::message::Pong<InMessage>;
 export using InAck = proto::message::Ack<InMessage>;
 export using InNak = proto::message::Nak<InMessage>;
 export using InDeviceInfoResponse = proto::message::DeviceInfoResponse<InMessage>;
-export using InPumpFinishedCalibrationResponse = proto::message::PumpFinishedCalibrationResponse<InMessage>;
+export using InDispenserFinishedCalibrationResponse = proto::message::DispenserFinishedCalibrationResponse<InMessage>;
+export using InLoadCellWeightResponse = proto::message::LoadCellWeightResponse<InMessage>;
 export using InDispenseFinished = proto::message::DispenseFinished<InMessage>;
+export using InDispenseProgress = proto::message::DispenseProgress<InMessage>;
 
 export using OutMessage = proto::FrameInterface<comms::option::app::WriteIterator<std::uint8_t*>,
                                                 comms::option::app::LengthInfoInterface,
@@ -50,7 +53,8 @@ export using OutEmergencyStop = proto::message::EmergencyStop<OutMessage>;
 export using OutDeviceInfoRequest = proto::message::DeviceInfoRequest<OutMessage>;
 export using OutLoadCellCalibrateWithRefWeight = proto::message::LoadCellCalibrateWithRefWeight<OutMessage>;
 export using OutLoadCellTare = proto::message::LoadCellTare<OutMessage>;
-export using OutPumpStartCalibration = proto::message::PumpStartCalibration<OutMessage>;
+export using OutDispenserStartCalibration = proto::message::DispenserStartCalibration<OutMessage>;
+export using OutLoadCellWeightRequest = proto::message::LoadCellWeightRequest<OutMessage>;
 export using OutHighlightDispenser = proto::message::HighlightDispenser<OutMessage>;
 export using OutDispense = proto::message::Dispense<OutMessage>;
 
@@ -70,7 +74,8 @@ export class ProtocolError : public std::runtime_error
 export class PodProtocolSession
 {
     static constexpr std::size_t kWriteQueueCapacity = 10;
-    static constexpr std::size_t kResponseChannelCapacity = 1;
+    // A command gets at most an Ack and a final reply, and both can arrive before the first waiter has resumed.
+    static constexpr std::size_t kResponseChannelCapacity = 2;
 
     using ResponseChannel = Channel<InFrame::MsgPtr>;
     using ChannelPtr = std::shared_ptr<ResponseChannel>;
@@ -99,10 +104,13 @@ export class PodProtocolSession
     TransactionId::ValueType generate_new_transaction_id();
 
     /**
-     * Waits for the response with `transaction_id`.
+     * Waits for the next response with `transaction_id`.
      *
      * The response is registered right away when this is called, not when the returned task is started, so the request can
      * be sent in between without its response getting lost. The timeout starts once the task is awaited.
+     *
+     * Several waits can share one id, one per expected response, and they have to be awaited in the order of the responses.
+     * The id stays registered until the last of them is gone.
      */
     template <typename ExpectedMsg>
     auto async_receive(TransactionId::ValueType transaction_id, std::chrono::milliseconds timeout) -> Task<ExpectedMsg>;

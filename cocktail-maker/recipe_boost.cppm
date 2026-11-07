@@ -24,50 +24,30 @@ struct ScaleFactors
     double reducible = 1.0;
 };
 
-// Generic left-fold over every Command leaf in a Commands tree.
-template <typename T, typename Fn>
-[[nodiscard]] auto fold_commands(const Commands& commands, T init, Fn fn) -> T
+/// The boost category of the poured ingredient, or nothing for an ingredient the store doesn't know.
+[[nodiscard]] auto boost_category_of(const DispenseCommand& pour, const IngredientStore& store) -> std::optional<BoostCategory>
 {
-    const auto fold_cmd = [&](T acc, const Command& cmd) -> T { return fn(std::move(acc), cmd); };
-
-    return std::accumulate(
-        commands.cbegin(), commands.cend(), std::move(init), [&](T acc, const std::variant<Command, ParallelCommand>& item) -> T {
-            return std::visit(
-                [&](const auto& v) -> T {
-                    using V = std::decay_t<decltype(v)>;
-                    if constexpr (std::is_same_v<V, Command>) {
-                        return fold_cmd(std::move(acc), v);
-                    }
-                    else { // ParallelCommand
-                        return std::accumulate(v.cbegin(), v.cend(), std::move(acc), fold_cmd);
-                    }
-                },
-                item);
-        });
+    return store.find_by_id(pour.ingredient).transform([](const Ingredient& ingredient) { return ingredient.boost_category; });
 }
 
 [[nodiscard]] auto accumulate_volumes(VolumeSummary acc, const Command& cmd, const IngredientStore& store) -> VolumeSummary
 {
-    return std::visit(
-        [&](const auto& c) -> VolumeSummary {
-            if constexpr (std::is_same_v<std::decay_t<decltype(c)>, DispenseCommand>) {
-                return store.find_by_id(c.ingredient)
-                    .transform([&](const Ingredient& ing) -> VolumeSummary {
-                        switch (ing.boost_category) {
-                        case BoostCategory::boostable:
-                            return {acc.boostable_litres + c.volume, acc.reducible_litres};
-                        case BoostCategory::reducible:
-                            return {acc.boostable_litres, acc.reducible_litres + c.volume};
-                        case BoostCategory::fixed:
-                            return acc;
-                        }
-                        std::unreachable();
-                    })
-                    .value_or(acc);
-            }
-            return acc;
-        },
-        cmd);
+    const auto* pour = std::get_if<DispenseCommand>(&cmd);
+    if (pour == nullptr) {
+        return acc;
+    }
+    // An unknown ingredient counts as fixed.
+    switch (boost_category_of(*pour, store).value_or(BoostCategory::fixed)) {
+    case BoostCategory::boostable:
+        acc.boostable_litres += pour->volume;
+        break;
+    case BoostCategory::reducible:
+        acc.reducible_litres += pour->volume;
+        break;
+    case BoostCategory::fixed:
+        break;
+    }
+    return acc;
 }
 
 // Derives per-category scale factors from the volume split and boost ratio p ∈ [-1, 1].
@@ -103,52 +83,20 @@ template <typename T, typename Fn>
 
 [[nodiscard]] auto scale_command(const Command& cmd, const ScaleFactors& scales, const IngredientStore& store) -> Command
 {
-    return std::visit(
-        [&](const auto& c) -> Command {
-            if constexpr (std::is_same_v<std::decay_t<decltype(c)>, DispenseCommand>) {
-                return store.find_by_id(c.ingredient)
-                    .transform([&](const Ingredient& ing) -> Command {
-                        switch (ing.boost_category) {
-                        case BoostCategory::boostable:
-                            return DispenseCommand{c.id, c.ingredient, c.volume * scales.boostable};
-                        case BoostCategory::reducible:
-                            return DispenseCommand{c.id, c.ingredient, c.volume * scales.reducible};
-                        case BoostCategory::fixed:
-                            return cmd;
-                        }
-                        std::unreachable();
-                    })
-                    .value_or(cmd); // unknown ingredient → pass through unchanged
-            }
-            return cmd;
-        },
-        cmd);
-}
-
-[[nodiscard]] auto scale_commands(const Commands& commands, const ScaleFactors& scales, const IngredientStore& store) -> Commands
-{
-    const auto scale_item = [&](const std::variant<Command, ParallelCommand>& item) -> std::variant<Command, ParallelCommand> {
-        return std::visit(
-            [&](const auto& v) -> std::variant<Command, ParallelCommand> {
-                using V = std::decay_t<decltype(v)>;
-                if constexpr (std::is_same_v<V, Command>) {
-                    return scale_command(v, scales, store);
-                }
-                else { // ParallelCommand
-                    ParallelCommand result;
-                    result.reserve(v.size());
-                    std::ranges::transform(
-                        v, std::back_inserter(result), [&](const Command& cmd) { return scale_command(cmd, scales, store); });
-                    return result;
-                }
-            },
-            item);
-    };
-
-    Commands result;
-    result.reserve(commands.size());
-    std::ranges::transform(commands, std::back_inserter(result), scale_item);
-    return result;
+    const auto* pour = std::get_if<DispenseCommand>(&cmd);
+    if (pour == nullptr) {
+        return cmd;
+    }
+    // An unknown ingredient passes through unchanged.
+    switch (boost_category_of(*pour, store).value_or(BoostCategory::fixed)) {
+    case BoostCategory::boostable:
+        return DispenseCommand{pour->id, pour->ingredient, pour->volume * scales.boostable};
+    case BoostCategory::reducible:
+        return DispenseCommand{pour->id, pour->ingredient, pour->volume * scales.reducible};
+    case BoostCategory::fixed:
+        return cmd;
+    }
+    std::unreachable();
 }
 
 } // namespace
@@ -177,52 +125,25 @@ export [[nodiscard]] auto boost_recipe(const Commands& commands, units::Percent 
         return commands;
     }
 
-    const auto volumes = fold_commands(commands, VolumeSummary{}, [&](VolumeSummary acc, const Command& cmd) {
-        return accumulate_volumes(std::move(acc), cmd, store);
-    });
+    VolumeSummary volumes;
+    for_each_command(commands, [&](const Command& cmd) { volumes = accumulate_volumes(volumes, cmd, store); });
 
     const auto scales = compute_scale_factors(volumes, p);
 
-    return scale_commands(commands, scales, store);
+    return transform_commands(commands, [&](const Command& cmd) { return scale_command(cmd, scales, store); });
 }
 
 export [[nodiscard]] auto is_recipe_boostable(const Commands& commands, const IngredientStore& store) -> bool
 {
-    struct BoostSummary
-    {
-        bool has_boostables{false};
-        bool has_reducables{false};
-    };
-
-    const auto summarize_boostables = [](BoostSummary acc, const Command& cmd, const IngredientStore& store) -> BoostSummary {
-        return std::visit(
-            [&](const auto& c) -> BoostSummary {
-                if (acc.has_boostables and acc.has_reducables) {
-                    return acc;
-                }
-                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, DispenseCommand>) {
-                    return store.find_by_id(c.ingredient)
-                        .transform([&](const Ingredient& ing) -> BoostSummary {
-                            switch (ing.boost_category) {
-                            case BoostCategory::boostable:
-                                return {true, acc.has_reducables};
-                            case BoostCategory::reducible:
-                                return {acc.has_boostables, true};
-                            case BoostCategory::fixed:
-                                return acc;
-                            }
-                            std::unreachable();
-                        })
-                        .value_or(acc);
-                }
-                return acc;
-            },
-            cmd);
-    };
-
-    const auto boostables = fold_commands(commands, BoostSummary{}, [&](BoostSummary acc, const Command& cmd) {
-        return summarize_boostables(std::move(acc), cmd, store);
+    bool has_boostables = false;
+    bool has_reducibles = false;
+    for_each_command(commands, [&](const Command& cmd) {
+        if (const auto* pour = std::get_if<DispenseCommand>(&cmd)) {
+            const auto category = boost_category_of(*pour, store);
+            has_boostables = has_boostables || category == BoostCategory::boostable;
+            has_reducibles = has_reducibles || category == BoostCategory::reducible;
+        }
     });
-    return boostables.has_boostables and boostables.has_reducables;
-};
+    return has_boostables && has_reducibles;
+}
 } // namespace cm

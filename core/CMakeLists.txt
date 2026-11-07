@@ -1,6 +1,7 @@
 add_library(cocktail-maker-core STATIC)
 add_library(cm::core ALIAS cocktail-maker-core)
 add_sanitizers(cocktail-maker-core)
+cm_enable_compile_time_trace(cocktail-maker-core)
 target_compile_features(cocktail-maker-core PUBLIC cxx_std_26)
 set_target_properties(
     cocktail-maker-core
@@ -17,52 +18,50 @@ target_link_libraries(
     PUBLIC
         mp-units::mp-units
         spdlog::spdlog
-        simdjson::simdjson
         STDEXEC::stdexec
         STDEXEC::asioexec
         libassert::assert
-        proto
 )
 
 target_sources(
     cocktail-maker-core
+    PRIVATE async_algorithms.cpp async_scope.cpp sleep.cpp
     PUBLIC
         FILE_SET CXX_MODULES
             FILES
                 lib.cppm
                 any_io_stream.cppm
                 async_algorithms.cppm
-                async_algorithms.cpp
                 async_scope.cppm
-                async_scope.cpp
                 awaitable_bool.cppm
                 channel.cppm
-                comms_adapter.cppm
                 io_scheduler.cppm
                 logging.cppm
                 overloaded.cppm
                 strong_type.cppm
                 units.cppm
                 retry.cppm
-                run_until_complete.cppm
+                sleep.cppm
                 task.cppm
 )
 
 if(BUILD_TESTING)
     add_executable(cocktail-maker-core-tests)
     add_sanitizers(cocktail-maker-core-tests)
+    cm_enable_compile_time_trace(cocktail-maker-core-tests)
     target_link_libraries(
         cocktail-maker-core-tests
-        PRIVATE Catch2::Catch2WithMain cm::core proto
+        PRIVATE Catch2::Catch2WithMain cm::core cm::testing
     )
     catch_discover_tests(cocktail-maker-core-tests)
 
     target_sources(
         cocktail-maker-core-tests
         PRIVATE
+            any_io_stream.test.cpp
+            sleep.test.cpp
             async_algorithms.test.cpp
             awaitable_bool.test.cpp
-            comms_adapter.test.cpp
             strong_type.test.cpp
     )
 endif()

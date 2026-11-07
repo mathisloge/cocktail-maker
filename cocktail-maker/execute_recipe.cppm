@@ -8,7 +8,7 @@ import :recipe;
 
 namespace cm {
 
-export enum CommandStatus
+export enum class CommandStatus
 {
     unknown,
     in_progress,

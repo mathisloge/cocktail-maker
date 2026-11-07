@@ -2,18 +2,16 @@ module;
 #include <spdlog/spdlog.h>
 #include "app-window.h"
 
-module cm.gui:gui_application_impl;
+module cm.gui;
 import cm.core;
 import cm;
-import :gui_application;
-import :ui_log_sink;
-import :station_state_bridge;
 
 namespace cm::gui {
 
-GuiApplication::GuiApplication()
+GuiApplication::GuiApplication(const std::filesystem::path& state_dir)
+    : Application{state_dir}
 {
-    auto ui_log_sink = std::make_shared<ui_log_sink_st>();
+    auto ui_log_sink = std::make_shared<ui_log_sink_mt>();
     log::add_sink(ui_log_sink);
 
     const auto& ui_station_state_context = ui_->global<StationStateContext>();
@@ -31,7 +29,7 @@ void GuiApplication::init(const std::filesystem::path& db_dir)
 
 void GuiApplication::run(std::unique_ptr<PodDiscovery> pod_discovery, bool fullscreen)
 {
-    auto station_state = std::make_shared<StationStateBridge>(ui_, pod_registry_, async_scope());
+    auto station_state = std::make_shared<StationStateBridge>(ui_, pod_registry_, async_scope(), fill_levels());
     // don't move station_state, keep it alive as long as the ui is running
     Application::run(station_state, std::move(pod_discovery));
     ui_->window().set_fullscreen(fullscreen);

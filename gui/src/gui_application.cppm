@@ -13,17 +13,17 @@ export class GuiApplication : public Application
 {
 
   public:
-    GuiApplication();
+    explicit GuiApplication(const std::filesystem::path& state_dir);
     void init(const std::filesystem::path& db_dir) override;
     void run(std::unique_ptr<PodDiscovery> pod_discovery, bool fullscreen = false);
 
   private:
     slint::ComponentHandle<AppWindow> ui_ = cm::gui::AppWindow::create();
-    DispenserCalibrationBridge dispenser_calibration_bridge_{async_scope(), ui_, pod_registry_};
+    DispenserCalibrationBridge dispenser_calibration_bridge_{async_scope(), ui_, pod_registry_, fill_levels()};
     RecipeContextBridge recipe_context_bridge_{get_executor(), ui_, recipe_store_, ingredient_store_, station_config_};
     GlassContextBridge glass_context_bridge_{ui_, glass_store_};
     ProcessContextBridge process_context_bridge_{
-        async_scope(), ui_, recipe_store_, ingredient_store_, station_config_, pod_registry_};
+        async_scope(), ui_, recipe_store_, ingredient_store_, station_config_, pod_registry_, fill_levels()};
 };
 
 } // namespace cm::gui

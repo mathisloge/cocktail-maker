@@ -35,7 +35,7 @@ Rejected: it would tie the Station to a non-standard coroutine library with fewe
 Rejected: they integrate well with Asio but are just as non-standard, and they provide no structured-concurrency scopes.
 
 === stdexec as a {cpp} module (`import stdexec`)
-Rejected for now: with the pinned Clang version the module build of stdexec crashes the compiler, and stdexec itself documents module-related compiler bugs below Clang 24. stdexec is consumed as headers from the global module fragment instead, like the other third-party libraries (xref:002-cpp-module-compilation-model.adoc[ADR-002]).
+Rejected for now: stdexec's module only wraps `stdexec/execution.hpp`, and its `exec/` headers aren't module-ready yet. `exec::when_any`, which the Station uses, needs stdexec internals that the module doesn't export. Clang 22 also crashed on the module build. stdexec is consumed as headers from the global module fragment instead, like the other third-party libraries (xref:002-cpp-module-compilation-model.adoc[ADR-002]).
 
 == Consequences
 * **Good:** the asynchronous code follows the {cpp}26 standard model. Switching to `std::execution` is mostly mechanical.

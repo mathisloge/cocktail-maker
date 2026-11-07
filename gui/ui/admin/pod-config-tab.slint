@@ -47,9 +47,17 @@ component PodListDelegate inherits Rectangle {
                 Palette.log-error;
         }
 
-        title := SmallText {
-            text: pod.id;
-            animate color { duration: 100ms; }
+        VerticalLayout {
+            alignment: center;
+            title := SmallText {
+                text: pod.id;
+                animate color { duration: 100ms; }
+            }
+
+            if pod.status-text != "": SmallText {
+                text: pod.status-text;
+                color: Palette.log-error;
+            }
         }
     }
 
@@ -109,6 +117,11 @@ export component PodConfigTab inherits Rectangle {
             text: active-pod.id;
         }
 
+        if active-pod.status-text != "": SmallText {
+            text: active-pod.status-text;
+            color: Palette.log-error;
+        }
+
         ScrollView {
             VerticalBox {
                 for dispenser in root.active-pod.dispensers: HorizontalBox {
@@ -117,12 +130,23 @@ export component PodConfigTab inherits Rectangle {
                         text: "Dispenser " + dispenser.id;
                     }
 
+                    SmallText {
+                        text: dispenser.fill-text;
+                        color: Palette.text-secondary;
+                    }
+
                     ComboBox {
                         height: Layout.touch-height-sm;
                         model: RecipeContext.ingredient-ids;
                         selected(current-value) => {
                             RecipeContext.assign-ingredient-to-dispenser(active-pod, dispenser, current-value);
                         }
+                    }
+
+                    Button {
+                        text: "Nachgefüllt";
+                        height: Layout.touch-height-sm;
+                        clicked => { StationStateContext.mark-dispenser-refilled(active-pod, dispenser); }
                     }
 
                     Button {

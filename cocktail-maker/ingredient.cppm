@@ -118,9 +118,8 @@ std::vector<Ingredient> load_ingredients_from_dir(std::filesystem::path dir);
 class IngredientStore
 {
   public:
-    virtual ~IngredientStore() = default;
-
-    virtual void init_ingredients(std::vector<Ingredient> ingredients);
+    /// Replaces the catalog. @throws std::invalid_argument if two ingredients share an id.
+    void init_ingredients(std::vector<Ingredient> ingredients);
 
     std::optional<Ingredient> find_by_id(const IngredientId& ingredient_id) const;
 

@@ -115,7 +115,8 @@ component DispenserCalibrationContent inherits Rectangle {
     in property <Pod> active-pod;
     in property <Dispenser> active-dispenser;
     private property <int> reference-weight-g: 100;
-    private property <int> pump-test-steps: 200;
+    callback close-requested();
+    private property <int> run-time-s: DispenserCalibrationContext.default-run-time-s;
 
     background: Palette.background;
 
@@ -140,11 +141,30 @@ component DispenserCalibrationContent inherits Rectangle {
                         ? "Pumpe " + root.active-dispenser.id + " kalibrieren"
                         : "Ventil " + root.active-dispenser.id + " kalibrieren";
                 }
+
+                Rectangle {
+                    horizontal-stretch: 1;
+                }
+
+                Button {
+                    text: "Schließen";
+                    height: Layout.touch-height-sm;
+                    enabled: !DispenserCalibrationContext.is-busy();
+                    clicked => {
+                        root.close-requested();
+                    }
+                }
             }
 
             SmallText {
                 text: "Pod " + root.active-pod.id;
                 color: Palette.text-secondary;
+            }
+
+            if DispenserCalibrationContext.state.error-message != "": SmallText {
+                text: DispenserCalibrationContext.state.error-message;
+                color: Palette.log-error;
+                wrap: word-wrap;
             }
 
             ScrollView {
@@ -155,10 +175,21 @@ component DispenserCalibrationContent inherits Rectangle {
 
                     StepCard {
                         step-number: "1";
-                        title: "Referenzgewicht";
-                        description: "Bekanntes Referenzgewicht auflegen, Gewicht eingeben und kalibrieren.";
-                        status: DispenserCalibrationContext.state.load-cell-status;
-                        enabled: true;
+                        title: "Wägezelle";
+                        description: "Nur beim Einbau der Wägezelle nötig. Waage leeren und tarieren, danach das Referenzgewicht auflegen und kalibrieren.";
+                        status: DispenserCalibrationContext.load-cell-card-status();
+
+                        Button {
+                            text: DispenserCalibrationContext.state.load-cell-tare-status == CalibrationStepStatus.running
+                                ? "läuft..." : "Tara (leere Waage)";
+                            height: Layout.touch-height;
+                            enabled: DispenserCalibrationContext.state.load-cell-tare-status != CalibrationStepStatus.running;
+                            clicked => {
+                                DispenserCalibrationContext.load-cell-tare(
+                                    root.active-pod,
+                                    root.active-dispenser);
+                            }
+                        }
 
                         HorizontalBox {
                             cross-axis-alignment: center;
@@ -180,7 +211,8 @@ component DispenserCalibrationContent inherits Rectangle {
                             text: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.running
                                 ? "läuft..." : "Mit Referenzgewicht kalibrieren";
                             height: Layout.touch-height;
-                            enabled: DispenserCalibrationContext.state.load-cell-status != CalibrationStepStatus.running;
+                            enabled: DispenserCalibrationContext.state.load-cell-tare-status == CalibrationStepStatus.success
+                                && DispenserCalibrationContext.state.load-cell-status != CalibrationStepStatus.running;
                             clicked => {
                                 DispenserCalibrationContext.calibrate-load-cell-ref-weight(
                                     root.active-pod,
@@ -188,75 +220,90 @@ component DispenserCalibrationContent inherits Rectangle {
                                     root.reference-weight-g);
                             }
                         }
+
+                        if DispenserCalibrationContext.state.reference-reading != "": SmallText {
+                            text: "Waage zeigt: " + DispenserCalibrationContext.state.reference-reading;
+                            color: Palette.log-info;
+                        }
                     }
 
                     StepCard {
                         step-number: "2";
-                        title: "Tare";
-                        description: "TARE";
-                        status: DispenserCalibrationContext.state.load-cell-tare-status;
+                        title: "Leere Flasche";
+                        description: "Leere Flasche aufsetzen und tarieren. Der Füllstand steht danach auf 0.";
+                        status: DispenserCalibrationContext.state.empty-bottle-tare-status;
 
                         Button {
-                            text: DispenserCalibrationContext.state.load-cell-tare-status == CalibrationStepStatus.running
-                                ? "läuft..." : "TARE";
+                            text: DispenserCalibrationContext.state.empty-bottle-tare-status == CalibrationStepStatus.running
+                                ? "läuft..." : "Tara (leere Flasche)";
                             height: Layout.touch-height;
-                            enabled: DispenserCalibrationContext.state.load-cell-tare-status != CalibrationStepStatus.running;
+                            enabled: DispenserCalibrationContext.state.empty-bottle-tare-status != CalibrationStepStatus.running;
                             clicked => {
-                                DispenserCalibrationContext.load-cell-tare(
+                                DispenserCalibrationContext.empty-bottle-tare(
                                     root.active-pod,
                                     root.active-dispenser);
                             }
                         }
                     }
 
-                    if root.active-dispenser.type == DispenserType.pump: StepCard {
+                    StepCard {
                         step-number: "3";
-                        title: "Pumpvolumen";
-                        description: "Pumpt die eingegebene Anzahl Schritte und misst das ausgegebene Volumen mit der kalibrierten Waage.";
-                        status: DispenserCalibrationContext.state.pump-status;
-                        enabled: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.success;
+                        title: "Dispenser";
+                        // codespell:ignore-next-line
+                        description: "Gefüllte Flasche auf der Waage und ein Glas unter den Auslauf stellen. Es fließt echte Flüssigkeit.";
+                        status: DispenserCalibrationContext.state.dispenser-status;
 
                         HorizontalBox {
                             cross-axis-alignment: center;
                             spacing: Layout.spacing-md;
                             SmallText {
-                                text: "Schritte:";
+                                text: "Laufzeit (s):";
                             }
 
                             SpinBox {
                                 height: Layout.touch-height-sm;
-                                minimum: 1;
-                                maximum: 20000;
-                                value <=> root.pump-test-steps;
-                                enabled: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.success;
+                                minimum: DispenserCalibrationContext.min-run-time-s;
+                                maximum: DispenserCalibrationContext.max-run-time-s;
+                                value <=> root.run-time-s;
+                                enabled: DispenserCalibrationContext.state.dispenser-status != CalibrationStepStatus.running;
                             }
                         }
 
                         Button {
-                            text: DispenserCalibrationContext.state.pump-status == CalibrationStepStatus.running
-                                ? "läuft..." : "Pumptest starten";
+                            text: DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.running
+                                ? "läuft..." : "Lauf starten";
                             height: Layout.touch-height;
-                            enabled: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.success
-                                && DispenserCalibrationContext.state.pump-status != CalibrationStepStatus.running;
+                            enabled: DispenserCalibrationContext.state.dispenser-status != CalibrationStepStatus.running;
                             clicked => {
-                                DispenserCalibrationContext.calibrate-pump(
-                                root.active-pod,
+                                DispenserCalibrationContext.calibrate-dispenser(
+                                    root.active-pod,
                                     root.active-dispenser,
-                                    root.pump-test-steps);
+                                    root.run-time-s);
                             }
                         }
 
-                        if DispenserCalibrationContext.state.pump-status == CalibrationStepStatus.success: SmallText {
-                            text: "Ergebnis: " + DispenserCalibrationContext.state.measured-ml-per-step;
+                        if DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.running: Button {
+                            // codespell:ignore-next-line
+                            text: "Stopp";
+                            height: Layout.touch-height;
+                            clicked => {
+                                DispenserCalibrationContext.stop-calibration();
+                            }
+                        }
+
+                        if DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.success: SmallText {
+                            text: "Gemessen: " + DispenserCalibrationContext.state.measured-amount;
                             color: Palette.log-info;
+                        }
+
+                        if DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.success
+                            && DispenserCalibrationContext.state.below-recommended-amount: SmallText {
+                            text: "Für eine genauere Kalibrierung eine längere Laufzeit wählen.";
+                            wrap: word-wrap;
+                            color: Palette.text-secondary;
                         }
                     }
 
-                    if DispenserCalibrationContext.state.error-message != "": SmallText {
-                        text: DispenserCalibrationContext.state.error-message;
-                        color: Palette.log-error;
-                        wrap: word-wrap;
-                    }
                 }
             }
         }
@@ -267,7 +314,8 @@ export component DispenserCalibrationPopup inherits PopupWindow {
     in property <Pod> active-pod;
     in property <Dispenser> active-dispenser;
 
-    close-policy: PopupClosePolicy.close-on-click-outside;
+    // It must not close while something runs, as the way to stop a run is in here.
+    close-policy: PopupClosePolicy.no-auto-close;
     Rectangle {
         width: 100%;
         height: 100%;
@@ -281,5 +329,8 @@ export component DispenserCalibrationPopup inherits PopupWindow {
         y: (root.height - self.height) / 2;
         active-pod: root.active-pod;
         active-dispenser: root.active-dispenser;
+        close-requested => {
+            root.close();
+        }
     }
 }

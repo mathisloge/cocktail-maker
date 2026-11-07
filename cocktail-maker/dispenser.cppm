@@ -33,6 +33,23 @@ export class DispenserNotFoundError : public std::runtime_error
     DispenserId dispenser_id_;
 };
 
+/// Why a pour ended.
+export enum class DispenseOutcome
+{
+    completed,
+    bottle_empty,
+    timed_out,
+    /// The Pod used up its trims and the amount is still below the target.
+    still_short,
+};
+
+/// What a pour really delivered, measured at rest, and why it ended.
+export struct DispenseReport
+{
+    units::Litre amount;
+    DispenseOutcome outcome;
+};
+
 export class Dispenser
 {
   public:
@@ -43,7 +60,10 @@ export class Dispenser
     Dispenser& operator=(const Dispenser&) = delete;
     Dispenser& operator=(Dispenser&&) noexcept = delete;
 
-    virtual Task<units::Litre> dispense(units::Litre volume) = 0;
+    virtual Task<DispenseReport> dispense(units::Litre volume) = 0;
+    virtual Task<units::Litre> calibrate(std::chrono::milliseconds run_time) = 0;
+    /// Reads the load cell. The weight is relative to its zero point, so it can be negative.
+    virtual Task<units::Grams> load_cell_weight() = 0;
     virtual Task<void> load_cell_calibrate_with_ref_weight(units::Grams grams) = 0;
     virtual Task<void> load_cell_tare() = 0;
     virtual Task<void> highlight(std::chrono::milliseconds duration) = 0;

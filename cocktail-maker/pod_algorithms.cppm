@@ -19,12 +19,16 @@ export template <std::ranges::input_range R>
 Task<void> force_safe_state_all(R&& pods)
 {
     std::vector<Task<void>> tasks;
+    // The range may only hand out temporaries, and a pod can lose its last owner while its stop is pending.
+    std::vector<std::shared_ptr<IPod>> keep_alive;
     if constexpr (std::ranges::sized_range<R>) {
         tasks.reserve(std::ranges::size(pods));
+        keep_alive.reserve(std::ranges::size(pods));
     }
-    for (const auto& pod : pods) {
+    for (std::shared_ptr<IPod> pod : pods) {
         ASSERT(pod != nullptr, "IPod in range must not be null.");
         tasks.emplace_back(pod->force_safe_state());
+        keep_alive.push_back(std::move(pod));
     }
 
     co_await gather_all(std::move(tasks));

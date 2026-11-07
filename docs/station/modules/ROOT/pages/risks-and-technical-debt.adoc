@@ -44,3 +44,5 @@ xref:adr:003-asynchronous-execution-model.adoc[ADR-003].
 * *Running a pump backwards:* emptying the tubes needs a pump to run in reverse. Neither the protocol
   nor the Pod firmware can do this yet. The maintenance area will offer the action per pump, and it
   stays without effect until both are extended.
+* *Restarting a Pod:* the protocol has no message that restarts a Pod. The maintenance area will offer
+  a restart per Pod, and it stays without effect until the protocol and the Pod firmware support it.

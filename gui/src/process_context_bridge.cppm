@@ -51,6 +51,9 @@ export class ProcessContextBridge
 
     void display_ui_success(std::chrono::milliseconds duration) const;
 
+    /// Shows the error page for `error` on the UI thread.
+    void show_mix_error(const std::exception_ptr& error) const;
+
   private:
     log::Logger logger_{log::create_or_get("ui")};
     AsyncScope& async_scope_;

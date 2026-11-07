@@ -36,6 +36,8 @@ target_sources(
                 src/recipe_context_bridge.cpp
                 src/process_context_bridge.cppm
                 src/process_context_bridge.cpp
+                src/mix_error_page.cppm
+                src/mix_error_page.cpp
                 src/glass_context_bridge.cppm
                 src/gui_application.cppm
                 src/gui_application.cpp
@@ -70,6 +72,7 @@ if(BUILD_TESTING)
             src/maschine_adapter.test.cpp
             src/station_flows.test.cpp
             src/dispenser_calibration_bridge.test.cpp
+            src/mix_error_page.test.cpp
     )
 endif()
 

@@ -14,3 +14,4 @@ export import :overloaded;
 export import :strong_type;
 export import :any_io_stream;
 export import :retry;
+export import :sleep;

@@ -44,6 +44,8 @@ target_sources(
                 strong_type.cppm
                 units.cppm
                 retry.cppm
+                sleep.cppm
+                sleep.cpp
                 run_until_complete.cppm
                 task.cppm
 )
@@ -61,6 +63,7 @@ if(BUILD_TESTING)
         cocktail-maker-core-tests
         PRIVATE
             any_io_stream.test.cpp
+            sleep.test.cpp
             async_algorithms.test.cpp
             awaitable_bool.test.cpp
             comms_adapter.test.cpp

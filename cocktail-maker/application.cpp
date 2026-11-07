@@ -132,11 +132,7 @@ void Application::shutdown()
     SPDLOG_LOGGER_INFO(logger_, "Stopping all asynchronous work...");
 
     // The scope is stopped and joined on the execution thread. The calling thread only waits for it.
-    auto stop_and_join = [](AsyncScope& scope) -> Task<void> {
-        scope.request_stop();
-        co_await scope.join();
-    };
-    stdexec::sync_wait(stdexec::starts_on(async_scope_.scheduler(), stop_and_join(async_scope_)));
+    stdexec::sync_wait(stdexec::starts_on(async_scope_.scheduler(), async_scope_.stop_and_join()));
 
     // All asynchronous work has finished, so the handlers that are still queued can be dropped.
     work_guard_.reset();

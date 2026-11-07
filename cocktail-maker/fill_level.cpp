@@ -1,7 +1,6 @@
 module;
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/post.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <exec/asio/use_sender.hpp>
 #include <fcntl.h>
 #include <proto/field/ErrorCodeCommon.h>
 #include <simdjson.h>
@@ -344,8 +343,7 @@ void FillLevelTracker::empty_bottle_tared(const PodDispenser& address)
 
 Task<void> FillLevelTracker::refilled(const PodDispenser& address, Dispenser& dispenser, const RefillSource source)
 {
-    asio::steady_timer timer{executor_, options_.refill_settle_time};
-    co_await timer.async_wait(exec::asio::use_sender);
+    co_await async_sleep(executor_, options_.refill_settle_time);
 
     const auto reading = co_await read_weight(address, dispenser);
     const auto it = records_.find(address);

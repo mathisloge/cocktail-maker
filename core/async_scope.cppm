@@ -47,6 +47,10 @@ export class AsyncScope
     /// Completes once every associated operation has completed. It must be started on the io_context's thread.
     [[nodiscard]] Task<void> join();
 
+    /// Requests a stop and completes once every associated operation has completed. It must be started on the
+    /// io_context's thread.
+    [[nodiscard]] Task<void> stop_and_join();
+
     [[nodiscard]] IoScheduler scheduler() const noexcept
     {
         return scheduler_;

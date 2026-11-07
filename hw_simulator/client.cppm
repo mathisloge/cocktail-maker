@@ -617,8 +617,7 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
   private:
     Task<void> delay(std::chrono::milliseconds duration = std::chrono::milliseconds{50})
     {
-        asio::steady_timer timer{stream_.get_executor(), duration};
-        co_await timer.async_wait(exec::asio::use_sender);
+        co_await async_sleep(stream_.get_executor(), duration);
     }
 
     auto async_send(auto msg, const TransactionId::ValueType transaction_id) -> Task<void>

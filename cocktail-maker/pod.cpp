@@ -1,7 +1,5 @@
 module;
-#include <boost/asio/steady_timer.hpp>
 #include <comms/ErrorStatus.h>
-#include <exec/asio/use_sender.hpp>
 #include <exec/when_any.hpp>
 #include <proto/field/DispenseResultCommon.h>
 #include <proto/field/ErrorCodeCommon.h>
@@ -13,8 +11,6 @@ module cm:pod_impl;
 import std;
 import cm.core;
 import :pod;
-
-namespace asio = boost::asio;
 
 namespace cm {
 
@@ -405,8 +401,7 @@ Task<void> Pod::monitor_device()
                             station_protocol_version());
         state_->update_state(PodState::ConnectionState::incompatible);
         // Only a stop request ends the wait, when the Pod goes away or the Station shuts down.
-        asio::steady_timer never{session_.get_executor(), asio::steady_timer::time_point::max()};
-        co_await never.async_wait(exec::asio::use_sender);
+        co_await wait_until_stopped(session_.get_executor());
         co_return;
     }
     SPDLOG_LOGGER_INFO(logger_, "Device '{}' is ready.", pod_info.id);
@@ -419,15 +414,13 @@ Task<void> Pod::monitor_device()
 Task<void> Pod::keep_alive()
 {
     co_await device_ready_.async_wait();
-    asio::steady_timer timer{session_.get_executor()};
-    // The loop only ends through a stop request, which completes the pending ping or timer wait with set_stopped.
+    // The loop only ends through a stop request, which completes the pending ping or sleep with set_stopped.
     for (;;) {
         co_await retry_on_timeout(
             3,
             [this](auto timeout) { return send_and_receive<InPong>(session_, OutPing{}, default_env(this, timeout)); },
             ExponentialBackoffPolicy{.maximum = 1s});
-        timer.expires_after(2s);
-        co_await timer.async_wait(exec::asio::use_sender);
+        co_await async_sleep(session_.get_executor(), 2s);
     }
 }
 

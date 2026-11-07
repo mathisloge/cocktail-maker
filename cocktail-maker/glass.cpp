@@ -8,16 +8,20 @@ import mp_units;
 import cm.core;
 import :glass;
 import :state_file;
+import :catalog_loader;
 
 namespace cm {
 
 void GlassStore::init_glasses(std::vector<Glass> glasses)
 {
-    glasses_.clear();
+    std::unordered_map<GlassId, Glass> catalog;
     for (auto&& glass : glasses) {
         auto id = glass.id;
-        glasses_.emplace(std::move(id), std::move(glass));
+        if (not catalog.emplace(id, std::move(glass)).second) {
+            throw std::invalid_argument{std::format("Duplicate glass id '{}'", id)};
+        }
     }
+    glasses_ = std::move(catalog);
     load_active_volumes();
 }
 
@@ -89,23 +93,10 @@ Glass parse_glass(simdjson::ondemand::document& doc)
 
 std::vector<Glass> load_glasses_from_dir(std::filesystem::path dir)
 {
-    std::vector<Glass> glasses;
-    simdjson::ondemand::parser parser;
-
-    for (const auto& entry : std::filesystem::directory_iterator(dir)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".json") {
-            try {
-                simdjson::padded_string json = simdjson::padded_string::load(entry.path().string());
-                simdjson::ondemand::document doc = parser.iterate(json);
-
-                glasses.push_back(parse_glass(doc));
-            }
-            catch (const simdjson::simdjson_error& e) {
-                throw std::runtime_error(std::format("Failed to parse {}: {}", entry.path().string(), e.what()));
-            }
-        }
-    }
-    return glasses;
+    return load_json_catalog<Glass>(
+        dir, "glass", [](simdjson::ondemand::document& document, const std::filesystem::path& /*file*/) {
+            return parse_glass(document);
+        });
 }
 
 namespace {

@@ -43,7 +43,7 @@ export struct Recipe
 };
 
 /**
- * Loads every recipe file in `path`.
+ * Loads every recipe file in the directory `path`, in the order of the file names.
  *
  * @throws std::runtime_error naming the file, if a recipe can't be read, names an unknown ingredient, or has a value
  * the Station can't work with: a serving volume of 0 or less, or a dispense step below 1 mL.
@@ -53,6 +53,7 @@ export std::vector<Recipe> load_recipes_from_dir(const std::filesystem::path& pa
 export class RecipeStore final
 {
   public:
+    /// Replaces the recipes and numbers their commands. @throws std::invalid_argument if two recipes share an id.
     void init_recipes(std::vector<Recipe> recipes);
 
     std::optional<Recipe> find_by_id(RecipeId id) const;

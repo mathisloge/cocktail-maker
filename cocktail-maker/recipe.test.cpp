@@ -232,3 +232,52 @@ TEST_CASE("load_recipes_from_dir reads the serving volume", "[recipe][load]")
     REQUIRE(recipes.size() == 1);
     CHECK(recipes.front().nominal_serving_volume == 200 * units::milli_litre);
 }
+
+TEST_CASE("RecipeStore::init_recipes refuses a duplicate id", "[RecipeStore]")
+{
+    RecipeStore store{};
+
+    CHECK_THROWS_AS(store.init_recipes({make_recipe("Lemon Tart"), make_recipe("Lemon Tart")}), std::invalid_argument);
+    CHECK_THROWS_WITH(store.init_recipes({make_recipe("Lemon Tart"), make_recipe("Lemon Tart")}),
+                      ContainsSubstring("Lemon Tart"));
+}
+
+TEST_CASE("RecipeStore::init_recipes replaces the recipes it held", "[RecipeStore]")
+{
+    RecipeStore store{};
+    store.init_recipes(three_recipes());
+
+    store.init_recipes({make_recipe("Lemon Tart")});
+
+    CHECK(store.recipe_count() == 1);
+}
+
+TEST_CASE("load_recipes_from_dir returns the recipes in file name order", "[recipe][load]")
+{
+    const cm::testing::TempDir dir{"cm-recipe-test"};
+    const auto store = store_with_rum();
+    const std::string_view recipe = R"({"name": "X", "nominal_serving_volume": 200,
+                                        "steps": [{"kind": "dispense", "ingredient": "rum", "volume": 40}]})";
+    dir.write_file("b.json", recipe);
+    dir.write_file("a.json", recipe);
+    dir.write_file("c.json", recipe);
+
+    const auto recipes = load_recipes_from_dir(dir.path(), store);
+
+    REQUIRE(recipes.size() == 3);
+    CHECK(recipes[0].id == RecipeId{"a"});
+    CHECK(recipes[1].id == RecipeId{"b"});
+    CHECK(recipes[2].id == RecipeId{"c"});
+}
+
+TEST_CASE("load_recipes_from_dir refuses a dispense step below 1 mL at the top level", "[recipe][load]")
+{
+    const cm::testing::TempDir dir{"cm-recipe-test"};
+    const auto store = store_with_rum();
+    dir.write_file("tiny.json",
+                   R"({"name": "X", "nominal_serving_volume": 200,
+                       "steps": [{"kind": "dispense", "ingredient": "rum", "volume": 0.5}]})");
+
+    CHECK_THROWS_WITH(load_recipes_from_dir(dir.path(), store),
+                      ContainsSubstring("tiny.json") && ContainsSubstring("at least 1 mL"));
+}

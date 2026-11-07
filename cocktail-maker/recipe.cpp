@@ -6,6 +6,7 @@ import std;
 import mp_units;
 import cm.core;
 import :recipe;
+import :catalog_loader;
 
 namespace cm {
 template <typename T>
@@ -45,10 +46,14 @@ constexpr void assign_unique_command_ids(Recipe& recipe)
 
 void RecipeStore::init_recipes(std::vector<Recipe> recipes)
 {
-    for (auto&& r : recipes) {
-        assign_unique_command_ids(r);
-        recipes_.emplace_back(std::move(r));
+    std::unordered_set<RecipeId> ids;
+    for (auto& recipe : recipes) {
+        if (not ids.insert(recipe.id).second) {
+            throw std::invalid_argument{std::format("Duplicate recipe id '{}'", recipe.id)};
+        }
+        assign_unique_command_ids(recipe);
     }
+    recipes_ = std::move(recipes);
 }
 
 std::optional<Recipe> RecipeStore::find_by_id(RecipeId id) const
@@ -71,6 +76,22 @@ std::optional<Recipe> RecipeStore::find_by_index(int index) const
 std::size_t RecipeStore::recipe_count() const
 {
     return recipes_.size();
+}
+
+/// The command ids are left to `RecipeStore::init_recipes`, which numbers the commands of every recipe.
+DispenseCommand parse_dispense_step(simdjson::ondemand::object& step, const IngredientStore& ingredient_store)
+{
+    DispenseCommand command;
+    command.ingredient = IngredientId{std::string(step["ingredient"].get_string().value())};
+    if (!ingredient_store.find_by_id(command.ingredient).has_value()) {
+        throw std::runtime_error(std::format("Ingredient '{}' not found in store", command.ingredient));
+    }
+
+    command.volume = step["volume"].get_double().value() * units::milli_litre;
+    if (command.volume < 1 * units::milli_litre) {
+        throw std::runtime_error(std::format("The volume of '{}' has to be at least 1 mL", command.ingredient));
+    }
+    return command;
 }
 
 Recipe parse_recipe(simdjson::ondemand::document& doc,
@@ -112,7 +133,6 @@ Recipe parse_recipe(simdjson::ondemand::document& doc,
     recipe.nominal_serving_volume = nominal_vol_ml * units::milli_litre;
 
     // Steps (Required array)
-    int next_command_id = 1;
     simdjson::ondemand::array steps_arr = obj["steps"].get_array().value();
 
     for (auto step_val : steps_arr) {
@@ -120,25 +140,10 @@ Recipe parse_recipe(simdjson::ondemand::document& doc,
         std::string_view kind = step_obj["kind"].get_string().value();
 
         if (kind == "dispense") {
-            DispenseCommand cmd;
-            cmd.id = CommandId{next_command_id++};
-            cmd.ingredient = IngredientId{std::string(step_obj["ingredient"].get_string().value())};
-
-            // Validate against the provided ingredient store
-            if (!ingredient_store.find_by_id(cmd.ingredient).has_value()) {
-                throw std::runtime_error(
-                    std::format("Ingredient '{}' not found in store", static_cast<const std::string&>(cmd.ingredient)));
-            }
-
-            cmd.volume = step_obj["volume"].get_double().value() * units::milli_litre;
-            if (cmd.volume < 1 * units::milli_litre) {
-                throw std::runtime_error(std::format("The volume of '{}' has to be at least 1 mL", cmd.ingredient));
-            }
-            recipe.commands.emplace_back(Command{cmd});
+            recipe.commands.emplace_back(Command{parse_dispense_step(step_obj, ingredient_store)});
         }
         else if (kind == "manual") {
             ManualCommand cmd;
-            cmd.id = CommandId{next_command_id++};
             cmd.instruction = std::string(step_obj["text"].get_string().value());
             recipe.commands.emplace_back(Command{cmd});
         }
@@ -153,21 +158,7 @@ Recipe parse_recipe(simdjson::ondemand::document& doc,
                 if (inner_kind != "dispense") {
                     throw std::runtime_error("Only dispense steps are allowed inside a parallel block");
                 }
-
-                DispenseCommand cmd;
-                cmd.id = CommandId{next_command_id++};
-                cmd.ingredient = IngredientId{std::string(inner_obj["ingredient"].get_string().value())};
-
-                if (!ingredient_store.find_by_id(cmd.ingredient).has_value()) {
-                    throw std::runtime_error(
-                        std::format("Ingredient '{}' not found in store", static_cast<const std::string&>(cmd.ingredient)));
-                }
-
-                cmd.volume = inner_obj["volume"].get_double().value() * units::milli_litre;
-                if (cmd.volume < 1 * units::milli_litre) {
-                    throw std::runtime_error(std::format("The volume of '{}' has to be at least 1 mL", cmd.ingredient));
-                }
-                pcmd.emplace_back(Command{cmd});
+                pcmd.emplace_back(Command{parse_dispense_step(inner_obj, ingredient_store)});
             }
             recipe.commands.emplace_back(pcmd);
         }
@@ -181,34 +172,9 @@ Recipe parse_recipe(simdjson::ondemand::document& doc,
 
 std::vector<Recipe> load_recipes_from_dir(const std::filesystem::path& path, const IngredientStore& ingredient_store)
 {
-    std::vector<Recipe> recipes;
-    simdjson::ondemand::parser parser;
-
-    auto load_single_file = [&](const std::filesystem::path& file_path) {
-        try {
-            simdjson::padded_string json = simdjson::padded_string::load(file_path.string());
-            simdjson::ondemand::document doc = parser.iterate(json);
-            recipes.push_back(parse_recipe(doc, file_path, ingredient_store));
-        }
-        catch (const simdjson::simdjson_error& e) {
-            throw std::runtime_error(std::format("Failed to parse recipe {}: {}", file_path.string(), e.what()));
-        }
-        catch (const std::exception& e) {
-            throw std::runtime_error(std::format("Error loading recipe {}: {}", file_path.string(), e.what()));
-        }
-    };
-
-    if (std::filesystem::is_directory(path)) {
-        for (const auto& entry : std::filesystem::directory_iterator(path)) {
-            if (entry.is_regular_file() && entry.path().extension() == ".json") {
-                load_single_file(entry.path());
-            }
-        }
-    }
-    else if (std::filesystem::is_regular_file(path) && path.extension() == ".json") {
-        load_single_file(path);
-    }
-
-    return recipes;
+    return load_json_catalog<Recipe>(
+        path, "recipe", [&ingredient_store](simdjson::ondemand::document& document, const std::filesystem::path& file) {
+            return parse_recipe(document, file, ingredient_store);
+        });
 }
 } // namespace cm

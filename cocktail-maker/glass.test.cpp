@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 import std;
 import mp_units;
@@ -115,6 +116,16 @@ TEST_CASE("GlassStore::init_glasses preserves all glass fields", "[GlassStore][i
     CHECK(stored.icon.viewbox_height == expected.icon.viewbox_height);
     CHECK(stored.icon.outline == expected.icon.outline);
     CHECK(stored.icon.rim == expected.icon.rim);
+}
+
+TEST_CASE("GlassStore::init_glasses refuses a duplicate id", "[GlassStore][init_glasses]")
+{
+    const cm::testing::TempDir dir;
+    GlassStore store{dir.file("glass_active_volumes.json")};
+
+    CHECK_THROWS_AS(store.init_glasses({make_glass("highball"), make_glass("highball")}), std::invalid_argument);
+    CHECK_THROWS_WITH(store.init_glasses({make_glass("highball"), make_glass("highball")}),
+                      Catch::Matchers::ContainsSubstring("highball"));
 }
 
 TEST_CASE("GlassStore::init_glasses replaces previously stored glasses", "[GlassStore][init_glasses]")
@@ -409,6 +420,21 @@ TEST_CASE("load_glasses_from_dir reads all json files in the directory", "[load_
     CHECK(glasses.at(0).id == GlassId{"highball"});
     CHECK(glasses.at(1).id == GlassId{"margarita"});
     CHECK(glasses.at(2).id == GlassId{"wine"});
+}
+
+TEST_CASE("load_glasses_from_dir returns the glasses in file name order", "[load_glasses_from_dir]")
+{
+    const cm::testing::TempDir dir;
+    dir.write_file("b.json", glass_json("wine", "Wine"));
+    dir.write_file("a.json", glass_json("highball", "Highball"));
+    dir.write_file("c.json", glass_json("tumbler", "Tumbler"));
+
+    const auto glasses = load_glasses_from_dir(dir.path());
+
+    REQUIRE(glasses.size() == 3);
+    CHECK(glasses[0].id == GlassId{"highball"});
+    CHECK(glasses[1].id == GlassId{"wine"});
+    CHECK(glasses[2].id == GlassId{"tumbler"});
 }
 
 TEST_CASE("load_glasses_from_dir ignores non-json files", "[load_glasses_from_dir]")

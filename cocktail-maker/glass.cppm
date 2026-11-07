@@ -34,7 +34,7 @@ export class GlassStore
   public:
     explicit GlassStore(std::filesystem::path active_volumes_file);
 
-    /// Replaces the catalog and reads the active volumes for it.
+    /// Replaces the catalog and reads the active volumes for it. @throws std::invalid_argument if two glasses share an id.
     void init_glasses(std::vector<Glass> glasses);
 
     [[nodiscard]] const std::unordered_map<GlassId, Glass>& glasses() const;

@@ -20,6 +20,7 @@ target_sources(
     PUBLIC
         FILE_SET CXX_MODULES
             FILES
+                catalog_loader.cppm
                 dispenser.cppm
                 fill_level.cppm
                 fill_level.cpp

@@ -1,23 +1,25 @@
 module;
-#include <libassert/assert-macros.hpp>
 #include <simdjson.h>
 
 module cm:ingredient_impl;
 import std;
 import mp_units;
-import libassert;
 import cm.core;
 import :ingredient;
+import :catalog_loader;
 
 namespace cm {
 
 void IngredientStore::init_ingredients(std::vector<Ingredient> ingredients)
 {
-    ingredients_.clear();
-    for (auto&& i : ingredients) {
-        const auto [_, emplaced] = ingredients_.emplace(i.id, std::move(i));
-        ASSERT(emplaced);
+    std::unordered_map<IngredientId, Ingredient> catalog;
+    for (auto&& ingredient : ingredients) {
+        auto id = ingredient.id;
+        if (not catalog.emplace(id, std::move(ingredient)).second) {
+            throw std::invalid_argument{std::format("Duplicate ingredient id '{}'", id)};
+        }
     }
+    ingredients_ = std::move(catalog);
 }
 
 std::optional<Ingredient> IngredientStore::find_by_id(const IngredientId& ingredient_id) const
@@ -93,26 +95,9 @@ Ingredient parse_ingredient(simdjson::ondemand::document& doc)
 
 std::vector<Ingredient> load_ingredients_from_dir(std::filesystem::path dir)
 {
-    std::vector<Ingredient> ingredients;
-    simdjson::ondemand::parser parser;
-
-    for (const auto& entry : std::filesystem::directory_iterator(dir)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".json") {
-            try {
-                // Read via simdjson padded layout to support accelerated parsing
-                simdjson::padded_string json = simdjson::padded_string::load(entry.path().c_str());
-                simdjson::ondemand::document doc = parser.iterate(json);
-
-                ingredients.push_back(parse_ingredient(doc));
-            }
-            catch (const simdjson::simdjson_error& e) {
-                throw std::runtime_error(std::format("Failed to parse ingredient file {}: {}", entry.path().c_str(), e.what()));
-            }
-            catch (const std::exception& e) {
-                throw std::runtime_error(std::format("Error in file {}: {}", entry.path().c_str(), e.what()));
-            }
-        }
-    }
-    return ingredients;
+    return load_json_catalog<Ingredient>(
+        dir, "ingredient", [](simdjson::ondemand::document& document, const std::filesystem::path& /*file*/) {
+            return parse_ingredient(document);
+        });
 }
 } // namespace cm

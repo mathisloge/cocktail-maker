@@ -76,7 +76,7 @@ TEST_CASE("ui snapshots", "[.snapshot]")
     snapshot(ui, dir, "fill_warning_popup");
     ui->invoke_close_fill_warning_popup();
 
-    ui->invoke_open_manual_command_popup(cm::gui::Command{});
+    ui->invoke_open_manual_command_popup(cm::gui::Command{.text = "Ginger Beer nachfüllen"});
     snapshot(ui, dir, "manual_command_popup");
     ui->invoke_close_manual_command_popup();
 

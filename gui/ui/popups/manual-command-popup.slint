@@ -19,11 +19,12 @@ export component ManualCommandPopup inherits PopupWindow {
         background: Palette.overlay-scrim;
     }
 
+    // The box grows with the command text, so long instructions wrap instead of being cut off.
     Rectangle {
-        height: 50%;
         width: 50%;
-        x: root.width / 4;
-        y: root.height / 4;
+        height: box-layout.preferred-height;
+        x: (root.width - self.width) / 2;
+        y: (root.height - self.height) / 2;
         background: Palette.surface-elevated;
         border-width: 1px;
         border-color: Palette.border-strong;
@@ -59,6 +60,7 @@ export component ManualCommandPopup inherits PopupWindow {
 
             DisplayText {
                 horizontal-alignment: center;
+                wrap: word-wrap;
                 text: command.text;
             }
 

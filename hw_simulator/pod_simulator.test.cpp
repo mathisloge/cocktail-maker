@@ -534,6 +534,7 @@ namespace {
 class SimApplication : public cm::Application
 {
   public:
+    using Application::Application;
     using Application::run;
 };
 
@@ -585,27 +586,9 @@ TEST_CASE_METHOD(SimFillLevelFixture, "A connection lost during the reads ends t
 
 TEST_CASE("The application reads the fill levels of a pod that connects", "[sim][fill_level]")
 {
-    // The application keeps its file in the working directory, and this test must not touch a real one.
-    const auto directory = std::filesystem::temp_directory_path() /
-                           std::format("sim-application-{}", std::chrono::steady_clock::now().time_since_epoch().count());
-    std::filesystem::create_directories(directory);
-    const auto previous_directory = std::filesystem::current_path();
-    std::filesystem::current_path(directory);
-
-    struct RestoreDirectory
-    {
-        std::filesystem::path previous;
-        std::filesystem::path temporary;
-
-        ~RestoreDirectory()
-        {
-            std::filesystem::current_path(previous);
-            std::filesystem::remove_all(temporary);
-        }
-    } restore_directory{previous_directory, directory};
-
+    cm::testing::TempDir dir{"cm-sim-application-test"};
     std::atomic<int> changes{0};
-    SimApplication app;
+    SimApplication app{dir.path()};
     app.fill_levels().set_change_handler([&changes](const cm::PodDispenser&, const cm::FillLevelView&) { ++changes; });
 
     app.run(std::make_shared<SilentStationState>(), std::make_unique<cm::sim::SimulatedPodDiscovery>());

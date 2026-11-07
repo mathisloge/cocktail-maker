@@ -86,6 +86,13 @@ class FillLevelStationState final : public StationState
 };
 } // namespace
 
+Application::Application(const std::filesystem::path& state_dir)
+    : glass_store_{state_dir / "glass_active_volumes.json"}
+    , station_config_{ingredient_store_, state_dir / "ingredient_dispenser_mapping.json"}
+    , fill_levels_{execution_context_.get_executor(), state_dir / "dispenser_fill_levels.json"}
+{
+}
+
 Application::~Application()
 {
     try {
@@ -136,6 +143,8 @@ void Application::shutdown()
     execution_context_.stop();
     execution_thread_.reset();
     fill_levels_.flush();
+    station_config_.flush();
+    glass_store_.flush();
 }
 
 boost::asio::any_io_executor Application::get_executor()

@@ -50,6 +50,8 @@ target_sources(
                 station_config.cppm
                 station_config.cpp
                 station_state.cppm
+                state_file.cppm
+                state_file.cpp
                 serial.cppm
                 serial.cpp
                 application.cppm
@@ -81,5 +83,7 @@ if(BUILD_TESTING)
             recipe_scale.test.cpp
             recipe.test.cpp
             serial.test.cpp
+            state_file.test.cpp
+            station_config.test.cpp
     )
 endif()

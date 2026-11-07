@@ -446,7 +446,7 @@ namespace {
 struct ShortageFixture : FillLevelFixture
 {
     cm::IngredientStore ingredients;
-    cm::StationConfig config{ingredients, ""};
+    cm::StationConfig config{ingredients, dir.file("mapping.json")};
     const cm::IngredientId rum{"rum"};
     const cm::IngredientId lime{"lime"};
     const cm::PodDispenser lime_address{cm::PodId{"Pod"}, cm::DispenserId{1}};

@@ -16,7 +16,8 @@ int main(int argc, char** argv)
     cli.add_flag("--fullscreen", fullscreen, "Run the kiosk UI in fullscreen mode");
     CLI11_PARSE(cli, argc, argv);
 
-    cm::gui::GuiApplication app;
+    // The state files live in the working directory, which the systemd unit sets.
+    cm::gui::GuiApplication app{std::filesystem::current_path()};
     cm::log::set_level(cm::log::Level::debug);
 
     auto logger = cm::log::create_or_get("main");

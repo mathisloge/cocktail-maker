@@ -17,7 +17,8 @@ TEST_CASE("MachineAdapter - manual command opens and resolves through the popup"
     auto ui = cm::gui::AppWindow::create();
     cm::IngredientStore ingredient_store;
     cm::PodRegistry pod_registry;
-    cm::StationConfig station_config{ingredient_store, ""};
+    cm::testing::TempDir dir;
+    cm::StationConfig station_config{ingredient_store, dir.file("mapping.json")};
 
     boost::asio::io_context ctx;
     cm::AsyncScope scope{ctx};
@@ -49,7 +50,8 @@ TEST_CASE("MachineAdapter - update_command_status updates the active recipe", "[
     auto ui = cm::gui::AppWindow::create();
     cm::IngredientStore ingredient_store;
     cm::PodRegistry pod_registry;
-    cm::StationConfig station_config{ingredient_store, ""};
+    cm::testing::TempDir dir;
+    cm::StationConfig station_config{ingredient_store, dir.file("mapping.json")};
 
     boost::asio::io_context ctx;
     cm::FillLevelTracker fill_levels{ctx.get_executor(), "unused_fill_levels.json"};

@@ -11,7 +11,8 @@ import :station_state_bridge;
 
 namespace cm::gui {
 
-GuiApplication::GuiApplication()
+GuiApplication::GuiApplication(const std::filesystem::path& state_dir)
+    : Application{state_dir}
 {
     auto ui_log_sink = std::make_shared<ui_log_sink_st>();
     log::add_sink(ui_log_sink);

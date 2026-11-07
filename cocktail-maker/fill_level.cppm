@@ -1,6 +1,5 @@
 module;
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/thread_pool.hpp>
 
 export module cm:fill_level;
 
@@ -12,6 +11,7 @@ import :dispenser;
 import :station_config;
 import :pod_registry;
 import :recipe;
+import :state_file;
 
 namespace cm {
 
@@ -85,7 +85,6 @@ export class FillLevelTracker
     FillLevelTracker(boost::asio::any_io_executor executor, std::filesystem::path file, FillLevelOptions options = {});
     FillLevelTracker(const FillLevelTracker&) = delete;
     FillLevelTracker& operator=(const FillLevelTracker&) = delete;
-    ~FillLevelTracker();
 
     /// Loads the stored records. A missing or malformed file logs and starts empty, and a malformed entry is skipped.
     void init();
@@ -126,18 +125,15 @@ export class FillLevelTracker
     Task<std::optional<units::Grams>> read_weight(const PodDispenser& address, Dispenser& dispenser);
     void apply_reading(const PodDispenser& address, units::Grams reading);
     void changed(const PodDispenser& address);
-    void write_file(const Records& records) const;
 
     log::Logger logger_{log::create_or_get("fill_level")};
     boost::asio::any_io_executor executor_;
-    std::filesystem::path file_;
     FillLevelOptions options_;
     Records records_;
     std::map<PodDispenser, units::Grams> corrections_;
     std::set<PodDispenser> without_load_cell_;
     ChangeHandler change_handler_;
-    std::atomic<std::uint64_t> save_generation_{0};
-    boost::asio::thread_pool writer_{1};
+    StateFileWriter writer_;
 };
 
 /// An ingredient whose bottle may not be enough for a drink.

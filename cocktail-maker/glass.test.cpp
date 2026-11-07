@@ -5,6 +5,7 @@ import std;
 import mp_units;
 import cm;
 import cm.core;
+import cm.testing;
 
 using namespace cm;
 using Catch::Matchers::WithinAbs;
@@ -48,57 +49,6 @@ Glass make_glass(std::string id, std::vector<units::Litre> active_volumes = {})
     };
 }
 
-// `GlassStore` and the active-volume config functions read and write
-// `glass_active_volumes.json` relative to the current working directory, so each test runs
-// inside its own temporary directory to stay isolated.
-class TempWorkingDir
-{
-  public:
-    TempWorkingDir()
-        : previous_{std::filesystem::current_path()}
-        , dir_{unique_path()}
-    {
-        std::filesystem::create_directories(dir_);
-        std::filesystem::current_path(dir_);
-    }
-
-    TempWorkingDir(const TempWorkingDir&) = delete;
-    TempWorkingDir& operator=(const TempWorkingDir&) = delete;
-    TempWorkingDir(TempWorkingDir&&) = delete;
-    TempWorkingDir& operator=(TempWorkingDir&&) = delete;
-
-    ~TempWorkingDir()
-    {
-        std::error_code ec;
-        std::filesystem::current_path(previous_, ec);
-        std::filesystem::remove_all(dir_, ec);
-    }
-
-    [[nodiscard]] const std::filesystem::path& path() const
-    {
-        return dir_;
-    }
-
-    void write_file(const std::string& name, std::string_view content) const
-    {
-        std::ofstream ofs{dir_ / name, std::ios::binary | std::ios::trunc};
-        REQUIRE(ofs);
-        ofs << content;
-        REQUIRE(ofs);
-    }
-
-  private:
-    static std::filesystem::path unique_path()
-    {
-        static std::atomic<std::uint64_t> counter{0};
-        const auto stamp = static_cast<std::uint64_t>(std::chrono::steady_clock::now().time_since_epoch().count());
-        return std::filesystem::temp_directory_path() / std::format("cm-glass-test-{}-{}", stamp, counter++);
-    }
-
-    std::filesystem::path previous_;
-    std::filesystem::path dir_;
-};
-
 std::string glass_json(std::string_view id, std::string_view display_name, std::string_view common_volumes_ml = "[200, 300]")
 {
     return std::format(R"({{
@@ -123,17 +73,17 @@ std::string glass_json(std::string_view id, std::string_view display_name, std::
 
 TEST_CASE("GlassStore::glasses is empty for a fresh store", "[GlassStore][init_glasses]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    const GlassStore store;
+    const GlassStore store{dir.file("glass_active_volumes.json")};
     CHECK(store.glasses().empty());
 }
 
 TEST_CASE("GlassStore::init_glasses keys the glasses by their id", "[GlassStore][init_glasses]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    GlassStore store;
+    GlassStore store{dir.file("glass_active_volumes.json")};
     store.init_glasses({make_glass("highball"), make_glass("wine"), make_glass("margarita")});
 
     const auto& glasses = store.glasses();
@@ -146,13 +96,13 @@ TEST_CASE("GlassStore::init_glasses keys the glasses by their id", "[GlassStore]
 
 TEST_CASE("GlassStore::init_glasses preserves all glass fields", "[GlassStore][init_glasses]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
     Glass expected = make_glass("coupe");
     expected.display_name = "Coupe Glas";
     expected.icon.rim = {"M 18 18 L 82 18"};
 
-    GlassStore store;
+    GlassStore store{dir.file("glass_active_volumes.json")};
     store.init_glasses({expected});
 
     const auto it = store.glasses().find(GlassId{"coupe"});
@@ -169,9 +119,9 @@ TEST_CASE("GlassStore::init_glasses preserves all glass fields", "[GlassStore][i
 
 TEST_CASE("GlassStore::init_glasses replaces previously stored glasses", "[GlassStore][init_glasses]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    GlassStore store;
+    GlassStore store{dir.file("glass_active_volumes.json")};
     store.init_glasses({make_glass("highball"), make_glass("wine")});
     store.init_glasses({make_glass("tumbler")});
 
@@ -185,9 +135,9 @@ TEST_CASE("GlassStore::init_glasses replaces previously stored glasses", "[Glass
 
 TEST_CASE("GlassStore::add_active_volume adds a volume to a known glass", "[GlassStore][add_active_volume]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    GlassStore store;
+    GlassStore store{dir.file("glass_active_volumes.json")};
     store.init_glasses({make_glass("highball")});
 
     CHECK(store.add_active_volume(GlassId{"highball"}, ml(300.0)));
@@ -196,9 +146,9 @@ TEST_CASE("GlassStore::add_active_volume adds a volume to a known glass", "[Glas
 
 TEST_CASE("GlassStore::add_active_volume keeps the active volumes sorted", "[GlassStore][add_active_volume]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    GlassStore store;
+    GlassStore store{dir.file("glass_active_volumes.json")};
     store.init_glasses({make_glass("highball")});
 
     CHECK(store.add_active_volume(GlassId{"highball"}, ml(400.0)));
@@ -210,9 +160,9 @@ TEST_CASE("GlassStore::add_active_volume keeps the active volumes sorted", "[Gla
 
 TEST_CASE("GlassStore::add_active_volume rejects a duplicate volume", "[GlassStore][add_active_volume]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    GlassStore store;
+    GlassStore store{dir.file("glass_active_volumes.json")};
     store.init_glasses({make_glass("highball")});
 
     REQUIRE(store.add_active_volume(GlassId{"highball"}, ml(300.0)));
@@ -223,9 +173,9 @@ TEST_CASE("GlassStore::add_active_volume rejects a duplicate volume", "[GlassSto
 
 TEST_CASE("GlassStore::add_active_volume ignores an unknown glass", "[GlassStore][add_active_volume]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    GlassStore store;
+    GlassStore store{dir.file("glass_active_volumes.json")};
     store.init_glasses({make_glass("highball")});
 
     CHECK_FALSE(store.add_active_volume(GlassId{"does-not-exist"}, ml(300.0)));
@@ -235,9 +185,9 @@ TEST_CASE("GlassStore::add_active_volume ignores an unknown glass", "[GlassStore
 
 TEST_CASE("GlassStore::add_active_volume only touches the addressed glass", "[GlassStore][add_active_volume]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    GlassStore store;
+    GlassStore store{dir.file("glass_active_volumes.json")};
     store.init_glasses({make_glass("highball"), make_glass("wine")});
 
     REQUIRE(store.add_active_volume(GlassId{"highball"}, ml(300.0)));
@@ -248,9 +198,9 @@ TEST_CASE("GlassStore::add_active_volume only touches the addressed glass", "[Gl
 
 TEST_CASE("GlassStore::remove_active_volume removes an existing volume", "[GlassStore][remove_active_volume]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    GlassStore store;
+    GlassStore store{dir.file("glass_active_volumes.json")};
     store.init_glasses({make_glass("highball", {ml(200.0), ml(300.0), ml(400.0)})});
 
     CHECK(store.remove_active_volume(GlassId{"highball"}, ml(300.0)));
@@ -259,9 +209,9 @@ TEST_CASE("GlassStore::remove_active_volume removes an existing volume", "[Glass
 
 TEST_CASE("GlassStore::remove_active_volume ignores a volume that is not active", "[GlassStore][remove_active_volume]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    GlassStore store;
+    GlassStore store{dir.file("glass_active_volumes.json")};
     store.init_glasses({make_glass("highball", {ml(200.0)})});
 
     CHECK_FALSE(store.remove_active_volume(GlassId{"highball"}, ml(500.0)));
@@ -270,9 +220,9 @@ TEST_CASE("GlassStore::remove_active_volume ignores a volume that is not active"
 
 TEST_CASE("GlassStore::remove_active_volume ignores an unknown glass", "[GlassStore][remove_active_volume]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    GlassStore store;
+    GlassStore store{dir.file("glass_active_volumes.json")};
     store.init_glasses({make_glass("highball", {ml(200.0)})});
 
     CHECK_FALSE(store.remove_active_volume(GlassId{"does-not-exist"}, ml(200.0)));
@@ -281,9 +231,9 @@ TEST_CASE("GlassStore::remove_active_volume ignores an unknown glass", "[GlassSt
 
 TEST_CASE("GlassStore active volumes survive add/remove cycles", "[GlassStore][add_active_volume][remove_active_volume]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    GlassStore store;
+    GlassStore store{dir.file("glass_active_volumes.json")};
     store.init_glasses({make_glass("highball")});
 
     REQUIRE(store.add_active_volume(GlassId{"highball"}, ml(300.0)));
@@ -297,17 +247,17 @@ TEST_CASE("GlassStore active volumes survive add/remove cycles", "[GlassStore][a
 
 TEST_CASE("Added active volumes are persisted and reloaded by a new store", "[GlassStore][persistence]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
     {
-        GlassStore store;
+        GlassStore store{dir.file("glass_active_volumes.json")};
         store.init_glasses({make_glass("highball"), make_glass("wine")});
         REQUIRE(store.add_active_volume(GlassId{"highball"}, ml(400.0)));
         REQUIRE(store.add_active_volume(GlassId{"highball"}, ml(200.0)));
         REQUIRE(store.add_active_volume(GlassId{"wine"}, ml(150.0)));
     }
 
-    GlassStore reloaded;
+    GlassStore reloaded{dir.file("glass_active_volumes.json")};
     reloaded.init_glasses({make_glass("highball"), make_glass("wine")});
 
     check_volumes_ml(reloaded.glasses().at(GlassId{"highball"}).active_volumes, {200.0, 400.0});
@@ -316,103 +266,98 @@ TEST_CASE("Added active volumes are persisted and reloaded by a new store", "[Gl
 
 TEST_CASE("Removed active volumes are persisted", "[GlassStore][persistence]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
     {
-        GlassStore store;
+        GlassStore store{dir.file("glass_active_volumes.json")};
         store.init_glasses({make_glass("highball", {ml(200.0), ml(300.0)})});
         REQUIRE(store.remove_active_volume(GlassId{"highball"}, ml(200.0)));
     }
 
-    GlassStore reloaded;
+    GlassStore reloaded{dir.file("glass_active_volumes.json")};
     reloaded.init_glasses({make_glass("highball", {ml(200.0), ml(300.0)})});
 
     check_volumes_ml(reloaded.glasses().at(GlassId{"highball"}).active_volumes, {300.0});
 }
 
-TEST_CASE("save_glass_active_volumes / load_glass_active_volumes round-trip", "[glass][persistence]")
+TEST_CASE("GlassStore saves the active volumes of every glass, an empty list too", "[GlassStore][persistence]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    std::unordered_map<GlassId, Glass> saved;
-    saved.emplace(GlassId{"highball"}, make_glass("highball", {ml(200.0), ml(350.5)}));
-    saved.emplace(GlassId{"wine"}, make_glass("wine", {}));
-    save_glass_active_volumes(saved);
+    {
+        GlassStore store{dir.file("glass_active_volumes.json")};
+        store.init_glasses({make_glass("highball", {ml(200.0)}), make_glass("wine")});
+        REQUIRE(store.add_active_volume(GlassId{"highball"}, ml(350.5)));
+    }
 
-    std::unordered_map<GlassId, Glass> loaded;
-    loaded.emplace(GlassId{"highball"}, make_glass("highball"));
-    loaded.emplace(GlassId{"wine"}, make_glass("wine", {ml(999.0)}));
-    load_glass_active_volumes(loaded);
+    GlassStore reloaded{dir.file("glass_active_volumes.json")};
+    reloaded.init_glasses({make_glass("highball"), make_glass("wine", {ml(999.0)})});
 
-    check_volumes_ml(loaded.at(GlassId{"highball"}).active_volumes, {200.0, 350.5});
-    CHECK(loaded.at(GlassId{"wine"}).active_volumes.empty());
+    check_volumes_ml(reloaded.glasses().at(GlassId{"highball"}).active_volumes, {200.0, 350.5});
+    CHECK(reloaded.glasses().at(GlassId{"wine"}).active_volumes.empty());
 }
 
-TEST_CASE("load_glass_active_volumes leaves defaults when no config exists", "[glass][persistence]")
+TEST_CASE("GlassStore keeps the catalog's volumes when nothing is stored", "[GlassStore][persistence]")
 {
-    const TempWorkingDir cwd;
+    const cm::testing::TempDir dir;
 
-    std::unordered_map<GlassId, Glass> glasses;
-    glasses.emplace(GlassId{"highball"}, make_glass("highball", {ml(250.0)}));
-    load_glass_active_volumes(glasses);
+    GlassStore store{dir.file("glass_active_volumes.json")};
+    store.init_glasses({make_glass("highball", {ml(250.0)})});
 
-    check_volumes_ml(glasses.at(GlassId{"highball"}).active_volumes, {250.0});
+    check_volumes_ml(store.glasses().at(GlassId{"highball"}).active_volumes, {250.0});
 }
 
-TEST_CASE("load_glass_active_volumes sorts and de-duplicates the stored volumes", "[glass][persistence]")
+TEST_CASE("GlassStore sorts and de-duplicates the stored volumes", "[GlassStore][persistence]")
 {
-    const TempWorkingDir cwd;
-    cwd.write_file("glass_active_volumes.json",
+    const cm::testing::TempDir dir;
+    dir.write_file("glass_active_volumes.json",
                    R"({"version": 1, "glasses": [{"glass_id": "highball", "active_volumes": [400, 200, 400, 300]}]})");
 
-    std::unordered_map<GlassId, Glass> glasses;
-    glasses.emplace(GlassId{"highball"}, make_glass("highball"));
-    load_glass_active_volumes(glasses);
+    GlassStore store{dir.file("glass_active_volumes.json")};
+    store.init_glasses({make_glass("highball")});
 
-    check_volumes_ml(glasses.at(GlassId{"highball"}).active_volumes, {200.0, 300.0, 400.0});
+    check_volumes_ml(store.glasses().at(GlassId{"highball"}).active_volumes, {200.0, 300.0, 400.0});
 }
 
-TEST_CASE("load_glass_active_volumes skips config entries for unknown glasses", "[glass][persistence]")
+TEST_CASE("GlassStore skips stored entries for unknown glasses", "[GlassStore][persistence]")
 {
-    const TempWorkingDir cwd;
-    cwd.write_file("glass_active_volumes.json",
+    const cm::testing::TempDir dir;
+    dir.write_file("glass_active_volumes.json",
                    R"({"version": 1, "glasses": [{"glass_id": "gone", "active_volumes": [100]},
                        {"glass_id": "highball", "active_volumes": [300]}]})");
 
-    std::unordered_map<GlassId, Glass> glasses;
-    glasses.emplace(GlassId{"highball"}, make_glass("highball"));
-    REQUIRE_NOTHROW(load_glass_active_volumes(glasses));
+    GlassStore store{dir.file("glass_active_volumes.json")};
+    REQUIRE_NOTHROW(store.init_glasses({make_glass("highball")}));
 
-    CHECK(glasses.size() == 1);
-    check_volumes_ml(glasses.at(GlassId{"highball"}).active_volumes, {300.0});
+    CHECK(store.glasses().size() == 1);
+    check_volumes_ml(store.glasses().at(GlassId{"highball"}).active_volumes, {300.0});
 }
 
-TEST_CASE("load_glass_active_volumes leaves defaults for a malformed config", "[glass][persistence]")
+TEST_CASE("GlassStore keeps the catalog's volumes for a malformed file", "[GlassStore][persistence]")
 {
-    const TempWorkingDir cwd;
-    cwd.write_file("glass_active_volumes.json", R"({"version": 1, "not-glasses": [)");
+    const cm::testing::TempDir dir;
+    dir.write_file("glass_active_volumes.json", R"({"version": 1, "not-glasses": [)");
 
-    std::unordered_map<GlassId, Glass> glasses;
-    glasses.emplace(GlassId{"highball"}, make_glass("highball", {ml(250.0)}));
-    REQUIRE_NOTHROW(load_glass_active_volumes(glasses));
+    GlassStore store{dir.file("glass_active_volumes.json")};
+    REQUIRE_NOTHROW(store.init_glasses({make_glass("highball", {ml(250.0)})}));
 
-    check_volumes_ml(glasses.at(GlassId{"highball"}).active_volumes, {250.0});
+    check_volumes_ml(store.glasses().at(GlassId{"highball"}).active_volumes, {250.0});
 }
 
 // ── load_glasses_from_dir ─────────────────────────────────────────────────────
 
 TEST_CASE("load_glasses_from_dir returns nothing for an empty directory", "[load_glasses_from_dir]")
 {
-    const TempWorkingDir cwd;
-    CHECK(load_glasses_from_dir(cwd.path()).empty());
+    const cm::testing::TempDir dir;
+    CHECK(load_glasses_from_dir(dir.path()).empty());
 }
 
 TEST_CASE("load_glasses_from_dir parses every field of a glass file", "[load_glasses_from_dir]")
 {
-    const TempWorkingDir cwd;
-    cwd.write_file("highball.json", glass_json("highball", "Highball Glas", "[300, 350, 500]"));
+    const cm::testing::TempDir dir;
+    dir.write_file("highball.json", glass_json("highball", "Highball Glas", "[300, 350, 500]"));
 
-    const auto glasses = load_glasses_from_dir(cwd.path());
+    const auto glasses = load_glasses_from_dir(dir.path());
     REQUIRE(glasses.size() == 1);
 
     const auto& glass = glasses.front();
@@ -427,37 +372,37 @@ TEST_CASE("load_glasses_from_dir parses every field of a glass file", "[load_gla
 
 TEST_CASE("load_glasses_from_dir leaves active volumes empty", "[load_glasses_from_dir]")
 {
-    const TempWorkingDir cwd;
-    cwd.write_file("highball.json", glass_json("highball", "Highball Glas"));
+    const cm::testing::TempDir dir;
+    dir.write_file("highball.json", glass_json("highball", "Highball Glas"));
 
-    const auto glasses = load_glasses_from_dir(cwd.path());
+    const auto glasses = load_glasses_from_dir(dir.path());
     REQUIRE(glasses.size() == 1);
     CHECK(glasses.front().active_volumes.empty());
 }
 
 TEST_CASE("load_glasses_from_dir treats the icon rim as optional", "[load_glasses_from_dir]")
 {
-    const TempWorkingDir cwd;
-    cwd.write_file("willi.json", R"({
+    const cm::testing::TempDir dir;
+    dir.write_file("willi.json", R"({
         "id": "willi",
         "display_name": "Willi Becher",
         "common_volumes_ml": [400],
         "icon": {"viewbox_width": 90, "viewbox_height": 170, "outline": "M 0 0 L 1 1"}
     })");
 
-    const auto glasses = load_glasses_from_dir(cwd.path());
+    const auto glasses = load_glasses_from_dir(dir.path());
     REQUIRE(glasses.size() == 1);
     CHECK(glasses.front().icon.rim.empty());
 }
 
 TEST_CASE("load_glasses_from_dir reads all json files in the directory", "[load_glasses_from_dir]")
 {
-    const TempWorkingDir cwd;
-    cwd.write_file("highball.json", glass_json("highball", "Highball Glas"));
-    cwd.write_file("wine.json", glass_json("wine", "Weinglas"));
-    cwd.write_file("margarita.json", glass_json("margarita", "Margarita Glas"));
+    const cm::testing::TempDir dir;
+    dir.write_file("highball.json", glass_json("highball", "Highball Glas"));
+    dir.write_file("wine.json", glass_json("wine", "Weinglas"));
+    dir.write_file("margarita.json", glass_json("margarita", "Margarita Glas"));
 
-    auto glasses = load_glasses_from_dir(cwd.path());
+    auto glasses = load_glasses_from_dir(dir.path());
     REQUIRE(glasses.size() == 3);
 
     std::ranges::sort(glasses, {}, [](const Glass& glass) { return glass.id.raw(); });
@@ -468,45 +413,45 @@ TEST_CASE("load_glasses_from_dir reads all json files in the directory", "[load_
 
 TEST_CASE("load_glasses_from_dir ignores non-json files", "[load_glasses_from_dir]")
 {
-    const TempWorkingDir cwd;
-    cwd.write_file("highball.json", glass_json("highball", "Highball Glas"));
-    cwd.write_file("README.md", "not a glass");
-    cwd.write_file("wine.json.bak", glass_json("wine", "Weinglas"));
+    const cm::testing::TempDir dir;
+    dir.write_file("highball.json", glass_json("highball", "Highball Glas"));
+    dir.write_file("README.md", "not a glass");
+    dir.write_file("wine.json.bak", glass_json("wine", "Weinglas"));
 
-    const auto glasses = load_glasses_from_dir(cwd.path());
+    const auto glasses = load_glasses_from_dir(dir.path());
     REQUIRE(glasses.size() == 1);
     CHECK(glasses.front().id == GlassId{"highball"});
 }
 
 TEST_CASE("load_glasses_from_dir ignores subdirectories", "[load_glasses_from_dir]")
 {
-    const TempWorkingDir cwd;
-    cwd.write_file("highball.json", glass_json("highball", "Highball Glas"));
-    std::filesystem::create_directory(cwd.path() / "nested.json");
+    const cm::testing::TempDir dir;
+    dir.write_file("highball.json", glass_json("highball", "Highball Glas"));
+    std::filesystem::create_directory(dir.path() / "nested.json");
 
-    const auto glasses = load_glasses_from_dir(cwd.path());
+    const auto glasses = load_glasses_from_dir(dir.path());
     REQUIRE(glasses.size() == 1);
     CHECK(glasses.front().id == GlassId{"highball"});
 }
 
 TEST_CASE("load_glasses_from_dir throws on a malformed glass file", "[load_glasses_from_dir]")
 {
-    const TempWorkingDir cwd;
-    cwd.write_file("broken.json", R"({"id": "broken", "display_name": )");
+    const cm::testing::TempDir dir;
+    dir.write_file("broken.json", R"({"id": "broken", "display_name": )");
 
-    CHECK_THROWS_AS(load_glasses_from_dir(cwd.path()), std::runtime_error);
+    CHECK_THROWS_AS(load_glasses_from_dir(dir.path()), std::runtime_error);
 }
 
 TEST_CASE("load_glasses_from_dir throws when a required field is missing", "[load_glasses_from_dir]")
 {
-    const TempWorkingDir cwd;
-    cwd.write_file("incomplete.json", R"({"id": "incomplete", "display_name": "No Icon", "common_volumes_ml": [200]})");
+    const cm::testing::TempDir dir;
+    dir.write_file("incomplete.json", R"({"id": "incomplete", "display_name": "No Icon", "common_volumes_ml": [200]})");
 
-    CHECK_THROWS_AS(load_glasses_from_dir(cwd.path()), std::runtime_error);
+    CHECK_THROWS_AS(load_glasses_from_dir(dir.path()), std::runtime_error);
 }
 
 TEST_CASE("load_glasses_from_dir throws for a non-existing directory", "[load_glasses_from_dir]")
 {
-    const TempWorkingDir cwd;
-    CHECK_THROWS_AS(load_glasses_from_dir(cwd.path() / "does-not-exist"), std::filesystem::filesystem_error);
+    const cm::testing::TempDir dir;
+    CHECK_THROWS_AS(load_glasses_from_dir(dir.path() / "does-not-exist"), std::filesystem::filesystem_error);
 }

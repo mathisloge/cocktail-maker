@@ -119,8 +119,9 @@ struct SimStation
     cm::IngredientStore ingredients;
     cm::RecipeStore recipes;
     cm::PodRegistry registry;
-    cm::StationConfig config{ingredients, ""};
+    // Declared before the config and the tracker, so that it outlives what writes into it.
     cm::testing::TempDir dir{"cm-station-flows-test"};
+    cm::StationConfig config{ingredients, dir.file("mapping.json")};
     cm::FillLevelTracker fill_levels{
         ctx.get_executor(), dir.file("levels.json"), cm::FillLevelOptions{.refill_settle_time = 1ms}};
     std::shared_ptr<cm::sim::Client<Socket>> client;
@@ -840,8 +841,9 @@ struct FailingMixStation
     cm::IngredientStore ingredients;
     cm::RecipeStore recipes;
     cm::PodRegistry registry;
-    cm::StationConfig config{ingredients, ""};
+    // Declared before the config and the tracker, so that it outlives what writes into it.
     cm::testing::TempDir dir{"cm-failing-mix-test"};
+    cm::StationConfig config{ingredients, dir.file("mapping.json")};
     cm::FillLevelTracker fill_levels{ctx.get_executor(), dir.file("levels.json")};
     std::shared_ptr<RefusingPod> pod = std::make_shared<RefusingPod>();
     cm::gui::ProcessContextBridge bridge{scope, ui, recipes, ingredients, config, registry, fill_levels};

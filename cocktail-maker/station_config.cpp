@@ -10,12 +10,13 @@ import :pod_types;
 import :ingredient;
 import :dispenser;
 import :station_config;
+import :state_file;
 
 namespace cm {
 
-StationConfig::StationConfig(const IngredientStore& ingredient_store, std::filesystem::path db_file)
+StationConfig::StationConfig(const IngredientStore& ingredient_store, std::filesystem::path mapping_file)
     : ingredient_store_{ingredient_store}
-    , db_file_{std::move(db_file)}
+    , writer_{std::move(mapping_file)}
 {
 }
 
@@ -64,18 +65,12 @@ std::expected<IngredientId, std::out_of_range> StationConfig::find_ingredient_by
     return it->first;
 }
 
-std::filesystem::path StationConfig::mapping_file_path()
+void StationConfig::flush()
 {
-    std::error_code ec;
-    auto cwd = std::filesystem::current_path(ec);
-    if (ec) {
-        SPDLOG_ERROR("Could not determine current working directory: {}", ec.message());
-        return "ingredient_dispenser_mapping.json";
-    }
-    return cwd / "ingredient_dispenser_mapping.json";
+    writer_.flush();
 }
 
-void StationConfig::save_config_to_file() const
+void StationConfig::save_config_to_file()
 {
     simdjson::builder::string_builder sb;
     sb.start_object();
@@ -110,36 +105,19 @@ void StationConfig::save_config_to_file() const
         return;
     }
 
-    const auto path = mapping_file_path();
-    std::ofstream ofs{path, std::ios::binary | std::ios::trunc};
-    if (not ofs) {
-        SPDLOG_LOGGER_ERROR(logger_, "Could not open '{}' for writing.", path.string());
-        return;
-    }
-    ofs << json;
-    if (not ofs) {
-        SPDLOG_LOGGER_ERROR(logger_, "Failed writing dispenser mapping to '{}'.", path.string());
-        return;
-    }
-
-    SPDLOG_LOGGER_DEBUG(logger_, "Saved {} dispenser mapping(s) to '{}'.", ingredient_dispenser_mapping_.size(), path.string());
+    writer_.save(std::string{json});
+    SPDLOG_LOGGER_DEBUG(
+        logger_, "Queued {} dispenser mapping(s) for '{}'.", ingredient_dispenser_mapping_.size(), writer_.file().string());
 }
 
 void StationConfig::load_config_from_file()
 {
-    const auto path = mapping_file_path();
-
-    std::error_code ec;
-    if (not std::filesystem::exists(path, ec) || ec) {
-        SPDLOG_LOGGER_DEBUG(logger_, "No dispenser mapping config found at '{}', starting empty.", path.string());
+    const auto& path = writer_.file();
+    const auto content = read_state_file(path, logger_);
+    if (not content.has_value()) {
         return;
     }
-
-    simdjson::padded_string json;
-    if (auto error = simdjson::padded_string::load(path.string()).get(json)) {
-        SPDLOG_LOGGER_ERROR(logger_, "Failed to read '{}': {}", path.string(), simdjson::error_message(error));
-        return;
-    }
+    const simdjson::padded_string json{*content};
 
     simdjson::ondemand::parser parser;
     simdjson::ondemand::document doc;

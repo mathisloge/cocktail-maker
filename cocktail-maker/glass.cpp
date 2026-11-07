@@ -7,6 +7,7 @@ import std;
 import mp_units;
 import cm.core;
 import :glass;
+import :state_file;
 
 namespace cm {
 
@@ -17,7 +18,7 @@ void GlassStore::init_glasses(std::vector<Glass> glasses)
         auto id = glass.id;
         glasses_.emplace(std::move(id), std::move(glass));
     }
-    load_glass_active_volumes(glasses_);
+    load_active_volumes();
 }
 
 const std::unordered_map<GlassId, Glass>& GlassStore::glasses() const
@@ -34,7 +35,7 @@ bool GlassStore::add_active_volume(const GlassId& id, units::Litre volume)
         auto vol_it = std::ranges::lower_bound(active_volumes, volume);
         if (vol_it == active_volumes.end() || *vol_it != volume) {
             active_volumes.insert(vol_it, volume);
-            save_glass_active_volumes(glasses_);
+            save_active_volumes();
             return kAdded;
         }
     }
@@ -50,7 +51,7 @@ bool GlassStore::remove_active_volume(const GlassId& id, units::Litre volume)
         auto vol_it = std::ranges::find(active_volumes, volume);
         if (vol_it != active_volumes.end()) {
             active_volumes.erase(vol_it);
-            save_glass_active_volumes(glasses_);
+            save_active_volumes();
             return kRemoved;
         }
     }
@@ -107,27 +108,9 @@ std::vector<Glass> load_glasses_from_dir(std::filesystem::path dir)
     return glasses;
 }
 
-log::Logger glass_volume_config_logger()
+namespace {
+std::string serialize_active_volumes(const std::unordered_map<GlassId, Glass>& glasses)
 {
-    static log::Logger logger{log::create_or_get("glass_volume_config")};
-    return logger;
-}
-
-std::filesystem::path glass_volume_config_file_path()
-{
-    std::error_code ec;
-    auto cwd = std::filesystem::current_path(ec);
-    if (ec) {
-        SPDLOG_ERROR("Could not determine current working directory: {}", ec.message());
-        return "glass_active_volumes.json";
-    }
-    return cwd / "glass_active_volumes.json";
-}
-
-void save_glass_active_volumes(const std::unordered_map<GlassId, Glass>& glasses)
-{
-    auto logger = glass_volume_config_logger();
-
     simdjson::builder::string_builder sb;
     sb.start_object();
     sb.append_key_value("version", 1);
@@ -168,42 +151,17 @@ void save_glass_active_volumes(const std::unordered_map<GlassId, Glass>& glasses
 
     std::string_view json;
     if (auto error = sb.view().get(json)) {
-        SPDLOG_LOGGER_ERROR(logger, "Failed to serialize glass active volumes: {}", simdjson::error_message(error));
-        return;
+        throw std::runtime_error{simdjson::error_message(error)};
     }
-
-    const auto path = glass_volume_config_file_path();
-    std::ofstream ofs{path, std::ios::binary | std::ios::trunc};
-    if (not ofs) {
-        SPDLOG_LOGGER_ERROR(logger, "Could not open '{}' for writing.", path.string());
-        return;
-    }
-    ofs << json;
-    if (not ofs) {
-        SPDLOG_LOGGER_ERROR(logger, "Failed writing glass active volumes to '{}'.", path.string());
-        return;
-    }
-
-    SPDLOG_LOGGER_DEBUG(logger, "Saved active volumes for {} glass(es) to '{}'.", glasses.size(), path.string());
+    return std::string{json};
 }
 
-void load_glass_active_volumes(std::unordered_map<GlassId, Glass>& glasses)
+void apply_active_volumes(const std::string& content,
+                          const std::filesystem::path& path,
+                          std::unordered_map<GlassId, Glass>& glasses,
+                          const log::Logger& logger)
 {
-    auto logger = glass_volume_config_logger();
-    const auto path = glass_volume_config_file_path();
-
-    std::error_code ec;
-    if (not std::filesystem::exists(path, ec) || ec) {
-        SPDLOG_LOGGER_DEBUG(logger, "No glass active volumes config found at '{}', leaving defaults.", path.string());
-        return;
-    }
-
-    simdjson::padded_string json;
-    if (auto error = simdjson::padded_string::load(path.string()).get(json)) {
-        SPDLOG_LOGGER_ERROR(logger, "Failed to read '{}': {}", path.string(), simdjson::error_message(error));
-        return;
-    }
-
+    const simdjson::padded_string json{content};
     simdjson::ondemand::parser parser;
     simdjson::ondemand::document doc;
     if (auto error = parser.iterate(json).get(doc)) {
@@ -260,6 +218,34 @@ void load_glass_active_volumes(std::unordered_map<GlassId, Glass>& glasses)
     }
 
     SPDLOG_LOGGER_INFO(logger, "Loaded active volumes from '{}'.", path.string());
+}
+} // namespace
+
+GlassStore::GlassStore(std::filesystem::path active_volumes_file)
+    : writer_{std::move(active_volumes_file)}
+{
+}
+
+void GlassStore::flush()
+{
+    writer_.flush();
+}
+
+void GlassStore::load_active_volumes()
+{
+    if (const auto content = read_state_file(writer_.file(), logger_); content.has_value()) {
+        apply_active_volumes(*content, writer_.file(), glasses_, logger_);
+    }
+}
+
+void GlassStore::save_active_volumes()
+{
+    try {
+        writer_.save(serialize_active_volumes(glasses_));
+    }
+    catch (const std::exception& error) {
+        SPDLOG_LOGGER_ERROR(logger_, "Could not serialize the active glass volumes: {}", error.what());
+    }
 }
 
 } // namespace cm

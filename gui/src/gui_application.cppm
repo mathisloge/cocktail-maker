@@ -13,7 +13,7 @@ export class GuiApplication : public Application
 {
 
   public:
-    GuiApplication();
+    explicit GuiApplication(const std::filesystem::path& state_dir);
     void init(const std::filesystem::path& db_dir) override;
     void run(std::unique_ptr<PodDiscovery> pod_discovery, bool fullscreen = false);
 

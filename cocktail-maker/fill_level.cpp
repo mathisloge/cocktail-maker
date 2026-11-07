@@ -1,12 +1,9 @@
 module;
 #include <boost/asio/any_io_executor.hpp>
-#include <boost/asio/post.hpp>
-#include <fcntl.h>
 #include <proto/field/ErrorCodeCommon.h>
 #include <simdjson.h>
 #include <spdlog/spdlog.h>
 #include <stdexec/execution.hpp>
-#include <unistd.h>
 
 module cm:fill_level_impl;
 
@@ -101,55 +98,6 @@ std::string serialize(const std::map<PodDispenser, FillLevelRecord>& records)
     return std::string{json};
 }
 
-/// Replaces `file` in one step, so that a power loss leaves either the old file or the new one.
-void write_atomically(const std::filesystem::path& file, const std::string_view content)
-{
-    auto temporary = file;
-    temporary += ".tmp";
-
-    const int descriptor = ::open(temporary.c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644);
-    if (descriptor < 0) {
-        throw std::system_error{errno, std::generic_category(), "open"};
-    }
-
-    struct Closer
-    {
-        int descriptor;
-
-        ~Closer()
-        {
-            ::close(descriptor);
-        }
-    } closer{descriptor};
-
-    auto rest = content;
-    while (not rest.empty()) {
-        const auto written = ::write(descriptor, rest.data(), rest.size());
-        if (written < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-            throw std::system_error{errno, std::generic_category(), "write"};
-        }
-        rest.remove_prefix(static_cast<std::size_t>(written));
-    }
-    if (::fsync(descriptor) != 0) {
-        throw std::system_error{errno, std::generic_category(), "fsync"};
-    }
-
-    std::filesystem::rename(temporary, file);
-
-    // The rename only lasts through a power loss once the directory has reached the disk as well.
-    const auto directory = file.has_parent_path() ? file.parent_path() : std::filesystem::path{"."};
-    const int directory_descriptor = ::open(directory.c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
-    if (directory_descriptor < 0) {
-        throw std::system_error{errno, std::generic_category(), "open directory"};
-    }
-    const Closer directory_closer{directory_descriptor};
-    if (::fsync(directory_descriptor) != 0) {
-        throw std::system_error{errno, std::generic_category(), "fsync directory"};
-    }
-}
 } // namespace
 
 units::Litre to_volume(const units::Grams mass)
@@ -159,40 +107,30 @@ units::Litre to_volume(const units::Grams mass)
 
 FillLevelTracker::FillLevelTracker(asio::any_io_executor executor, std::filesystem::path file, FillLevelOptions options)
     : executor_{std::move(executor)}
-    , file_{std::move(file)}
     , options_{std::move(options)}
+    , writer_{std::move(file)}
 {
-}
-
-FillLevelTracker::~FillLevelTracker()
-{
-    writer_.join();
 }
 
 void FillLevelTracker::init()
 {
-    std::error_code ec;
-    if (not std::filesystem::exists(file_, ec) || ec) {
-        SPDLOG_LOGGER_DEBUG(logger_, "No fill levels found at '{}', starting empty.", file_.string());
+    const auto& file = writer_.file();
+    const auto content = read_state_file(file, logger_);
+    if (not content.has_value()) {
         return;
     }
-
-    simdjson::padded_string json;
-    if (auto error = simdjson::padded_string::load(file_.string()).get(json)) {
-        SPDLOG_LOGGER_ERROR(logger_, "Failed to read '{}': {}", file_.string(), simdjson::error_message(error));
-        return;
-    }
+    const simdjson::padded_string json{*content};
 
     simdjson::dom::parser parser;
     simdjson::dom::element document;
     if (auto error = parser.parse(json).get(document)) {
-        SPDLOG_LOGGER_ERROR(logger_, "Failed to parse '{}': {}", file_.string(), simdjson::error_message(error));
+        SPDLOG_LOGGER_ERROR(logger_, "Failed to parse '{}': {}", file.string(), simdjson::error_message(error));
         return;
     }
 
     simdjson::dom::array entries;
     if (auto error = document["fill_levels"].get(entries)) {
-        SPDLOG_LOGGER_ERROR(logger_, "Malformed '{}': missing 'fill_levels' array.", file_.string());
+        SPDLOG_LOGGER_ERROR(logger_, "Malformed '{}': missing 'fill_levels' array.", file.string());
         return;
     }
 
@@ -206,7 +144,7 @@ void FillLevelTracker::init()
         bool suspected_empty{};
         if (entry["pod_id"].get(pod_id) or entry["dispenser_id"].get(dispenser_id) or entry["level_g"].get(level) or
             entry["low_water_g"].get(low_water) or entry["suspected_empty"].get(suspected_empty)) {
-            SPDLOG_LOGGER_ERROR(logger_, "Malformed entry in '{}', skipping.", file_.string());
+            SPDLOG_LOGGER_ERROR(logger_, "Malformed entry in '{}', skipping.", file.string());
             continue;
         }
 
@@ -222,14 +160,12 @@ void FillLevelTracker::init()
                                   std::move(record));
     }
 
-    SPDLOG_LOGGER_INFO(logger_, "Loaded {} fill level(s) from '{}'.", records_.size(), file_.string());
+    SPDLOG_LOGGER_INFO(logger_, "Loaded {} fill level(s) from '{}'.", records_.size(), file.string());
 }
 
 void FillLevelTracker::flush()
 {
-    std::promise<void> done;
-    asio::post(writer_, [&done]() { done.set_value(); });
-    done.get_future().wait();
+    writer_.flush();
 }
 
 void FillLevelTracker::set_change_handler(ChangeHandler handler)
@@ -423,23 +359,11 @@ void FillLevelTracker::changed(const PodDispenser& address)
         change_handler_(address, view(address));
     }
 
-    // Only the newest state is worth a write, as the writer can lag behind on a slow SD card.
-    const auto generation = ++save_generation_;
-    asio::post(writer_, [this, generation, records = records_]() {
-        if (generation != save_generation_) {
-            return;
-        }
-        write_file(records);
-    });
-}
-
-void FillLevelTracker::write_file(const Records& records) const
-{
     try {
-        write_atomically(file_, serialize(records));
+        writer_.save(serialize(records_));
     }
     catch (const std::exception& error) {
-        SPDLOG_LOGGER_ERROR(logger_, "Could not save the fill levels to '{}': {}", file_.string(), error.what());
+        SPDLOG_LOGGER_ERROR(logger_, "Could not serialize the fill levels: {}", error.what());
     }
 }
 

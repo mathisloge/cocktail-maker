@@ -82,8 +82,19 @@ def summarize(index_file):
     # The module dependency scans are compile snippets too, but they only take milliseconds and aren't compiles.
     all_compiles = [s for s in snippets
                     if s.get("role") == "compile" and "clang-scan-deps" not in s.get("command", "")]
+    if builds:
+        # A direct ninja run leaves snippets behind that belong to no cmake --build, so only this build's ones count.
+        begin = min(s.get("timeStart", 0) for s in builds)
+        end = max(s.get("timeStart", 0) + s.get("duration", 0) for s in builds)
+        all_compiles = [s for s in all_compiles if begin <= s.get("timeStart", begin) <= end]
+    if not all_compiles:
+        print("summarize.py: nothing was compiled, so the last compile-time-summary.txt stays.", file=sys.stderr)
+        return
     compiles = [s for s in all_compiles if is_first_party(s.get("source", ""), build_dir)]
     lines = []
+    failed = [s.get("result") for s in builds if s.get("result")]
+    if failed:
+        lines.append(f"The build failed (exit code {failed[0]}), so this only covers what was compiled before it stopped.")
     wall = sum(s.get("duration", 0) for s in builds) / 1000
     summed = sum(s.get("duration", 0) for s in compiles) / 1000
     dependencies = sum(s.get("duration", 0) for s in all_compiles) / 1000 - summed
@@ -127,7 +138,8 @@ def summarize(index_file):
             templates[key][0] += duration / 1e6
             templates[key][1] += 1
         for _, duration, file in outermost(list(source_spans(events))):
-            match = LIBRARIES.search(file)
+            # The part after the include directory names the library, wherever CPM put its sources.
+            match = LIBRARIES.search(file.rsplit("/include/", 1)[-1])
             headers[match.group(1) if match else file.rsplit("/", 1)[-1]] += duration / 1e6
 
     lines.append("\nSlowest compile commands:")

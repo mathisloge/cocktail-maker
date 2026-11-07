@@ -85,6 +85,7 @@ if(BUILD_TESTING)
             src/dispenser_calibration_bridge.test.cpp
             src/mix_error_page.test.cpp
             src/ui_snapshots.test.cpp
+            src/boost_slider.test.cpp
     )
 endif()
 

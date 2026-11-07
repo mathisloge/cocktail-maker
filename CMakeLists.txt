@@ -121,7 +121,8 @@ cpmaddpackage(
   URI "gh:slint-ui/slint#8d51770e77db4a9e801427a47ee3f79487504975"
   NAME Slint
   SOURCE_SUBDIR api/cpp
-  OPTIONS "SLINT_FEATURE_MCP ${CM_SLINT_MCP}"
+  # The C++ testing API (ElementHandle) is only declared with the experimental feature.
+  OPTIONS "SLINT_FEATURE_MCP ${CM_SLINT_MCP}" "SLINT_FEATURE_EXPERIMENTAL ON"
 )
 cpmaddpackage(URI "gh:commschamp/comms@5.5.3" NAME LibComms)
 cpmaddpackage(URI "gh:mathisloge/cocktail-maker-protocol@2.1.0" SOURCE_SUBDIR generated

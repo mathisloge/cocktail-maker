@@ -1,0 +1,129 @@
+import { SliderInterface } from "std-widget-interfaces.slint";
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+
+// The track runs from milder (slate) over the original recipe (amber) to stronger (ember).
+export component BoostSlider {
+    implement SliderInterface <=> self;
+
+    in property <bool> enabled: true;
+    out property <bool> has-focus: focus.has-focus;
+    in-out property <float> value;
+    in property <float> step: 5;
+    in property <float> minimum: -80;
+    in property <float> maximum: 80;
+    in property <Orientation> orientation: Orientation.horizontal;
+
+    callback changed(value: float);
+    callback released(value: float);
+
+    min-height: Layout.boost-knob-size;
+    forward-focus: focus;
+    horizontal-stretch: 1;
+
+    accessible-role: slider;
+    accessible-label: "Alkohol-Boost";
+    accessible-enabled: root.enabled;
+    accessible-value: Math.round(root.value);
+    accessible-value-minimum: root.minimum;
+    accessible-value-maximum: root.maximum;
+    accessible-value-step: root.step;
+    accessible-action-set-value(v) => {
+        if v.is-float() {
+            root.update-value(v.to-float());
+        }
+    }
+    accessible-action-increment => { root.update-value(root.value + root.step); }
+    accessible-action-decrement => { root.update-value(root.value - root.step); }
+
+    private property <float> ratio: (root.value - root.minimum) / (root.maximum - root.minimum);
+    private property <length> travel: root.width - Layout.boost-knob-size;
+
+    function snap(value: float) -> float {
+        return max(root.minimum, min(root.maximum, Math.round(value / root.step) * root.step));
+    }
+
+    function update-value(value: float) {
+        if !root.enabled {
+            return;
+        }
+        let snapped = root.snap(value);
+        if snapped != root.value {
+            root.value = snapped;
+            root.changed(snapped);
+        }
+    }
+
+    function value-at(x: length) -> float {
+        let clamped = max(0px, min(root.travel, x - Layout.boost-knob-size / 2));
+        return root.minimum + clamped / root.travel * (root.maximum - root.minimum);
+    }
+
+    Rectangle {
+        y: (parent.height - self.height) / 2;
+        height: Layout.boost-track-height;
+        background: @linear-gradient(90deg, Palette.boost-negative 0%, Palette.accent 50%, Palette.boost-positive 100%);
+    }
+
+    // Marks the original recipe at 0 %.
+    Rectangle {
+        x: Layout.boost-knob-size / 2 + root.travel * (0 - root.minimum) / (root.maximum - root.minimum) - self.width / 2;
+        y: (parent.height - self.height) / 2;
+        width: Layout.border-width-strong;
+        height: Layout.boost-knob-size * 0.7;
+        background: Palette.text-primary;
+        opacity: 0.5;
+    }
+
+    Rectangle {
+        x: root.ratio * root.travel;
+        y: (parent.height - self.height) / 2;
+        width: Layout.boost-knob-size;
+        height: Layout.boost-knob-size;
+        border-radius: self.width / 2;
+        background: Palette.text-primary;
+        border-width: Layout.border-width-strong;
+        border-color: root.has-focus ? Palette.accent-light : Palette.accent;
+    }
+
+    // Follows the std slider: the zero-sized FocusScope takes keys only, so it never covers the TouchArea.
+    touch := TouchArea {
+        enabled: root.enabled;
+        pointer-event(event) => {
+            if event.button != PointerEventButton.left {
+                return;
+            }
+            if event.kind == PointerEventKind.down {
+                focus.focus();
+                root.update-value(root.value-at(self.mouse-x));
+            }
+            if event.kind == PointerEventKind.up {
+                root.released(root.value);
+            }
+        }
+        moved => {
+            if self.pressed {
+                root.update-value(root.value-at(self.mouse-x));
+            }
+        }
+    }
+
+    focus := FocusScope {
+        x: 0;
+        y: 0;
+        width: 0;
+        height: 0;
+        enabled: root.enabled;
+        key-pressed(event) => {
+            if event.text == Key.LeftArrow || event.text == Key.DownArrow {
+                root.update-value(root.value - root.step);
+                return accept;
+            }
+            if event.text == Key.RightArrow || event.text == Key.UpArrow {
+                root.update-value(root.value + root.step);
+                return accept;
+            }
+            reject
+        }
+    }
+}

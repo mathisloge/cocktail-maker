@@ -5,10 +5,10 @@ import { Button } from "../components/button.slint";
 import { ScrollArea } from "../components/scroll-area.slint";
 import { SeparatorText } from "../components/separator-text.slint";
 import { DisplayText, CaptionText, BodyText } from "../components/text.slint";
-import { ValueSlider } from "../components/value-slider.slint";
 import { RecipeView } from "../types/recipe.slint";
 import { ProcessContext } from "../globals/process-context.slint";
 import { RecipeContext } from "../globals/recipe-context.slint";
+import { BoostSlider } from "../widgets/boost-slider.slint";
 import { BoostText } from "../widgets/boost-text.slint";
 import { CommandListItem } from "../widgets/command-list-item.slint";
 import { RecipeTags } from "../widgets/recipe-tags.slint";
@@ -123,10 +123,7 @@ export component RecipeDetailPage inherits PageBase {
                     text: "milde";
                 }
 
-                booster := ValueSlider {
-                    height: Layout.touch-height-sm;
-                    minimum: -80;
-                    maximum: 80;
+                booster := BoostSlider {
                     value: root.boost-value;
 
                     changed(value) => {

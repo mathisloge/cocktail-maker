@@ -37,12 +37,42 @@ struct DetailPage
         show(cm::gui::Page::CocktailDetailPage);
     }
 
-    // Slint creates and destroys the elements of an `if` when it renders, so every page change waits for a frame.
+    // Slint creates and destroys the elements of an `if` only when it renders, so a page change runs the event loop
+    // until the slider has appeared on the detail page or disappeared on any other page.
     void show(cm::gui::Page page)
     {
         ui->global<cm::gui::StationStateContext>().set_active_screen(page);
-        slint::Timer::single_shot(std::chrono::milliseconds{100}, [] { slint::quit_event_loop(); });
-        slint::run_event_loop(slint::EventLoopMode::RunUntilQuit);
+        const bool want_slider = page == cm::gui::Page::CocktailDetailPage;
+        for (int frame = 0; frame < 100; ++frame) {
+            slint::Timer::single_shot(std::chrono::milliseconds{20}, [] { slint::quit_event_loop(); });
+            slint::run_event_loop(slint::EventLoopMode::RunUntilQuit);
+            if (has_slider() == want_slider) {
+                return;
+            }
+        }
+        FAIL("the page did not change within 2 s");
+    }
+
+    [[nodiscard]] bool has_slider() const
+    {
+        return !slint::testing::ElementHandle::find_by_accessible_label(ui, "Alkohol-Boost").empty();
+    }
+
+    // The knob centre maps to the value, so a point is computed from the travel of the knob, not the full width.
+    [[nodiscard]] slint::LogicalPosition point_at(float ratio, float offset = 0.0F) const
+    {
+        constexpr float knob = 40.0F;
+        const auto position = slider().absolute_position();
+        const auto size = slider().size();
+        return slint::LogicalPosition{
+            {position.x + (knob / 2) + (ratio * (size.width - knob)) + offset, position.y + (size.height / 2)}};
+    }
+
+    void tap(slint::LogicalPosition point)
+    {
+        ui->window().dispatch_pointer_press_event(point, slint::PointerEventButton::Left);
+        ui->window().dispatch_pointer_release_event(point, slint::PointerEventButton::Left);
+        flush_slint_events();
     }
 
     [[nodiscard]] slint::testing::ElementHandle slider() const
@@ -98,16 +128,29 @@ TEST_CASE("boost slider jumps to a tapped position", "[boost_slider]")
 {
     DetailPage page;
     SlintFlusher flusher;
-    const auto slider = page.slider();
-    const auto position = slider.absolute_position();
-    const auto size = slider.size();
-    const slint::LogicalPosition tap{{position.x + (size.width * 0.75F), position.y + (size.height / 2)}};
 
-    page.ui->window().dispatch_pointer_press_event(tap, slint::PointerEventButton::Left);
-    page.ui->window().dispatch_pointer_release_event(tap, slint::PointerEventButton::Left);
-    flush_slint_events();
+    page.tap(page.point_at(0.75F));
 
     CHECK(page.value() == "40");
+}
+
+TEST_CASE("boost slider keeps its value when the knob is grabbed off-centre", "[boost_slider]")
+{
+    DetailPage page;
+    SlintFlusher flusher;
+
+    page.tap(page.point_at(0.5F, 15.0F));
+
+    CHECK(page.value() == "0");
+    CHECK(page.boosts.empty());
+}
+
+TEST_CASE("boost slider is a large enough touch target", "[boost_slider]")
+{
+    DetailPage page;
+    SlintFlusher flusher;
+
+    CHECK(page.slider().size().height >= 48.0F);
 }
 
 TEST_CASE("boost slider starts at zero when the detail page opens again", "[boost_slider]")

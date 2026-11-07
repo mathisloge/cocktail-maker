@@ -17,7 +17,7 @@ export component BoostSlider {
     callback changed(value: float);
     callback released(value: float);
 
-    min-height: Layout.boost-knob-size;
+    min-height: max(Layout.touch-height-sm, Layout.boost-knob-size);
     forward-focus: focus;
     horizontal-stretch: 1;
 
@@ -38,13 +38,15 @@ export component BoostSlider {
 
     private property <float> ratio: (root.value - root.minimum) / (root.maximum - root.minimum);
     private property <length> travel: root.width - Layout.boost-knob-size;
+    private property <length> pressed-x;
+    private property <float> pressed-value;
 
     function snap(value: float) -> float {
         return max(root.minimum, min(root.maximum, Math.round(value / root.step) * root.step));
     }
 
     function update-value(value: float) {
-        if !root.enabled {
+        if !root.enabled || root.step <= 0 || root.maximum <= root.minimum {
             return;
         }
         let snapped = root.snap(value);
@@ -55,6 +57,9 @@ export component BoostSlider {
     }
 
     function value-at(x: length) -> float {
+        if root.travel <= 0px {
+            return root.value;
+        }
         let clamped = max(0px, min(root.travel, x - Layout.boost-knob-size / 2));
         return root.minimum + clamped / root.travel * (root.maximum - root.minimum);
     }
@@ -95,15 +100,21 @@ export component BoostSlider {
             }
             if event.kind == PointerEventKind.down {
                 focus.focus();
-                root.update-value(root.value-at(self.mouse-x));
+                // A press on the knob grabs it where it is. A press beside it jumps there first.
+                let knob-x = root.ratio * root.travel;
+                if self.mouse-x < knob-x || self.mouse-x > knob-x + Layout.boost-knob-size {
+                    root.update-value(root.value-at(self.mouse-x));
+                }
+                root.pressed-x = self.mouse-x;
+                root.pressed-value = root.value;
             }
             if event.kind == PointerEventKind.up {
                 root.released(root.value);
             }
         }
         moved => {
-            if self.pressed {
-                root.update-value(root.value-at(self.mouse-x));
+            if self.pressed && root.travel > 0px {
+                root.update-value(root.pressed-value + (self.mouse-x - root.pressed-x) / root.travel * (root.maximum - root.minimum));
             }
         }
     }

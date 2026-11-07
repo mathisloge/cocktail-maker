@@ -65,11 +65,11 @@ export class MachineAdapter : public cm::BasicCommandExecuter
                 if (cmd.has_value() and cmd->id == id.raw()) {
                     const auto ui_status = [status]() {
                         switch (status) {
-                        case unknown:
+                        case cm::CommandStatus::unknown:
                             return CommandStatus::NotStarted;
-                        case in_progress:
+                        case cm::CommandStatus::in_progress:
                             return CommandStatus::InProgress;
-                        case finished:
+                        case cm::CommandStatus::finished:
                             return CommandStatus::Finished;
                         }
                         std::unreachable();

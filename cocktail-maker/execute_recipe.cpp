@@ -12,19 +12,15 @@ namespace cm {
 Task<void> execute_commands(Commands commands, std::shared_ptr<BasicCommandExecuter> command_executer)
 {
 
-    const auto process_command = detail::Overloaded{[command_executer](ManualCommand command) -> Task<void> {
-                                                        const auto id = command.id;
-                                                        command_executer->update_command_status(id, CommandStatus::in_progress);
-                                                        co_await command_executer->execute_command(std::move(command));
-                                                        command_executer->update_command_status(id, CommandStatus::finished);
-                                                    },
-                                                    [command_executer](DispenseCommand command) -> Task<void> {
-                                                        const auto id = command.id;
-                                                        command_executer->update_command_status(id, CommandStatus::in_progress);
-                                                        co_await command_executer->execute_command(std::move(command));
-                                                        command_executer->update_command_status(id, CommandStatus::finished);
-                                                    },
-                                                    [](std::monostate) -> Task<void> { co_return; }};
+    const auto process_command = detail::Overloaded{
+        [](std::monostate) -> Task<void> { co_return; },
+        [command_executer](auto command) -> Task<void> {
+            const auto id = command.id;
+            command_executer->update_command_status(id, CommandStatus::in_progress);
+            co_await command_executer->execute_command(std::move(command));
+            command_executer->update_command_status(id, CommandStatus::finished);
+        },
+    };
 
     for (auto&& c : commands) {
         co_await std::visit(detail::Overloaded{

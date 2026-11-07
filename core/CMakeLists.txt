@@ -1,6 +1,7 @@
 add_library(cocktail-maker-core STATIC)
 add_library(cm::core ALIAS cocktail-maker-core)
 add_sanitizers(cocktail-maker-core)
+cm_enable_compile_time_trace(cocktail-maker-core)
 target_compile_features(cocktail-maker-core PUBLIC cxx_std_26)
 set_target_properties(
     cocktail-maker-core
@@ -49,6 +50,7 @@ target_sources(
 if(BUILD_TESTING)
     add_executable(cocktail-maker-core-tests)
     add_sanitizers(cocktail-maker-core-tests)
+    cm_enable_compile_time_trace(cocktail-maker-core-tests)
     target_link_libraries(
         cocktail-maker-core-tests
         PRIVATE Catch2::Catch2WithMain cm::core cm::testing

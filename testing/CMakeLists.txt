@@ -1,6 +1,7 @@
 add_library(cocktail-maker-testing STATIC)
 add_library(cm::testing ALIAS cocktail-maker-testing)
 add_sanitizers(cocktail-maker-testing)
+cm_enable_compile_time_trace(cocktail-maker-testing)
 target_compile_features(cocktail-maker-testing PUBLIC cxx_std_26)
 set_target_properties(
     cocktail-maker-testing

@@ -1,5 +1,6 @@
 add_library(cocktail-maker-simulator STATIC)
 add_sanitizers(cocktail-maker-simulator)
+cm_enable_compile_time_trace(cocktail-maker-simulator)
 target_link_libraries(cocktail-maker-simulator PUBLIC cm::lib PRIVATE proto)
 target_sources(
     cocktail-maker-simulator
@@ -15,6 +16,7 @@ target_sources(
 if(BUILD_TESTING)
     add_executable(cocktail-maker-sim-tests)
     add_sanitizers(cocktail-maker-sim-tests)
+    cm_enable_compile_time_trace(cocktail-maker-sim-tests)
     target_link_libraries(
         cocktail-maker-sim-tests
         PRIVATE

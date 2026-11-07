@@ -11,6 +11,7 @@ target_include_directories(generated-ui PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 add_library(cocktail-maker-gui STATIC)
 add_library(cm::gui ALIAS cocktail-maker-gui)
 add_sanitizers(cocktail-maker-gui)
+cm_enable_compile_time_trace(cocktail-maker-gui)
 target_compile_features(cocktail-maker-gui PUBLIC cxx_std_26)
 set_target_properties(
     cocktail-maker-gui
@@ -47,6 +48,7 @@ target_sources(
 if(BUILD_TESTING)
     add_executable(cocktail-maker-gui-tests)
     add_sanitizers(cocktail-maker-gui-tests)
+    cm_enable_compile_time_trace(cocktail-maker-gui-tests)
     target_link_libraries(
         cocktail-maker-gui-tests
         PRIVATE
@@ -78,6 +80,7 @@ endif()
 
 add_executable(cocktail-maker src/main.cpp)
 add_sanitizers(cocktail-maker)
+cm_enable_compile_time_trace(cocktail-maker)
 target_link_libraries(
     cocktail-maker
     PRIVATE cm::gui cocktail-maker-simulator CLI11::CLI11

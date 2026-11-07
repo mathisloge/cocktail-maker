@@ -19,6 +19,35 @@ cmake_policy(SET CMP0167 NEW)
 message(STATUS "Project version: ${PROJECT_VERSION}")
 
 option(BUILD_SIMULATED "Use simulated pods" OFF)
+option(
+    CM_COMPILE_TIME_TRACE
+    "Collect clang -ftime-trace data for the first-party targets"
+    OFF
+)
+
+# Only the first-party targets get -ftime-trace. The instrumentation still wraps every compile command, so turning the
+# option on or off rebuilds the dependencies once.
+function(cm_enable_compile_time_trace target)
+    if(CM_COMPILE_TIME_TRACE)
+        target_compile_options(
+            ${target}
+            PRIVATE -ftime-trace -ftime-trace-granularity=500
+        )
+    endif()
+endfunction()
+
+if(CM_COMPILE_TIME_TRACE)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    # compileTrace only collects what -ftime-trace writes. postBuild wouldn't fire under cmake --build.
+    cmake_instrumentation(
+        API_VERSION 1
+        DATA_VERSION 1.1
+        HOOKS postCMakeBuild
+        OPTIONS compileTrace trace dynamicSystemInformation
+        CALLBACK ${Python3_EXECUTABLE}
+        ${PROJECT_SOURCE_DIR}/tools/compile_time/summarize.py
+    )
+endif()
 
 list(
     APPEND CMAKE_MODULE_PATH

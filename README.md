@@ -89,7 +89,7 @@ See [docs/naming-conventions.md](docs/naming-conventions.md).
 
 #### Backend (C++)
 
-- **C++ Modules** for compilation units (`.cppm` for module interface (partition) units `.cpp` for module implementation partition units and `.test.cpp` for TU test files)
+- **C++ Modules** for compilation units (`.cppm` for module interface (partition) units, `.cpp` for module implementation units such as `module cm;` and `.test.cpp` for TU test files)
 - **stdexec** (`std::execution` senders/receivers and coroutine tasks) on **Boost.Asio** for asynchronous I/O
 - **mp-units** for physical quantities and unit-safe arithmetic
 - **libassert** for expressive runtime assertions

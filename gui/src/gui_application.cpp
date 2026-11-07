@@ -14,7 +14,7 @@ namespace cm::gui {
 GuiApplication::GuiApplication(const std::filesystem::path& state_dir)
     : Application{state_dir}
 {
-    auto ui_log_sink = std::make_shared<ui_log_sink_st>();
+    auto ui_log_sink = std::make_shared<ui_log_sink_mt>();
     log::add_sink(ui_log_sink);
 
     const auto& ui_station_state_context = ui_->global<StationStateContext>();

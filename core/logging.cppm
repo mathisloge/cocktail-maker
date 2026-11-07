@@ -1,8 +1,5 @@
 module;
-#include <spdlog/fmt/bin_to_hex.h>
 #include <spdlog/logger.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
@@ -26,20 +23,6 @@ constexpr auto critical = spdlog::level::critical;
 constexpr auto off = spdlog::level::off;
 } // namespace level
 
-// ── Internal helpers ──────────────────────────────────────────────────────────
-
-namespace detail {
-
-template <typename... Args>
-void log_impl(
-    spdlog::logger& logger, const std::source_location& location, Level lvl, spdlog::format_string_t<Args...> fmt, Args&&... args)
-{
-    spdlog::source_loc loc{location.file_name(), static_cast<int>(location.line()), location.function_name()};
-    logger.log(std::move(loc), lvl, fmt, std::forward<Args>(args)...);
-}
-
-} // namespace detail
-
 // ── Logging context (singleton) ───────────────────────────────────────────────
 
 class LoggingContext
@@ -53,6 +36,8 @@ class LoggingContext
 
     Logger get_logger(std::string name)
     {
+        // The UI thread and the execution context both create loggers, and registering a name twice throws.
+        const std::scoped_lock lock{mutex_};
         if (auto logger = spdlog::get(name)) {
             return logger;
         }
@@ -70,45 +55,20 @@ class LoggingContext
         add_sink(std::move(sink));
     }
 
-    void add_file_sink(const std::string& filename, Level lvl = level::trace, bool truncate = false)
-    {
-        auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(filename, truncate);
-        sink->set_level(lvl);
-        add_sink(std::move(sink));
-    }
-
     void add_sink(spdlog::sink_ptr sink)
     {
+        const std::scoped_lock lock{mutex_};
         sinks_.emplace_back(sink);
         spdlog::apply_all([sink](Logger logger) { logger->sinks().emplace_back(sink); });
     }
 
-    void add_rotating_file_sink(const std::string& filename,
-                                std::size_t max_bytes,
-                                std::size_t max_files,
-                                Level lvl = level::trace)
-    {
-        auto sink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(filename, max_bytes, max_files);
-        sink->set_level(lvl);
-        add_sink(std::move(sink));
-    }
-
     void set_level(Level lvl)
     {
+        const std::scoped_lock lock{mutex_};
         spdlog::set_level(lvl);
         for (auto&& s : sinks_) {
             s->set_level(lvl);
         }
-    }
-
-    void set_pattern(const std::string& pat)
-    {
-        spdlog::set_pattern(pat);
-    }
-
-    void flush_all()
-    {
-        spdlog::apply_all([](const Logger& l) { l->flush(); });
     }
 
     ~LoggingContext()
@@ -127,6 +87,7 @@ class LoggingContext
         add_console_sink(level::debug);
     }
 
+    std::mutex mutex_;
     std::vector<std::shared_ptr<spdlog::sinks::sink>> sinks_;
 };
 
@@ -140,29 +101,6 @@ export Logger create_or_get(std::string name)
 export void set_level(Level lvl)
 {
     LoggingContext::instance().set_level(lvl);
-}
-
-export void set_pattern(const std::string& pattern)
-{
-    LoggingContext::instance().set_pattern(pattern);
-}
-
-export void flush_all()
-{
-    LoggingContext::instance().flush_all();
-}
-
-export void add_file_sink(const std::string& filename, Level lvl = level::trace, bool truncate = false)
-{
-    LoggingContext::instance().add_file_sink(filename, lvl, truncate);
-}
-
-export void add_rotating_file_sink(const std::string& filename,
-                                   std::size_t max_bytes,
-                                   std::size_t max_files,
-                                   Level lvl = level::trace)
-{
-    LoggingContext::instance().add_rotating_file_sink(filename, max_bytes, max_files, lvl);
 }
 
 export void add_sink(spdlog::sink_ptr sink)

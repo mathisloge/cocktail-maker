@@ -27,8 +27,6 @@ list(
 )
 
 include(CTest)
-include(GenerateExportHeader)
-include(FeatureSummary)
 include(GNUInstallDirs)
 include(FindPkgConfig)
 include(GetGitRevisionDescription)
@@ -77,6 +75,7 @@ cpmaddpackage(
     "STDEXEC_ASIO_IMPLEMENTATION boost"
 )
 
+# mp-units checks its API contracts with gsl-lite, so nothing in this repository names it.
 cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite)
 cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_USE_STD_FORMAT ON")
 cpmaddpackage(URI "gh:CLIUtils/CLI11@2.7.2" OPTIONS "CLI11_PRECOMPILED ON")
@@ -99,7 +98,6 @@ pkg_check_modules(libudev IMPORTED_TARGET libudev REQUIRED)
 if(BUILD_TESTING)
     cpmaddpackage("gh:catchorg/Catch2@3.16.0")
     list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
-    include(CTest)
     include(Catch)
 endif()
 

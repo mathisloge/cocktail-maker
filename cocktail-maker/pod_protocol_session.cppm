@@ -17,6 +17,7 @@ export module cm:pod_protocol_session;
 import std;
 import libassert;
 import cm.core;
+import :comms_adapter;
 
 namespace cm {
 

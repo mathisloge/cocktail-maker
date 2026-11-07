@@ -2,7 +2,6 @@ module;
 export module cm.core;
 export import :logging;
 export import :units;
-export import :comms_adapter;
 export import :task;
 export import :io_scheduler;
 export import :async_scope;

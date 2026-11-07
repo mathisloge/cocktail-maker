@@ -9,7 +9,7 @@ set_target_properties(
 
 target_link_libraries(
     cocktail-maker-lib
-    PUBLIC cm::core
+    PUBLIC cm::core proto
     PRIVATE
         simdjson::simdjson
         $<$<TARGET_EXISTS:PkgConfig::libudev>:PkgConfig::libudev>
@@ -21,6 +21,7 @@ target_sources(
         FILE_SET CXX_MODULES
             FILES
                 catalog_loader.cppm
+                comms_adapter.cppm
                 dispenser.cppm
                 fill_level.cppm
                 fill_level.cpp
@@ -72,6 +73,7 @@ if(BUILD_TESTING)
         cocktail-maker-lib-tests
         PRIVATE
             application.test.cpp
+            comms_adapter.test.cpp
             execute_recipe.test.cpp
             fill_level.test.cpp
             glass.test.cpp

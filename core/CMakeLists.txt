@@ -17,11 +17,9 @@ target_link_libraries(
     PUBLIC
         mp-units::mp-units
         spdlog::spdlog
-        simdjson::simdjson
         STDEXEC::stdexec
         STDEXEC::asioexec
         libassert::assert
-        proto
 )
 
 target_sources(
@@ -37,7 +35,6 @@ target_sources(
                 async_scope.cpp
                 awaitable_bool.cppm
                 channel.cppm
-                comms_adapter.cppm
                 io_scheduler.cppm
                 logging.cppm
                 overloaded.cppm
@@ -54,7 +51,7 @@ if(BUILD_TESTING)
     add_sanitizers(cocktail-maker-core-tests)
     target_link_libraries(
         cocktail-maker-core-tests
-        PRIVATE Catch2::Catch2WithMain cm::core cm::testing proto
+        PRIVATE Catch2::Catch2WithMain cm::core cm::testing
     )
     catch_discover_tests(cocktail-maker-core-tests)
 
@@ -65,7 +62,6 @@ if(BUILD_TESTING)
             sleep.test.cpp
             async_algorithms.test.cpp
             awaitable_bool.test.cpp
-            comms_adapter.test.cpp
             strong_type.test.cpp
     )
 endif()

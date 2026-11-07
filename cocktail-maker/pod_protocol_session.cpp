@@ -15,6 +15,7 @@ module cm:pod_protocol_session_impl;
 import std;
 import libassert;
 import cm.core;
+import :comms_adapter;
 import :pod_protocol_session;
 
 namespace asio = boost::asio;

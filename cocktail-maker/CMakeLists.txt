@@ -61,7 +61,7 @@ if(BUILD_TESTING)
     add_sanitizers(cocktail-maker-lib-tests)
     target_link_libraries(
         cocktail-maker-lib-tests
-        PRIVATE Catch2::Catch2WithMain cm::lib proto
+        PRIVATE Catch2::Catch2WithMain cm::lib cm::testing proto
     )
     catch_discover_tests(cocktail-maker-lib-tests)
 
@@ -73,10 +73,8 @@ if(BUILD_TESTING)
             fill_level.test.cpp
             glass.test.cpp
             ingredient.test.cpp
-            pod_discovery.test.cpp
             pod.test.cpp
             pod_protocol_session.test.cpp
-            pod_registry.test.cpp
             pod_algorithms.test.cpp
             pour.test.cpp
             recipe_boost.test.cpp

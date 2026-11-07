@@ -47,7 +47,12 @@ if(BUILD_TESTING)
     add_sanitizers(cocktail-maker-gui-tests)
     target_link_libraries(
         cocktail-maker-gui-tests
-        PRIVATE Catch2::Catch2WithMain cm::gui cocktail-maker-simulator proto
+        PRIVATE
+            Catch2::Catch2WithMain
+            cm::gui
+            cocktail-maker-simulator
+            cm::testing
+            proto
     )
     catch_discover_tests(cocktail-maker-gui-tests)
     target_compile_definitions(

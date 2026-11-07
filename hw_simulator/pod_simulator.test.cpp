@@ -8,6 +8,7 @@
 import std;
 import mp_units;
 import cm.core;
+import cm.testing;
 import cm;
 import cm.sim;
 
@@ -21,16 +22,6 @@ using ErrorCode = proto::field::ErrorCodeVal;
 const cm::DispenserId kDispenser{0};
 const cm::DispenserId kOtherDispenser{1};
 const cm::DispenserId kWithoutLoadCell{4};
-
-cm::sim::ClientConfig fast_config()
-{
-    return cm::sim::ClientConfig{
-        .load_cell_action = 50ms,
-        .settle = 50ms,
-        .stall = 50ms,
-        .flow = 1000.0 * units::milli_litre / units::si::second,
-    };
-}
 
 class TestPodState final : public cm::PodState
 {
@@ -80,18 +71,14 @@ struct SimPodFixture
 
     std::shared_ptr<cm::Pod> make_pod()
     {
-        Socket pod_socket{ctx};
-        boost::asio::local::connect_pair(client->socket(), pod_socket);
-        return std::make_shared<cm::Pod>(std::make_unique<cm::SocketIoStream<Socket>>(std::move(pod_socket)));
+        return std::make_shared<cm::Pod>(cm::sim::open_station_stream(*client));
     }
 
     /// Replaces the client and the pod, so it has to be called before `run_test`.
     void configure(cm::sim::ClientConfig config)
     {
         client = std::make_shared<cm::sim::Client<Socket>>(scope, "SimPod", cm::Version{.major = 2}, std::move(config));
-        Socket pod_socket{ctx};
-        boost::asio::local::connect_pair(client->socket(), pod_socket);
-        pod = std::make_shared<cm::Pod>(std::make_unique<cm::SocketIoStream<Socket>>(std::move(pod_socket)));
+        pod = make_pod();
     }
 
     auto connected()
@@ -116,8 +103,7 @@ struct SimPodFixture
         scope.spawn(client->run());
         cm::run_until_complete(ctx, test_wrapper());
 
-        scope.request_stop();
-        cm::run_until_complete(ctx, scope.join());
+        cm::run_until_complete(ctx, scope.stop_and_join());
 
         if (error) {
             std::rethrow_exception(error);
@@ -146,7 +132,7 @@ TEST_CASE_METHOD(SimPodFixture, "A calibration run returns the measured amount",
 
 TEST_CASE_METHOD(SimPodFixture, "Replies within the Station's timeouts are accepted", "[sim][pod]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.ack_delay = 300ms;
     config.quick_reply = 300ms;
     configure(config);
@@ -161,7 +147,7 @@ TEST_CASE_METHOD(SimPodFixture, "Replies within the Station's timeouts are accep
 
 TEST_CASE_METHOD(SimPodFixture, "The weight comes back relative to the zero point", "[sim][pod]")
 {
-    configure(fast_config());
+    configure(cm::sim::fast_test_config());
     run_test([this]() -> cm::Task<void> {
         co_await connected();
         co_await pod->load_cell_tare(kDispenser);
@@ -173,7 +159,7 @@ TEST_CASE_METHOD(SimPodFixture, "The weight comes back relative to the zero poin
 
 TEST_CASE_METHOD(SimPodFixture, "A refused weight read is a Nak and not a protocol error", "[sim][pod]")
 {
-    configure(fast_config());
+    configure(cm::sim::fast_test_config());
     run_test([this]() -> cm::Task<void> {
         co_await connected();
         try {
@@ -188,7 +174,7 @@ TEST_CASE_METHOD(SimPodFixture, "A refused weight read is a Nak and not a protoc
 
 TEST_CASE_METHOD(SimPodFixture, "A volume is rounded to the nearest millilitre", "[sim][pod]")
 {
-    configure(fast_config());
+    configure(cm::sim::fast_test_config());
     run_test([this]() -> cm::Task<void> {
         co_await connected();
         std::ignore = co_await pod->dispense(kDispenser, 19.999 * units::milli_litre);
@@ -198,7 +184,7 @@ TEST_CASE_METHOD(SimPodFixture, "A volume is rounded to the nearest millilitre",
 
 TEST_CASE_METHOD(SimPodFixture, "An amount that rounds to nothing isn't sent", "[sim][pod]")
 {
-    configure(fast_config());
+    configure(cm::sim::fast_test_config());
     run_test([this]() -> cm::Task<void> {
         co_await connected();
         const auto report = co_await pod->dispense(kDispenser, 0.4 * units::milli_litre);
@@ -210,7 +196,7 @@ TEST_CASE_METHOD(SimPodFixture, "An amount that rounds to nothing isn't sent", "
 
 TEST_CASE_METHOD(SimPodFixture, "A short pour from a dry bottle reports an empty bottle", "[sim][pod]")
 {
-    configure(fast_config());
+    configure(cm::sim::fast_test_config());
     client->bottle(kDispenser).liquid = 30 * units::si::gram;
     run_test([this]() -> cm::Task<void> {
         co_await connected();
@@ -222,7 +208,7 @@ TEST_CASE_METHOD(SimPodFixture, "A short pour from a dry bottle reports an empty
 
 TEST_CASE_METHOD(SimPodFixture, "A pour over the time limit reports the limit", "[sim][pod]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.pour_limit = 200ms;
     config.flow = 100.0 * units::milli_litre / units::si::second;
     configure(config);
@@ -235,7 +221,7 @@ TEST_CASE_METHOD(SimPodFixture, "A pour over the time limit reports the limit", 
 
 TEST_CASE_METHOD(SimPodFixture, "A pour that used up its trims reports still short", "[sim][pod]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.trim_shortfall = 3 * units::si::gram;
     configure(config);
     run_test([this]() -> cm::Task<void> {
@@ -248,7 +234,7 @@ TEST_CASE_METHOD(SimPodFixture, "A pour that used up its trims reports still sho
 
 TEST_CASE_METHOD(SimPodFixture, "A tare that takes too long isn't sent again", "[sim][pod]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.load_cell_action = 3s;
     configure(config);
     run_test([this]() -> cm::Task<void> {
@@ -260,7 +246,7 @@ TEST_CASE_METHOD(SimPodFixture, "A tare that takes too long isn't sent again", "
 
 TEST_CASE_METHOD(SimPodFixture, "A refused pour fails at once instead of waiting for the final reply", "[sim][pod]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.load_cell_action = 300ms;
     configure(config);
     run_test([this]() -> cm::Task<void> {
@@ -286,7 +272,7 @@ TEST_CASE_METHOD(SimPodFixture, "A refused pour fails at once instead of waiting
 
 TEST_CASE_METHOD(SimPodFixture, "A run with next to nothing coming out is reported as empty", "[sim][pod]")
 {
-    configure(fast_config());
+    configure(cm::sim::fast_test_config());
     client->bottle(kDispenser).liquid = 3 * units::si::gram;
     run_test([this]() -> cm::Task<void> {
         co_await connected();
@@ -296,7 +282,7 @@ TEST_CASE_METHOD(SimPodFixture, "A run with next to nothing coming out is report
 
 TEST_CASE_METHOD(SimPodFixture, "An emergency stop fails the running pours with a hardware fault", "[sim][pod]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.flow = 10.0 * units::milli_litre / units::si::second;
     configure(config);
     run_test([this]() -> cm::Task<void> {
@@ -312,8 +298,7 @@ TEST_CASE_METHOD(SimPodFixture, "An emergency stop fails the running pours with 
             }
         };
         const auto stop = [this]() -> cm::Task<void> {
-            boost::asio::steady_timer timer{ctx, 200ms};
-            co_await timer.async_wait(exec::asio::use_sender);
+            co_await cm::async_sleep(ctx.get_executor(), 200ms);
             co_await pod->force_safe_state();
         };
 
@@ -348,7 +333,7 @@ TEST_CASE_METHOD(SimPodFixture, "A pour at the real time limit stays within the 
 
 TEST_CASE_METHOD(SimPodFixture, "An Ack that comes too late fails the pour without sending it again", "[sim][pod]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.ack_delay = 700ms;
     configure(config);
     run_test([this]() -> cm::Task<void> {
@@ -360,7 +345,7 @@ TEST_CASE_METHOD(SimPodFixture, "An Ack that comes too late fails the pour witho
 
 TEST_CASE_METHOD(SimPodFixture, "An emergency stop fails a running calibration", "[sim][pod]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.flow = 10.0 * units::milli_litre / units::si::second;
     configure(config);
     run_test([this]() -> cm::Task<void> {
@@ -376,8 +361,7 @@ TEST_CASE_METHOD(SimPodFixture, "An emergency stop fails a running calibration",
             }
         };
         const auto stop = [this]() -> cm::Task<void> {
-            boost::asio::steady_timer timer{ctx, 200ms};
-            co_await timer.async_wait(exec::asio::use_sender);
+            co_await cm::async_sleep(ctx.get_executor(), 200ms);
             co_await pod->force_safe_state();
         };
 
@@ -391,25 +375,22 @@ TEST_CASE_METHOD(SimPodFixture, "An emergency stop fails a running calibration",
 namespace {
 struct SimFillLevelFixture : SimPodFixture
 {
-    std::filesystem::path file =
-        std::filesystem::temp_directory_path() /
-        std::format("sim-fill-levels-{}.json", std::chrono::steady_clock::now().time_since_epoch().count());
-    cm::FillLevelTracker fill_levels{ctx.get_executor(), file, cm::FillLevelOptions{.refill_settle_time = 1ms}};
+    cm::testing::TempDir dir{"cm-sim-fill-levels-test"};
+    cm::FillLevelTracker fill_levels{
+        ctx.get_executor(), dir.file("levels.json"), cm::FillLevelOptions{.refill_settle_time = 1ms}};
     cm::PodRegistry registry;
     const cm::PodInfo info{.id = cm::PodId{"SimPod"}, .firmware_version = {}, .num_pumps = 5, .num_valves = 3};
     const cm::PodDispenser address{info.id, kDispenser};
 
     SimFillLevelFixture()
     {
-        configure(fast_config());
+        configure(cm::sim::fast_test_config());
         registry.register_pod(pod);
     }
 
     ~SimFillLevelFixture()
     {
         registry.unregister_pod(pod);
-        fill_levels.flush();
-        std::filesystem::remove(file);
     }
 
     cm::Dispenser& dispenser()
@@ -465,7 +446,7 @@ TEST_CASE_METHOD(SimFillLevelFixture,
 
 TEST_CASE_METHOD(SimFillLevelFixture, "The weights at connect are read one after the other", "[sim][fill_level]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.quick_reply = 50ms;
     registry.unregister_pod(pod);
     configure(config);
@@ -537,7 +518,7 @@ class SilentStationState : public cm::StationState
 
 TEST_CASE_METHOD(SimFillLevelFixture, "A connection lost during the reads ends them without an error", "[sim][fill_level]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.quick_reply = 50ms;
     registry.unregister_pod(pod);
     configure(config);
@@ -549,8 +530,7 @@ TEST_CASE_METHOD(SimFillLevelFixture, "A connection lost during the reads ends t
         }
 
         const auto lose_connection = [this]() -> cm::Task<void> {
-            boost::asio::steady_timer timer{ctx, 70ms};
-            co_await timer.async_wait(exec::asio::use_sender);
+            co_await cm::async_sleep(ctx.get_executor(), 70ms);
             client->socket().close();
         };
         std::vector<cm::Task<void>> tasks;
@@ -598,7 +578,7 @@ TEST_CASE("The application reads the fill levels of a pod that connects", "[sim]
 
 TEST_CASE_METHOD(SimPodFixture, "A pod on another protocol release is incompatible and pours nothing", "[sim][pod]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.protocol_version = cm::Version{.major = 2, .minor = 2, .patch = 0};
     configure(config);
     run_test([this]() -> cm::Task<void> {
@@ -617,7 +597,7 @@ TEST_CASE("The Station speaks the protocol it was built against", "[sim][pod]")
 
 TEST_CASE_METHOD(SimPodFixture, "Progress during a pour doesn't get in the way of its result", "[sim][pod]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.flow = 100.0 * units::milli_litre / units::si::second;
     config.progress_interval = 1ms;
     configure(config);

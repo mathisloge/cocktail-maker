@@ -2,9 +2,9 @@ module;
 #include <boost/asio/io_context.hpp>
 #include <stdexec/execution.hpp>
 
-export module cm.core:run_until_complete;
+export module cm.testing:run_until_complete;
 import std;
-import :io_scheduler;
+import cm.core;
 
 namespace cm {
 namespace asio = boost::asio;

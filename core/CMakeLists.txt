@@ -46,7 +46,6 @@ target_sources(
                 retry.cppm
                 sleep.cppm
                 sleep.cpp
-                run_until_complete.cppm
                 task.cppm
 )
 
@@ -55,7 +54,7 @@ if(BUILD_TESTING)
     add_sanitizers(cocktail-maker-core-tests)
     target_link_libraries(
         cocktail-maker-core-tests
-        PRIVATE Catch2::Catch2WithMain cm::core proto
+        PRIVATE Catch2::Catch2WithMain cm::core cm::testing proto
     )
     catch_discover_tests(cocktail-maker-core-tests)
 

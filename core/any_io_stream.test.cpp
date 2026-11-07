@@ -2,13 +2,12 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/local/connect_pair.hpp>
 #include <boost/asio/local/stream_protocol.hpp>
-#include <boost/asio/steady_timer.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <exec/asio/use_sender.hpp>
 #include <exec/when_any.hpp>
 #include <stdexec/execution.hpp>
 import std;
 import cm.core;
+import cm.testing;
 
 using namespace std::chrono_literals;
 
@@ -69,13 +68,12 @@ TEST_CASE_METHOD(StreamFixture, "SocketIoStream - A stop request ends a pending 
     std::array<std::uint8_t, 16> buffer{};
     bool read_returned = false;
     bool read_stopped = false;
-    boost::asio::steady_timer timer{ioc, 10ms};
 
     REQUIRE(cm::run_until_complete(ioc,
                                    exec::when_any(stream->async_read(boost::asio::buffer(buffer)) | stdexec::then([&](auto&&) {
                                                       read_returned = true;
                                                   }) | stdexec::upon_stopped([&]() noexcept { read_stopped = true; }),
-                                                  timer.async_wait(exec::asio::use_sender))));
+                                                  cm::async_sleep(ioc.get_executor(), 10ms))));
 
     CHECK(read_stopped);
     CHECK_FALSE(read_returned);

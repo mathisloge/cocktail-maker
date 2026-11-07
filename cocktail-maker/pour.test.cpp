@@ -9,6 +9,7 @@
 import std;
 import mp_units;
 import cm.core;
+import cm.testing;
 import cm;
 
 #include "fake_dispenser.test.hpp"
@@ -28,18 +29,12 @@ cm::DispenseReport report(double amount, cm::DispenseOutcome outcome)
 struct PourFixture
 {
     boost::asio::io_context ctx;
-    std::filesystem::path file = std::filesystem::temp_directory_path() /
-                                 std::format("pour-{}.json", std::chrono::steady_clock::now().time_since_epoch().count());
+    cm::testing::TempDir dir{"cm-pour-test"};
+    std::filesystem::path file = dir.file("levels.json");
     cm::FillLevelTracker tracker{ctx.get_executor(), file, cm::FillLevelOptions{.refill_settle_time = 1ms}};
     FakeDispenser dispenser;
     int prompts = 0;
     double refill_amount = 0;
-
-    ~PourFixture()
-    {
-        tracker.flush();
-        std::filesystem::remove(file);
-    }
 
     cm::RefillPrompt prompt()
     {
@@ -243,10 +238,7 @@ TEST_CASE_METHOD(PourFixture, "A stop during the prompt ends the pour", "[pour]"
 
     cm::AwaitableBool never{ctx.get_executor()};
     cm::RefillPrompt waiting_prompt = [&never]() -> cm::Task<void> { co_await never.async_wait(); };
-    const auto stop_soon = [this]() -> cm::Task<void> {
-        boost::asio::steady_timer timer{ctx, 10ms};
-        co_await timer.async_wait(exec::asio::use_sender);
-    };
+    const auto stop_soon = [this]() -> cm::Task<void> { co_await cm::async_sleep(ctx.get_executor(), 10ms); };
 
     const auto run = [&]() -> cm::Task<void> {
         co_await exec::when_any(cm::pour_with_refill(dispenser, kAddress, 40 * units::milli_litre, tracker, waiting_prompt),

@@ -9,21 +9,18 @@
 import std;
 import mp_units;
 import cm.core;
+import cm.testing;
 import cm;
 import cm.gui;
 import cm.sim;
+
+#include "slint_events.test.hpp"
 
 using namespace std::chrono_literals;
 namespace units = cm::units;
 
 namespace {
 using Socket = cm::sim::Socket;
-
-void flush_slint_events()
-{
-    slint::invoke_from_event_loop([]() { slint::quit_event_loop(); });
-    slint::run_event_loop(slint::EventLoopMode::RunUntilQuit);
-}
 
 class TestPodState final : public cm::PodState
 {
@@ -132,10 +129,9 @@ struct SimStation
     cm::RecipeStore recipes;
     cm::PodRegistry registry;
     cm::StationConfig config{ingredients, ""};
-    std::filesystem::path file =
-        std::filesystem::temp_directory_path() /
-        std::format("station-flows-{}.json", std::chrono::steady_clock::now().time_since_epoch().count());
-    cm::FillLevelTracker fill_levels{ctx.get_executor(), file, cm::FillLevelOptions{.refill_settle_time = 1ms}};
+    cm::testing::TempDir dir{"cm-station-flows-test"};
+    cm::FillLevelTracker fill_levels{
+        ctx.get_executor(), dir.file("levels.json"), cm::FillLevelOptions{.refill_settle_time = 1ms}};
     std::shared_ptr<cm::sim::Client<Socket>> client;
     std::shared_ptr<cm::Pod> pod;
 
@@ -154,9 +150,7 @@ struct SimStation
         config.update_dispenser_ingredient_mapping(rum, rum_address);
         config.update_dispenser_ingredient_mapping(lime, lime_address);
 
-        Socket pod_socket{ctx};
-        boost::asio::local::connect_pair(client->socket(), pod_socket);
-        pod = std::make_shared<cm::Pod>(std::make_unique<cm::SocketIoStream<Socket>>(std::move(pod_socket)));
+        pod = std::make_shared<cm::Pod>(cm::sim::open_station_stream(*client));
         registry.register_pod(pod);
 
         scope.spawn(client->run());
@@ -169,8 +163,6 @@ struct SimStation
     ~SimStation()
     {
         stop();
-        fill_levels.flush();
-        std::filesystem::remove(file);
     }
 
     /// Ends all work, as `Application::shutdown` does. A station with a bridge has to call it before the bridge is destroyed.
@@ -181,8 +173,7 @@ struct SimStation
         }
         stopped = true;
         registry.unregister_pod(pod);
-        scope.request_stop();
-        cm::run_until_complete(ctx, scope.join());
+        cm::run_until_complete(ctx, scope.stop_and_join());
         ctx.restart();
         ctx.poll();
     }
@@ -859,9 +850,8 @@ struct FailingMixStation
     cm::RecipeStore recipes;
     cm::PodRegistry registry;
     cm::StationConfig config{ingredients, ""};
-    std::filesystem::path file = std::filesystem::temp_directory_path() /
-                                 std::format("failing-mix-{}.json", std::chrono::steady_clock::now().time_since_epoch().count());
-    cm::FillLevelTracker fill_levels{ctx.get_executor(), file};
+    cm::testing::TempDir dir{"cm-failing-mix-test"};
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), dir.file("levels.json")};
     std::shared_ptr<RefusingPod> pod = std::make_shared<RefusingPod>();
     cm::gui::ProcessContextBridge bridge{scope, ui, recipes, ingredients, config, registry, fill_levels};
     std::optional<cm::gui::Page> last_page;
@@ -901,10 +891,7 @@ struct FailingMixStation
     ~FailingMixStation()
     {
         registry.unregister_pod(pod);
-        scope.request_stop();
-        cm::run_until_complete(ctx, scope.join());
-        fill_levels.flush();
-        std::filesystem::remove(file);
+        cm::run_until_complete(ctx, scope.stop_and_join());
     }
 
     bool pump_until(const std::function<bool()>& predicate)

@@ -17,7 +17,11 @@ if(BUILD_TESTING)
     add_sanitizers(cocktail-maker-sim-tests)
     target_link_libraries(
         cocktail-maker-sim-tests
-        PRIVATE Catch2::Catch2WithMain cocktail-maker-simulator proto
+        PRIVATE
+            Catch2::Catch2WithMain
+            cocktail-maker-simulator
+            cm::testing
+            proto
     )
     catch_discover_tests(cocktail-maker-sim-tests)
 

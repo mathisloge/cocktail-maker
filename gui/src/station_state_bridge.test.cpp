@@ -7,29 +7,11 @@
 import std;
 import mp_units;
 import cm.core;
+import cm.testing;
 import cm;
 import cm.gui;
 
-namespace {
-// Helper to flush Slint's event loop queue.
-inline void flush_slint_events()
-{
-    slint::invoke_from_event_loop([]() { slint::quit_event_loop(); });
-    slint::run_event_loop(slint::EventLoopMode::RunUntilQuit);
-}
-
-// RAII guard: Local variables are destroyed in reverse order of declaration.
-// When a SECTION finishes, `pod` (section) is destructed first (pushing cleanup tasks to Slint).
-// Then this `flusher` is destructed, running those pending tasks and freeing the captured
-// `shared_ptr<StationStateBridge>`, allowing `bridge` and `ui` to be cleanly destroyed.
-struct SlintFlusher
-{
-    ~SlintFlusher()
-    {
-        flush_slint_events();
-    }
-};
-} // namespace
+#include "slint_events.test.hpp"
 
 TEST_CASE("StationStateBridge - Initialization", "[gui][StationStateBridge]")
 {
@@ -270,6 +252,5 @@ TEST_CASE("StationStateBridge - An operator lockout counts down on the UI thread
     CHECK(ctx.poll() == 0);
 
     // A scope has to be joined before it goes away, also when a failed check above left work in it.
-    scope.request_stop();
-    cm::run_until_complete(ctx, scope.join());
+    cm::run_until_complete(ctx, scope.stop_and_join());
 }

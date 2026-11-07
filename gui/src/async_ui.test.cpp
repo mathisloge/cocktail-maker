@@ -7,25 +7,11 @@
 
 import std;
 import cm.core;
+import cm.testing;
 import cm;
 import cm.gui;
 
-namespace {
-
-inline void flush_slint_events()
-{
-    slint::invoke_from_event_loop([]() { slint::quit_event_loop(); });
-    slint::run_event_loop(slint::EventLoopMode::RunUntilQuit);
-}
-
-struct SlintFlusher
-{
-    ~SlintFlusher()
-    {
-        flush_slint_events();
-    }
-};
-} // namespace
+#include "slint_events.test.hpp"
 
 TEST_CASE("async_show_manual_command_popup - opens and resolves on confirm", "[gui][async_ui]")
 {

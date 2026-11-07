@@ -48,6 +48,17 @@ export struct ClientConfig
     std::chrono::milliseconds progress_interval{250ms};
 };
 
+/// Quick timings for tests, so that the real procedures still finish fast.
+export inline ClientConfig fast_test_config()
+{
+    return ClientConfig{
+        .load_cell_action = 50ms,
+        .settle = 50ms,
+        .stall = 50ms,
+        .flow = 1000.0 * units::milli_litre / units::si::second,
+    };
+}
+
 /// A bottle on a scale. Tests change it directly, as nothing else reaches the simulated pod but protocol messages.
 export struct SimBottle
 {
@@ -722,4 +733,12 @@ class Client : public std::enable_shared_from_this<Client<TSocket>>
     }
 };
 
+/// Connects `client` to a new socket, as a USB port would, and returns the Station's end of it.
+export template <typename TSocket>
+std::unique_ptr<AnyIoStream> open_station_stream(Client<TSocket>& client)
+{
+    TSocket station_socket{client.socket().get_executor()};
+    asio::local::connect_pair(client.socket(), station_socket);
+    return std::make_unique<SocketIoStream<TSocket>>(std::move(station_socket));
+}
 } // namespace cm::sim

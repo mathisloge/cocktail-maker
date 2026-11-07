@@ -36,12 +36,9 @@ Task<void> SimulatedPodDiscovery::discover(AsyncScope& scope, std::function<void
         c->bottle(DispenserId{0}).liquid = 60 * units::si::gram;
         c->power_cycle_load_cells();
 
-        Socket server_socket{c->socket().get_executor()};
-
-        boost::asio::local::connect_pair(c->socket(), server_socket);
-
+        auto station_stream = open_station_stream(*c);
         scope.spawn(run_client(c));
-        on_pod_discovered(std::make_shared<Pod>(std::make_unique<SocketIoStream<Socket>>(std::move(server_socket))));
+        on_pod_discovered(std::make_shared<Pod>(std::move(station_stream)));
     }
 
     co_return;

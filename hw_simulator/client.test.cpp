@@ -8,6 +8,7 @@
 import std;
 import mp_units;
 import cm.core;
+import cm.testing;
 import cm;
 import cm.sim;
 
@@ -23,16 +24,6 @@ constexpr auto kReplyTimeout = 5s;
 const cm::DispenserId kDispenser{0};
 const cm::DispenserId kOtherDispenser{1};
 const cm::DispenserId kWithoutLoadCell{4};
-
-cm::sim::ClientConfig fast_config()
-{
-    return cm::sim::ClientConfig{
-        .load_cell_action = 50ms,
-        .settle = 50ms,
-        .stall = 50ms,
-        .flow = 1000.0 * units::milli_litre / units::si::second,
-    };
-}
 
 cm::OutLoadCellTare tare(cm::DispenserId id)
 {
@@ -86,13 +77,10 @@ struct ClientFixture
     std::shared_ptr<cm::sim::Client<Socket>> client;
     std::unique_ptr<cm::PodProtocolSession> session;
 
-    void create(cm::sim::ClientConfig config = fast_config())
+    void create(cm::sim::ClientConfig config = cm::sim::fast_test_config())
     {
         client = std::make_shared<cm::sim::Client<Socket>>(scope, "SimPod", cm::Version{.major = 2}, std::move(config));
-        Socket session_socket{ctx};
-        boost::asio::local::connect_pair(client->socket(), session_socket);
-        session =
-            std::make_unique<cm::PodProtocolSession>(std::make_unique<cm::SocketIoStream<Socket>>(std::move(session_socket)));
+        session = std::make_unique<cm::PodProtocolSession>(cm::sim::open_station_stream(*client));
     }
 
     template <typename TxMsg>
@@ -140,8 +128,7 @@ struct ClientFixture
 
     cm::Task<void> pause(std::chrono::milliseconds duration)
     {
-        boost::asio::steady_timer timer{ctx, duration};
-        co_await timer.async_wait(exec::asio::use_sender);
+        co_await cm::async_sleep(ctx.get_executor(), duration);
     }
 
     template <typename CoroutineFunc>
@@ -160,8 +147,7 @@ struct ClientFixture
         scope.spawn(client->run());
         cm::run_until_complete(ctx, test_wrapper());
 
-        scope.request_stop();
-        cm::run_until_complete(ctx, scope.join());
+        cm::run_until_complete(ctx, scope.stop_and_join());
 
         if (error) {
             std::rethrow_exception(error);
@@ -186,7 +172,7 @@ TEST_CASE_METHOD(ClientFixture, "A tare takes as long as on the real Pod", "[sim
 
 TEST_CASE_METHOD(ClientFixture, "A second tare is refused while the first one runs", "[sim][client]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.load_cell_action = 300ms;
     create(config);
     run_test([this]() -> cm::Task<void> {
@@ -271,7 +257,7 @@ TEST_CASE_METHOD(ClientFixture, "A pour of 0 mL is invalid", "[sim][client]")
 
 TEST_CASE_METHOD(ClientFixture, "A pour stops at the time limit", "[sim][client]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.pour_limit = 200ms;
     config.flow = 100.0 * units::milli_litre / units::si::second;
     create(config);
@@ -315,7 +301,7 @@ TEST_CASE_METHOD(ClientFixture, "A calibration run answers like the firmware", "
 
 TEST_CASE_METHOD(ClientFixture, "A calibration run below the smallest amount counts as empty", "[sim][client]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.stall = 5s;
     config.flow = 20.0 * units::milli_litre / units::si::second;
     create(config);
@@ -339,7 +325,7 @@ TEST_CASE_METHOD(ClientFixture, "A calibration run that stalls counts as empty e
 
 TEST_CASE_METHOD(ClientFixture, "A running pour blocks only its own dispenser", "[sim][client]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.flow = 100.0 * units::milli_litre / units::si::second;
     create(config);
     run_test([this]() -> cm::Task<void> {
@@ -396,7 +382,7 @@ TEST_CASE_METHOD(ClientFixture, "A dispenser without a load cell refuses everyth
 
 TEST_CASE_METHOD(ClientFixture, "An emergency stop acknowledges first and ends every running pour", "[sim][client]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.flow = 10.0 * units::milli_litre / units::si::second;
     config.load_cell_action = 300ms;
     config.stop_nak_spacing = 200ms;
@@ -438,7 +424,7 @@ TEST_CASE_METHOD(ClientFixture, "An emergency stop acknowledges first and ends e
 
 TEST_CASE_METHOD(ClientFixture, "A dry bottle refills itself when configured", "[sim][client]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.auto_refill_after = 50ms;
     create(config);
     run_test([this]() -> cm::Task<void> {
@@ -454,7 +440,7 @@ TEST_CASE_METHOD(ClientFixture, "A dry bottle refills itself when configured", "
 
 TEST_CASE_METHOD(ClientFixture, "A stop before the Ack ends a pour with a single reply", "[sim][client]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.ack_delay = 200ms;
     create(config);
     run_test([this]() -> cm::Task<void> {
@@ -474,7 +460,7 @@ TEST_CASE_METHOD(ClientFixture, "A stop before the Ack ends a pour with a single
 
 TEST_CASE_METHOD(ClientFixture, "A stop while the load settles ends a pour with a single reply", "[sim][client]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.settle = 400ms;
     create(config);
     run_test([this]() -> cm::Task<void> {
@@ -497,7 +483,7 @@ TEST_CASE_METHOD(ClientFixture, "A stop while the load settles ends a pour with 
 
 TEST_CASE_METHOD(ClientFixture, "A stop during a calibration run ends it with a single reply", "[sim][client]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.flow = 100.0 * units::milli_litre / units::si::second;
     create(config);
     run_test([this]() -> cm::Task<void> {
@@ -523,7 +509,7 @@ TEST_CASE_METHOD(ClientFixture, "A stop during a calibration run ends it with a 
 
 TEST_CASE_METHOD(ClientFixture, "An old refill doesn't fill a bottle that is in use again", "[sim][client]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.auto_refill_after = 150ms;
     create(config);
     client->bottle(kDispenser).liquid = 10 * units::si::gram;
@@ -540,7 +526,7 @@ TEST_CASE_METHOD(ClientFixture, "An old refill doesn't fill a bottle that is in 
 
 TEST_CASE_METHOD(ClientFixture, "A pour and a calibration run report their progress", "[sim][client]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.flow = 100.0 * units::milli_litre / units::si::second;
     config.progress_interval = 1ms;
     create(config);
@@ -565,7 +551,7 @@ TEST_CASE_METHOD(ClientFixture, "A pour and a calibration run report their progr
 
 TEST_CASE_METHOD(ClientFixture, "A shortfall larger than the pour leaves the bottle as it is", "[sim][client]")
 {
-    auto config = fast_config();
+    auto config = cm::sim::fast_test_config();
     config.trim_shortfall = 10 * units::si::gram;
     create(config);
     run_test([this]() -> cm::Task<void> {

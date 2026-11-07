@@ -3,6 +3,7 @@
 import cm;
 import cm.core;
 import mp_units;
+import cm.testing;
 import std;
 using namespace cm;
 
@@ -18,42 +19,6 @@ Recipe make_recipe(std::string name, std::string description = "", int n_command
                   .description = std::move(description),
                   .commands = std::move(commands)};
 }
-
-/// A directory for recipe files, removed with everything in it at the end of the test.
-class RecipeDir
-{
-  public:
-    RecipeDir()
-        : path_{std::filesystem::temp_directory_path() /
-                std::format("cm-recipe-test-{}", std::chrono::steady_clock::now().time_since_epoch().count())}
-    {
-        std::filesystem::create_directories(path_);
-    }
-
-    RecipeDir(const RecipeDir&) = delete;
-    RecipeDir& operator=(const RecipeDir&) = delete;
-
-    ~RecipeDir()
-    {
-        std::error_code ec;
-        std::filesystem::remove_all(path_, ec);
-    }
-
-    [[nodiscard]] const std::filesystem::path& path() const
-    {
-        return path_;
-    }
-
-    void write(const std::string& name, std::string_view content) const
-    {
-        std::ofstream file{path_ / name};
-        file << content;
-        REQUIRE(file);
-    }
-
-  private:
-    std::filesystem::path path_;
-};
 
 IngredientStore store_with_rum()
 {
@@ -224,9 +189,9 @@ using Catch::Matchers::ContainsSubstring;
 
 TEST_CASE("load_recipes_from_dir refuses a recipe without a serving volume", "[recipe][load]")
 {
-    const RecipeDir dir;
+    const cm::testing::TempDir dir{"cm-recipe-test"};
     const auto store = store_with_rum();
-    dir.write("no_volume.json", R"({"name": "X", "steps": [{"kind": "dispense", "ingredient": "rum", "volume": 40}]})");
+    dir.write_file("no_volume.json", R"({"name": "X", "steps": [{"kind": "dispense", "ingredient": "rum", "volume": 40}]})");
 
     CHECK_THROWS_WITH(load_recipes_from_dir(dir.path(), store),
                       ContainsSubstring("no_volume.json") && ContainsSubstring("nominal_serving_volume"));
@@ -234,10 +199,10 @@ TEST_CASE("load_recipes_from_dir refuses a recipe without a serving volume", "[r
 
 TEST_CASE("load_recipes_from_dir refuses a serving volume of 0", "[recipe][load]")
 {
-    const RecipeDir dir;
+    const cm::testing::TempDir dir{"cm-recipe-test"};
     const auto store = store_with_rum();
-    dir.write("zero.json",
-              R"({"name": "X", "nominal_serving_volume": 0,
+    dir.write_file("zero.json",
+                   R"({"name": "X", "nominal_serving_volume": 0,
                   "steps": [{"kind": "dispense", "ingredient": "rum", "volume": 40}]})");
 
     CHECK_THROWS_WITH(load_recipes_from_dir(dir.path(), store), ContainsSubstring("nominal_serving_volume"));
@@ -245,10 +210,10 @@ TEST_CASE("load_recipes_from_dir refuses a serving volume of 0", "[recipe][load]
 
 TEST_CASE("load_recipes_from_dir refuses a dispense step below 1 mL", "[recipe][load]")
 {
-    const RecipeDir dir;
+    const cm::testing::TempDir dir{"cm-recipe-test"};
     const auto store = store_with_rum();
-    dir.write("tiny.json",
-              R"({"name": "X", "nominal_serving_volume": 200,
+    dir.write_file("tiny.json",
+                   R"({"name": "X", "nominal_serving_volume": 200,
                   "steps": [{"kind": "parallel", "steps": [{"kind": "dispense", "ingredient": "rum", "volume": 0}]}]})");
 
     CHECK_THROWS_WITH(load_recipes_from_dir(dir.path(), store), ContainsSubstring("at least 1 mL"));
@@ -256,10 +221,10 @@ TEST_CASE("load_recipes_from_dir refuses a dispense step below 1 mL", "[recipe][
 
 TEST_CASE("load_recipes_from_dir reads the serving volume", "[recipe][load]")
 {
-    const RecipeDir dir;
+    const cm::testing::TempDir dir{"cm-recipe-test"};
     const auto store = store_with_rum();
-    dir.write("good.json",
-              R"({"name": "X", "nominal_serving_volume": 200,
+    dir.write_file("good.json",
+                   R"({"name": "X", "nominal_serving_volume": 200,
                   "steps": [{"kind": "dispense", "ingredient": "rum", "volume": 40}]})");
 
     const auto recipes = load_recipes_from_dir(dir.path(), store);

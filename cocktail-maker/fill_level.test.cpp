@@ -8,6 +8,7 @@
 import std;
 import mp_units;
 import cm.core;
+import cm.testing;
 import cm;
 
 #include "fake_dispenser.test.hpp"
@@ -26,16 +27,16 @@ const cm::PodDispenser kAddress{cm::PodId{"Pod"}, cm::DispenserId{0}};
 struct FillLevelFixture
 {
     boost::asio::io_context ctx;
-    std::filesystem::path file = std::filesystem::temp_directory_path() /
-                                 std::format("fill-level-{}.json", std::chrono::steady_clock::now().time_since_epoch().count());
+    cm::testing::TempDir dir{"cm-fill-level-test"};
+    std::filesystem::path file = dir.file("levels.json");
     cm::FillLevelOptions options{.refill_settle_time = 1ms};
     std::unique_ptr<cm::FillLevelTracker> tracker = std::make_unique<cm::FillLevelTracker>(ctx.get_executor(), file, options);
     FakeDispenser dispenser;
 
     ~FillLevelFixture()
     {
+        // The tracker's writer has to finish before the directory goes away.
         tracker.reset();
-        std::filesystem::remove(file);
     }
 
     void run(cm::Task<void> task)
@@ -360,10 +361,7 @@ TEST_CASE_METHOD(FillLevelFixture, "A stop during the wait after the button leav
     slow.empty_bottle_tared(kAddress);
     const auto slow_before = slow.record(kAddress);
 
-    auto stop_soon = [this]() -> cm::Task<void> {
-        boost::asio::steady_timer timer{ctx, 10ms};
-        co_await timer.async_wait(exec::asio::use_sender);
-    };
+    auto stop_soon = [this]() -> cm::Task<void> { co_await cm::async_sleep(ctx.get_executor(), 10ms); };
     dispenser.reading = grams(900);
     run([&]() -> cm::Task<void> {
         co_await exec::when_any(slow.refilled(kAddress, dispenser, cm::RefillSource::admin_area), stop_soon());

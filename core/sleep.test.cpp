@@ -4,6 +4,7 @@
 #include <stdexec/execution.hpp>
 import std;
 import cm.core;
+import cm.testing;
 
 using namespace std::chrono_literals;
 

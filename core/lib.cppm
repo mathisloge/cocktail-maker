@@ -7,7 +7,6 @@ export import :task;
 export import :io_scheduler;
 export import :async_scope;
 export import :async_algorithms;
-export import :run_until_complete;
 export import :channel;
 export import :awaitable_bool;
 export import :overloaded;

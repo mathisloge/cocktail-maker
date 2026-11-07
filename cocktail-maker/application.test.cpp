@@ -1,6 +1,4 @@
-#include <boost/asio/steady_timer.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <exec/asio/use_sender.hpp>
 #include <stdexec/execution.hpp>
 import std;
 import cm.core;
@@ -35,8 +33,7 @@ class WaitingPodDiscovery : public cm::PodDiscovery
 
     cm::Task<void> discover(cm::AsyncScope& scope, std::function<void(std::shared_ptr<cm::IPod>)> /*on_pod_discovered*/) override
     {
-        boost::asio::steady_timer timer{scope.executor(), 1h};
-        co_await (timer.async_wait(exec::asio::use_sender) | stdexec::upon_stopped([this]() noexcept { stopped_ = true; }));
+        co_await (cm::wait_until_stopped(scope.executor()) | stdexec::upon_stopped([this]() noexcept { stopped_ = true; }));
     }
 
   private:

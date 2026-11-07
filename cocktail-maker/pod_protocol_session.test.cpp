@@ -7,6 +7,7 @@
 
 import std;
 import cm.core;
+import cm.testing;
 import cm;
 
 using namespace std::chrono_literals;
@@ -64,28 +65,11 @@ struct PodProtocolSessionTestFixture
         session = std::make_unique<Session>(std::make_unique<cm::SocketIoStream<Socket>>(std::move(session_socket)));
     }
 
-    // Safely executes tests and guarantees graceful session shutdown even if assertions fail
+    /// Runs `test_coro` while the session runs. The session ends with the test, and a failure is rethrown.
     template <typename CoroutineFunc>
     void run_test(CoroutineFunc&& test_coro)
     {
-        std::exception_ptr err;
-
-        auto test_wrapper = [&]() -> cm::Task<void> {
-            try {
-                // The session runs until the test coroutine has finished and stops it.
-                co_await exec::when_any(test_coro(), session->run());
-            }
-            catch (...) {
-                // Catch2 REQUIRE failures throw an exception to abort the execution path
-                err = std::current_exception();
-            }
-        };
-
-        cm::run_until_complete(ioc, test_wrapper());
-
-        if (err) {
-            std::rethrow_exception(err);
-        }
+        cm::run_until_complete(ioc, exec::when_any(test_coro(), session->run()));
     }
 
     // Encodes msg as an on-wire frame tagged with transaction_id. Does not
@@ -175,8 +159,7 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture, "PodProtocolSession - Receive Fr
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer.data(), half), exec::asio::use_sender);
 
         // Introduce a slight delay before writing the second half
-        boost::asio::steady_timer delay_timer(ioc, std::chrono::milliseconds(10));
-        co_await delay_timer.async_wait(exec::asio::use_sender);
+        co_await cm::async_sleep(ioc.get_executor(), 10ms);
 
         co_await boost::asio::async_write(
             client_socket, boost::asio::buffer(buffer.data() + half, buffer.size() - half), exec::asio::use_sender);
@@ -197,18 +180,14 @@ TEST_CASE_METHOD(PodProtocolSessionTestFixture,
 
         auto recv_task = session->async_receive<TestRxMsg>(kTestTransaction, std::chrono::milliseconds(500));
 
-        boost::asio::steady_timer delay_timer(ioc);
-
         co_await boost::asio::async_write(client_socket, boost::asio::buffer(buffer.data(), third), exec::asio::use_sender);
 
-        delay_timer.expires_after(std::chrono::milliseconds(5));
-        co_await delay_timer.async_wait(exec::asio::use_sender);
+        co_await cm::async_sleep(ioc.get_executor(), 5ms);
 
         co_await boost::asio::async_write(
             client_socket, boost::asio::buffer(buffer.data() + third, third), exec::asio::use_sender);
 
-        delay_timer.expires_after(std::chrono::milliseconds(5));
-        co_await delay_timer.async_wait(exec::asio::use_sender);
+        co_await cm::async_sleep(ioc.get_executor(), 5ms);
 
         co_await boost::asio::async_write(
             client_socket, boost::asio::buffer(buffer.data() + 2 * third, buffer.size() - 2 * third), exec::asio::use_sender);
@@ -486,8 +465,7 @@ TEST_CASE("PodProtocolSession - A failed write ends the session", "[send][lifecy
     bool ended = false;
     auto send_and_wait = [&]() -> cm::Task<void> {
         co_await session.async_send(TestTxMsg{}, kTestTransaction);
-        boost::asio::steady_timer timer{ioc, 2s};
-        co_await timer.async_wait(exec::asio::use_sender);
+        co_await cm::async_sleep(ioc.get_executor(), 2s);
     };
     cm::run_until_complete(ioc, exec::when_any(session.run() | stdexec::then([&] { ended = true; }), send_and_wait()));
 

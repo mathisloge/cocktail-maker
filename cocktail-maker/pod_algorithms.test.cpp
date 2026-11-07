@@ -5,6 +5,7 @@
 #include <stdexec/execution.hpp>
 import std;
 import cm.core;
+import cm.testing;
 import cm;
 
 namespace units = cm::units;

@@ -52,14 +52,31 @@ Use the roles from `components/text.slint`: `DisplayText`, `HeadlineText`, `Bran
 If no role fits, add a token group to `Typography` and a role to `components/text.slint`, instead of overriding one.
 A plain `Text {}` is only allowed inside `components/`, where it reads its values from `Typography`, like the label of `Button`.
 
-## Std-widgets
+## Std-widgets and own controls
 
 Only `components/` import `std-widgets.slint`.
-Use the wrappers `ScrollArea`, `LoadingSpinner`, `ProgressBar`, `ValueSlider`, `SelectBox` and `NumberBox`.
-Theming a std-widget is then a change in its wrapper.
+`ScrollArea`, `SelectBox` and `NumberBox` wrap a std-widget, so theming one is a change in its wrapper.
+
+`LoadingSpinner`, `ProgressBar` (`components/`) and `BoostSlider` (`widgets/`) are drawn from Slint primitives.
+Each one implements the interface of the std-widget it replaces, for example `implement SliderInterface <=> self;`
+with the interfaces imported from `"std-widget-interfaces.slint"`.
+The component declares every property and callback of the interface itself, and the compiler checks them.
+Give a control a `FocusScope` of size 0 with `forward-focus`, like the std slider does.
+A full-size `FocusScope` on top of a `TouchArea` takes its pointer events.
+
+`Button` has two sizes. `compact: true` gives 48 px for rows and tool bars, otherwise it is 75 px tall.
 `ListView` cannot be wrapped, because the Slint compiler treats it specially by name.
 Use a `ScrollArea` with a `VerticalLayout` for short lists.
 Use plain `VerticalLayout`/`HorizontalLayout` with `Layout` spacing instead of `VerticalBox`/`HorizontalBox`.
+
+## Slint project file
+
+`slint-project.json` sets the main file, the experimental features (`interfaces`) and the edition.
+CMake and the Slint editor extension both read it.
+The edition is still 1.18.
+Edition 1.19 adds the size limits of `if` and `for` children to their parent,
+and several pages report a fixed maximum width, so the window would resize with the page.
+Those pages need layout fixes before the edition can go up.
 
 ## Naming
 

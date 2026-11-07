@@ -108,10 +108,10 @@ cpmaddpackage(
 cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite)
 cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_USE_STD_FORMAT ON")
 cpmaddpackage(URI "gh:CLIUtils/CLI11@2.7.2" OPTIONS "CLI11_PRECOMPILED ON")
-cpmaddpackage(URI "gh:mpusz/mp-units#daaed987fa55419d0d5daffbad95e4463f2e3f74" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
+cpmaddpackage(URI "gh:mpusz/mp-units#18d759722417168dc103ac951154bf0ad34f3c88" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
 )
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
-cpmaddpackage(URI "gh:simdjson/simdjson@4.6.11" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF")
+cpmaddpackage(URI "gh:simdjson/simdjson@5.1.1" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF")
 cpmaddpackage(
   URI "gh:slint-ui/slint@1.18.1"
   NAME Slint
@@ -125,7 +125,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(libudev IMPORTED_TARGET libudev REQUIRED)
 
 if(BUILD_TESTING)
-    cpmaddpackage("gh:catchorg/Catch2@3.16.0")
+    cpmaddpackage("gh:catchorg/Catch2@3.16.1")
     list(APPEND CMAKE_MODULE_PATH ${Catch2_SOURCE_DIR}/extras)
     include(Catch)
 endif()

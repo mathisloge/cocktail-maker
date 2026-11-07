@@ -18,6 +18,22 @@ namespace {
 constexpr auto kDispenserNotFoundText = "Es konnte kein Dispenser gefunden werden.";
 constexpr auto kKeepsCalibrationText = " Der Pod nutzt weiter die bisherige Kalibrierung. Bitte den Lauf wiederholen.";
 
+/// The field of the dialog's state that shows how `step` is doing.
+CalibrationStepStatus DispenserCalibrationState::* status_of(const CalibrationStep step)
+{
+    switch (step) {
+    case CalibrationStep::clear_scale_tare:
+        return &DispenserCalibrationState::load_cell_tare_status;
+    case CalibrationStep::reference_weight:
+        return &DispenserCalibrationState::load_cell_status;
+    case CalibrationStep::empty_bottle_tare:
+        return &DispenserCalibrationState::empty_bottle_tare_status;
+    case CalibrationStep::dispenser_run:
+        return &DispenserCalibrationState::dispenser_status;
+    }
+    std::unreachable();
+}
+
 std::string receive_error_text(const CalibrationStep step, const PodReceiveError& error)
 {
     using ErrorCode = proto::field::ErrorCodeCommon::ValueType;
@@ -117,168 +133,137 @@ void DispenserCalibrationBridge::init()
     context.on_stop_calibration([this]() { async_scope_.spawn(pod_registry_.force_safe_state_all_pods()); });
 }
 
-Task<void> DispenserCalibrationBridge::async_dispatch_load_tare(const PodId pod_id, const DispenserId dispenser_id)
+template <typename Body>
+Task<void> DispenserCalibrationBridge::run_step(const CalibrationStep step, const PodDispenser address, Body body)
 {
-    update_load_tare_status(CalibrationStepStatus::Running);
-    update_ui_error("");
-    auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
+    const auto status = status_of(step);
+    update_state([status](DispenserCalibrationState& state) {
+        state.*status = CalibrationStepStatus::Running;
+        state.error_message = "";
+    });
+
+    auto dispenser = pod_registry_.dispenser_of_pod(address.pod_id, address.dispenser_id);
     if (not dispenser.has_value()) {
-        update_load_tare_status(CalibrationStepStatus::Error);
-        update_ui_error(kDispenserNotFoundText);
+        update_state([status](DispenserCalibrationState& state) {
+            state.*status = CalibrationStepStatus::Error;
+            state.error_message = kDispenserNotFoundText;
+        });
         co_return;
     }
+
+    std::exception_ptr failure;
     try {
-        co_await (*dispenser)->load_cell_tare();
-        // The zero point has moved and the bottle is off the scale, so the level isn't known anymore.
-        fill_levels_.clear_scale_tared(PodDispenser{pod_id, dispenser_id});
-        update_load_tare_status(CalibrationStepStatus::Success);
+        co_await body(**dispenser);
     }
     catch (const std::exception&) {
-        update_load_tare_status(CalibrationStepStatus::Error);
-        update_ui_error(calibration_error_text(CalibrationStep::clear_scale_tare, std::current_exception()));
+        failure = std::current_exception();
     }
+
+    if (failure == nullptr) {
+        update_state([status](DispenserCalibrationState& state) { state.*status = CalibrationStepStatus::Success; });
+        co_return;
+    }
+    const auto text = calibration_error_text(step, failure);
+    update_state([status, text](DispenserCalibrationState& state) {
+        state.*status = CalibrationStepStatus::Error;
+        state.error_message = slint::SharedString{text};
+    });
+}
+
+Task<void> DispenserCalibrationBridge::async_dispatch_load_tare(const PodId pod_id, const DispenserId dispenser_id)
+{
+    const PodDispenser address{pod_id, dispenser_id};
+    co_await run_step(CalibrationStep::clear_scale_tare, address, [this, address](cm::Dispenser& dispenser) -> Task<void> {
+        co_await dispenser.load_cell_tare();
+        // The zero point has moved and the bottle is off the scale, so the level isn't known anymore.
+        fill_levels_.clear_scale_tared(address);
+    });
 }
 
 Task<void> DispenserCalibrationBridge::async_dispatch_calibrate_load_cell_ref_weight(const PodId pod_id,
                                                                                      const DispenserId dispenser_id,
                                                                                      const units::Grams grams)
 {
-    update_load_cell_calibration_status(CalibrationStepStatus::Running);
-    update_ui_error("");
-    update_reference_reading("");
-    auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
-    if (not dispenser.has_value()) {
-        update_load_cell_calibration_status(CalibrationStepStatus::Error);
-        update_ui_error(kDispenserNotFoundText);
-        co_return;
-    }
-    try {
-        co_await (*dispenser)->load_cell_calibrate_with_ref_weight(grams);
-        update_load_cell_calibration_status(CalibrationStepStatus::Success);
-    }
-    catch (const std::exception&) {
-        update_load_cell_calibration_status(CalibrationStepStatus::Error);
-        update_ui_error(calibration_error_text(CalibrationStep::reference_weight, std::current_exception()));
-        co_return;
-    }
+    update_state([](DispenserCalibrationState& state) { state.reference_reading = ""; });
+    co_await run_step(
+        CalibrationStep::reference_weight,
+        PodDispenser{pod_id, dispenser_id},
+        [this, grams](cm::Dispenser& dispenser) -> Task<void> {
+            co_await dispenser.load_cell_calibrate_with_ref_weight(grams);
 
-    // The scale should now show the known weight, which lets the operator check the result.
-    try {
-        const units::Grams reading = co_await (*dispenser)->load_cell_weight();
-        update_reference_reading(std::format("{} g", std::lround(reading.numerical_value_in(units::si::gram))));
-    }
-    catch (const std::exception&) {
-        update_ui_error(calibration_error_text(CalibrationStep::reference_weight, std::current_exception()));
-    }
+            // The scale should now show the known weight, which lets the operator check the result. A failed check leaves
+            // the calibration itself successful.
+            try {
+                const units::Grams reading = co_await dispenser.load_cell_weight();
+                const auto text = std::format("{} g", std::lround(reading.numerical_value_in(units::si::gram)));
+                update_state([text](DispenserCalibrationState& state) { state.reference_reading = slint::SharedString{text}; });
+            }
+            catch (const std::exception&) {
+                const auto text = calibration_error_text(CalibrationStep::reference_weight, std::current_exception());
+                update_state([text](DispenserCalibrationState& state) { state.error_message = slint::SharedString{text}; });
+            }
+        });
 }
 
 Task<void> DispenserCalibrationBridge::async_dispatch_empty_bottle_tare(const PodId pod_id, const DispenserId dispenser_id)
 {
-    update_empty_bottle_tare_status(CalibrationStepStatus::Running);
-    update_ui_error("");
-    auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
-    if (not dispenser.has_value()) {
-        update_empty_bottle_tare_status(CalibrationStepStatus::Error);
-        update_ui_error(kDispenserNotFoundText);
-        co_return;
-    }
-    try {
-        co_await (*dispenser)->load_cell_tare();
-        fill_levels_.empty_bottle_tared(PodDispenser{pod_id, dispenser_id});
-        update_empty_bottle_tare_status(CalibrationStepStatus::Success);
-    }
-    catch (const std::exception&) {
-        update_empty_bottle_tare_status(CalibrationStepStatus::Error);
-        update_ui_error(calibration_error_text(CalibrationStep::empty_bottle_tare, std::current_exception()));
-    }
+    const PodDispenser address{pod_id, dispenser_id};
+    co_await run_step(CalibrationStep::empty_bottle_tare, address, [this, address](cm::Dispenser& dispenser) -> Task<void> {
+        co_await dispenser.load_cell_tare();
+        fill_levels_.empty_bottle_tared(address);
+    });
 }
 
 Task<void> DispenserCalibrationBridge::async_calibrate_dispenser(const PodId pod_id,
                                                                  const DispenserId dispenser_id,
                                                                  const std::chrono::milliseconds run_time)
 {
-    update_dispenser_status(CalibrationStepStatus::Running);
-    update_ui_error("");
-    auto dispenser = pod_registry_.dispenser_of_pod(pod_id, dispenser_id);
-    if (not dispenser.has_value()) {
-        update_dispenser_status(CalibrationStepStatus::Error);
-        update_ui_error(kDispenserNotFoundText);
-        co_return;
-    }
-
-    std::optional<units::Litre> amount;
-    try {
-        amount = co_await (*dispenser)->calibrate(run_time);
-        update_dispenser_measured_amount(*amount);
-        update_dispenser_status(CalibrationStepStatus::Success);
-    }
-    catch (const PodTimeoutError&) {
-        // The Pod starts the dispenser before it replies, so it may be pouring with nobody watching.
-        async_scope_.spawn(pod_registry_.force_safe_state_all_pods());
-        update_dispenser_status(CalibrationStepStatus::Error);
-        update_ui_error(calibration_error_text(CalibrationStep::dispenser_run, std::current_exception()));
-    }
-    catch (const std::exception&) {
-        update_dispenser_status(CalibrationStepStatus::Error);
-        update_ui_error(calibration_error_text(CalibrationStep::dispenser_run, std::current_exception()));
-    }
-
     const PodDispenser address{pod_id, dispenser_id};
-    if (amount.has_value()) {
-        co_await fill_levels_.pour_finished(
-            address, **dispenser, DispenseReport{.amount = *amount, .outcome = DispenseOutcome::completed});
-    }
-    else {
-        // Liquid may have come out even though the run failed.
-        co_await fill_levels_.refresh(address, **dispenser);
-    }
-}
+    co_await run_step(CalibrationStep::dispenser_run, address, [this, address, run_time](cm::Dispenser& dispenser) -> Task<void> {
+        // A catch handler can't await, so the failure waits here until the fill level is up to date.
+        std::exception_ptr failure;
+        std::optional<units::Litre> amount;
+        try {
+            amount = co_await dispenser.calibrate(run_time);
+        }
+        catch (const PodTimeoutError&) {
+            // The Pod starts the dispenser before it replies, so it may be pouring with nobody watching.
+            async_scope_.spawn(pod_registry_.force_safe_state_all_pods());
+            failure = std::current_exception();
+        }
+        catch (const std::exception&) {
+            failure = std::current_exception();
+        }
 
-void DispenserCalibrationBridge::update_ui_error(std::string error_str)
-{
-    slint::invoke_from_event_loop([ui = ui_, error = std::move(error_str)]() {
-        ui->global<DispenserCalibrationContext>().invoke_update_calibration_error(slint::SharedString{error.c_str()});
+        if (amount.has_value()) {
+            const units::Litre rounded = std::lround(amount->numerical_value_in(units::milli_litre)) * units::milli_litre;
+            const auto text = std::format("{} mL", std::lround(rounded.numerical_value_in(units::milli_litre)));
+            const bool below_recommended = rounded < kRecommendedCalibrationAmount;
+            update_state([text, below_recommended](DispenserCalibrationState& state) {
+                state.measured_amount = slint::SharedString{text};
+                state.below_recommended_amount = below_recommended;
+            });
+            co_await fill_levels_.pour_finished(
+                address, dispenser, DispenseReport{.amount = *amount, .outcome = DispenseOutcome::completed});
+        }
+        else {
+            // Liquid may have come out even though the run failed.
+            co_await fill_levels_.refresh(address, dispenser);
+        }
+
+        if (failure != nullptr) {
+            std::rethrow_exception(failure);
+        }
     });
 }
 
-void DispenserCalibrationBridge::update_load_cell_calibration_status(CalibrationStepStatus status)
+void DispenserCalibrationBridge::update_state(std::function<void(DispenserCalibrationState&)> change)
 {
-    slint::invoke_from_event_loop(
-        [ui = ui_, status]() { ui->global<DispenserCalibrationContext>().invoke_update_load_cell_ref_weight_status(status); });
-}
-
-void DispenserCalibrationBridge::update_load_tare_status(CalibrationStepStatus status)
-{
-    slint::invoke_from_event_loop(
-        [ui = ui_, status]() { ui->global<DispenserCalibrationContext>().invoke_update_load_cell_tare_status(status); });
-}
-
-void DispenserCalibrationBridge::update_empty_bottle_tare_status(CalibrationStepStatus status)
-{
-    slint::invoke_from_event_loop(
-        [ui = ui_, status]() { ui->global<DispenserCalibrationContext>().invoke_update_empty_bottle_tare_status(status); });
-}
-
-void DispenserCalibrationBridge::update_dispenser_status(CalibrationStepStatus status)
-{
-    slint::invoke_from_event_loop(
-        [ui = ui_, status]() { ui->global<DispenserCalibrationContext>().invoke_update_dispenser_status(status); });
-}
-
-void DispenserCalibrationBridge::update_dispenser_measured_amount(units::Litre amount)
-{
-    const units::Litre rounded = std::lround(amount.numerical_value_in(units::milli_litre)) * units::milli_litre;
-    const auto text = std::format("{} mL", std::lround(rounded.numerical_value_in(units::milli_litre)));
-    const bool below_recommended = rounded < kRecommendedCalibrationAmount;
-    slint::invoke_from_event_loop([ui = ui_, text = slint::SharedString{text.c_str()}, below_recommended]() {
-        ui->global<DispenserCalibrationContext>().invoke_update_dispenser_measured_amount(text, below_recommended);
-    });
-}
-
-void DispenserCalibrationBridge::update_reference_reading(std::string reading)
-{
-    slint::invoke_from_event_loop([ui = ui_, text = slint::SharedString{reading.c_str()}]() {
-        ui->global<DispenserCalibrationContext>().invoke_update_reference_reading(text);
+    slint::invoke_from_event_loop([ui = ui_, change = std::move(change)]() {
+        const auto& context = ui->global<DispenserCalibrationContext>();
+        auto state = context.get_state();
+        change(state);
+        context.set_state(state);
     });
 }
 } // namespace cm::gui

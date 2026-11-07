@@ -24,16 +24,8 @@ export global DispenserCalibrationContext {
     out property <int> min-run-time-s: 1;
     out property <int> max-run-time-s: 30;
 
-    in-out property <DispenserCalibrationState> state: {
-        load-cell-status: CalibrationStepStatus.idle,
-        load-cell-tare-status: CalibrationStepStatus.idle,
-        empty-bottle-tare-status: CalibrationStepStatus.idle,
-        dispenser-status: CalibrationStepStatus.idle,
-        reference-reading: "",
-        measured-amount: "",
-        below-recommended-amount: false,
-        error-message: "",
-    };
+    // Every field starts at its default, which is idle for a status. The bridge changes the state as a whole.
+    in-out property <DispenserCalibrationState> state;
 
     /// Something is running, and leaving now would take the way to stop it away.
     public pure function is-busy() -> bool {
@@ -54,35 +46,6 @@ export global DispenserCalibrationContext {
         return state.load-cell-status;
     }
 
-    public function update-calibration-error(error: string) {
-        self.state.error-message = error;
-    }
-
-    public function update-load-cell-ref-weight-status(status: CalibrationStepStatus) {
-        self.state.load-cell-status = status;
-    }
-
-    public function update-load-cell-tare-status(status: CalibrationStepStatus) {
-        self.state.load-cell-tare-status = status;
-    }
-
-    public function update-empty-bottle-tare-status(status: CalibrationStepStatus) {
-        self.state.empty-bottle-tare-status = status;
-    }
-
-    public function update-dispenser-status(status: CalibrationStepStatus) {
-        self.state.dispenser-status = status;
-    }
-
-    public function update-dispenser-measured-amount(amount: string, below-recommended: bool) {
-        self.state.measured-amount = amount;
-        self.state.below-recommended-amount = below-recommended;
-    }
-
-    public function update-reference-reading(reading: string) {
-        self.state.reference-reading = reading;
-    }
-
     // implemented by business logic
     callback load-cell-tare(Pod, Dispenser);
     callback calibrate-load-cell-ref-weight(Pod, Dispenser, int /* reference-weight-g */);
@@ -91,15 +54,6 @@ export global DispenserCalibrationContext {
     callback stop-calibration();
 
     public function reset-state() {
-        state = {
-            load-cell-status: CalibrationStepStatus.idle,
-            load-cell-tare-status: CalibrationStepStatus.idle,
-            empty-bottle-tare-status: CalibrationStepStatus.idle,
-            dispenser-status: CalibrationStepStatus.idle,
-            reference-reading: "",
-            measured-amount: "",
-            below-recommended-amount: false,
-            error-message: "",
-        };
+        state = {};
     }
 }

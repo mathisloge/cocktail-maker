@@ -752,6 +752,20 @@ TEST_CASE_METHOD(CalibrationStation, "A run with next to nothing coming out expl
     CHECK(std::string{state().error_message.data()}.starts_with("Es ist fast nichts geflossen."));
 }
 
+// codespell:ignore-begin
+TEST_CASE_METHOD(CalibrationStation, "A step on a dispenser the Pod doesn't have says so", "[flow][calibration]")
+{
+    auto unknown = gui_dispenser;
+    unknown.id = 99;
+
+    context().invoke_load_cell_tare(gui_pod, unknown);
+
+    REQUIRE(pump_until([this]() { return state().load_cell_tare_status == Status::Error; }));
+    CHECK(std::string{state().error_message.data()} == "Es konnte kein Dispenser gefunden werden.");
+}
+
+// codespell:ignore-end
+
 TEST_CASE_METHOD(CalibrationStation, "A valve calibrates like a pump", "[flow][calibration]")
 {
     gui_dispenser.id = 5;

@@ -44,19 +44,18 @@ export class DispenserCalibrationBridge
 
     Task<void> async_calibrate_dispenser(PodId pod_id, DispenserId dispenser_id, std::chrono::milliseconds run_time);
 
-    void update_ui_error(std::string error_str);
+    /**
+     * Runs one step of the procedure on the dispenser at `address`.
+     *
+     * It shows the step as running and clears the error. Then it awaits `body`, which is `Task<void>(Dispenser&)`, and
+     * shows the step as successful or as failed with an explanation. A dispenser the Pod doesn't have fails the step
+     * right away.
+     */
+    template <typename Body>
+    Task<void> run_step(CalibrationStep step, PodDispenser address, Body body);
 
-    void update_load_cell_calibration_status(CalibrationStepStatus status);
-
-    void update_load_tare_status(CalibrationStepStatus status);
-
-    void update_empty_bottle_tare_status(CalibrationStepStatus status);
-
-    void update_dispenser_status(CalibrationStepStatus status);
-
-    void update_dispenser_measured_amount(units::Litre amount);
-
-    void update_reference_reading(std::string reading);
+    /// Changes the dialog's state on the UI thread.
+    void update_state(std::function<void(DispenserCalibrationState&)> change);
 
   private:
     AsyncScope& async_scope_;

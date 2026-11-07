@@ -1,0 +1,28 @@
+// Each text role of components/text.slint takes its size, weight and letter-spacing from one group here.
+export global Typography {
+    out property <string> font-family: "Space Grotesk";
+
+    out property <length> display-size: 42pt;
+    out property <int> display-weight: 700;
+    out property <length> display-spacing: 1.5pt;
+
+    out property <length> headline-size: 30pt;
+    out property <int> headline-weight: 700;
+    out property <length> headline-spacing: 1.5pt;
+
+    out property <length> title-size: 20pt;
+    out property <int> title-weight: 800;
+    out property <relative-font-size> title-spacing: 0.38rem;
+
+    out property <length> body-size: 14pt;
+    out property <int> body-weight: 400;
+    out property <length> body-spacing: 1.5pt;
+
+    out property <length> label-size: 12pt;
+    out property <int> label-weight: 600;
+    out property <length> label-spacing: 2pt;
+
+    out property <length> caption-size: 10pt;
+    out property <int> caption-weight: 400;
+    out property <length> caption-spacing: 2pt;
+}

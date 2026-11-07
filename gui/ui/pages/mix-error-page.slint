@@ -1,5 +1,6 @@
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Typography } from "../theme/typography.slint";
 import { Button } from "../components/button.slint";
 import { CornerDeco } from "../components/corner-deco.slint";
 import { LargeText } from "../components/large-text.slint";
@@ -21,7 +22,7 @@ component ErrorDetailRow inherits Rectangle {
     in property <string> sub-label;
 
     height: 56px;
-    background: Palette.background-card;
+    background: Palette.surface-card;
     border-width: 1px;
     border-color: Palette.border;
 
@@ -34,7 +35,7 @@ component ErrorDetailRow inherits Rectangle {
             horizontal-stretch: 0;
             SmallText {
                 text: root.icon;
-                font-size: Layout.font-size-md;
+                font-size: Typography.body-size;
                 letter-spacing: 0px;
                 vertical-alignment: center;
             }
@@ -47,13 +48,13 @@ component ErrorDetailRow inherits Rectangle {
                 text: root.label;
                 font-italic: false;
                 font-weight: FontWeight.semi-bold;
-                font-size: Layout.font-size-sm;
+                font-size: Typography.label-size;
                 color: Palette.text-primary;
             }
 
             SmallText {
                 text: root.sub-label;
-                font-size: Layout.font-size-xs;
+                font-size: Typography.caption-size;
                 letter-spacing: 1.5px;
                 color: Palette.text-muted;
             }
@@ -73,7 +74,7 @@ component ErrorDetailRow inherits Rectangle {
                 padding: Layout.spacing-xs;
                 SmallText {
                     text: "FAILED";
-                    font-size: Layout.font-size-xs;
+                    font-size: Typography.caption-size;
                     letter-spacing: 2px;
                     font-weight: FontWeight.semi-bold;
                     color: Palette.text-error;
@@ -112,7 +113,7 @@ export component MixErrorPage inherits PageBase {
         Rectangle {
             width: 380px;
             horizontal-stretch: 0;
-            background: Palette.background;
+            background: Palette.surface;
 
             Rectangle {
                 x: parent.width - 1px;
@@ -146,7 +147,7 @@ export component MixErrorPage inherits PageBase {
                             border-radius: self.height / 2;
                             border-width: root.pulse ? 1px : 3px;
                             border-color: root.pulse ? Palette.border : Palette.text-error;
-                            background: Palette.background-elevated;
+                            background: Palette.surface-elevated;
                             animate border-color, border-width {
                                 duration: 400ms;
                                 easing: ease-in-out;
@@ -225,7 +226,7 @@ export component MixErrorPage inherits PageBase {
         // ════════════════════════════════════════════════════
         Rectangle {
             horizontal-stretch: 1;
-            background: Palette.background;
+            background: Palette.surface;
 
             VerticalLayout {
                 padding: Layout.spacing-xl * 1.4;

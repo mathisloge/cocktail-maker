@@ -1,6 +1,7 @@
 import { ScrollView, HorizontalBox, Slider } from "std-widgets.slint";
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Motion } from "../theme/motion.slint";
 import { Button } from "../components/button.slint";
 import { LargeText } from "../components/large-text.slint";
 import { MediumText } from "../components/medium-text.slint";
@@ -30,8 +31,8 @@ export component RecipeDetailPage inherits PageBase {
         alignment: end;
         opacity: root.mounted ? 1 : 0;
         animate opacity {
-            duration: Palette.mount-animation-duration;
-            easing: Palette.mount-animation-easing;
+            duration: Motion.mount-duration;
+            easing: Motion.mount-easing;
         }
         Image {
             source: recipe.image;
@@ -78,8 +79,8 @@ export component RecipeDetailPage inherits PageBase {
         alignment: LayoutAlignment.space-between;
         opacity: root.mounted ? 1 : 0;
         animate opacity {
-            duration: Palette.mount-animation-duration;
-            easing: Palette.mount-animation-easing;
+            duration: Motion.mount-duration;
+            easing: Motion.mount-easing;
         }
 
         VerticalLayout {

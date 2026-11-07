@@ -1,12 +1,13 @@
 import { Spinner } from "std-widgets.slint";
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Typography } from "../theme/typography.slint";
 import { MediumText } from "../components/medium-text.slint";
 import { Command, CommandStatus } from "../types/recipe.slint";
 
 export component CommandItem inherits Rectangle {
     in property <Command> command;
-    background: Palette.background-card;
+    background: Palette.surface-card;
     animate background { duration: 200ms; }
     border-color: Palette.border;
     border-width: 1px;
@@ -25,7 +26,7 @@ export component CommandItem inherits Rectangle {
         }
 
         if command.status == CommandStatus.in-progress: Spinner {
-            height: Layout.font-size-sm;
+            height: Typography.label-size;
             indeterminate: true;
         }
 
@@ -37,7 +38,7 @@ export component CommandItem inherits Rectangle {
     states [
         not-started when command.status == CommandStatus.not-started: {}
         in-progress when command.status == CommandStatus.in-progress: {
-            root.background: Palette.background-elevated;
+            root.background: Palette.surface-elevated;
         }
         finished when command.status == CommandStatus.finished: {}
     ]

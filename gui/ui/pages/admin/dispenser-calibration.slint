@@ -25,7 +25,7 @@ component StepCard inherits Rectangle {
     in property <CalibrationStepStatus> status: CalibrationStepStatus.running;
     in property <bool> enabled: true;
 
-    background: Palette.background-card;
+    background: Palette.surface-card;
     border-width: 1px;
     border-color: Palette.border-subtle;
     opacity: root.enabled ? 1.0 : 0.45;
@@ -56,7 +56,7 @@ component StepCard inherits Rectangle {
                 width: 28px;
                 height: 28px;
                 border-radius: self.height / 2;
-                background: Palette.background-elevated;
+                background: Palette.surface-elevated;
 
                 Text {
                     text: root.step-number;
@@ -82,7 +82,7 @@ component StepCard inherits Rectangle {
 
                 SmallText {
                     text: root.status-label();
-                    color: Palette.text-secondary;
+                    color: Palette.text-interactive;
                 }
             }
         }
@@ -90,7 +90,7 @@ component StepCard inherits Rectangle {
         SmallText {
             text: root.description;
             wrap: word-wrap;
-            color: Palette.text-secondary;
+            color: Palette.text-interactive;
         }
 
         @children
@@ -104,12 +104,12 @@ component DispenserCalibrationContent inherits Rectangle {
     callback close-requested();
     private property <int> run-time-s: DispenserCalibrationContext.default-run-time-s;
 
-    background: Palette.background;
+    background: Palette.surface;
 
     card := Rectangle {
         x: (parent.width - self.width) / 2;
         y: (parent.height - self.height) / 2;
-        background: Palette.background-card;
+        background: Palette.surface-card;
         border-width: 1px;
         border-color: Palette.border-strong;
 
@@ -144,7 +144,7 @@ component DispenserCalibrationContent inherits Rectangle {
 
             SmallText {
                 text: "Pod " + root.active-pod.id;
-                color: Palette.text-secondary;
+                color: Palette.text-interactive;
             }
 
             if DispenserCalibrationContext.state.error-message != "": SmallText {
@@ -286,7 +286,7 @@ component DispenserCalibrationContent inherits Rectangle {
                             && DispenserCalibrationContext.state.below-recommended-amount: SmallText {
                             text: "Für eine genauere Kalibrierung eine längere Laufzeit wählen.";
                             wrap: word-wrap;
-                            color: Palette.text-secondary;
+                            color: Palette.text-interactive;
                         }
                     }
 

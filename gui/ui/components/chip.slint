@@ -1,5 +1,6 @@
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Motion } from "../theme/motion.slint";
 import { MediumText } from "./medium-text.slint";
 
 export component Chip inherits Rectangle {
@@ -14,7 +15,7 @@ export component Chip inherits Rectangle {
     border-width: 1px;
     border-color: root.selected ? Palette.border-strong : Palette.border;
 
-    animate background, border-color { duration: Palette.mount-animation-duration / 3; }
+    animate background, border-color { duration: Motion.mount-duration / 3; }
 
     MediumText {
         text: root.text;

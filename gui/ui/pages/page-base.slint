@@ -1,12 +1,13 @@
 import { Palette } from "../theme/colors.slint";
+import { Motion } from "../theme/motion.slint";
 
 export component PageBase inherits Rectangle {
-    background: Palette.background;
+    background: Palette.surface;
 
     // Property used for initial animations
     out property <bool> mounted: false;
     Timer {
-        interval: 60ms;
+        interval: Motion.mount-delay;
         running: !root.mounted;
         triggered => { root.mounted = true; }
     }

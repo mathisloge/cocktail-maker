@@ -1,6 +1,7 @@
 import { ProgressIndicator, Spinner, ScrollView } from "std-widgets.slint";
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Typography } from "../theme/typography.slint";
 import { Button } from "../components/button.slint";
 import { CornerDeco } from "../components/corner-deco.slint";
 import { LargeText } from "../components/large-text.slint";
@@ -25,7 +26,7 @@ export component BootScreen inherits PageBase {
         // ── LEFT: branding + spinner ─────────────────────────
         left-panel := Rectangle {
             horizontal-stretch: 42;
-            background: Palette.background;
+            background: Palette.surface;
 
             Rectangle {
                 x: parent.width - 1px;
@@ -47,7 +48,7 @@ export component BootScreen inherits PageBase {
 
                 SmallText {
                     text: "COCKTAIL MACHINE";
-                    font-size: Layout.font-size-xs;
+                    font-size: Typography.caption-size;
                     letter-spacing: 4px;
                 }
 
@@ -100,7 +101,7 @@ export component BootScreen inherits PageBase {
         // ── RIGHT: boot log ──────────────────────────────────
         Rectangle {
             horizontal-stretch: 58;
-            background: Palette.background-card;
+            background: Palette.surface-card;
 
             VerticalLayout {
                 spacing: 0;
@@ -108,7 +109,7 @@ export component BootScreen inherits PageBase {
                 // Toolbar
                 Rectangle {
                     height: Layout.spacing-xl;
-                    background: Palette.background;
+                    background: Palette.surface;
 
                     Rectangle {
                         y: parent.height - 1px;
@@ -129,7 +130,7 @@ export component BootScreen inherits PageBase {
 
                         SmallText {
                             text: "SYSTEM LOG";
-                            font-size: Layout.font-size-xs;
+                            font-size: Typography.caption-size;
                             letter-spacing: 3.5px;
                         }
 
@@ -140,7 +141,7 @@ export component BootScreen inherits PageBase {
 
                         SmallText {
                             text: root.log-entries.length + " ZEILEN";
-                            font-size: Layout.font-size-xs;
+                            font-size: Typography.caption-size;
                             letter-spacing: 2px;
                             highlight: true;
                             vertical-alignment: center;

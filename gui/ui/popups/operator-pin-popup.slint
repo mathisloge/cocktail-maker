@@ -24,7 +24,7 @@ component PopupContent {
     }
 
     Rectangle {
-        background: Palette.background;
+        background: Palette.surface;
         border-width: 2px;
         border-color: Palette.border;
         border-radius: Layout.radius-sm;
@@ -49,7 +49,7 @@ component PopupContent {
                     width: 16px;
                     height: 16px;
                     border-radius: self.height / 2;
-                    background: i < pin-length ? Palette.accent : Palette.background;
+                    background: i < pin-length ? Palette.accent : Palette.surface;
                     border-width: 1px;
                     border-color: Palette.border;
                 }
@@ -63,7 +63,7 @@ component PopupContent {
 
             if !StationStateContext.operator-locked-out && StationStateContext.operator-remaining-attempts < 5: Text {
                 text: "\{StationStateContext.operator-remaining-attempts} Versuche übrig.";
-                color: Palette.text-secondary;
+                color: Palette.text-interactive;
                 horizontal-alignment: center;
             }
 

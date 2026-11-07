@@ -1,6 +1,7 @@
 import { VerticalBox, ScrollView, HorizontalBox, Slider } from "std-widgets.slint";
 import { Palette } from "./theme/colors.slint";
 import { Layout } from "./theme/layout.slint";
+import { Typography } from "./theme/typography.slint";
 import { Button } from "./components/button.slint";
 import { LogEntry } from "./types/log.slint";
 import { Page } from "./types/navigation.slint";
@@ -39,7 +40,7 @@ export {
 
 
 export component AppWindow inherits Window {
-    default-font-family: "Space Grotesk";
+    default-font-family: Typography.font-family;
     preferred-width: 1280px;
     preferred-height: 720px;
     private property <bool> device_ready: StationStateContext.station-ready;
@@ -107,7 +108,7 @@ export component AppWindow inherits Window {
         }
     }
 
-    background: Palette.background;
+    background: Palette.surface;
     if !device_ready || !boot-screen-confirmed: BootScreen {
         is-loading: !device_ready;
         boot-complete => {
@@ -131,10 +132,10 @@ export component AppWindow inherits Window {
 
             Text {
                 text: StationStateContext.station-name;
-                font-size: Layout.font-size-lg;
+                font-size: Typography.title-size;
                 font-weight: FontWeight.extra-bold;
                 letter-spacing: 0.38rem;
-                color: Palette.text-secondary;
+                color: Palette.text-interactive;
 
                 horizontal-alignment: TextHorizontalAlignment.center;
                 vertical-alignment: TextVerticalAlignment.center;

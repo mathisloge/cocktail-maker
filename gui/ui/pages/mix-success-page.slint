@@ -1,5 +1,7 @@
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Motion } from "../theme/motion.slint";
+import { Typography } from "../theme/typography.slint";
 import { Button } from "../components/button.slint";
 import { CornerDeco } from "../components/corner-deco.slint";
 import { LargeText } from "../components/large-text.slint";
@@ -15,7 +17,7 @@ component StatChip inherits Rectangle {
     in property <string> value;
     in property <color> value-color: Palette.text-primary;
 
-    background: Palette.background-card;
+    background: Palette.surface-card;
     border-width: 1px;
     border-color: Palette.border;
 
@@ -29,7 +31,7 @@ component StatChip inherits Rectangle {
 
         SmallText {
             text: root.label;
-            font-size: Layout.font-size-xs;
+            font-size: Typography.caption-size;
             letter-spacing: 2.5px;
             color: Palette.text-muted;
             horizontal-alignment: center;
@@ -39,7 +41,7 @@ component StatChip inherits Rectangle {
             text: root.value;
             font-italic: false;
             font-weight: FontWeight.semi-bold;
-            font-size: Layout.font-size-sm;
+            font-size: Typography.label-size;
             color: root.value-color;
             horizontal-alignment: center;
         }
@@ -69,12 +71,12 @@ export component MixSuccessPage inherits PageBase {
 
         LargeText {
             text: root.cocktail-name;
-            font-size: Layout.font-size-xl;
+            font-size: Typography.headline-size;
             font-italic: true;
             opacity: root.mounted ? 1 : 0;
             animate opacity {
-                duration: Palette.mount-animation-duration;
-                easing: Palette.mount-animation-easing;
+                duration: Motion.mount-duration;
+                easing: Motion.mount-easing;
                 delay: 320ms;
             }
         }
@@ -90,8 +92,8 @@ export component MixSuccessPage inherits PageBase {
             opacity: root.mounted ? 1 : 0;
             primary: true;
             animate opacity {
-                duration: Palette.mount-animation-duration;
-                easing: Palette.mount-animation-easing;
+                duration: Motion.mount-duration;
+                easing: Motion.mount-easing;
                 delay: 360ms;
             }
         }
@@ -105,14 +107,14 @@ export component MixSuccessPage inherits PageBase {
             spacing: Layout.spacing-sm;
             opacity: root.mounted ? 1 : 0;
             animate opacity {
-                duration: Palette.mount-animation-duration;
-                easing: Palette.mount-animation-easing;
+                duration: Motion.mount-duration;
+                easing: Motion.mount-easing;
                 delay: 420ms;
             }
 
             SmallText {
                 text: "ZUSAMMENFASSUNG";
-                font-size: Layout.font-size-xs;
+                font-size: Typography.caption-size;
                 letter-spacing: 3.5px;
             }
 
@@ -146,8 +148,8 @@ export component MixSuccessPage inherits PageBase {
             spacing: Layout.spacing-sm;
             opacity: root.mounted ? 1 : 0;
             animate opacity {
-                duration: Palette.mount-animation-duration;
-                easing: Palette.mount-animation-easing;
+                duration: Motion.mount-duration;
+                easing: Motion.mount-easing;
                 delay: 460ms;
             }
 
@@ -170,7 +172,7 @@ export component MixSuccessPage inherits PageBase {
 
             SmallText {
                 text: "ALLES ERFOLGREICH GEMIXT";
-                font-size: Layout.font-size-xs;
+                font-size: Typography.caption-size;
                 letter-spacing: 2px;
                 color: Palette.text-muted;
             }
@@ -184,8 +186,8 @@ export component MixSuccessPage inherits PageBase {
         Button {
             opacity: root.mounted ? 1 : 0;
             animate opacity {
-                duration: Palette.mount-animation-duration;
-                easing: Palette.mount-animation-easing;
+                duration: Motion.mount-duration;
+                easing: Motion.mount-easing;
                 delay: 560ms;
             }
             secondary: true;

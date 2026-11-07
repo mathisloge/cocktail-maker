@@ -1,5 +1,6 @@
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Typography } from "../theme/typography.slint";
 
 export component Button {
     in property <string> text;
@@ -9,7 +10,7 @@ export component Button {
 
     callback clicked;
 
-    private property <brush> text-color: self.secondary ? Palette.text-secondary : Palette.text-on-accent;
+    private property <brush> text-color: self.secondary ? Palette.text-interactive : Palette.text-on-accent;
 
     min-width: max(32px, i-layout.min-width);
     min-height: max(Layout.touch-height, i-layout.min-height);
@@ -24,7 +25,7 @@ export component Button {
 
     states [
         disabled when !root.enabled : {
-            i-background.background: root.secondary ? Palette.background : Palette.accent-dim;
+            i-background.background: root.secondary ? Palette.surface : Palette.accent-dim;
             i-border.border-color: Palette.border-subtle;
             root.text-color: Palette.text-on-accent;
         }
@@ -41,7 +42,7 @@ export component Button {
 
     i-background := Rectangle {
         border-radius: 0px;
-        background: root.secondary ? Palette.background : Palette.accent;
+        background: root.secondary ? Palette.surface : Palette.accent;
 
         animate background, border-color { duration: 150ms; }
 
@@ -60,7 +61,7 @@ export component Button {
             alignment: center;
 
             if (root.text != ""): Text {
-                font-size: Layout.font-size-sm;
+                font-size: Typography.label-size;
                 font-weight: FontWeight.normal;
                 horizontal-alignment: center;
                 vertical-alignment: center;

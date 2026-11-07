@@ -1,5 +1,6 @@
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Motion } from "../theme/motion.slint";
 import { MediumText } from "../components/medium-text.slint";
 import { GlassDescriptor } from "../types/glass.slint";
 import { GlassIcon } from "./glass-icon.slint";
@@ -12,7 +13,7 @@ export component GlassCard inherits Rectangle {
     width: 168px;
     height: 232px;
     border-radius: Layout.radius-md;
-    background: root.selected ? Palette.accent-dim : (ta.pressed ? Palette.background-elevated : Palette.background-card);
+    background: root.selected ? Palette.accent-dim : (ta.pressed ? Palette.surface-elevated : Palette.surface-card);
     border-width: root.selected ? 2px : 1px;
     border-color: root.selected ? Palette.border-strong : (ta.pressed ? Palette.border-strong : Palette.border);
 
@@ -20,7 +21,7 @@ export component GlassCard inherits Rectangle {
     drop-shadow-blur: 8px;
     drop-shadow-offset-y: 2px;
 
-    animate background, border-color, border-width { duration: Palette.mount-animation-duration / 3; }
+    animate background, border-color, border-width { duration: Motion.mount-duration / 3; }
 
     VerticalLayout {
         padding: Layout.spacing-md;

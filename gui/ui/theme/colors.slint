@@ -1,54 +1,114 @@
+// Raw color values. Only Palette uses them, everything else reads the semantic tokens of Palette.
+global Primitives {
+    out property <color> ink: #0a0806;
+    out property <color> ink-raised: #120e0a;
+    out property <color> ink-elevated: #1c1510;
+    out property <color> amber: #c8913a;
+    out property <color> amber-light: #e8b86d;
+    out property <color> cream: #f5eed8;
+    out property <color> sand: #d9cfae;
+    out property <color> red: #c0392b;
+    out property <color> green: #5cad75;
+    out property <color> black: #000000;
+
+    // The boost slider stays out of the amber/black/cream family on purpose.
+    out property <color> slate: #3d6f85;
+    out property <color> slate-light: #86aebd;
+    out property <color> ember: #a8562f;
+    out property <color> ember-light: #d99569;
+
+    out property <color> log-gray-blue: #7A8594;
+    out property <color> log-blue: #3B6EA8;
+    out property <color> log-green: #4A8F5A;
+    out property <color> log-amber: #C58A2B;
+    out property <color> log-orange-red: #C55A3D;
+    out property <color> log-dark-red: #A12D2D;
+}
+
+export enum TextTone {
+    primary,
+    interactive,
+    label,
+    muted,
+    on-accent,
+    error,
+    success,
+}
+
 export global Palette {
-    in-out property <duration> mount-animation-duration: 200ms;
-    in-out property <easing> mount-animation-easing: ease-in;
-    // ── Backgrounds ─────────────────────────────────────
-    in-out property <color> background:          #0a0806;
-    in-out property <color> background-card:     #120e0a;
-    in-out property <color> background-elevated: #1c1510;
+    // Surfaces
+    out property <color> surface: Primitives.ink;
+    out property <color> surface-card: Primitives.ink-raised;
+    out property <color> surface-elevated: Primitives.ink-elevated;
 
-    // ── Borders ─────────────────────────────────────────
-    in-out property <color> border:              #c8913a3d;  // amber 24 %
-    in-out property <color> border-strong:       #c8913a;    // amber solid (hover/selected)
-    in-out property <color> border-subtle:       #c8913a14;  // amber 8 % (ingredient dividers)
+    // Borders
+    out property <color> border: Primitives.amber.with-alpha(0.24);
+    out property <color> border-strong: Primitives.amber;
+    out property <color> border-subtle: Primitives.amber.with-alpha(0.08);
 
-    // ── Amber accent ────────────────────────────────────
-    in-out property <color> accent:              #c8913a;
-    in-out property <color> accent-light:        #e8b86d;
-    in-out property <color> accent-dim:          #c8913a24;  // 14 % fill (hover bg, slider)
+    // Accent
+    out property <color> accent: Primitives.amber;
+    out property <color> accent-light: Primitives.amber-light;
+    out property <color> accent-dim: Primitives.amber.with-alpha(0.14);
 
-    // ── Text ────────────────────────────────────────────
-    in-out property <color> text-primary:        #f5eed8;
-    in-out property <color> text-secondary:      #c8913a;    // amber, reserved for interactive/selected text
-    in-out property <color> text-label:          #d9cfae;    // muted warm neutral for static section labels
-    in-out property <color> text-muted:          #f5eed8ad;  // cream 68 % (descriptions, legible under glare)
-    in-out property <color> text-on-accent:      #0a0806;    // dark text on amber button
-    in-out property <color> text-error:          #c0392b;
-    in-out property <color> text-success:        #5cad75;
+    // Text
+    out property <color> text-primary: Primitives.cream;
+    // Amber, reserved for interactive or selected text.
+    out property <color> text-interactive: Primitives.amber;
+    // Muted warm neutral for static section labels.
+    out property <color> text-label: Primitives.sand;
+    // Stays legible under glare.
+    out property <color> text-muted: Primitives.cream.with-alpha(0.68);
+    out property <color> text-on-accent: Primitives.ink;
+    out property <color> text-error: Primitives.red;
+    out property <color> text-success: Primitives.green;
 
-    // ── Boost slider (kept out of the amber/black/cream family on purpose) ─
-    in-out property <color> boost-negative:      #3d6f85;    // muted slate-teal (less alcohol)
-    in-out property <color> boost-positive:      #a8562f;    // terracotta/ember (more alcohol)
-    in-out property <color> boost-negative-text: #86aebd;    // lighter slate-teal for amount display
-    in-out property <color> boost-positive-text: #d99569;    // lighter terracotta for amount display
+    // Boost slider
+    out property <color> boost-negative: Primitives.slate;
+    out property <color> boost-positive: Primitives.ember;
+    out property <color> boost-negative-text: Primitives.slate-light;
+    out property <color> boost-positive-text: Primitives.ember-light;
 
-    // ── Elevation ────────────────────────────────────────
-    in-out property <color> shadow:              #00000066;  // 40 % black, card/popup drop-shadow
+    // Elevation
+    out property <color> shadow: Primitives.black.with-alpha(0.4);
 
-    // ── Processing states ────────────────────────────────
-    in-out property <color> status-waiting:      #f5eed885;
-    in-out property <color> status-pouring:      #c8913a;
-    in-out property <color> status-done:         #f5eed854;
+    // Processing states
+    out property <color> status-waiting: Primitives.cream.with-alpha(0.52);
+    out property <color> status-pouring: Primitives.amber;
+    out property <color> status-done: Primitives.cream.with-alpha(0.33);
 
-    // ── Overlays ────────────────────────────────────────
-    in-out property <color> overlay-done:        #0a0806eb;  // 92 % opaque (done screen)
-    in-out property <color> overlay-card-scrim:  #0a08069e;  // 62 % (photo gradient bottom)
-    in-out property <color> overlay-scrim:       #0a0806e0;  // 88 % (modal/popup backdrop)
+    // Overlays
+    out property <color> overlay-done: Primitives.ink.with-alpha(0.92);
+    out property <color> overlay-card-scrim: Primitives.ink.with-alpha(0.62);
+    out property <color> overlay-scrim: Primitives.ink.with-alpha(0.88);
 
-    // ── Log levels ──────────────────────────────────────
-    in-out property <color> log-trace:           #7A8594;    // gray-blue (trace)
-    in-out property <color> log-debug:           #3B6EA8;    // blue (debug)
-    in-out property <color> log-info:            #4A8F5A;    // green (info)
-    in-out property <color> log-warn:            #C58A2B;    // amber (warning)
-    in-out property <color> log-error:           #C55A3D;    // orange-red (error)
-    in-out property <color> log-critical:        #A12D2D;    // dark red (critical)
+    // Log levels
+    out property <color> log-trace: Primitives.log-gray-blue;
+    out property <color> log-debug: Primitives.log-blue;
+    out property <color> log-info: Primitives.log-green;
+    out property <color> log-warn: Primitives.log-amber;
+    out property <color> log-error: Primitives.log-orange-red;
+    out property <color> log-critical: Primitives.log-dark-red;
+
+    pure public function text-color(tone: TextTone) -> color {
+        if (tone == TextTone.interactive) {
+            return root.text-interactive;
+        }
+        if (tone == TextTone.label) {
+            return root.text-label;
+        }
+        if (tone == TextTone.muted) {
+            return root.text-muted;
+        }
+        if (tone == TextTone.on-accent) {
+            return root.text-on-accent;
+        }
+        if (tone == TextTone.error) {
+            return root.text-error;
+        }
+        if (tone == TextTone.success) {
+            return root.text-success;
+        }
+        return root.text-primary;
+    }
 }

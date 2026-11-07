@@ -17,7 +17,7 @@ component PodListDelegate inherits Rectangle {
     in property <bool> selected;
     callback clicked();
 
-    background: Palette.background-card;
+    background: Palette.surface-card;
     border-width: 1px;
     border-color: root.selected ? Palette.border-strong : Palette.border-subtle;
     animate background, border-color { duration: 100ms; }
@@ -53,12 +53,12 @@ component PodListDelegate inherits Rectangle {
 
     states [
         pressed when touch-area.pressed: {
-            root.background: Palette.background-elevated.brighter(1);
+            root.background: Palette.surface-elevated.brighter(1);
             root.border-color: Palette.border;
             title.color: Palette.text-primary;
         }
         hover when touch-area.has-hover: {
-            root.background: Palette.background-elevated;
+            root.background: Palette.surface-elevated;
         }
     ]
 }
@@ -116,7 +116,7 @@ export component PodConfigTab inherits Rectangle {
 
                     SmallText {
                         text: dispenser.fill-text;
-                        color: Palette.text-secondary;
+                        color: Palette.text-interactive;
                     }
 
                     ComboBox {

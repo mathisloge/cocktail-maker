@@ -1,5 +1,6 @@
 import { Palette } from "../theme/colors.slint";
 import { Layout } from "../theme/layout.slint";
+import { Typography } from "../theme/typography.slint";
 import { SmallText } from "../components/small-text.slint";
 import { LogEntry, LogLevel } from "../types/log.slint";
 
@@ -79,7 +80,7 @@ component LogRow inherits Rectangle {
                     text: root.entry.message;
                     wrap: word-wrap;
                     width: 300px;
-                    font-size: Layout.font-size-sm;
+                    font-size: Typography.label-size;
                     horizontal-alignment: start;
                 }
             }

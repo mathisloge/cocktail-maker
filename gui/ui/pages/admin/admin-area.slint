@@ -1,5 +1,6 @@
 import { Palette } from "../../theme/colors.slint";
 import { Layout } from "../../theme/layout.slint";
+import { Typography } from "../../theme/typography.slint";
 import { StationStateContext } from "../../globals/station-state-context.slint";
 import { SystemLog } from "../../widgets/system-log.slint";
 import { GlassConfigTab } from "./glass-config-tab.slint";
@@ -12,16 +13,16 @@ component AdminTab inherits Rectangle {
 
     min-height: Layout.touch-height-sm;
     horizontal-stretch: 1;
-    background: root.active ? Palette.accent-dim : touch.pressed ? Palette.background-elevated : transparent;
+    background: root.active ? Palette.accent-dim : touch.pressed ? Palette.surface-elevated : transparent;
 
     Text {
         text: root.title;
-        font-size: Layout.font-size-sm;
+        font-size: Typography.label-size;
         font-weight: root.active ? FontWeight.bold : FontWeight.normal;
         letter-spacing: 2px;
         horizontal-alignment: center;
         vertical-alignment: center;
-        color: root.active ? Palette.text-secondary : Palette.text-muted;
+        color: root.active ? Palette.text-interactive : Palette.text-muted;
     }
 
     Rectangle {
@@ -42,7 +43,7 @@ export component AdminArea {
 
     VerticalLayout {
         Rectangle {
-            background: Palette.background-card;
+            background: Palette.surface-card;
 
             HorizontalLayout {
                 for title[index] in ["POD CONFIG", "GLASS CONFIG", "SYSTEM LOGS"]: AdminTab {

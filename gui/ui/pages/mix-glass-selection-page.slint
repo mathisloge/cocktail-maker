@@ -18,7 +18,7 @@ export component MixGlassSelectionPage inherits PageBase {
     property <bool> has-glass-selected: ProcessContext.glass.id != "";
     property <bool> can-confirm: root.has-glass-selected && ProcessContext.glass-volume > 0;
 
-    background: Palette.background;
+    background: Palette.surface;
 
     VerticalLayout {
         padding: Layout.spacing-xl;

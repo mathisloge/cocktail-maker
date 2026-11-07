@@ -281,3 +281,48 @@ TEST_CASE("load_recipes_from_dir refuses a dispense step below 1 mL at the top l
     CHECK_THROWS_WITH(load_recipes_from_dir(dir.path(), store),
                       ContainsSubstring("tiny.json") && ContainsSubstring("at least 1 mL"));
 }
+
+// ---------------------------------------------------------------------------
+// Walking the command tree
+// ---------------------------------------------------------------------------
+
+namespace {
+Commands manual_steps_with_a_group()
+{
+    return Commands{
+        Command{ManualCommand{.id = CommandId{1}}},
+        ParallelCommand{Command{ManualCommand{.id = CommandId{2}}}, Command{ManualCommand{.id = CommandId{3}}}},
+        Command{ManualCommand{.id = CommandId{4}}},
+    };
+}
+} // namespace
+
+TEST_CASE("for_each_command visits every command in order, parallel groups included", "[Recipe][commands]")
+{
+    const Commands commands = manual_steps_with_a_group();
+    std::vector<int> ids;
+
+    for_each_command(commands, [&](const Command& command) { ids.push_back(std::get<ManualCommand>(command).id.raw()); });
+
+    CHECK(ids == std::vector{1, 2, 3, 4});
+}
+
+TEST_CASE("for_each_command lets the commands be changed", "[Recipe][commands]")
+{
+    Commands commands = manual_steps_with_a_group();
+
+    for_each_command(commands, [](Command& command) { std::get<ManualCommand>(command).instruction = "Eis"; });
+
+    for_each_command(commands, [](const Command& command) { CHECK(std::get<ManualCommand>(command).instruction == "Eis"); });
+}
+
+TEST_CASE("transform_commands keeps a parallel group a group", "[Recipe][commands]")
+{
+    const Commands commands = manual_steps_with_a_group();
+
+    const auto result = transform_commands(commands, [](const Command& command) { return command; });
+
+    REQUIRE(result.size() == 3);
+    REQUIRE(std::holds_alternative<ParallelCommand>(result[1]));
+    CHECK(std::get<ParallelCommand>(result[1]).size() == 2);
+}

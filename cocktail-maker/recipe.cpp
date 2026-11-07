@@ -9,39 +9,18 @@ import :recipe;
 import :catalog_loader;
 
 namespace cm {
-template <typename T>
-struct is_variant : std::false_type
-{
-};
-
-template <typename... Ts>
-struct is_variant<std::variant<Ts...>> : std::true_type
-{
-};
-
-template <typename T>
-inline constexpr bool is_variant_v = is_variant<std::remove_cvref_t<T>>::value;
-
-constexpr void assign_unique_command_ids(Recipe& recipe)
+void assign_unique_command_ids(Recipe& recipe)
 {
     CommandId next_id{1};
-    auto visitor = [&next_id](this auto const& self, auto& node) -> void {
-        // Does this node have a command_id? Assign Id.
-        if constexpr (requires { node.id; }) {
-            node.id = next_id++;
-        }
-        // Matches Command and the top-level variants in Commands.
-        else if constexpr (is_variant_v<decltype(node)>) {
-            std::visit(self, node);
-        }
-        // Matches Commands and ParallelCommand (which are std::vector under the hood).
-        else if constexpr (std::ranges::range<decltype(node)>) {
-            for (auto& child : node) {
-                self(child); // Recursively process children
-            }
-        }
-    };
-    visitor(recipe.commands);
+    for_each_command(recipe.commands, [&next_id](Command& command) {
+        std::visit(
+            [&next_id](auto& alternative) {
+                if constexpr (requires { alternative.id; }) {
+                    alternative.id = next_id++;
+                }
+            },
+            command);
+    });
 }
 
 void RecipeStore::init_recipes(std::vector<Recipe> recipes)

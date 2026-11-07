@@ -27,6 +27,44 @@ export using Command = std::variant<std::monostate, ManualCommand, DispenseComma
 export using ParallelCommand = std::vector<Command>;
 export using Commands = std::vector<std::variant<Command, ParallelCommand>>;
 
+/// Calls `fn` with every command of `commands` in order, the ones inside a parallel group included.
+export template <typename CommandList, typename Fn>
+    requires std::same_as<std::remove_cvref_t<CommandList>, Commands>
+void for_each_command(CommandList&& commands, Fn&& fn)
+{
+    for (auto&& step : commands) {
+        if (auto* command = std::get_if<Command>(&step)) {
+            fn(*command);
+            continue;
+        }
+        for (auto&& member : std::get<ParallelCommand>(step)) {
+            fn(member);
+        }
+    }
+}
+
+/// A copy of `commands` with every command replaced by `fn(command)`. A parallel group stays a group.
+export template <typename Fn>
+Commands transform_commands(const Commands& commands, Fn&& fn)
+{
+    Commands result;
+    result.reserve(commands.size());
+    for (const auto& step : commands) {
+        if (const auto* command = std::get_if<Command>(&step)) {
+            result.emplace_back(std::in_place_type<Command>, fn(*command));
+            continue;
+        }
+        const auto& members = std::get<ParallelCommand>(step);
+        ParallelCommand group;
+        group.reserve(members.size());
+        for (const auto& member : members) {
+            group.push_back(fn(member));
+        }
+        result.emplace_back(std::move(group));
+    }
+    return result;
+}
+
 export struct Recipe
 {
     RecipeId id;

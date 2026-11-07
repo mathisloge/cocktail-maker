@@ -46,11 +46,7 @@ std::vector<std::pair<IngredientId, units::Litre>> amounts_per_ingredient(const 
         }
     };
 
-    for (const auto& step : commands) {
-        std::visit(detail::Overloaded{[&add](const Command& command) { add(command); },
-                                      [&add](const ParallelCommand& group) { std::ranges::for_each(group, add); }},
-                   step);
-    }
+    for_each_command(commands, add);
     return amounts;
 }
 

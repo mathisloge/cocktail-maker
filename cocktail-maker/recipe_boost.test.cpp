@@ -49,58 +49,24 @@ auto manual(std::string instruction) -> Command
 auto find_volume(const Commands& commands, std::string id_str) -> std::optional<units::Litre>
 {
     const IngredientId id{std::move(id_str)};
-    const auto check_cmd = [&](const Command& cmd) -> std::optional<units::Litre> {
-        if (const auto* dc = std::get_if<DispenseCommand>(&cmd); dc && dc->ingredient == id) {
-            return dc->volume;
+    std::optional<units::Litre> found;
+    for_each_command(commands, [&](const Command& cmd) {
+        if (const auto* dc = std::get_if<DispenseCommand>(&cmd); dc && dc->ingredient == id && not found.has_value()) {
+            found = dc->volume;
         }
-        return std::nullopt;
-    };
-
-    for (const auto& item : commands) {
-        if (auto found = std::visit(
-                [&](const auto& v) -> std::optional<units::Litre> {
-                    using V = std::decay_t<decltype(v)>;
-                    if constexpr (std::is_same_v<V, Command>) {
-                        return check_cmd(v);
-                    }
-                    else {
-                        for (const auto& cmd : v) {
-                            if (auto vol = check_cmd(cmd)) {
-                                return vol;
-                            }
-                        }
-                        return std::nullopt;
-                    }
-                },
-                item)) {
-            return found;
-        }
-    }
-    return std::nullopt;
+    });
+    return found;
 }
 
 // Sums the volumes of all DispenseCommands in mL.
 auto total_volume(const Commands& commands) -> units::Litre
 {
     units::Litre total = 0.0 * units::milli_litre;
-    const auto add_cmd = [&](const Command& cmd) {
+    for_each_command(commands, [&](const Command& cmd) {
         if (const auto* dc = std::get_if<DispenseCommand>(&cmd)) {
             total += dc->volume;
         }
-    };
-    for (const auto& item : commands) {
-        std::visit(
-            [&](const auto& v) {
-                using V = std::decay_t<decltype(v)>;
-                if constexpr (std::is_same_v<V, Command>) {
-                    add_cmd(v);
-                }
-                else {
-                    std::ranges::for_each(v, add_cmd);
-                }
-            },
-            item);
-    }
+    });
     return total;
 }
 

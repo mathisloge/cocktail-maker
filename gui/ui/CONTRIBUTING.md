@@ -56,6 +56,7 @@ A plain `Text {}` is only allowed inside `components/`, where it reads its value
 
 Only `components/` import `std-widgets.slint`.
 `ScrollArea`, `SelectBox` and `NumberBox` wrap a std-widget, so theming one is a change in its wrapper.
+`SelectBox` and `NumberBox` switch the std palette to the dark color scheme, because the std style follows the system.
 
 `LoadingSpinner`, `ProgressBar` (`components/`) and `BoostSlider` (`widgets/`) are drawn from Slint primitives.
 Each one implements the interface of the std-widget it replaces, for example `implement SliderInterface <=> self;`
@@ -63,6 +64,9 @@ with the interfaces imported from `"std-widget-interfaces.slint"`.
 The component declares every property and callback of the interface itself, and the compiler checks them.
 Give a control a `FocusScope` of size 0 with `forward-focus`, like the std slider does.
 A full-size `FocusScope` on top of a `TouchArea` takes its pointer events.
+
+An action whose backend is still missing uses `ActionButton` with `available: false`.
+It is disabled and says "noch nicht verfügbar", so no button looks active without doing anything.
 
 `Button` has two sizes. `compact: true` gives 48 px for rows and tool bars, otherwise it is 75 px tall.
 `ListView` cannot be wrapped, because the Slint compiler treats it specially by name.
@@ -102,7 +106,8 @@ The boot screen spinner, the progress bar and the pulse dots differ by a few hun
 The breathing ring of the error page and the success page can differ by more than ten thousand pixels,
 so compare those two by eye.
 
-Screens that need interaction, such as a selected Pod in the admin area, can be inspected live through
+The snapshot test also opens the pump page and the Gläser and System sections of the admin area.
+Screens that need more interaction, such as a calibration on the pump page, can be inspected live through
 Slint's embedded MCP server.
 Configure with `-DCM_SLINT_MCP=ON`, then open a page and keep it open:
 

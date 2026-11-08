@@ -18,22 +18,43 @@ Task<void> async_mark_dispenser_refilled(const PodRegistry& pod_registry,
                                          const PodId pod_id,
                                          const DispenserId dispenser_id);
 
-std::string format_fill_level(const FillLevelView& view)
+namespace {
+constexpr std::string_view kUnknownFillText{"Füllstand unbekannt"};
+constexpr double kAlmostEmptyPercent{15.0};
+} // namespace
+
+FillPresentation present_fill_level(const FillLevelView& view)
 {
     if (view.no_load_cell) {
-        return "keine Wägezelle";
+        return {.text = std::string{kUnknownFillText}};
     }
     if (view.suspected_empty) {
-        return "vermutlich leer";
+        return {.text = "vermutlich leer", .known = true, .ratio = 0.0F, .almost_empty = true};
     }
     if (not view.level.has_value()) {
-        return "unbekannt";
+        return {.text = std::string{kUnknownFillText}};
     }
-    const auto millilitres = std::lround(to_volume(*view.level).numerical_value_in(units::milli_litre));
+    const double millilitres = to_volume(*view.level).numerical_value_in(units::milli_litre);
     if (not view.percent.has_value()) {
-        return std::format("ca. {} mL", millilitres);
+        return {.text = std::format("ca. {} mL", std::lround(millilitres))};
     }
-    return std::format("ca. {} mL · {} %", millilitres, std::lround(view.percent->numerical_value_in(units::percent)));
+    const double percent = view.percent->numerical_value_in(units::percent);
+    // Without a share left the bottle's content cannot be derived from the level.
+    if (percent <= 0.0) {
+        return {.text = std::format("{} mL", std::lround(millilitres)), .known = true, .ratio = 0.0F, .almost_empty = true};
+    }
+    const double content = millilitres / (percent / 100.0);
+    return {
+        .text = std::format("{} mL von {} mL", std::lround(millilitres), std::lround(content)),
+        .known = true,
+        .ratio = static_cast<float>(std::clamp(percent / 100.0, 0.0, 1.0)),
+        .almost_empty = percent < kAlmostEmptyPercent,
+    };
+}
+
+std::string dispenser_label(const DispenserType type, const int number)
+{
+    return std::format("{} {}", type == DispenserType::Pump ? "Pumpe" : "Ventil", number);
 }
 
 struct PodStateData
@@ -122,6 +143,11 @@ class PodUiModel : public slint::Model<gui::Pod>
                 gui_pod.status_text = slint::SharedString{status};
                 changed = true;
             }
+            if (const auto firmware = std::format("{}", state_pod.info.firmware_version);
+                gui_pod.firmware_version.data() != firmware) {
+                gui_pod.firmware_version = slint::SharedString{firmware};
+                changed = true;
+            }
 
             // An incompatible Pod offers nothing to assign, calibrate or identify, because it stays unused.
             const bool usable = state_pod.connection_state != gui::ConnectionState::Incompatible;
@@ -129,19 +155,23 @@ class PodUiModel : public slint::Model<gui::Pod>
             const int num_valves = usable ? state_pod.info.num_valves : 0;
             if ((gui_pod.dispensers == nullptr) or gui_pod.dispensers->row_count() != (num_pumps + num_valves)) {
                 auto dispenser_model = std::make_shared<slint::VectorModel<gui::Dispenser>>();
-                for (int i = 0; i < num_pumps; ++i) {
+                const auto unknown = present_fill_level(FillLevelView{});
+                const auto add = [&dispenser_model, &unknown](int id, DispenserType type, int number) {
                     dispenser_model->push_back(gui::Dispenser{
-                        .id = i,
-                        .type = DispenserType::Pump,
-                        .fill_text = "unbekannt",
+                        .id = id,
+                        .type = type,
+                        .label = slint::SharedString{dispenser_label(type, number)},
+                        .fill_text = slint::SharedString{unknown.text},
+                        .fill_known = unknown.known,
+                        .fill_ratio = unknown.ratio,
+                        .almost_empty = unknown.almost_empty,
                     });
+                };
+                for (int i = 0; i < num_pumps; ++i) {
+                    add(i, DispenserType::Pump, i + 1);
                 }
                 for (int i = 0; i < num_valves; ++i) {
-                    dispenser_model->push_back(gui::Dispenser{
-                        .id = (num_pumps + i),
-                        .type = DispenserType::Valve,
-                        .fill_text = "unbekannt",
-                    });
+                    add(num_pumps + i, DispenserType::Valve, i + 1);
                 }
                 gui_pod.dispensers = std::move(dispenser_model);
                 changed = true;
@@ -168,7 +198,7 @@ class PodUiModel : public slint::Model<gui::Pod>
         }
     }
 
-    void update_dispenser_fill_text(const PodDispenser& address, const std::string& text)
+    void update_dispenser_fill(const PodDispenser& address, const FillPresentation& fill)
     {
         const auto pod_it =
             std::ranges::find_if(pods_, [&address](const auto& ui_pod) { return ui_pod.id == address.pod_id.raw().c_str(); });
@@ -178,7 +208,10 @@ class PodUiModel : public slint::Model<gui::Pod>
         for (std::size_t row = 0; row < pod_it->dispensers->row_count(); ++row) {
             auto dispenser = pod_it->dispensers->row_data(row);
             if (dispenser.has_value() && dispenser->id == address.dispenser_id.raw()) {
-                dispenser->fill_text = slint::SharedString{text};
+                dispenser->fill_text = slint::SharedString{fill.text};
+                dispenser->fill_known = fill.known;
+                dispenser->fill_ratio = fill.ratio;
+                dispenser->almost_empty = fill.almost_empty;
                 pod_it->dispensers->set_row_data(row, *dispenser);
                 return;
             }
@@ -233,7 +266,7 @@ StationStateBridge::StationStateBridge(slint::ComponentHandle<AppWindow> ui,
         });
     fill_levels.set_change_handler([model = pod_model_](const PodDispenser& address, const FillLevelView& view) {
         slint::invoke_from_event_loop(
-            [model, address, text = format_fill_level(view)]() { model->update_dispenser_fill_text(address, text); });
+            [model, address, fill = present_fill_level(view)]() { model->update_dispenser_fill(address, fill); });
     });
     ui_->global<StationStateContext>().on_navigate_to([this](Page target) { on_navigate_to(target); });
     ui_->global<StationStateContext>().on_submit_operator_pin([this](slint::SharedString pin) { on_submit_operator_pin(pin); });

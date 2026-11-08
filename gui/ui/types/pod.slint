@@ -6,7 +6,12 @@ export enum DispenserType {
 export struct Dispenser {
     id: int,
     type: DispenserType,
+    label: string,
+    ingredient-name: string,
     fill-text: string,
+    fill-known: bool,
+    fill-ratio: float,
+    almost-empty: bool,
 }
 
 export enum ConnectionState {
@@ -16,4 +21,10 @@ export enum ConnectionState {
     incompatible,
 }
 
-export struct Pod { id: string, connection_state: ConnectionState, status-text: string, dispensers: [Dispenser] }
+export struct Pod {
+    id: string,
+    connection_state: ConnectionState,
+    status-text: string,
+    firmware-version: string,
+    dispensers: [Dispenser],
+}

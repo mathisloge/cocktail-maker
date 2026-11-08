@@ -12,8 +12,21 @@ namespace cm::gui {
 class PodStateImpl;
 class PodUiModel;
 
-/// What the admin area says about a bottle.
-export [[nodiscard]] std::string format_fill_level(const FillLevelView& view);
+/// What the admin area says and shows about a bottle.
+export struct FillPresentation
+{
+    std::string text;
+    /// Whether the bottle's content is known, so that a fill bar makes sense.
+    bool known{};
+    /// The remaining share of the bottle's content, from 0 to 1.
+    float ratio{};
+    bool almost_empty{};
+};
+
+export [[nodiscard]] FillPresentation present_fill_level(const FillLevelView& view);
+
+/// The name the admin area gives a dispenser, numbered per type from 1.
+export [[nodiscard]] std::string dispenser_label(DispenserType type, int number);
 
 export class StationStateBridge : public StationState, public std::enable_shared_from_this<StationStateBridge>
 {

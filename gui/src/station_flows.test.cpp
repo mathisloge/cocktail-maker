@@ -365,7 +365,7 @@ TEST_CASE_METHOD(SimStation, "The admin row shows the level and takes a refill",
         const auto dispenser = gui_pod->dispensers->row_data(0);
         return dispenser.has_value() ? std::string{dispenser->fill_text.data()} : std::string{};
     };
-    REQUIRE(row_text() == "unbekannt");
+    REQUIRE(row_text() == "Füllstand unbekannt");
 
     fill_levels.empty_bottle_tared(rum_address);
     REQUIRE(pump_until([&row_text]() { return row_text() == "ca. 0 mL"; }));
@@ -377,7 +377,7 @@ TEST_CASE_METHOD(SimStation, "The admin row shows the level and takes a refill",
     gui_dispenser.id = rum_address.dispenser_id.raw();
     ui->global<cm::gui::StationStateContext>().invoke_mark_dispenser_refilled(gui_pod, gui_dispenser);
 
-    CHECK(pump_until([&row_text]() { return row_text() == "ca. 300 mL · 100 %"; }));
+    CHECK(pump_until([&row_text]() { return row_text() == "300 mL von 300 mL"; }));
 
     pod_state.reset();
     pump_for(10ms);

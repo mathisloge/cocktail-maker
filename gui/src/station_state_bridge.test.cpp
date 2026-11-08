@@ -112,6 +112,26 @@ TEST_CASE("StationStateBridge - Pod Lifecycle", "[gui][StationStateBridge]")
         REQUIRE(model->row_count() == 1);
         REQUIRE(model->row_data(0)->connection_state == cm::gui::ConnectionState::Connected);
     }
+
+    SECTION("A connected pod lists labelled dispensers and its firmware")
+    {
+        auto pod = bridge->create_pod_state();
+        pod->update_info({.id = cm::PodId{"pod-labelled"}, .firmware_version = {1, 4, 0}, .num_pumps = 2, .num_valves = 1});
+        pod->update_state(cm::PodState::ConnectionState::connected);
+        flush_slint_events();
+
+        REQUIRE(model->row_count() == 1);
+        const auto row = model->row_data(0).value();
+        CHECK(row.firmware_version == slint::SharedString{"1.4.0"});
+        REQUIRE(row.dispensers->row_count() == 3);
+        const std::array<std::string, 3> labels{"Pumpe 1", "Pumpe 2", "Ventil 1"};
+        for (std::size_t i = 0; i < labels.size(); ++i) {
+            const auto dispenser = row.dispensers->row_data(i).value();
+            CHECK(std::string{dispenser.label.data()} == labels[i]);
+            CHECK(std::string{dispenser.fill_text.data()} == "Füllstand unbekannt");
+            CHECK_FALSE(dispenser.fill_known);
+        }
+    }
 }
 
 TEST_CASE("StationStateBridge - Readiness Status and Multiple Pods", "[gui][StationStateBridge]")
@@ -172,19 +192,41 @@ TEST_CASE("StationStateBridge - Readiness Status and Multiple Pods", "[gui][Stat
     }
 }
 
-TEST_CASE("format_fill_level words what is known about a bottle", "[gui][StationStateBridge]")
+TEST_CASE("present_fill_level words and measures what is known about a bottle", "[gui][StationStateBridge]")
 {
-    namespace units = cm::units;
-    const auto grams = [](double value) { return value * units::si::gram; };
+    const auto grams = [](double value) { return value * cm::units::si::gram; };
+    using cm::units::percent;
+    const auto unknown = cm::gui::present_fill_level(cm::FillLevelView{});
+    CHECK(unknown.text == "Füllstand unbekannt");
+    CHECK_FALSE(unknown.known);
+    CHECK_FALSE(unknown.almost_empty);
+    CHECK(cm::gui::present_fill_level(cm::FillLevelView{.no_load_cell = true}).text == "Füllstand unbekannt");
+    const auto no_capacity = cm::gui::present_fill_level(cm::FillLevelView{.level = grams(640)});
+    CHECK(no_capacity.text == "ca. 640 mL");
+    CHECK_FALSE(no_capacity.known);
+    const auto full = cm::gui::present_fill_level(cm::FillLevelView{.level = grams(640), .percent = 64.0 * percent});
+    CHECK(full.text == "640 mL von 1000 mL");
+    CHECK(full.known);
+    CHECK(full.ratio == Catch::Approx(0.64));
+    CHECK_FALSE(full.almost_empty);
+    CHECK(cm::gui::present_fill_level(cm::FillLevelView{.level = grams(90), .percent = 14.0 * percent}).almost_empty);
+    CHECK_FALSE(cm::gui::present_fill_level(cm::FillLevelView{.level = grams(150), .percent = 15.0 * percent}).almost_empty);
+    const auto drained = cm::gui::present_fill_level(cm::FillLevelView{.level = grams(0), .percent = 0.0 * percent});
+    CHECK(drained.text == "0 mL");
+    CHECK(drained.known);
+    CHECK(drained.almost_empty);
+    const auto empty =
+        cm::gui::present_fill_level(cm::FillLevelView{.level = grams(30), .percent = 3.0 * percent, .suspected_empty = true});
+    CHECK(empty.text == "vermutlich leer");
+    CHECK(empty.known);
+    CHECK(empty.almost_empty);
+    CHECK(empty.ratio == 0.0F);
+}
 
-    CHECK(cm::gui::format_fill_level(cm::FillLevelView{}) == "unbekannt");
-    CHECK(cm::gui::format_fill_level(cm::FillLevelView{.no_load_cell = true}) == "keine Wägezelle");
-    CHECK(cm::gui::format_fill_level(cm::FillLevelView{.level = grams(640), .percent = std::nullopt, .suspected_empty = false}) ==
-          "ca. 640 mL");
-    CHECK(cm::gui::format_fill_level(cm::FillLevelView{
-              .level = grams(640), .percent = 64.0 * units::percent, .suspected_empty = false}) == "ca. 640 mL · 64 %");
-    CHECK(cm::gui::format_fill_level(cm::FillLevelView{
-              .level = grams(30), .percent = 3.0 * units::percent, .suspected_empty = true}) == "vermutlich leer");
+TEST_CASE("dispenser_label numbers pumps and valves from one", "[gui][StationStateBridge]")
+{
+    CHECK(cm::gui::dispenser_label(cm::gui::DispenserType::Pump, 1) == "Pumpe 1");
+    CHECK(cm::gui::dispenser_label(cm::gui::DispenserType::Valve, 2) == "Ventil 2");
 }
 
 TEST_CASE("StationStateBridge - A pod on another protocol release shows why it isn't used", "[gui][StationStateBridge]")

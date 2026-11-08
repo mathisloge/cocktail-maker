@@ -18,6 +18,7 @@ StationConfig::StationConfig(const IngredientStore& ingredient_store, std::files
 void StationConfig::init()
 {
     load_config_from_file();
+    notify_changed();
 }
 
 void StationConfig::update_dispenser_ingredient_mapping(IngredientId ingredient_id, PodDispenser pod_dispenser_pair)
@@ -36,6 +37,24 @@ void StationConfig::update_dispenser_ingredient_mapping(IngredientId ingredient_
     // discovered/connected.
     ingredient_dispenser_mapping_.insert_or_assign(std::move(ingredient_id), std::move(pod_dispenser_pair));
     save_config_to_file();
+    notify_changed();
+}
+
+void StationConfig::set_change_handler(std::function<void()> handler)
+{
+    change_handler_ = std::move(handler);
+}
+
+std::vector<std::pair<IngredientId, PodDispenser>> StationConfig::assignments() const
+{
+    return {std::from_range, ingredient_dispenser_mapping_};
+}
+
+void StationConfig::notify_changed() const
+{
+    if (change_handler_) {
+        change_handler_();
+    }
 }
 
 std::expected<PodDispenser, IngredientNotAssignedError> StationConfig::find_dispenser_for_ingredient(

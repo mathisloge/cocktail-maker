@@ -57,6 +57,8 @@ std::string dispenser_label(const DispenserType type, const int number)
     return std::format("{} {}", type == DispenserType::Pump ? "Pumpe" : "Ventil", number);
 }
 
+using DispenserNames = std::map<PodDispenser, std::string>;
+
 struct PodStateData
 {
     PodInfo info;
@@ -129,7 +131,7 @@ class PodUiModel : public slint::Model<gui::Pod>
 
     void update_pod(const PodStateData& pod)
     {
-        const auto apply_state_to_ui = [](gui::Pod& gui_pod, const PodStateData& state_pod) {
+        const auto apply_state_to_ui = [this](gui::Pod& gui_pod, const PodStateData& state_pod) {
             bool changed = false;
             if (gui_pod.id.data() != state_pod.info.id.raw()) {
                 gui_pod.id = slint::SharedString{state_pod.info.id.raw()};
@@ -156,11 +158,12 @@ class PodUiModel : public slint::Model<gui::Pod>
             if ((gui_pod.dispensers == nullptr) or gui_pod.dispensers->row_count() != (num_pumps + num_valves)) {
                 auto dispenser_model = std::make_shared<slint::VectorModel<gui::Dispenser>>();
                 const auto unknown = present_fill_level(FillLevelView{});
-                const auto add = [&dispenser_model, &unknown](int id, DispenserType type, int number) {
+                const auto add = [&](int id, DispenserType type, int number) {
                     dispenser_model->push_back(gui::Dispenser{
                         .id = id,
                         .type = type,
                         .label = slint::SharedString{dispenser_label(type, number)},
+                        .ingredient_name = slint::SharedString{name_of(state_pod.info.id, id)},
                         .fill_text = slint::SharedString{unknown.text},
                         .fill_known = unknown.known,
                         .fill_ratio = unknown.ratio,
@@ -218,6 +221,27 @@ class PodUiModel : public slint::Model<gui::Pod>
         }
     }
 
+    void set_dispenser_names(DispenserNames names)
+    {
+        names_ = std::move(names);
+        for (const auto& gui_pod : pods_) {
+            if (gui_pod.dispensers == nullptr) {
+                continue;
+            }
+            const PodId pod_id{std::string{gui_pod.id.data()}};
+            for (std::size_t row = 0; row < gui_pod.dispensers->row_count(); ++row) {
+                auto dispenser = gui_pod.dispensers->row_data(row);
+                if (not dispenser.has_value()) {
+                    continue;
+                }
+                if (const auto name = name_of(pod_id, dispenser->id); dispenser->ingredient_name.data() != name) {
+                    dispenser->ingredient_name = slint::SharedString{name};
+                    gui_pod.dispensers->set_row_data(row, *dispenser);
+                }
+            }
+        }
+    }
+
     void remove_pod(const PodStateData& pod)
     {
         const auto old_size = pods_.size();
@@ -236,7 +260,14 @@ class PodUiModel : public slint::Model<gui::Pod>
     }
 
   private:
+    [[nodiscard]] std::string name_of(const PodId& pod_id, int dispenser_id) const
+    {
+        const auto it = names_.find(PodDispenser{pod_id, DispenserId{dispenser_id}});
+        return it == names_.end() ? std::string{} : it->second;
+    }
+
     std::vector<gui::Pod> pods_;
+    DispenserNames names_;
 };
 
 constexpr std::string kSalt = "static";
@@ -277,6 +308,22 @@ std::unique_ptr<PodState> StationStateBridge::create_pod_state()
     auto pod_state = std::make_unique<PodStateImpl>(shared_from_this());
     pods_.emplace_back(pod_state.get());
     return pod_state;
+}
+
+void StationStateBridge::watch_assignments(StationConfig& station_config, const IngredientStore& ingredient_store)
+{
+    const auto publish = [model = pod_model_, &station_config, &ingredient_store]() {
+        DispenserNames names;
+        for (const auto& [ingredient_id, address] : station_config.assignments()) {
+            if (const auto ingredient = ingredient_store.find_by_id(ingredient_id); ingredient.has_value()) {
+                names.insert_or_assign(address, ingredient->display_name);
+            }
+        }
+        slint::invoke_from_event_loop(
+            [model, names = std::move(names)]() mutable { model->set_dispenser_names(std::move(names)); });
+    };
+    station_config.set_change_handler(publish);
+    publish();
 }
 
 void StationStateBridge::pod_connection_state_changed(const PodStateImpl& pod)

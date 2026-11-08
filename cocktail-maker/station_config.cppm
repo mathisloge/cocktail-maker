@@ -110,6 +110,16 @@ export class StationConfig final
      */
     std::expected<IngredientId, std::out_of_range> find_ingredient_by_dispenser(PodDispenser pod_dispenser) const;
 
+    /**
+     * @brief Sets the function called after every change of the assignment and after `init()`.
+     *
+     * The handler runs on the thread that made the change. It replaces any earlier handler.
+     */
+    void set_change_handler(std::function<void()> handler);
+
+    /// Every ingredient with its assigned dispenser, one entry per ingredient.
+    [[nodiscard]] std::vector<std::pair<IngredientId, PodDispenser>> assignments() const;
+
     /// Blocks until every saved change has reached the file, so it must not run on the execution context.
     void flush();
 
@@ -128,10 +138,13 @@ export class StationConfig final
      */
     void load_config_from_file();
 
+    void notify_changed() const;
+
   private:
     log::Logger logger_{log::create_or_get("station_config")};
     const IngredientStore& ingredient_store_;
     std::unordered_map<IngredientId, PodDispenser> ingredient_dispenser_mapping_;
     StateFileWriter writer_;
+    std::function<void()> change_handler_;
 };
 } // namespace cm

@@ -134,6 +134,49 @@ TEST_CASE("StationStateBridge - Pod Lifecycle", "[gui][StationStateBridge]")
     }
 }
 
+TEST_CASE("StationStateBridge - Dispensers show the drink assigned to them", "[gui][StationStateBridge]")
+{
+    boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
+    auto ui = cm::gui::AppWindow::create();
+    cm::PodRegistry pod_registry;
+    cm::testing::TempDir dir;
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), dir.file("fill_levels.json")};
+    cm::IngredientStore ingredients;
+    ingredients.init_ingredients({
+        cm::Ingredient{.id = cm::IngredientId{"rum"}, .display_name = "Weißer Rum", .type = {}},
+        cm::Ingredient{.id = cm::IngredientId{"lime"}, .display_name = "Limettensaft", .type = {}},
+    });
+    cm::StationConfig station_config{ingredients, dir.file("mapping.json")};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
+    auto model = bridge->pod_model();
+    SlintFlusher flusher;
+
+    auto pod = bridge->create_pod_state();
+    pod->update_info({.id = cm::PodId{"Pod-A"}, .num_pumps = 2, .num_valves = 0});
+    pod->update_state(cm::PodState::ConnectionState::connected);
+    bridge->watch_assignments(station_config, ingredients);
+    flush_slint_events();
+
+    const auto name_of = [&model](std::size_t dispenser) {
+        return std::string{model->row_data(0)->dispensers->row_data(dispenser)->ingredient_name.data()};
+    };
+    REQUIRE(model->row_count() == 1);
+
+    station_config.update_dispenser_ingredient_mapping(cm::IngredientId{"rum"},
+                                                       cm::PodDispenser{cm::PodId{"Pod-A"}, cm::DispenserId{0}});
+    flush_slint_events();
+    CHECK(name_of(0) == "Weißer Rum");
+    CHECK(name_of(1) == "");
+
+    station_config.update_dispenser_ingredient_mapping(cm::IngredientId{"rum"},
+                                                       cm::PodDispenser{cm::PodId{"Pod-A"}, cm::DispenserId{1}});
+    flush_slint_events();
+    CHECK(name_of(0) == "");
+    CHECK(name_of(1) == "Weißer Rum");
+    station_config.flush();
+}
+
 TEST_CASE("StationStateBridge - Readiness Status and Multiple Pods", "[gui][StationStateBridge]")
 {
     boost::asio::io_context ctx;

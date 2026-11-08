@@ -36,6 +36,9 @@ export class StationStateBridge : public StationState, public std::enable_shared
                                 AsyncScope& async_scope,
                                 FillLevelTracker& fill_levels);
     std::unique_ptr<PodState> create_pod_state() override;
+
+    /// Shows the name of the assigned ingredient on each dispenser, now and after every change of the assignment.
+    void watch_assignments(StationConfig& station_config, const IngredientStore& ingredient_store);
     void pod_connection_state_changed(const PodStateImpl& pod);
     void pod_about_to_removed(const PodStateImpl& pod);
     void pod_info_changed(const PodStateImpl& pod);

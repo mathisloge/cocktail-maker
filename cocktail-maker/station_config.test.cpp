@@ -57,3 +57,30 @@ TEST_CASE_METHOD(StationConfigFixture, "StationConfig starts empty without a fil
 
     CHECK_FALSE(config.find_dispenser_for_ingredient(IngredientId{"rum"}).has_value());
 }
+
+TEST_CASE_METHOD(StationConfigFixture, "StationConfig reports every change of the assignment", "[station_config]")
+{
+    StationConfig config{ingredients, dir.file("mapping.json")};
+    int changes = 0;
+    config.set_change_handler([&changes]() { ++changes; });
+
+    config.update_dispenser_ingredient_mapping(IngredientId{"rum"}, address);
+    config.update_dispenser_ingredient_mapping(IngredientId{"rum"}, PodDispenser{PodId{"Pod"}, DispenserId{3}});
+
+    CHECK(changes == 2);
+    const auto assignments = config.assignments();
+    REQUIRE(assignments.size() == 1);
+    CHECK(assignments.front().first == IngredientId{"rum"});
+    CHECK(assignments.front().second == PodDispenser{PodId{"Pod"}, DispenserId{3}});
+}
+
+TEST_CASE_METHOD(StationConfigFixture, "StationConfig reports a loaded assignment", "[station_config]")
+{
+    StationConfig config{ingredients, dir.file("mapping.json")};
+    int changes = 0;
+    config.set_change_handler([&changes]() { ++changes; });
+
+    config.init();
+
+    CHECK(changes == 1);
+}

@@ -46,7 +46,6 @@ component ErrorDetailRow inherits Rectangle {
             LabelText {
                 emphasized: true;
                 text: root.label;
-                font-italic: false;
             }
 
             CaptionText {
@@ -57,12 +56,10 @@ component ErrorDetailRow inherits Rectangle {
 
         Rectangle {
             horizontal-stretch: 1;
-            background: transparent;
         }
 
         Rectangle {
             horizontal-stretch: 0;
-            background: transparent;
             border-width: 1px;
             border-color: Palette.text-error;
             HorizontalLayout {
@@ -98,7 +95,6 @@ export component MixErrorPage inherits PageBase {
     property <bool> pulse: false;
     Timer {
         interval: Motion.breathe;
-        running: true;
         triggered => { root.pulse = !root.pulse; }
     }
 
@@ -125,7 +121,6 @@ export component MixErrorPage inherits PageBase {
 
             VerticalLayout {
                 alignment: center;
-                spacing: 0;
 
                 // ── Broken-ring icon ─────────────────────────
                 HorizontalLayout {
@@ -133,7 +128,6 @@ export component MixErrorPage inherits PageBase {
                     icon-stack := Rectangle {
                         width: root.ring-size;
                         height: root.ring-size;
-                        background: transparent;
 
                         // Static amber base ring (the "glass rim")
                         Rectangle {
@@ -160,7 +154,6 @@ export component MixErrorPage inherits PageBase {
                             viewbox-height: 100;
                             // triangle, gently rounded corners
                             commands: "M 50 32 Q 52 32 53 34 L 64 58 Q 66 62 62 62 L 38 62 Q 34 62 36 58 L 47 34 Q 48 32 50 32 Z";
-                            fill: transparent;
                             stroke: root.pulse ? Palette.border : Palette.text-error;
                             stroke-width: Layout.icon-stroke;
                             opacity: root.mounted ? 1 : 0;
@@ -180,7 +173,6 @@ export component MixErrorPage inherits PageBase {
                             // exclamation bar + dot
                             commands: "M 49 41 L 51 41 L 50.5 51 L 49.5 51 Z M 48.5 55 L 51.5 55 L 51.5 58 L 48.5 58 Z";
                             fill: root.pulse ? Palette.border : Palette.text-error;
-                            stroke: transparent;
                             opacity: root.mounted ? 1 : 0;
                             animate opacity, fill {
                                 duration: Motion.reveal;
@@ -192,7 +184,6 @@ export component MixErrorPage inherits PageBase {
 
                 Rectangle {
                     height: Layout.spacing-lg;
-                    background: transparent;
                 }
 
                 VerticalLayout {
@@ -227,7 +218,6 @@ export component MixErrorPage inherits PageBase {
 
             VerticalLayout {
                 padding: Layout.spacing-xl * 1.4;
-                spacing: 0;
                 alignment: center;
 
                 DisplayText {
@@ -243,7 +233,6 @@ export component MixErrorPage inherits PageBase {
 
                 Rectangle {
                     height: Layout.spacing-sm;
-                    background: transparent;
                 }
 
                 BodyText {
@@ -259,7 +248,6 @@ export component MixErrorPage inherits PageBase {
 
                 Rectangle {
                     height: Layout.spacing-lg;
-                    background: transparent;
                 }
 
                 // ── Technische Details (dezent, für das Personal) ────
@@ -317,7 +305,6 @@ export component MixErrorPage inherits PageBase {
 
                 Rectangle {
                     height: Layout.spacing-xl;
-                    background: transparent;
                 }
 
                 // ── Actions ────────────────────────────────────

@@ -34,7 +34,6 @@ component StatChip inherits Rectangle {
 
         LabelText {
             text: root.value;
-            font-italic: false;
             emphasized: true;
             tone: root.value-tone;
             horizontal-alignment: center;
@@ -51,7 +50,6 @@ export component MixSuccessPage inherits PageBase {
 
     Timer {
         interval: 5s;
-        running: true;
         triggered => { finish(); }
     }
 
@@ -60,7 +58,6 @@ export component MixSuccessPage inherits PageBase {
         padding-bottom: Layout.spacing-xl * 1.4;
         padding-left: Layout.spacing-xl * 1.2;
         padding-right: Layout.spacing-xl * 1.2;
-        spacing: 0;
         alignment: center;
 
         HeadlineText {
@@ -78,7 +75,6 @@ export component MixSuccessPage inherits PageBase {
 
         Rectangle {
             height: Layout.spacing-sm;
-            background: transparent;
         }
 
         BoostText {
@@ -94,7 +90,6 @@ export component MixSuccessPage inherits PageBase {
 
         Rectangle {
             height: Layout.spacing-lg;
-            background: transparent;
         }
 
         VerticalLayout {
@@ -134,7 +129,6 @@ export component MixSuccessPage inherits PageBase {
 
         Rectangle {
             height: Layout.spacing-md;
-            background: transparent;
         }
 
         VerticalLayout {
@@ -171,7 +165,6 @@ export component MixSuccessPage inherits PageBase {
 
         Rectangle {
             height: Layout.spacing-xl;
-            background: transparent;
         }
 
         Button {

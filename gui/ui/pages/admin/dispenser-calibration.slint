@@ -21,7 +21,7 @@ component StatusDot inherits PulseDot {
 }
 
 component StepCard inherits Rectangle {
-    in property <string> step-number: "1";
+    in property <string> step-number;
     in property <string> title: "Test title";
     in property <string> description: "Test description";
     in property <CalibrationStepStatus> status: CalibrationStepStatus.running;

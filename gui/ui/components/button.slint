@@ -46,7 +46,6 @@ export component Button {
     ]
 
     i-background := Rectangle {
-        border-radius: 0px;
         background: root.danger ? Palette.danger : root.secondary ? Palette.surface : Palette.accent;
 
         animate background, border-color { duration: Motion.quick; }

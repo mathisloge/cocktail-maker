@@ -10,7 +10,6 @@ export component RecipeTags inherits HorizontalLayout {
         tone: TextTone.interactive;
         text: t + ((i < (tags.length - 1)) ? " | " : "");
         horizontal-alignment: left;
-        wrap: TextWrap.no-wrap;
         overflow: ((i < (tags.length - 1)) ? TextOverflow.clip : elide);
     }
 }

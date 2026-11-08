@@ -66,10 +66,17 @@ export component AdminArea {
     private property <int> open-pod-index;
     private property <int> open-dispenser-index;
     private property <AdminSection> section: AdminSection.pumps;
-    // The pump page follows the model, so that refills and new drinks show while it is open. It keeps the last state
-    // when the rows have moved, because its Pod went away.
+    // The pump page follows the model, so that refills and new drinks show while it is open.
     private property <Pod> live-pod: StationStateContext.pods[root.open-pod-index];
     private property <bool> live: root.live-pod.id == root.open-pod.id && root.open-dispenser-index < root.live-pod.dispensers.length;
+
+    // A pump whose Pod went away offers nothing that would still work, so the page goes back to the tiles. A running
+    // calibration keeps it, because its way to stop the run is on the page.
+    changed live => {
+        if root.pump-open && !root.live && !DispenserCalibrationContext.is-busy() {
+            root.pump-open = false;
+        }
+    }
 
     VerticalLayout {
         Rectangle {

@@ -89,6 +89,17 @@ struct AdminAreaPage
         return false;
     }
 
+    [[nodiscard]] bool wait_until_gone(std::string_view label) const
+    {
+        for (int frame = 0; frame < 100; ++frame) {
+            render();
+            if (find(label).empty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     static void render()
     {
         slint::Timer::single_shot(std::chrono::milliseconds{20}, [] { slint::quit_event_loop(); });
@@ -340,4 +351,15 @@ TEST_CASE_METHOD(AdminAreaPage, "The system section filters the log for errors",
 
     CHECK(wait_for("Timeout bei Ping"));
     CHECK(find("Mojito fertig").empty());
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The pump page closes when its pod goes away", "[admin_area]")
+{
+    activate("Pod-A Pumpe 1");
+    REQUIRE(wait_for("Identify"));
+
+    set_pods({});
+
+    CHECK(wait_until_gone("Identify"));
+    CHECK(find("← Pumpen").empty());
 }

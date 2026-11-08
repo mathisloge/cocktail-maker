@@ -26,6 +26,8 @@ export struct Pod {
     connection_state: ConnectionState,
     status-text: string,
     firmware-version: string,
+    pump-count: int,
+    valve-count: int,
     dispensers: [Dispenser],
     // How many dispensers the Pods before this one have, so that the admin tiles of all Pods flow in one grid.
     tile-offset: int,

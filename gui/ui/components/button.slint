@@ -6,6 +6,8 @@ import { Typography } from "../theme/typography.slint";
 export component Button {
     in property <string> text;
     in property <bool> secondary;
+    // For actions that stop or destroy something, like an emergency stop.
+    in property <bool> danger;
     // 48 px instead of 75 px, for rows and tool bars.
     in property <bool> compact;
     in property <bool> enabled <=> i-touch-area.enabled;
@@ -13,7 +15,7 @@ export component Button {
 
     callback clicked;
 
-    private property <brush> text-color: self.secondary ? Palette.text-interactive : Palette.text-on-accent;
+    private property <brush> text-color: self.danger ? Palette.text-on-danger : self.secondary ? Palette.text-interactive : Palette.text-on-accent;
 
     min-width: max(32px, i-layout.min-width);
     min-height: max(root.compact ? Layout.touch-height-sm : Layout.touch-height, i-layout.min-height);
@@ -45,7 +47,7 @@ export component Button {
 
     i-background := Rectangle {
         border-radius: 0px;
-        background: root.secondary ? Palette.surface : Palette.accent;
+        background: root.danger ? Palette.danger : root.secondary ? Palette.surface : Palette.accent;
 
         animate background, border-color { duration: Motion.quick; }
 

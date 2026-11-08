@@ -93,6 +93,8 @@ component LogRow inherits Rectangle {
 }
 
 export component SystemLog inherits Flickable {
+    // Shows only errors and critical entries.
+    in property <bool> errors-only;
     in property <[LogEntry]> log-entries: [
         {
             time_stamp: "10:10:10.000",
@@ -139,8 +141,10 @@ export component SystemLog inherits Flickable {
         padding-bottom: Layout.spacing-sm;
         alignment: start;
 
-        for entry in root.log-entries: LogRow {
-            entry: entry;
+        for entry in root.log-entries: VerticalLayout {
+            if !root.errors-only || entry.level == LogLevel.err || entry.level == LogLevel.critical: LogRow {
+                entry: entry;
+            }
         }
     }
 }

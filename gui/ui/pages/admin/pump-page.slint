@@ -1,39 +1,15 @@
 import { TextTone, Palette } from "../../theme/colors.slint";
 import { Layout } from "../../theme/layout.slint";
+import { ActionButton } from "../../components/action-button.slint";
 import { Button } from "../../components/button.slint";
 import { FillBar } from "../../components/fill-bar.slint";
 import { SelectBox } from "../../components/select-box.slint";
-import { BodyText, CaptionText, HeadlineText, LabelText } from "../../components/text.slint";
+import { BodyText, HeadlineText, LabelText } from "../../components/text.slint";
 import { DispenserCalibrationContext } from "../../globals/dispenser-calibration-context.slint";
 import { RecipeContext } from "../../globals/recipe-context.slint";
 import { StationStateContext } from "../../globals/station-state-context.slint";
 import { Dispenser, DispenserType, Pod } from "../../types/pod.slint";
 import { DispenserCalibrationPanel } from "./dispenser-calibration.slint";
-
-// An action of the pump page. One whose backend is still missing says so next to its button.
-component PumpAction inherits HorizontalLayout {
-    in property <string> text;
-    in property <bool> available: true;
-    callback clicked();
-
-    spacing: Layout.spacing-md;
-    alignment: start;
-
-    Button {
-        text: root.text;
-        compact: true;
-        secondary: true;
-        enabled: root.available;
-        clicked => {
-            root.clicked();
-        }
-    }
-
-    if !root.available: CaptionText {
-        text: "noch nicht verfügbar";
-        vertical-alignment: center;
-    }
-}
 
 component SectionTitle inherits LabelText {
     tone: TextTone.label;
@@ -78,42 +54,47 @@ export component PumpPage {
             vertical-stretch: 1;
             spacing: Layout.spacing-md;
 
-            Rectangle {
+            // The card keeps the height of its content.
+            VerticalLayout {
                 horizontal-stretch: 1;
-                border-radius: Layout.tile-radius;
-                background: Palette.surface-card;
+                alignment: start;
 
-                VerticalLayout {
-                    padding: Layout.tile-padding;
-                    spacing: Layout.spacing-sm;
-                    alignment: start;
+                Rectangle {
+                    border-radius: Layout.tile-radius;
+                    background: Palette.surface-card;
 
-                    HeadlineText {
-                        text: root.assigned ? root.dispenser.ingredient-name : "nicht belegt";
-                        tone: root.assigned ? TextTone.primary : TextTone.muted;
-                        wrap: word-wrap;
-                    }
-
-                    if root.assigned: BodyText {
-                        text: root.dispenser.fill-text;
-                        tone: root.dispenser.almost-empty ? TextTone.error : TextTone.muted;
-                    }
-
-                    if root.assigned && root.dispenser.fill-known: FillBar {
-                        ratio: root.dispenser.fill-ratio;
-                        low: root.dispenser.almost-empty;
-                    }
-
-                    if root.assigned: HorizontalLayout {
-                        padding-top: Layout.spacing-sm;
+                    VerticalLayout {
+                        padding: Layout.tile-padding;
+                        spacing: Layout.spacing-sm;
                         alignment: start;
 
-                        Button {
-                            text: "Nachgefüllt";
-                            compact: true;
-                            secondary: !root.dispenser.almost-empty;
-                            clicked => {
-                                StationStateContext.mark-dispenser-refilled(root.pod, root.dispenser);
+                        HeadlineText {
+                            text: root.assigned ? root.dispenser.ingredient-name : "nicht belegt";
+                            tone: root.assigned ? TextTone.primary : TextTone.muted;
+                            wrap: word-wrap;
+                        }
+
+                        if root.assigned: BodyText {
+                            text: root.dispenser.fill-text;
+                            tone: root.dispenser.almost-empty ? TextTone.error : TextTone.muted;
+                        }
+
+                        if root.assigned && root.dispenser.fill-known: FillBar {
+                            ratio: root.dispenser.fill-ratio;
+                            low: root.dispenser.almost-empty;
+                        }
+
+                        if root.assigned: HorizontalLayout {
+                            padding-top: Layout.spacing-sm;
+                            alignment: start;
+
+                            Button {
+                                text: "Nachgefüllt";
+                                compact: true;
+                                secondary: !root.dispenser.almost-empty;
+                                clicked => {
+                                    StationStateContext.mark-dispenser-refilled(root.pod, root.dispenser);
+                                }
                             }
                         }
                     }
@@ -139,7 +120,7 @@ export component PumpPage {
                         text: "Pflege";
                     }
 
-                    PumpAction {
+                    ActionButton {
                         text: "Reinigen";
                         available: StationStateContext.clean-available;
                         clicked => {
@@ -147,7 +128,7 @@ export component PumpPage {
                         }
                     }
 
-                    if root.dispenser.type == DispenserType.pump: PumpAction {
+                    if root.dispenser.type == DispenserType.pump: ActionButton {
                         text: "Rückwärts leeren";
                         available: StationStateContext.reverse-available;
                         clicked => {
@@ -155,18 +136,22 @@ export component PumpPage {
                         }
                     }
 
-                    PumpAction {
+                    ActionButton {
                         text: "Identify";
                         clicked => {
                             StationStateContext.highlight-dispenser(root.pod, root.dispenser);
                         }
                     }
 
+                    Rectangle {
+                        height: Layout.spacing-sm;
+                    }
+
                     SectionTitle {
                         text: "Einrichten";
                     }
 
-                    PumpAction {
+                    ActionButton {
                         text: "Getränk ändern";
                         clicked => {
                             root.choosing-drink = !root.choosing-drink;
@@ -182,7 +167,7 @@ export component PumpPage {
                         }
                     }
 
-                    PumpAction {
+                    ActionButton {
                         text: "Kalibrieren";
                         clicked => {
                             DispenserCalibrationContext.reset-state();

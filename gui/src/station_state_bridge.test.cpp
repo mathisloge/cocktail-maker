@@ -125,6 +125,8 @@ TEST_CASE("StationStateBridge - Pod Lifecycle", "[gui][StationStateBridge]")
         REQUIRE(model->row_count() == 1);
         const auto row = model->row_data(0).value();
         CHECK(row.firmware_version == slint::SharedString{"1.4.0"});
+        CHECK(row.pump_count == 2);
+        CHECK(row.valve_count == 1);
         REQUIRE(row.dispensers->row_count() == 3);
         const std::array<std::string, 3> labels{"Pumpe 1", "Pumpe 2", "Ventil 1"};
         for (std::size_t i = 0; i < labels.size(); ++i) {
@@ -381,6 +383,7 @@ TEST_CASE("StationStateBridge - Pod problems", "[gui][StationStateBridge]")
         REQUIRE(rows.size() == 1);
         CHECK(std::string{rows.front().pod_id.data()} == "Pod-A");
         CHECK_THAT(std::string{rows.front().text.data()}, Catch::Matchers::StartsWith("Pod-A getrennt um "));
+        CHECK(rows.front().gone);
 
         auto again = connect_pod_a();
         flush_slint_events();

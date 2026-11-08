@@ -30,6 +30,7 @@ cm::gui::Pod pod_with(std::vector<cm::gui::Dispenser> dispensers)
         .id = "Pod-A",
         .connection_state = cm::gui::ConnectionState::Connected,
         .firmware_version = "1.4.0",
+        .pump_count = static_cast<int>(dispensers.size()),
         .dispensers = std::make_shared<slint::VectorModel<cm::gui::Dispenser>>(std::move(dispensers)),
     };
 }
@@ -40,6 +41,7 @@ struct AdminAreaPage
     slint::ComponentHandle<cm::gui::AppWindow> ui = cm::gui::AppWindow::create();
     std::vector<int> refilled;
     std::vector<int> highlighted;
+    int emergency_stops = 0;
 
     AdminAreaPage()
     {
@@ -50,6 +52,7 @@ struct AdminAreaPage
             [this](const cm::gui::Pod&, const cm::gui::Dispenser& dispenser) { refilled.push_back(dispenser.id); });
         station.on_highlight_dispenser(
             [this](const cm::gui::Pod&, const cm::gui::Dispenser& dispenser) { highlighted.push_back(dispenser.id); });
+        station.on_emergency_stop_all([this]() { ++emergency_stops; });
         set_pods({pod_with({
             pump(0, "Weißer Rum", 0.64F),
             pump(1, "Limettensaft", 0.12F, true),
@@ -277,4 +280,64 @@ TEST_CASE_METHOD(AdminAreaPage, "The pump page goes back to the tiles", "[admin_
     activate("← Pumpen");
 
     CHECK(wait_for("Pod-A Pumpe 2"));
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The system section lists pods with their firmware", "[admin_area]")
+{
+    activate("System");
+
+    CHECK(wait_for("Firmware 1.4.0"));
+    CHECK_FALSE(find("3 Pumpen · 0 Ventile").empty());
+    CHECK_FALSE(find("keine Fehler").empty());
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The system section stops every pod", "[admin_area]")
+{
+    activate("System");
+    REQUIRE(wait_for("Not-Stopp alle Pods")); // codespell:ignore
+
+    activate("Not-Stopp alle Pods"); // codespell:ignore
+
+    CHECK(emergency_stops == 1);
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The system section offers restart and reconnect as not available yet", "[admin_area]")
+{
+    activate("System");
+    REQUIRE(wait_for("Neustarten"));
+
+    CHECK(only("Neustarten").accessible_enabled() == false);
+    CHECK(only("Neu verbinden").accessible_enabled() == false);
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The system section lists problems of pods that are gone", "[admin_area]")
+{
+    ui->global<cm::gui::StationStateContext>().set_pod_problems(
+        std::make_shared<slint::VectorModel<cm::gui::PodProblem>>(std::vector{
+            cm::gui::PodProblem{.pod_id = "Pod-B", .text = "Pod-B getrennt um 21:12", .gone = true},
+        }));
+    REQUIRE(wait_for("Details →"));
+
+    activate("Details →");
+
+    CHECK(wait_for("Not-Stopp alle Pods")); // codespell:ignore
+    CHECK_FALSE(find("Pod-B getrennt um 21:12").empty());
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The system section filters the log for errors", "[admin_area]")
+{
+    ui->global<cm::gui::StationStateContext>().set_log_entries(
+        std::make_shared<slint::VectorModel<cm::gui::LogEntry>>(std::vector{
+            cm::gui::LogEntry{
+                .time_stamp = "21:00:00.000", .level = cm::gui::LogLevel::Info, .component = "ui", .message = "Mojito fertig"},
+            cm::gui::LogEntry{
+                .time_stamp = "21:00:01.000", .level = cm::gui::LogLevel::Err, .component = "pod", .message = "Timeout bei Ping"},
+        }));
+    activate("System");
+    REQUIRE(wait_for("Mojito fertig"));
+
+    activate("Fehler");
+
+    CHECK(wait_for("Timeout bei Ping"));
+    CHECK(find("Mojito fertig").empty());
 }

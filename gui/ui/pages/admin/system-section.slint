@@ -1,0 +1,87 @@
+import { TextTone } from "../../theme/colors.slint";
+import { Layout } from "../../theme/layout.slint";
+import { Button } from "../../components/button.slint";
+import { Chip } from "../../components/chip.slint";
+import { BodyText } from "../../components/text.slint";
+import { StationStateContext } from "../../globals/station-state-context.slint";
+import { ConnectionState } from "../../types/pod.slint";
+import { PodCard } from "../../widgets/pod-card.slint";
+import { SystemLog } from "../../widgets/system-log.slint";
+
+// The technical view: Pods with their problems, the emergency stop and the log.
+export component SystemSection {
+    private property <bool> errors-only;
+
+    VerticalLayout {
+        padding: Layout.spacing-md;
+        spacing: Layout.spacing-md;
+
+        for problem in StationStateContext.pod-problems: VerticalLayout {
+            if problem.gone: BodyText {
+                text: problem.text;
+                tone: TextTone.error;
+            }
+        }
+
+        FlexboxLayout {
+            spacing: Layout.spacing-md;
+
+            for pod in StationStateContext.pods: PodCard {
+                pod: pod;
+                problem: pod.connection_state == ConnectionState.incompatible ? "Inkompatible Firmware (" + pod.status-text + ")"
+                    : pod.connection_state == ConnectionState.disconnected ? "nicht verbunden" : "";
+                reconnect-available: StationStateContext.reconnect-available;
+                restart-available: StationStateContext.restart-available;
+                reconnect => {
+                    StationStateContext.reconnect-pod(pod);
+                }
+                restart => {
+                    StationStateContext.restart-pod(pod);
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: Layout.spacing-sm;
+
+            Chip {
+                compact: true;
+                // codespell:ignore-next-line
+                text: "Alle";
+                selected: !root.errors-only;
+                clicked => {
+                    root.errors-only = false;
+                }
+            }
+
+            Chip {
+                compact: true;
+                text: "Fehler";
+                selected: root.errors-only;
+                clicked => {
+                    root.errors-only = true;
+                }
+            }
+
+            Rectangle {
+                horizontal-stretch: 1;
+            }
+
+            Button {
+                compact: true;
+                danger: true;
+                // codespell:ignore-next-line
+                text: "Not-Stopp alle Pods";
+                clicked => {
+                    StationStateContext.emergency-stop-all();
+                }
+            }
+        }
+
+        SystemLog {
+            vertical-stretch: 1;
+            errors-only: root.errors-only;
+            log-entries: StationStateContext.log-entries;
+        }
+    }
+}

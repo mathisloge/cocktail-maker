@@ -152,6 +152,11 @@ class PodUiModel : public slint::Model<gui::Pod>
                 gui_pod.firmware_version = slint::SharedString{firmware};
                 changed = true;
             }
+            if (gui_pod.pump_count != state_pod.info.num_pumps or gui_pod.valve_count != state_pod.info.num_valves) {
+                gui_pod.pump_count = state_pod.info.num_pumps;
+                gui_pod.valve_count = state_pod.info.num_valves;
+                changed = true;
+            }
 
             // An incompatible Pod offers nothing to assign, calibrate or identify, because it stays unused.
             const bool usable = state_pod.connection_state != gui::ConnectionState::Incompatible;
@@ -414,7 +419,8 @@ void StationStateBridge::track_problem(const PodStateImpl& pod, const bool remov
         return;
     }
     if (removed) {
-        problems_.insert_or_assign(id, std::format("{} getrennt um {}", id, local_clock_time(std::chrono::system_clock::now())));
+        problems_.insert_or_assign(
+            id, Problem{std::format("{} getrennt um {}", id, local_clock_time(std::chrono::system_clock::now())), true});
     }
     else if (data.connection_state == gui::ConnectionState::Connected) {
         if (problems_.erase(id) == 0) {
@@ -422,7 +428,8 @@ void StationStateBridge::track_problem(const PodStateImpl& pod, const bool remov
         }
     }
     else if (data.connection_state == gui::ConnectionState::Incompatible) {
-        problems_.insert_or_assign(id, std::format("{} hat eine inkompatible Firmware ({})", id, pod_status_text(data)));
+        problems_.insert_or_assign(
+            id, Problem{std::format("{} hat eine inkompatible Firmware ({})", id, pod_status_text(data)), false});
     }
     else {
         return;
@@ -433,8 +440,9 @@ void StationStateBridge::track_problem(const PodStateImpl& pod, const bool remov
 void StationStateBridge::publish_problems()
 {
     std::vector<gui::PodProblem> rows;
-    for (const auto& [id, text] : problems_) {
-        rows.push_back(gui::PodProblem{.pod_id = slint::SharedString{id}, .text = slint::SharedString{text}});
+    for (const auto& [id, problem] : problems_) {
+        rows.push_back(
+            gui::PodProblem{.pod_id = slint::SharedString{id}, .text = slint::SharedString{problem.text}, .gone = problem.gone});
     }
     slint::invoke_from_event_loop([ui = ui_, rows = std::move(rows)]() {
         ui->global<StationStateContext>().set_pod_problems(std::make_shared<slint::VectorModel<gui::PodProblem>>(rows));

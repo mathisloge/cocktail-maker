@@ -1,0 +1,83 @@
+import { TextTone, Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+import { ActionButton } from "../components/action-button.slint";
+import { BodyText, CaptionText, TitleText } from "../components/text.slint";
+import { ConnectionState, Pod } from "../types/pod.slint";
+
+// The state of one connected Pod in the System section.
+export component PodCard inherits Rectangle {
+    in property <Pod> pod;
+    // Empty when the Pod has no problem.
+    in property <string> problem;
+    in property <bool> reconnect-available;
+    in property <bool> restart-available;
+    callback reconnect();
+    callback restart();
+
+    private property <length> dot-size: 10px;
+    private property <bool> connected: root.pod.connection_state == ConnectionState.connected;
+    private property <bool> connecting: root.pod.connection_state == ConnectionState.connecting;
+
+    width: 380px;
+    border-radius: Layout.tile-radius;
+    background: Palette.surface-card;
+    border-width: 1px;
+    border-color: root.problem != "" ? Palette.border-alert : Palette.border-subtle;
+
+    VerticalLayout {
+        padding: Layout.tile-padding;
+        spacing: Layout.spacing-xs;
+
+        HorizontalLayout {
+            spacing: Layout.spacing-sm;
+
+            Rectangle {
+                width: root.dot-size;
+                height: root.dot-size;
+                y: (parent.height - self.height) / 2;
+                border-radius: self.height / 2;
+                background: root.connected ? Palette.text-success : root.connecting ? Palette.accent : Palette.text-error;
+            }
+
+            TitleText {
+                text: root.pod.id;
+                overflow: elide;
+            }
+        }
+
+        CaptionText {
+            text: root.pod.firmware-version != "" ? "Firmware " + root.pod.firmware-version : "Firmware unbekannt";
+        }
+
+        CaptionText {
+            text: root.pod.pump-count + (root.pod.pump-count == 1 ? " Pumpe" : " Pumpen") + " · " + root.pod.valve-count + (root.pod.valve-count == 1 ? " Ventil" : " Ventile");
+        }
+
+        BodyText {
+            text: root.problem != "" ? root.problem : root.connecting ? "verbindet …" : "keine Fehler";
+            tone: root.problem != "" ? TextTone.error : root.connecting ? TextTone.muted : TextTone.success;
+            wrap: word-wrap;
+        }
+
+        VerticalLayout {
+            padding-top: Layout.spacing-sm;
+            spacing: Layout.spacing-sm;
+
+            ActionButton {
+                text: "Neu verbinden";
+                available: root.reconnect-available;
+                clicked => {
+                    root.reconnect();
+                }
+            }
+
+            ActionButton {
+                text: "Neustarten";
+                available: root.restart-available;
+                clicked => {
+                    root.restart();
+                }
+            }
+        }
+    }
+}

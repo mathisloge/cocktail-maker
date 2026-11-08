@@ -6,9 +6,11 @@ import { BodyText } from "./text.slint";
 export component Chip inherits Rectangle {
     in property <string> text;
     in property <bool> selected;
+    // 48 px instead of 75 px, for filters in tool bars.
+    in property <bool> compact;
     callback clicked();
 
-    height: Layout.touch-height;
+    height: root.compact ? Layout.touch-height-sm : Layout.touch-height;
     min-width: Layout.touch-height * 1.28;
     border-radius: self.height / 2;
     background: root.selected ? Palette.accent : transparent;
@@ -17,12 +19,22 @@ export component Chip inherits Rectangle {
 
     animate background, border-color { duration: Motion.mount-duration / 3; }
 
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-checkable: true;
+    accessible-checked: root.selected;
+    accessible-action-default => {
+        root.clicked();
+    }
+
     BodyText {
         text: root.text;
         emphasized: root.selected;
         tone: root.selected ? TextTone.primary : TextTone.interactive;
         horizontal-alignment: center;
         vertical-alignment: center;
+        accessible-role: none;
+        accessible-label: "";
     }
 
     TouchArea {

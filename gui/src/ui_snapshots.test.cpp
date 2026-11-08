@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <slint-testing.h>
 #include <slint.h>
 #include "app-window.h"
 
@@ -21,6 +22,14 @@ void write_ppm(const std::filesystem::path& file, const slint::SharedPixelBuffer
         out.put(static_cast<char>(pixel.g));
         out.put(static_cast<char>(pixel.b));
     }
+}
+
+/// Triggers the element with the label, like a tap, for screens that are only reachable from another one.
+void activate(const slint::ComponentHandle<cm::gui::AppWindow>& ui, std::string_view label)
+{
+    const auto found = slint::testing::ElementHandle::find_by_accessible_label(ui, label);
+    REQUIRE(found.size() == 1);
+    found[0].invoke_accessible_default_action();
 }
 
 void snapshot(const slint::ComponentHandle<cm::gui::AppWindow>& ui, const std::filesystem::path& dir, std::string_view name)
@@ -70,6 +79,14 @@ TEST_CASE("ui snapshots", "[.snapshot]")
         station.set_active_screen(page);
         snapshot(ui, dir, name);
     }
+
+    // The admin area was the last page, so its sections follow.
+    activate(ui, "Pod-Connected Pumpe 2");
+    snapshot(ui, dir, "admin_pump_page");
+    activate(ui, "Gläser");
+    snapshot(ui, dir, "admin_glasses_section");
+    activate(ui, "System");
+    snapshot(ui, dir, "admin_system_section");
 
     station.set_active_screen(cm::gui::Page::CocktailListPage);
     ui->invoke_open_fill_warning_popup();

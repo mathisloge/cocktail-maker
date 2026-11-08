@@ -1,0 +1,28 @@
+import { Layout } from "../theme/layout.slint";
+import { Button } from "./button.slint";
+import { CaptionText } from "./text.slint";
+
+// A compact button for an action whose backend may still be missing. Then it is disabled and says so next to it.
+export component ActionButton inherits HorizontalLayout {
+    in property <string> text;
+    in property <bool> available: true;
+    callback clicked();
+
+    spacing: Layout.spacing-md;
+    alignment: start;
+
+    Button {
+        text: root.text;
+        compact: true;
+        secondary: true;
+        enabled: root.available;
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    if !root.available: CaptionText {
+        text: "noch nicht verfügbar";
+        vertical-alignment: center;
+    }
+}

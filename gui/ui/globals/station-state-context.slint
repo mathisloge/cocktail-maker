@@ -1,4 +1,5 @@
 import { LogEntry } from "../types/log.slint";
+import { PodProblem } from "../types/maintenance.slint";
 import { Page } from "../types/navigation.slint";
 import { Pod, Dispenser, ConnectionState, DispenserType } from "../types/pod.slint";
 import { RecipeView } from "../types/recipe.slint";
@@ -34,6 +35,19 @@ export global StationStateContext {
 
     callback highlight-dispenser(Pod, Dispenser);
     callback mark-dispenser-refilled(Pod, Dispenser);
+
+    // Maintenance. Problems stay listed for Pods that are gone, until they connect again.
+    in property <[PodProblem]> pod-problems;
+    // The backend for these actions is still missing, so the UI shows them as not available yet.
+    in property <bool> clean-available: false;
+    in property <bool> reverse-available: false;
+    in property <bool> restart-available: false;
+    in property <bool> reconnect-available: false;
+    callback clean-dispenser(Pod, Dispenser);
+    callback reverse-dispenser(Pod, Dispenser);
+    callback restart-pod(Pod);
+    callback reconnect-pod(Pod);
+    callback emergency-stop-all();
 
     // navigation
     callback navigated-to(Page, Page);

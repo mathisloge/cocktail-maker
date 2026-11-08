@@ -1,6 +1,7 @@
 #include <boost/asio/io_context.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_all.hpp>
+#include <proto/field/ErrorCodeCommon.h>
 #include <slint.h>
 #include "app-window.h"
 
@@ -11,6 +12,7 @@ import cm.testing;
 import cm;
 import cm.gui;
 
+#include "fake_pod.test.hpp"
 #include "slint_events.test.hpp"
 
 TEST_CASE("StationStateBridge - Initialization", "[gui][StationStateBridge]")
@@ -338,4 +340,98 @@ TEST_CASE("StationStateBridge - An operator lockout counts down on the UI thread
 
     // A scope has to be joined before it goes away, also when a failed check above left work in it.
     cm::run_until_complete(ctx, scope.stop_and_join());
+}
+
+TEST_CASE("StationStateBridge - Pod problems", "[gui][StationStateBridge]")
+{
+    boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
+    auto ui = cm::gui::AppWindow::create();
+    cm::PodRegistry pod_registry;
+    cm::testing::TempDir dir;
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), dir.file("fill_levels.json")};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
+    const auto& context = ui->global<cm::gui::StationStateContext>();
+    SlintFlusher flusher;
+
+    const auto problems = [&context]() {
+        std::vector<cm::gui::PodProblem> rows;
+        const auto model = context.get_pod_problems();
+        for (std::size_t row = 0; model != nullptr and row < model->row_count(); ++row) {
+            rows.push_back(model->row_data(row).value());
+        }
+        return rows;
+    };
+    const auto connect_pod_a = [&bridge]() {
+        auto pod = bridge->create_pod_state();
+        pod->update_info({.id = cm::PodId{"Pod-A"}, .num_pumps = 1, .num_valves = 0});
+        pod->update_state(cm::PodState::ConnectionState::connected);
+        return pod;
+    };
+
+    SECTION("A pod that goes away leaves one problem until it connects again")
+    {
+        auto pod = connect_pod_a();
+        flush_slint_events();
+        CHECK(problems().empty());
+
+        pod.reset();
+        flush_slint_events();
+        auto rows = problems();
+        REQUIRE(rows.size() == 1);
+        CHECK(std::string{rows.front().pod_id.data()} == "Pod-A");
+        CHECK_THAT(std::string{rows.front().text.data()}, Catch::Matchers::StartsWith("Pod-A getrennt um "));
+
+        auto again = connect_pod_a();
+        flush_slint_events();
+        CHECK(problems().empty());
+        REQUIRE(bridge->pod_model()->row_count() == 1);
+    }
+
+    SECTION("A pod on another protocol release is a problem")
+    {
+        auto pod = bridge->create_pod_state();
+        pod->update_info({.id = cm::PodId{"Pod-A"}, .num_pumps = 1, .num_valves = 0});
+        pod->update_state(cm::PodState::ConnectionState::incompatible);
+        flush_slint_events();
+        const auto rows = problems();
+        REQUIRE(rows.size() == 1);
+        CHECK_THAT(std::string{rows.front().text.data()}, Catch::Matchers::StartsWith("Pod-A hat eine inkompatible Firmware"));
+    }
+
+    SECTION("A pod without an id is no problem")
+    {
+        auto pod = bridge->create_pod_state();
+        pod->update_state(cm::PodState::ConnectionState::incompatible);
+        pod.reset();
+        flush_slint_events();
+        CHECK(problems().empty());
+    }
+
+    SECTION("Foreseen actions start disabled")
+    {
+        CHECK_FALSE(context.get_clean_available());
+        CHECK_FALSE(context.get_reverse_available());
+        CHECK_FALSE(context.get_restart_available());
+        CHECK_FALSE(context.get_reconnect_available());
+    }
+}
+
+TEST_CASE("StationStateBridge - Emergency stop reaches every pod", "[gui][StationStateBridge]")
+{
+    boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
+    auto ui = cm::gui::AppWindow::create();
+    cm::PodRegistry pod_registry;
+    cm::testing::TempDir dir;
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), dir.file("fill_levels.json")};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
+    auto pod = std::make_shared<RefusingPod>();
+    pod_registry.register_pod(pod);
+    SlintFlusher flusher;
+
+    ui->global<cm::gui::StationStateContext>().invoke_emergency_stop_all();
+    REQUIRE(cm::run_until_complete(ctx, scope.join()));
+
+    CHECK(pod->stops == 1);
 }

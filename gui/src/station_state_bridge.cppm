@@ -49,6 +49,8 @@ export class StationStateBridge : public StationState, public std::enable_shared
     std::optional<PodStateImpl*> find_pod(const PodStateImpl* pod);
 
     void update_pod_model(const PodStateImpl& pod);
+    void track_problem(const PodStateImpl& pod, bool removed);
+    void publish_problems();
     void on_navigate_to(Page target);
     void on_submit_operator_pin(const slint::SharedString& pin);
     void publish_operator_state(std::chrono::steady_clock::time_point now);
@@ -58,6 +60,8 @@ export class StationStateBridge : public StationState, public std::enable_shared
     slint::ComponentHandle<AppWindow> ui_;
     std::vector<PodStateImpl*> pods_;
     std::shared_ptr<PodUiModel> pod_model_;
+    // Keyed by Pod id. Only the execution context touches it, like the Pod states that report into it.
+    std::map<std::string, std::string> problems_;
     OperatorAuth operator_auth_;
     bool operator_authenticated_{false};
     // The countdown runs on the UI thread, which is the only one that touches operator_auth_.

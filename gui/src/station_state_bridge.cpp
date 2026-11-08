@@ -1,6 +1,7 @@
 module;
 #include <slint.h>
 #include <spdlog/spdlog.h>
+#include <time.h>
 #include "app-window.h"
 
 module cm.gui;
@@ -17,6 +18,7 @@ Task<void> async_mark_dispenser_refilled(const PodRegistry& pod_registry,
                                          FillLevelTracker& fill_levels,
                                          const PodId pod_id,
                                          const DispenserId dispenser_id);
+Task<void> async_emergency_stop_all(const PodRegistry& pod_registry);
 
 namespace {
 constexpr std::string_view kUnknownFillText{"Füllstand unbekannt"};
@@ -299,6 +301,18 @@ StationStateBridge::StationStateBridge(slint::ComponentHandle<AppWindow> ui,
         slint::invoke_from_event_loop(
             [model, address, fill = present_fill_level(view)]() { model->update_dispenser_fill(address, fill); });
     });
+    ui_->global<StationStateContext>().on_emergency_stop_all(
+        [&pod_registry, &async_scope]() { async_scope.spawn(async_emergency_stop_all(pod_registry)); });
+    ui_->global<StationStateContext>().on_clean_dispenser([this](const gui::Pod&, const gui::Dispenser&) {
+        SPDLOG_LOGGER_WARN(logger_, "Cleaning a dispenser is not supported yet.");
+    });
+    ui_->global<StationStateContext>().on_reverse_dispenser([this](const gui::Pod&, const gui::Dispenser&) {
+        SPDLOG_LOGGER_WARN(logger_, "Running a dispenser backwards is not supported yet.");
+    });
+    ui_->global<StationStateContext>().on_restart_pod(
+        [this](const gui::Pod&) { SPDLOG_LOGGER_WARN(logger_, "Restarting a pod is not supported yet."); });
+    ui_->global<StationStateContext>().on_reconnect_pod(
+        [this](const gui::Pod&) { SPDLOG_LOGGER_WARN(logger_, "Reconnecting a pod is not supported yet."); });
     ui_->global<StationStateContext>().on_navigate_to([this](Page target) { on_navigate_to(target); });
     ui_->global<StationStateContext>().on_submit_operator_pin([this](slint::SharedString pin) { on_submit_operator_pin(pin); });
 }
@@ -329,6 +343,7 @@ void StationStateBridge::watch_assignments(StationConfig& station_config, const 
 void StationStateBridge::pod_connection_state_changed(const PodStateImpl& pod)
 {
     update_pod_model(pod);
+    track_problem(pod, false);
     const auto is_connected = [](const auto* p) { return p->data().connection_state == gui::ConnectionState::Connected; };
     // An incompatible Pod stays unused like an unplugged one, so it doesn't hold back the others.
     const auto is_settled = [&is_connected](const auto* p) {
@@ -343,6 +358,7 @@ void StationStateBridge::pod_about_to_removed(const PodStateImpl& pod)
 {
     std::erase(pods_, &pod);
     pod_connection_state_changed(pod);
+    track_problem(pod, true);
     // ^^ always remove pod after connection state re-eval, since otherwise it will be added to the model again.
     slint::invoke_from_event_loop([model = pod_model_, pod = pod.data()]() { model->remove_pod(pod); });
 }
@@ -352,6 +368,54 @@ void StationStateBridge::pod_info_changed(const PodStateImpl& pod)
     if (auto p = find_pod(&pod); p.has_value()) {
         update_pod_model(*p.value());
     }
+}
+
+namespace {
+std::string local_clock_time(const std::chrono::system_clock::time_point now)
+{
+    const std::time_t seconds = std::chrono::system_clock::to_time_t(now);
+    std::tm local{};
+    // libc++ ships no time zone database here, so the C library converts to local time.
+    if (::localtime_r(&seconds, &local) == nullptr) {
+        return std::format("{:%H:%M}", std::chrono::floor<std::chrono::minutes>(now));
+    }
+    return std::format("{:02}:{:02}", local.tm_hour, local.tm_min);
+}
+} // namespace
+
+void StationStateBridge::track_problem(const PodStateImpl& pod, const bool removed)
+{
+    const auto& data = pod.data();
+    const auto& id = data.info.id.raw();
+    if (id.empty()) {
+        return;
+    }
+    if (removed) {
+        problems_.insert_or_assign(id, std::format("{} getrennt um {}", id, local_clock_time(std::chrono::system_clock::now())));
+    }
+    else if (data.connection_state == gui::ConnectionState::Connected) {
+        if (problems_.erase(id) == 0) {
+            return;
+        }
+    }
+    else if (data.connection_state == gui::ConnectionState::Incompatible) {
+        problems_.insert_or_assign(id, std::format("{} hat eine inkompatible Firmware ({})", id, pod_status_text(data)));
+    }
+    else {
+        return;
+    }
+    publish_problems();
+}
+
+void StationStateBridge::publish_problems()
+{
+    std::vector<gui::PodProblem> rows;
+    for (const auto& [id, text] : problems_) {
+        rows.push_back(gui::PodProblem{.pod_id = slint::SharedString{id}, .text = slint::SharedString{text}});
+    }
+    slint::invoke_from_event_loop([ui = ui_, rows = std::move(rows)]() {
+        ui->global<StationStateContext>().set_pod_problems(std::make_shared<slint::VectorModel<gui::PodProblem>>(rows));
+    });
 }
 
 std::shared_ptr<slint::Model<gui::Pod>> StationStateBridge::pod_model() const
@@ -404,6 +468,16 @@ Task<void> async_mark_dispenser_refilled(const PodRegistry& pod_registry,
         co_return;
     }
     co_await fill_levels.refilled(PodDispenser{pod_id, dispenser_id}, **dispenser, RefillSource::admin_area);
+}
+
+Task<void> async_emergency_stop_all(const PodRegistry& pod_registry)
+{
+    try {
+        co_await pod_registry.force_safe_state_all_pods();
+    }
+    catch (const std::exception& err) {
+        SPDLOG_LOGGER_ERROR(log::create_or_get("station_state_bridge"), "Emergency stop failed: {}", err.what());
+    }
 }
 
 void StationStateBridge::on_navigate_to(const Page target)

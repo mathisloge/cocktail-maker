@@ -178,6 +178,11 @@ TEST_CASE("StationStateBridge - Dispensers show the drink assigned to them", "[g
     flush_slint_events();
     CHECK(name_of(0) == "");
     CHECK(name_of(1) == "Weißer Rum");
+
+    station_config.update_dispenser_ingredient_mapping(cm::IngredientId{"lime"},
+                                                       cm::PodDispenser{cm::PodId{"Pod-A"}, cm::DispenserId{1}});
+    flush_slint_events();
+    CHECK(name_of(1) == "Limettensaft");
     station_config.flush();
 }
 

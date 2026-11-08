@@ -35,6 +35,8 @@ void StationConfig::update_dispenser_ingredient_mapping(IngredientId ingredient_
     }
     // allow unknown pod->dispenser pair for now, as the config file will be loaded later on before anything is
     // discovered/connected.
+    // A dispenser pours one ingredient, so a new one replaces whatever it was assigned before.
+    std::erase_if(ingredient_dispenser_mapping_, [&](const auto& entry) { return entry.second == pod_dispenser_pair; });
     ingredient_dispenser_mapping_.insert_or_assign(std::move(ingredient_id), std::move(pod_dispenser_pair));
     save_config_to_file();
     notify_changed();

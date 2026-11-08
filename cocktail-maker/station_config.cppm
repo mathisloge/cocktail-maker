@@ -86,8 +86,9 @@ export class StationConfig final
      *
      * The file is written atomically on a thread of its own, so the call doesn't block.
      *
-     * An existing assignment for the same ingredient is replaced. The pod and dispenser are deliberately not validated
-     * against discovered hardware, because the configuration is loaded before any pod is connected.
+     * An existing assignment for the same ingredient is replaced, and so is the ingredient the dispenser held before. The pod and
+     * dispenser are deliberately not validated against discovered hardware, because the configuration is loaded before any pod is
+     * connected.
      *
      * @param ingredient_id Must be known to the ingredient store, otherwise the call is logged and ignored.
      */

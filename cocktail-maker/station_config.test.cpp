@@ -15,7 +15,10 @@ struct StationConfigFixture
 
     StationConfigFixture()
     {
-        ingredients.init_ingredients({Ingredient{.id = IngredientId{"rum"}, .display_name = "Rum", .type = {}}});
+        ingredients.init_ingredients({
+            Ingredient{.id = IngredientId{"rum"}, .display_name = "Rum", .type = {}},
+            Ingredient{.id = IngredientId{"gin"}, .display_name = "Gin", .type = {}},
+        });
     }
 };
 } // namespace
@@ -83,4 +86,16 @@ TEST_CASE_METHOD(StationConfigFixture, "StationConfig reports a loaded assignmen
     config.init();
 
     CHECK(changes == 1);
+}
+
+TEST_CASE_METHOD(StationConfigFixture, "StationConfig gives a dispenser one ingredient at a time", "[station_config]")
+{
+    StationConfig config{ingredients, dir.file("mapping.json")};
+
+    config.update_dispenser_ingredient_mapping(IngredientId{"rum"}, address);
+    config.update_dispenser_ingredient_mapping(IngredientId{"gin"}, address);
+
+    CHECK_FALSE(config.find_dispenser_for_ingredient(IngredientId{"rum"}).has_value());
+    CHECK(config.find_dispenser_for_ingredient(IngredientId{"gin"}) == address);
+    CHECK(config.assignments().size() == 1);
 }

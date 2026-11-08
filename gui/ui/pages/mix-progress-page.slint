@@ -74,7 +74,6 @@ export component MixProgressPage inherits PageBase {
         VerticalLayout {
             padding: Layout.spacing-xl;
             spacing: Layout.spacing-md;
-            alignment: LayoutAlignment.start;
             rowspan: 2;
 
             SeparatorText {
@@ -83,10 +82,16 @@ export component MixProgressPage inherits PageBase {
 
             VerticalLayout {
                 spacing: Layout.spacing-sm;
+                vertical-stretch: 0;
 
                 for command in recipe.commands: CommandItem {
                     command: command;
                 }
+            }
+
+            // Keeps the cancel button at the bottom, away from the steps.
+            Rectangle {
+                vertical-stretch: 1;
             }
 
             Button {

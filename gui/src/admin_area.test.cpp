@@ -39,6 +39,7 @@ struct AdminAreaPage
 {
     slint::ComponentHandle<cm::gui::AppWindow> ui = cm::gui::AppWindow::create();
     std::vector<int> refilled;
+    std::vector<int> highlighted;
 
     AdminAreaPage()
     {
@@ -47,6 +48,8 @@ struct AdminAreaPage
         auto& station = ui->global<cm::gui::StationStateContext>();
         station.on_mark_dispenser_refilled(
             [this](const cm::gui::Pod&, const cm::gui::Dispenser& dispenser) { refilled.push_back(dispenser.id); });
+        station.on_highlight_dispenser(
+            [this](const cm::gui::Pod&, const cm::gui::Dispenser& dispenser) { highlighted.push_back(dispenser.id); });
         set_pods({pod_with({
             pump(0, "Weißer Rum", 0.64F),
             pump(1, "Limettensaft", 0.12F, true),
@@ -183,4 +186,95 @@ TEST_CASE_METHOD(AdminAreaPage, "The admin area shows a pod problem", "[admin_ar
 
     CHECK(wait_for("Pod-B getrennt um 21:12"));
     CHECK_FALSE(find("Details →").empty());
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The pump page shows foreseen actions as not available yet", "[admin_area]")
+{
+    activate("Pod-A Pumpe 1");
+    REQUIRE(wait_for("Reinigen"));
+
+    CHECK(only("Reinigen").accessible_enabled() == false);
+    CHECK(only("Rückwärts leeren").accessible_enabled() == false);
+    CHECK_FALSE(find("noch nicht verfügbar").empty());
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The pump page of a valve has no backwards run", "[admin_area]")
+{
+    auto valve = pump(3, "Soda", 0.5F);
+    valve.type = cm::gui::DispenserType::Valve;
+    valve.label = "Ventil 1";
+    set_pods({pod_with({pump(0, "Weißer Rum", 0.64F), valve})});
+    REQUIRE(wait_for("Pod-A Ventil 1"));
+
+    activate("Pod-A Ventil 1");
+    REQUIRE(wait_for("Reinigen"));
+
+    CHECK(find("Rückwärts leeren").empty());
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The pump page identifies its dispenser", "[admin_area]")
+{
+    activate("Pod-A Pumpe 2");
+    REQUIRE(wait_for("Identify"));
+
+    activate("Identify");
+
+    CHECK(highlighted == std::vector<int>{1});
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The pump page refills its dispenser", "[admin_area]")
+{
+    activate("Pod-A Pumpe 2");
+    REQUIRE(wait_for("Identify"));
+
+    activate("Nachgefüllt");
+
+    CHECK(refilled == std::vector<int>{1});
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The pump page shows changes of its dispenser while open", "[admin_area]")
+{
+    activate("Pod-A Pumpe 1");
+    REQUIRE(wait_for("Weißer Rum"));
+
+    set_pods({pod_with({pump(0, "Dunkler Rum", 0.5F), pump(1, "Limettensaft", 0.12F, true)})});
+
+    CHECK(wait_for("Dunkler Rum"));
+    CHECK_FALSE(find("← Pumpen").empty());
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The pump page cannot be left while a calibration runs", "[admin_area]")
+{
+    activate("Pod-A Pumpe 1");
+    REQUIRE(wait_for("Kalibrieren"));
+    activate("Kalibrieren");
+    REQUIRE(wait_for("Fertig"));
+
+    auto& calibration = ui->global<cm::gui::DispenserCalibrationContext>();
+    auto state = calibration.get_state();
+    state.dispenser_status = cm::gui::CalibrationStepStatus::Running;
+    calibration.set_state(state);
+    render();
+
+    CHECK(only("← Pumpen").accessible_enabled() == false);
+    CHECK(only("← Zurück").accessible_enabled() == false);
+    CHECK(only("Pumpen").accessible_enabled() == false);
+    CHECK(only("Fertig").accessible_enabled() == false);
+
+    state.dispenser_status = cm::gui::CalibrationStepStatus::Success;
+    calibration.set_state(state);
+    render();
+    activate("Fertig");
+    CHECK(wait_for("Identify"));
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The pump page goes back to the tiles", "[admin_area]")
+{
+    activate("Pod-A Pumpe 1");
+    REQUIRE(wait_for("← Pumpen"));
+    REQUIRE(find("Pod-A Pumpe 2").empty());
+
+    activate("← Pumpen");
+
+    CHECK(wait_for("Pod-A Pumpe 2"));
 }

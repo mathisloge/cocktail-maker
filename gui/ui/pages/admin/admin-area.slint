@@ -1,11 +1,12 @@
 import { TextTone, Palette } from "../../theme/colors.slint";
 import { Layout } from "../../theme/layout.slint";
-import { Button } from "../../components/button.slint";
-import { BodyText, LabelText } from "../../components/text.slint";
+import { LabelText } from "../../components/text.slint";
+import { DispenserCalibrationContext } from "../../globals/dispenser-calibration-context.slint";
 import { StationStateContext } from "../../globals/station-state-context.slint";
 import { Dispenser, Pod } from "../../types/pod.slint";
 import { SystemLog } from "../../widgets/system-log.slint";
 import { GlassConfigTab } from "./glass-config-tab.slint";
+import { PumpPage } from "./pump-page.slint";
 import { PumpsSection } from "./pumps-section.slint";
 
 enum AdminSection {
@@ -17,6 +18,7 @@ enum AdminSection {
 component SectionTab inherits Rectangle {
     in property <string> title;
     in property <bool> active;
+    in property <bool> enabled <=> touch.enabled;
     callback clicked();
 
     min-width: Layout.back-button-width;
@@ -25,8 +27,11 @@ component SectionTab inherits Rectangle {
     accessible-role: tab;
     accessible-label: root.title;
     accessible-item-selected: root.active;
+    accessible-enabled: root.enabled;
     accessible-action-default => {
-        root.clicked();
+        if root.enabled {
+            root.clicked();
+        }
     }
 
     LabelText {
@@ -35,6 +40,9 @@ component SectionTab inherits Rectangle {
         horizontal-alignment: center;
         vertical-alignment: center;
         tone: root.active ? TextTone.interactive : TextTone.muted;
+        // The tab itself carries the label.
+        accessible-role: none;
+        accessible-label: "";
     }
 
     Rectangle {
@@ -55,7 +63,13 @@ export component AdminArea {
     in-out property <bool> pump-open;
     property <Pod> open-pod;
     property <Dispenser> open-dispenser;
+    private property <int> open-pod-index;
+    private property <int> open-dispenser-index;
     private property <AdminSection> section: AdminSection.pumps;
+    // The pump page follows the model, so that refills and new drinks show while it is open. It keeps the last state
+    // when the rows have moved, because its Pod went away.
+    private property <Pod> live-pod: StationStateContext.pods[root.open-pod-index];
+    private property <bool> live: root.live-pod.id == root.open-pod.id && root.open-dispenser-index < root.live-pod.dispensers.length;
 
     VerticalLayout {
         Rectangle {
@@ -80,6 +94,7 @@ export component AdminArea {
                 ]: SectionTab {
                     title: item.title;
                     active: root.section == item.section;
+                    enabled: !DispenserCalibrationContext.is-busy();
                     clicked => {
                         root.section = item.section;
                         root.pump-open = false;
@@ -100,9 +115,11 @@ export component AdminArea {
             if root.section == AdminSection.pumps && !root.pump-open: PumpsSection {
                 width: 100%;
                 height: 100%;
-                open(pod, dispenser) => {
-                    root.open-pod = pod;
-                    root.open-dispenser = dispenser;
+                open(pod-index, dispenser-index) => {
+                    root.open-pod-index = pod-index;
+                    root.open-dispenser-index = dispenser-index;
+                    root.open-pod = StationStateContext.pods[pod-index];
+                    root.open-dispenser = root.open-pod.dispensers[dispenser-index];
                     root.pump-open = true;
                 }
                 details => {
@@ -110,26 +127,13 @@ export component AdminArea {
                 }
             }
 
-            if root.section == AdminSection.pumps && root.pump-open: VerticalLayout {
-                padding: Layout.spacing-lg;
-                spacing: Layout.spacing-md;
-                alignment: start;
-
-                HorizontalLayout {
-                    alignment: start;
-
-                    Button {
-                        compact: true;
-                        secondary: true;
-                        text: "← Pumpen";
-                        clicked => {
-                            root.pump-open = false;
-                        }
-                    }
-                }
-
-                BodyText {
-                    text: "Pumpe";
+            if root.section == AdminSection.pumps && root.pump-open: PumpPage {
+                width: 100%;
+                height: 100%;
+                pod: root.live ? root.live-pod : root.open-pod;
+                dispenser: root.live ? root.live-pod.dispensers[root.open-dispenser-index] : root.open-dispenser;
+                back => {
+                    root.pump-open = false;
                 }
             }
 

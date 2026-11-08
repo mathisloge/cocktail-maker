@@ -1,0 +1,197 @@
+import { TextTone, Palette } from "../../theme/colors.slint";
+import { Layout } from "../../theme/layout.slint";
+import { Button } from "../../components/button.slint";
+import { FillBar } from "../../components/fill-bar.slint";
+import { SelectBox } from "../../components/select-box.slint";
+import { BodyText, CaptionText, HeadlineText, LabelText } from "../../components/text.slint";
+import { DispenserCalibrationContext } from "../../globals/dispenser-calibration-context.slint";
+import { RecipeContext } from "../../globals/recipe-context.slint";
+import { StationStateContext } from "../../globals/station-state-context.slint";
+import { Dispenser, DispenserType, Pod } from "../../types/pod.slint";
+import { DispenserCalibrationPanel } from "./dispenser-calibration.slint";
+
+// An action of the pump page. One whose backend is still missing says so next to its button.
+component PumpAction inherits HorizontalLayout {
+    in property <string> text;
+    in property <bool> available: true;
+    callback clicked();
+
+    spacing: Layout.spacing-md;
+    alignment: start;
+
+    Button {
+        text: root.text;
+        compact: true;
+        secondary: true;
+        enabled: root.available;
+        clicked => {
+            root.clicked();
+        }
+    }
+
+    if !root.available: CaptionText {
+        text: "noch nicht verfügbar";
+        vertical-alignment: center;
+    }
+}
+
+component SectionTitle inherits LabelText {
+    tone: TextTone.label;
+    emphasized: true;
+}
+
+// Everything about one dispenser: its level and refill on the left, care and setup on the right.
+export component PumpPage {
+    in property <Pod> pod;
+    in property <Dispenser> dispenser;
+    callback back();
+
+    private property <bool> assigned: root.dispenser.ingredient-name != "";
+    private property <bool> calibrating;
+    private property <bool> choosing-drink;
+
+    VerticalLayout {
+        padding: Layout.spacing-md;
+        spacing: Layout.spacing-md;
+
+        HorizontalLayout {
+            spacing: Layout.spacing-md;
+            alignment: start;
+
+            Button {
+                text: "← Pumpen";
+                compact: true;
+                secondary: true;
+                enabled: !DispenserCalibrationContext.is-busy();
+                clicked => {
+                    root.back();
+                }
+            }
+
+            LabelText {
+                text: root.pod.id + " · " + root.dispenser.label;
+                vertical-alignment: center;
+            }
+        }
+
+        HorizontalLayout {
+            vertical-stretch: 1;
+            spacing: Layout.spacing-md;
+
+            Rectangle {
+                horizontal-stretch: 1;
+                border-radius: Layout.tile-radius;
+                background: Palette.surface-card;
+
+                VerticalLayout {
+                    padding: Layout.tile-padding;
+                    spacing: Layout.spacing-sm;
+                    alignment: start;
+
+                    HeadlineText {
+                        text: root.assigned ? root.dispenser.ingredient-name : "nicht belegt";
+                        tone: root.assigned ? TextTone.primary : TextTone.muted;
+                        wrap: word-wrap;
+                    }
+
+                    if root.assigned: BodyText {
+                        text: root.dispenser.fill-text;
+                        tone: root.dispenser.almost-empty ? TextTone.error : TextTone.muted;
+                    }
+
+                    if root.assigned && root.dispenser.fill-known: FillBar {
+                        ratio: root.dispenser.fill-ratio;
+                        low: root.dispenser.almost-empty;
+                    }
+
+                    if root.assigned: HorizontalLayout {
+                        padding-top: Layout.spacing-sm;
+                        alignment: start;
+
+                        Button {
+                            text: "Nachgefüllt";
+                            compact: true;
+                            secondary: !root.dispenser.almost-empty;
+                            clicked => {
+                                StationStateContext.mark-dispenser-refilled(root.pod, root.dispenser);
+                            }
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                horizontal-stretch: 1;
+
+                if root.calibrating: DispenserCalibrationPanel {
+                    active-pod: root.pod;
+                    active-dispenser: root.dispenser;
+                    done => {
+                        root.calibrating = false;
+                    }
+                }
+
+                if !root.calibrating: VerticalLayout {
+                    spacing: Layout.spacing-sm;
+                    alignment: start;
+
+                    SectionTitle {
+                        text: "Pflege";
+                    }
+
+                    PumpAction {
+                        text: "Reinigen";
+                        available: StationStateContext.clean-available;
+                        clicked => {
+                            StationStateContext.clean-dispenser(root.pod, root.dispenser);
+                        }
+                    }
+
+                    if root.dispenser.type == DispenserType.pump: PumpAction {
+                        text: "Rückwärts leeren";
+                        available: StationStateContext.reverse-available;
+                        clicked => {
+                            StationStateContext.reverse-dispenser(root.pod, root.dispenser);
+                        }
+                    }
+
+                    PumpAction {
+                        text: "Identify";
+                        clicked => {
+                            StationStateContext.highlight-dispenser(root.pod, root.dispenser);
+                        }
+                    }
+
+                    SectionTitle {
+                        text: "Einrichten";
+                    }
+
+                    PumpAction {
+                        text: "Getränk ändern";
+                        clicked => {
+                            root.choosing-drink = !root.choosing-drink;
+                        }
+                    }
+
+                    if root.choosing-drink: SelectBox {
+                        height: Layout.touch-height-sm;
+                        model: RecipeContext.ingredient-ids;
+                        selected(ingredient-id) => {
+                            RecipeContext.assign-ingredient-to-dispenser(root.pod, root.dispenser, ingredient-id);
+                            root.choosing-drink = false;
+                        }
+                    }
+
+                    PumpAction {
+                        text: "Kalibrieren";
+                        clicked => {
+                            DispenserCalibrationContext.reset-state();
+                            root.choosing-drink = false;
+                            root.calibrating = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

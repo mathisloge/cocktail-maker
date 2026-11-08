@@ -6,7 +6,7 @@ import { NumberBox } from "../../components/number-box.slint";
 import { PulseDot } from "../../components/pulse-dot.slint";
 import { ScrollArea } from "../../components/scroll-area.slint";
 import { CaptionText, BodyText } from "../../components/text.slint";
-import { Pod, Dispenser, DispenserType } from "../../types/pod.slint";
+import { Pod, Dispenser } from "../../types/pod.slint";
 import { DispenserCalibrationContext, CalibrationStepStatus } from "../../globals/dispenser-calibration-context.slint";
 
 component StatusDot inherits PulseDot {
@@ -103,238 +103,191 @@ component StepCard inherits Rectangle {
     }
 }
 
-component DispenserCalibrationContent inherits Rectangle {
+// The calibration steps of one dispenser, shown on its pump page.
+export component DispenserCalibrationPanel {
     in property <Pod> active-pod;
     in property <Dispenser> active-dispenser;
+    callback done();
     private property <int> reference-weight-g: 100;
-    callback close-requested();
     private property <int> run-time-s: DispenserCalibrationContext.default-run-time-s;
 
-    background: Palette.surface;
+    VerticalLayout {
+        spacing: Layout.spacing-md;
 
-    card := Rectangle {
-        x: (parent.width - self.width) / 2;
-        y: (parent.height - self.height) / 2;
-        background: Palette.surface-card;
-        border-width: 1px;
-        border-color: Palette.border-strong;
+        HorizontalLayout {
+            spacing: Layout.spacing-sm;
 
-        drop-shadow-color: Palette.shadow;
-        drop-shadow-blur: Layout.shadow-popup-blur;
-
-        VerticalLayout {
-            padding: Layout.spacing-lg;
-            spacing: Layout.spacing-md;
-
-            HorizontalLayout {
-                padding: Layout.spacing-sm;
-                spacing: Layout.spacing-sm;
-                cross-axis-alignment: center;
-                BodyText {
-                    tone: TextTone.interactive;
-                    text: root.active-dispenser.type == DispenserType.pump
-                        ? "Pumpe " + root.active-dispenser.id + " kalibrieren"
-                        : "Ventil " + root.active-dispenser.id + " kalibrieren";
-                }
-
-                Rectangle {
-                    horizontal-stretch: 1;
-                }
-
-                Button {
-                    text: "Schließen";
-                    compact: true;
-                    enabled: !DispenserCalibrationContext.is-busy();
-                    clicked => {
-                        root.close-requested();
-                    }
-                }
-            }
-
-            CaptionText {
+            BodyText {
                 tone: TextTone.interactive;
-                horizontal-alignment: center;
-                text: "Pod " + root.active-pod.id;
+                text: root.active-dispenser.label + " kalibrieren";
+                vertical-alignment: center;
+                horizontal-stretch: 1;
             }
 
-            if DispenserCalibrationContext.state.error-message != "": CaptionText {
-                tone: TextTone.log-error;
-                horizontal-alignment: center;
-                text: DispenserCalibrationContext.state.error-message;
-                wrap: word-wrap;
-            }
-
-            ScrollArea {
-                vertical-stretch: 1;
-
-                VerticalLayout {
-                    spacing: Layout.spacing-md;
-
-                    StepCard {
-                        step-number: "1";
-                        title: "Wägezelle";
-                        description: "Nur beim Einbau der Wägezelle nötig. Waage leeren und tarieren, danach das Referenzgewicht auflegen und kalibrieren.";
-                        status: DispenserCalibrationContext.load-cell-card-status();
-
-                        Button {
-                            text: DispenserCalibrationContext.state.load-cell-tare-status == CalibrationStepStatus.running
-                                ? "läuft..." : "Tara (leere Waage)";
-                            height: Layout.touch-height;
-                            enabled: DispenserCalibrationContext.state.load-cell-tare-status != CalibrationStepStatus.running;
-                            clicked => {
-                                DispenserCalibrationContext.load-cell-tare(
-                                    root.active-pod,
-                                    root.active-dispenser);
-                            }
-                        }
-
-                        HorizontalLayout {
-                            padding: Layout.spacing-sm;
-                            cross-axis-alignment: center;
-                            spacing: Layout.spacing-md;
-                            CaptionText {
-                                horizontal-alignment: center;
-                                text: "Gewicht (g):";
-                            }
-
-                            NumberBox {
-                                height: Layout.touch-height-sm;
-                                minimum: 1;
-                                maximum: 20000;
-                                value <=> root.reference-weight-g;
-                                enabled: DispenserCalibrationContext.state.load-cell-status != CalibrationStepStatus.running;
-                            }
-                        }
-
-                        Button {
-                            text: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.running
-                                ? "läuft..." : "Mit Referenzgewicht kalibrieren";
-                            height: Layout.touch-height;
-                            enabled: DispenserCalibrationContext.state.load-cell-tare-status == CalibrationStepStatus.success
-                                && DispenserCalibrationContext.state.load-cell-status != CalibrationStepStatus.running;
-                            clicked => {
-                                DispenserCalibrationContext.calibrate-load-cell-ref-weight(
-                                    root.active-pod,
-                                    root.active-dispenser,
-                                    root.reference-weight-g);
-                            }
-                        }
-
-                        if DispenserCalibrationContext.state.reference-reading != "": CaptionText {
-                            tone: TextTone.log-info;
-                            horizontal-alignment: center;
-                            text: "Waage zeigt: " + DispenserCalibrationContext.state.reference-reading;
-                        }
-                    }
-
-                    StepCard {
-                        step-number: "2";
-                        title: "Leere Flasche";
-                        description: "Leere Flasche aufsetzen und tarieren. Der Füllstand steht danach auf 0.";
-                        status: DispenserCalibrationContext.state.empty-bottle-tare-status;
-
-                        Button {
-                            text: DispenserCalibrationContext.state.empty-bottle-tare-status == CalibrationStepStatus.running
-                                ? "läuft..." : "Tara (leere Flasche)";
-                            height: Layout.touch-height;
-                            enabled: DispenserCalibrationContext.state.empty-bottle-tare-status != CalibrationStepStatus.running;
-                            clicked => {
-                                DispenserCalibrationContext.empty-bottle-tare(
-                                    root.active-pod,
-                                    root.active-dispenser);
-                            }
-                        }
-                    }
-
-                    StepCard {
-                        step-number: "3";
-                        title: "Dispenser";
-                        // codespell:ignore-next-line
-                        description: "Gefüllte Flasche auf der Waage und ein Glas unter den Auslauf stellen. Es fließt echte Flüssigkeit.";
-                        status: DispenserCalibrationContext.state.dispenser-status;
-
-                        HorizontalLayout {
-                            padding: Layout.spacing-sm;
-                            cross-axis-alignment: center;
-                            spacing: Layout.spacing-md;
-                            CaptionText {
-                                horizontal-alignment: center;
-                                text: "Laufzeit (s):";
-                            }
-
-                            NumberBox {
-                                height: Layout.touch-height-sm;
-                                minimum: DispenserCalibrationContext.min-run-time-s;
-                                maximum: DispenserCalibrationContext.max-run-time-s;
-                                value <=> root.run-time-s;
-                                enabled: DispenserCalibrationContext.state.dispenser-status != CalibrationStepStatus.running;
-                            }
-                        }
-
-                        Button {
-                            text: DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.running
-                                ? "läuft..." : "Lauf starten";
-                            height: Layout.touch-height;
-                            enabled: DispenserCalibrationContext.state.dispenser-status != CalibrationStepStatus.running;
-                            clicked => {
-                                DispenserCalibrationContext.calibrate-dispenser(
-                                    root.active-pod,
-                                    root.active-dispenser,
-                                    root.run-time-s);
-                            }
-                        }
-
-                        if DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.running: Button {
-                            // codespell:ignore-next-line
-                            text: "Stopp";
-                            height: Layout.touch-height;
-                            clicked => {
-                                DispenserCalibrationContext.stop-calibration();
-                            }
-                        }
-
-                        if DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.success: CaptionText {
-                            tone: TextTone.log-info;
-                            horizontal-alignment: center;
-                            text: "Gemessen: " + DispenserCalibrationContext.state.measured-amount;
-                        }
-
-                        if DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.success
-                            && DispenserCalibrationContext.state.below-recommended-amount: CaptionText {
-                            tone: TextTone.interactive;
-                            horizontal-alignment: center;
-                            text: "Für eine genauere Kalibrierung eine längere Laufzeit wählen.";
-                            wrap: word-wrap;
-                        }
-                    }
-
+            // It stays disabled while something runs, as the way to stop a run is in here.
+            Button {
+                text: "Fertig";
+                compact: true;
+                secondary: true;
+                enabled: !DispenserCalibrationContext.is-busy();
+                clicked => {
+                    root.done();
                 }
             }
         }
-    }
-}
 
-export component DispenserCalibrationPopup inherits PopupWindow {
-    in property <Pod> active-pod;
-    in property <Dispenser> active-dispenser;
+        if DispenserCalibrationContext.state.error-message != "": CaptionText {
+            tone: TextTone.log-error;
+            horizontal-alignment: center;
+            text: DispenserCalibrationContext.state.error-message;
+            wrap: word-wrap;
+        }
 
-    // It must not close while something runs, as the way to stop a run is in here.
-    close-policy: PopupClosePolicy.no-auto-close;
-    Rectangle {
-        width: 100%;
-        height: 100%;
-        background: Palette.overlay-scrim;
-    }
+        ScrollArea {
+            vertical-stretch: 1;
 
-    DispenserCalibrationContent {
-        height: 90%;
-        width: 90%;
-        x: (root.width - self.width) / 2;
-        y: (root.height - self.height) / 2;
-        active-pod: root.active-pod;
-        active-dispenser: root.active-dispenser;
-        close-requested => {
-            root.close();
+            VerticalLayout {
+                spacing: Layout.spacing-md;
+
+                StepCard {
+                    step-number: "1";
+                    title: "Wägezelle";
+                    description: "Nur beim Einbau der Wägezelle nötig. Waage leeren und tarieren, danach das Referenzgewicht auflegen und kalibrieren.";
+                    status: DispenserCalibrationContext.load-cell-card-status();
+
+                    Button {
+                        text: DispenserCalibrationContext.state.load-cell-tare-status == CalibrationStepStatus.running
+                            ? "läuft..." : "Tara (leere Waage)";
+                        compact: true;
+                        enabled: DispenserCalibrationContext.state.load-cell-tare-status != CalibrationStepStatus.running;
+                        clicked => {
+                            DispenserCalibrationContext.load-cell-tare(
+                                root.active-pod,
+                                root.active-dispenser);
+                        }
+                    }
+
+                    HorizontalLayout {
+                        padding: Layout.spacing-sm;
+                        cross-axis-alignment: center;
+                        spacing: Layout.spacing-md;
+                        CaptionText {
+                            horizontal-alignment: center;
+                            text: "Gewicht (g):";
+                        }
+
+                        NumberBox {
+                            height: Layout.touch-height-sm;
+                            minimum: 1;
+                            maximum: 20000;
+                            value <=> root.reference-weight-g;
+                            enabled: DispenserCalibrationContext.state.load-cell-status != CalibrationStepStatus.running;
+                        }
+                    }
+
+                    Button {
+                        text: DispenserCalibrationContext.state.load-cell-status == CalibrationStepStatus.running
+                            ? "läuft..." : "Mit Referenzgewicht kalibrieren";
+                        compact: true;
+                        enabled: DispenserCalibrationContext.state.load-cell-tare-status == CalibrationStepStatus.success
+                            && DispenserCalibrationContext.state.load-cell-status != CalibrationStepStatus.running;
+                        clicked => {
+                            DispenserCalibrationContext.calibrate-load-cell-ref-weight(
+                                root.active-pod,
+                                root.active-dispenser,
+                                root.reference-weight-g);
+                        }
+                    }
+
+                    if DispenserCalibrationContext.state.reference-reading != "": CaptionText {
+                        tone: TextTone.log-info;
+                        horizontal-alignment: center;
+                        text: "Waage zeigt: " + DispenserCalibrationContext.state.reference-reading;
+                    }
+                }
+
+                StepCard {
+                    step-number: "2";
+                    title: "Leere Flasche";
+                    description: "Leere Flasche aufsetzen und tarieren. Der Füllstand steht danach auf 0.";
+                    status: DispenserCalibrationContext.state.empty-bottle-tare-status;
+
+                    Button {
+                        text: DispenserCalibrationContext.state.empty-bottle-tare-status == CalibrationStepStatus.running
+                            ? "läuft..." : "Tara (leere Flasche)";
+                        compact: true;
+                        enabled: DispenserCalibrationContext.state.empty-bottle-tare-status != CalibrationStepStatus.running;
+                        clicked => {
+                            DispenserCalibrationContext.empty-bottle-tare(
+                                root.active-pod,
+                                root.active-dispenser);
+                        }
+                    }
+                }
+
+                StepCard {
+                    step-number: "3";
+                    title: "Dispenser";
+                    // codespell:ignore-next-line
+                    description: "Gefüllte Flasche auf der Waage und ein Glas unter den Auslauf stellen. Es fließt echte Flüssigkeit.";
+                    status: DispenserCalibrationContext.state.dispenser-status;
+
+                    HorizontalLayout {
+                        padding: Layout.spacing-sm;
+                        cross-axis-alignment: center;
+                        spacing: Layout.spacing-md;
+                        CaptionText {
+                            horizontal-alignment: center;
+                            text: "Laufzeit (s):";
+                        }
+
+                        NumberBox {
+                            height: Layout.touch-height-sm;
+                            minimum: DispenserCalibrationContext.min-run-time-s;
+                            maximum: DispenserCalibrationContext.max-run-time-s;
+                            value <=> root.run-time-s;
+                            enabled: DispenserCalibrationContext.state.dispenser-status != CalibrationStepStatus.running;
+                        }
+                    }
+
+                    Button {
+                        text: DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.running
+                            ? "läuft..." : "Lauf starten";
+                        compact: true;
+                        enabled: DispenserCalibrationContext.state.dispenser-status != CalibrationStepStatus.running;
+                        clicked => {
+                            DispenserCalibrationContext.calibrate-dispenser(
+                                root.active-pod,
+                                root.active-dispenser,
+                                root.run-time-s);
+                        }
+                    }
+
+                    if DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.running: Button {
+                        // codespell:ignore-next-line
+                        text: "Stopp";
+                        compact: true;
+                        clicked => {
+                            DispenserCalibrationContext.stop-calibration();
+                        }
+                    }
+
+                    if DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.success: CaptionText {
+                        tone: TextTone.log-info;
+                        horizontal-alignment: center;
+                        text: "Gemessen: " + DispenserCalibrationContext.state.measured-amount;
+                    }
+
+                    if DispenserCalibrationContext.state.dispenser-status == CalibrationStepStatus.success
+                        && DispenserCalibrationContext.state.below-recommended-amount: CaptionText {
+                        tone: TextTone.interactive;
+                        horizontal-alignment: center;
+                        text: "Für eine genauere Kalibrierung eine längere Laufzeit wählen.";
+                        wrap: word-wrap;
+                    }
+                }
+
+            }
         }
     }
 }

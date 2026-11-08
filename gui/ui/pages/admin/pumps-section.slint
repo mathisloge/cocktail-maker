@@ -1,13 +1,12 @@
 import { Layout } from "../../theme/layout.slint";
 import { ScrollArea } from "../../components/scroll-area.slint";
 import { StationStateContext } from "../../globals/station-state-context.slint";
-import { Dispenser, Pod } from "../../types/pod.slint";
 import { ProblemBanner } from "../../widgets/problem-banner.slint";
 import { PumpTile } from "../../widgets/pump-tile.slint";
 
 // The entry of the admin area: every dispenser of every Pod as a tile, four in a row.
 export component PumpsSection {
-    callback open(Pod, Dispenser);
+    callback open(pod-index: int, dispenser-index: int);
     callback details();
 
     private property <int> columns: 4;
@@ -33,7 +32,7 @@ export component PumpsSection {
             content-width: self.visible-width;
             content-height: max(0px, root.rows * (root.tile-height + root.gap) - root.gap);
 
-            for pod in StationStateContext.pods: Rectangle {
+            for pod[pod-index] in StationStateContext.pods: Rectangle {
                 for dispenser[index] in pod.dispensers: PumpTile {
                     private property <int> position: pod.tile-offset + index;
                     x: mod(self.position, root.columns) * (self.width + root.gap);
@@ -46,7 +45,7 @@ export component PumpsSection {
                         StationStateContext.mark-dispenser-refilled(pod, dispenser);
                     }
                     open => {
-                        root.open(pod, dispenser);
+                        root.open(pod-index, index);
                     }
                 }
             }

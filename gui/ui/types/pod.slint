@@ -27,4 +27,6 @@ export struct Pod {
     status-text: string,
     firmware-version: string,
     dispensers: [Dispenser],
+    // How many dispensers the Pods before this one have, so that the admin tiles of all Pods flow in one grid.
+    tile-offset: int,
 }

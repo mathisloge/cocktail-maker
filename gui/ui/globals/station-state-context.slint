@@ -13,12 +13,13 @@ export global StationStateContext {
         {
             id: "Pod-Connected",
             connection_state: ConnectionState.connected,
+            firmware-version: "1.4.0",
             dispensers:[
-                { id: 1, type: DispenserType.pump },
-                { id: 2, type: DispenserType.pump },
-                { id: 3, type: DispenserType.pump },
-                { id: 4, type: DispenserType.pump },
-                { id: 5, type: DispenserType.valve },
+                { id: 0, type: DispenserType.pump, label: "Pumpe 1", ingredient-name: "Weißer Rum", fill-text: "640 mL von 1000 mL", fill-known: true, fill-ratio: 0.64 },
+                { id: 1, type: DispenserType.pump, label: "Pumpe 2", ingredient-name: "Limettensaft", fill-text: "90 mL von 700 mL", fill-known: true, fill-ratio: 0.13, almost-empty: true },
+                { id: 2, type: DispenserType.pump, label: "Pumpe 3", ingredient-name: "Zuckersirup", fill-text: "Füllstand unbekannt" },
+                { id: 3, type: DispenserType.pump, label: "Pumpe 4" },
+                { id: 4, type: DispenserType.valve, label: "Ventil 1", ingredient-name: "Soda", fill-text: "ca. 400 mL" },
             ]
         },
         { id: "Pod-Connecting", connection_state: ConnectionState.connecting },

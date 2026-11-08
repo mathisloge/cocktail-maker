@@ -435,3 +435,38 @@ TEST_CASE("StationStateBridge - Emergency stop reaches every pod", "[gui][Statio
 
     CHECK(pod->stops == 1);
 }
+
+TEST_CASE("StationStateBridge - Pods number their tiles one after the other", "[gui][StationStateBridge]")
+{
+    boost::asio::io_context ctx;
+    cm::AsyncScope scope{ctx};
+    auto ui = cm::gui::AppWindow::create();
+    cm::PodRegistry pod_registry;
+    cm::testing::TempDir dir;
+    cm::FillLevelTracker fill_levels{ctx.get_executor(), dir.file("fill_levels.json")};
+    auto bridge = std::make_shared<cm::gui::StationStateBridge>(ui, pod_registry, scope, fill_levels);
+    auto model = bridge->pod_model();
+    SlintFlusher flusher;
+
+    const auto connect = [&bridge](std::string id, int pumps) {
+        auto pod = bridge->create_pod_state();
+        pod->update_info({.id = cm::PodId{std::move(id)}, .num_pumps = pumps, .num_valves = 1});
+        pod->update_state(cm::PodState::ConnectionState::connected);
+        return pod;
+    };
+    auto first = connect("Pod-A", 3);
+    auto second = connect("Pod-B", 2);
+    auto third = connect("Pod-C", 1);
+    flush_slint_events();
+
+    REQUIRE(model->row_count() == 3);
+    CHECK(model->row_data(0)->tile_offset == 0);
+    CHECK(model->row_data(1)->tile_offset == 4);
+    CHECK(model->row_data(2)->tile_offset == 7);
+
+    first.reset();
+    flush_slint_events();
+    REQUIRE(model->row_count() == 2);
+    CHECK(model->row_data(0)->tile_offset == 0);
+    CHECK(model->row_data(1)->tile_offset == 3);
+}

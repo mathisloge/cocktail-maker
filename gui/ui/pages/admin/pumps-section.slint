@@ -1,0 +1,55 @@
+import { Layout } from "../../theme/layout.slint";
+import { ScrollArea } from "../../components/scroll-area.slint";
+import { StationStateContext } from "../../globals/station-state-context.slint";
+import { Dispenser, Pod } from "../../types/pod.slint";
+import { ProblemBanner } from "../../widgets/problem-banner.slint";
+import { PumpTile } from "../../widgets/pump-tile.slint";
+
+// The entry of the admin area: every dispenser of every Pod as a tile, four in a row.
+export component PumpsSection {
+    callback open(Pod, Dispenser);
+    callback details();
+
+    private property <int> columns: 4;
+    private property <length> gap: Layout.spacing-md;
+    // Three rows fit the window, so up to 12 tiles show without scrolling.
+    private property <length> tile-height: 172px;
+    private property <int> tile-count: StationStateContext.pods.length == 0 ? 0 : StationStateContext.pods[StationStateContext.pods.length - 1].tile-offset + StationStateContext.pods[StationStateContext.pods.length - 1].dispensers.length;
+    private property <int> rows: ceil(root.tile-count / root.columns);
+
+    VerticalLayout {
+        padding: Layout.spacing-md;
+        spacing: Layout.spacing-md;
+
+        if StationStateContext.pod-problems.length > 0: ProblemBanner {
+            problems: StationStateContext.pod-problems;
+            details => {
+                root.details();
+            }
+        }
+
+        scroll := ScrollArea {
+            vertical-stretch: 1;
+            content-width: self.visible-width;
+            content-height: max(0px, root.rows * (root.tile-height + root.gap) - root.gap);
+
+            for pod in StationStateContext.pods: Rectangle {
+                for dispenser[index] in pod.dispensers: PumpTile {
+                    private property <int> position: pod.tile-offset + index;
+                    x: mod(self.position, root.columns) * (self.width + root.gap);
+                    y: floor(self.position / root.columns) * (root.tile-height + root.gap);
+                    width: (scroll.visible-width - (root.columns - 1) * root.gap) / root.columns;
+                    height: root.tile-height;
+                    pod-id: pod.id;
+                    dispenser: dispenser;
+                    refill => {
+                        StationStateContext.mark-dispenser-refilled(pod, dispenser);
+                    }
+                    open => {
+                        root.open(pod, dispenser);
+                    }
+                }
+            }
+        }
+    }
+}

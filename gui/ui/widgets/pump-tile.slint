@@ -1,0 +1,85 @@
+import { TextTone, Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+import { Motion } from "../theme/motion.slint";
+import { Button } from "../components/button.slint";
+import { FillBar } from "../components/fill-bar.slint";
+import { CaptionText, LabelText, TitleText } from "../components/text.slint";
+import { Dispenser } from "../types/pod.slint";
+
+// One dispenser in the admin area: what it pours, how full the bottle is, and the refill right on the tile.
+export component PumpTile inherits Rectangle {
+    in property <string> pod-id;
+    in property <Dispenser> dispenser;
+    callback refill();
+    callback open();
+
+    private property <bool> assigned: root.dispenser.ingredient-name != "";
+
+    border-radius: Layout.tile-radius;
+    background: touch.pressed ? Palette.surface-elevated : Palette.surface-card;
+    border-width: 1px;
+    border-color: Palette.border-subtle;
+    animate background { duration: Motion.quick; }
+
+    accessible-role: button;
+    accessible-label: root.pod-id + " " + root.dispenser.label;
+    accessible-action-default => {
+        root.open();
+    }
+
+    // Lies below the content, so that the button on the tile gets its own taps.
+    touch := TouchArea {
+        clicked => {
+            root.open();
+        }
+    }
+
+    VerticalLayout {
+        padding: Layout.tile-padding;
+        spacing: Layout.spacing-xs;
+
+        LabelText {
+            text: root.pod-id + " · " + root.dispenser.label;
+            tone: TextTone.muted;
+            overflow: elide;
+        }
+
+        TitleText {
+            text: root.assigned ? root.dispenser.ingredient-name : "nicht belegt";
+            tone: root.assigned ? TextTone.primary : TextTone.muted;
+            overflow: elide;
+        }
+
+        if root.assigned && root.dispenser.fill-known: FillBar {
+            ratio: root.dispenser.fill-ratio;
+            low: root.dispenser.almost-empty;
+        }
+
+        if root.assigned: CaptionText {
+            text: root.dispenser.fill-text;
+            tone: root.dispenser.almost-empty ? TextTone.error : TextTone.muted;
+            overflow: elide;
+        }
+
+        Rectangle {
+            vertical-stretch: 1;
+        }
+
+        HorizontalLayout {
+            alignment: start;
+
+            Button {
+                compact: true;
+                secondary: !root.dispenser.almost-empty;
+                text: root.assigned ? "Nachgefüllt" : "Belegen";
+                clicked => {
+                    if root.assigned {
+                        root.refill();
+                    } else {
+                        root.open();
+                    }
+                }
+            }
+        }
+    }
+}

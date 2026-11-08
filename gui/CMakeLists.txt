@@ -86,6 +86,7 @@ if(BUILD_TESTING)
             src/mix_error_page.test.cpp
             src/ui_snapshots.test.cpp
             src/boost_slider.test.cpp
+            src/admin_area.test.cpp
     )
 endif()
 

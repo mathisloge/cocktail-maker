@@ -1,20 +1,33 @@
 import { TextTone, Palette } from "../../theme/colors.slint";
 import { Layout } from "../../theme/layout.slint";
-import { Typography } from "../../theme/typography.slint";
-import { LabelText } from "../../components/text.slint";
+import { Button } from "../../components/button.slint";
+import { BodyText, LabelText } from "../../components/text.slint";
 import { StationStateContext } from "../../globals/station-state-context.slint";
+import { Dispenser, Pod } from "../../types/pod.slint";
 import { SystemLog } from "../../widgets/system-log.slint";
 import { GlassConfigTab } from "./glass-config-tab.slint";
-import { PodConfigTab } from "./pod-config-tab.slint";
+import { PumpsSection } from "./pumps-section.slint";
 
-component AdminTab inherits Rectangle {
+enum AdminSection {
+    pumps,
+    glasses,
+    system,
+}
+
+component SectionTab inherits Rectangle {
     in property <string> title;
     in property <bool> active;
     callback clicked();
 
-    min-height: Layout.touch-height-sm;
-    horizontal-stretch: 1;
+    min-width: Layout.back-button-width;
     background: root.active ? Palette.accent-dim : touch.pressed ? Palette.surface-elevated : transparent;
+
+    accessible-role: tab;
+    accessible-label: root.title;
+    accessible-item-selected: root.active;
+    accessible-action-default => {
+        root.clicked();
+    }
 
     LabelText {
         text: root.title;
@@ -38,18 +51,38 @@ component AdminTab inherits Rectangle {
 }
 
 export component AdminArea {
-    private property <int> current-tab: 0;
+    // The page of a single pump, opened from its tile inside the Pumpen section.
+    in-out property <bool> pump-open;
+    property <Pod> open-pod;
+    property <Dispenser> open-dispenser;
+    private property <AdminSection> section: AdminSection.pumps;
 
     VerticalLayout {
         Rectangle {
             background: Palette.surface-card;
+            height: Layout.touch-height-sm;
 
             HorizontalLayout {
-                for title[index] in ["POD CONFIG", "GLASS CONFIG", "SYSTEM LOGS"]: AdminTab {
-                    title: title;
-                    active: root.current-tab == index;
+                padding-left: Layout.spacing-md;
+
+                LabelText {
+                    text: "WARTUNG";
+                    emphasized: true;
+                    tone: TextTone.label;
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+
+                for item in [
+                    { section: AdminSection.pumps, title: "Pumpen" },
+                    { section: AdminSection.glasses, title: "Gläser" },
+                    { section: AdminSection.system, title: "System" },
+                ]: SectionTab {
+                    title: item.title;
+                    active: root.section == item.section;
                     clicked => {
-                        root.current-tab = index;
+                        root.section = item.section;
+                        root.pump-open = false;
                     }
                 }
             }
@@ -61,26 +94,56 @@ export component AdminArea {
             }
         }
 
-        // All tabs stay instantiated so that switching keeps their state.
         Rectangle {
             vertical-stretch: 1;
 
-            PodConfigTab {
+            if root.section == AdminSection.pumps && !root.pump-open: PumpsSection {
                 width: 100%;
                 height: 100%;
-                visible: root.current-tab == 0;
+                open(pod, dispenser) => {
+                    root.open-pod = pod;
+                    root.open-dispenser = dispenser;
+                    root.pump-open = true;
+                }
+                details => {
+                    root.section = AdminSection.system;
+                }
             }
 
+            if root.section == AdminSection.pumps && root.pump-open: VerticalLayout {
+                padding: Layout.spacing-lg;
+                spacing: Layout.spacing-md;
+                alignment: start;
+
+                HorizontalLayout {
+                    alignment: start;
+
+                    Button {
+                        compact: true;
+                        secondary: true;
+                        text: "← Pumpen";
+                        clicked => {
+                            root.pump-open = false;
+                        }
+                    }
+                }
+
+                BodyText {
+                    text: "Pumpe";
+                }
+            }
+
+            // These sections stay instantiated so that switching keeps their state.
             GlassConfigTab {
                 width: 100%;
                 height: 100%;
-                visible: root.current-tab == 1;
+                visible: root.section == AdminSection.glasses;
             }
 
             SystemLog {
                 width: 100%;
                 height: 100%;
-                visible: root.current-tab == 2;
+                visible: root.section == AdminSection.system;
                 log-entries: StationStateContext.log-entries;
             }
         }

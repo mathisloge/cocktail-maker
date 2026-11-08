@@ -1,0 +1,46 @@
+import { TextTone, Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+import { Button } from "../components/button.slint";
+import { BodyText, CaptionText } from "../components/text.slint";
+import { PodProblem } from "../types/maintenance.slint";
+
+// The first Pod problem, above the pump tiles, with a way to the details.
+export component ProblemBanner inherits Rectangle {
+    in property <[PodProblem]> problems;
+    callback details();
+
+    border-radius: Layout.tile-radius;
+    background: Palette.surface-alert;
+    border-width: 1px;
+    border-color: Palette.border-alert;
+
+    HorizontalLayout {
+        padding-left: Layout.tile-padding;
+        padding-right: Layout.spacing-sm;
+        padding-top: Layout.spacing-sm;
+        padding-bottom: Layout.spacing-sm;
+        spacing: Layout.spacing-md;
+
+        BodyText {
+            text: root.problems.length > 0 ? root.problems[0].text : "";
+            tone: TextTone.error;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            overflow: elide;
+        }
+
+        if root.problems.length > 1: CaptionText {
+            text: "+" + (root.problems.length - 1) + " weitere";
+            vertical-alignment: center;
+        }
+
+        Button {
+            compact: true;
+            secondary: true;
+            text: "Details →";
+            clicked => {
+                root.details();
+            }
+        }
+    }
+}

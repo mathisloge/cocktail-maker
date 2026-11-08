@@ -1,0 +1,21 @@
+import { Palette } from "../theme/colors.slint";
+import { Layout } from "../theme/layout.slint";
+
+// A thin bar that shows how full something is.
+export component FillBar inherits Rectangle {
+    in property <float> ratio;
+    // Draws the filled part in the warning colour, for a level that needs attention.
+    in property <bool> low;
+
+    height: Layout.fill-bar-height;
+    border-radius: self.height / 2;
+    background: Palette.level-track;
+
+    Rectangle {
+        x: 0px;
+        width: parent.width * clamp(root.ratio, 0, 1);
+        height: parent.height;
+        border-radius: parent.border-radius;
+        background: root.low ? Palette.level-low : Palette.level-fill;
+    }
+}

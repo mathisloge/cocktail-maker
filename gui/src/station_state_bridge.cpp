@@ -192,7 +192,6 @@ class PodUiModel : public slint::Model<gui::Pod>
             auto [row, gui_pod] = existing_pod.value();
             if (apply_state_to_ui(*gui_pod, pod)) {
                 this->notify_row_changed(row);
-                renumber_tiles();
             }
         }
         else {
@@ -205,7 +204,6 @@ class PodUiModel : public slint::Model<gui::Pod>
             auto& inserted = pods_.emplace_back(gui::Pod{});
 
             apply_state_to_ui(inserted, pod);
-            inserted.tile_offset = tile_count(row);
             this->notify_row_added(row, 1);
         }
     }
@@ -266,30 +264,9 @@ class PodUiModel : public slint::Model<gui::Pod>
         const auto index = static_cast<size_t>(std::distance(pods_.begin(), first));
         pods_.erase(first, last);
         notify_row_removed(index, removed_cout);
-        renumber_tiles();
     }
 
   private:
-    /// The number of dispensers of the rows before `end`.
-    [[nodiscard]] int tile_count(std::size_t end) const
-    {
-        int count = 0;
-        for (std::size_t row = 0; row < end; ++row) {
-            count += pods_[row].dispensers == nullptr ? 0 : static_cast<int>(pods_[row].dispensers->row_count());
-        }
-        return count;
-    }
-
-    void renumber_tiles()
-    {
-        for (std::size_t row = 0; row < pods_.size(); ++row) {
-            if (const int offset = tile_count(row); pods_[row].tile_offset != offset) {
-                pods_[row].tile_offset = offset;
-                notify_row_changed(row);
-            }
-        }
-    }
-
     [[nodiscard]] std::string name_of(const PodId& pod_id, int dispenser_id) const
     {
         const auto it = names_.find(PodDispenser{pod_id, DispenserId{dispenser_id}});

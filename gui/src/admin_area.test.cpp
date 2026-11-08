@@ -149,8 +149,24 @@ TEST_CASE_METHOD(AdminAreaPage, "The admin area shows a tile per dispenser", "[a
     CHECK_FALSE(find("Pod-A Pumpe 2").empty());
     CHECK_FALSE(find("Pod-A Pumpe 3").empty());
     CHECK_FALSE(find("Weißer Rum").empty());
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The admin area groups the tiles by pod", "[admin_area]")
+{
+    CHECK(find("Pod-A").size() == 1);
+    // The Pod stands above its tiles, so a tile names only its dispenser.
+    CHECK(find("Pod-A · Pumpe 1").empty());
+    CHECK_FALSE(find("Pumpe 1").empty());
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The admin area assigns a drink from an unassigned tile", "[admin_area]")
+{
     CHECK_FALSE(find("nicht belegt").empty());
-    CHECK_FALSE(find("Belegen").empty());
+    CHECK(find("Belegen").empty());
+
+    activate("Pod-A Pumpe 3");
+
+    CHECK(wait_for("Getränk ändern"));
 }
 
 TEST_CASE_METHOD(AdminAreaPage, "The admin area refills from the tile", "[admin_area]")

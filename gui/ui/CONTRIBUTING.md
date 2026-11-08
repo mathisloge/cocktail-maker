@@ -77,10 +77,9 @@ Use plain `VerticalLayout`/`HorizontalLayout` with `Layout` spacing instead of `
 
 `slint-project.json` sets the main file, the experimental features (`interfaces`) and the edition.
 CMake and the Slint editor extension both read it.
-The edition is still 1.18.
-Edition 1.19 adds the size limits of `if` and `for` children to their parent,
-and several pages report a fixed maximum width, so the window would resize with the page.
-Those pages need layout fixes before the edition can go up.
+The edition is 1.19, so `if` and `for` children count toward the size of their parent like any other child.
+`AppWindow` has the fixed size of the kiosk display (1280×720), so a page cannot resize the window.
+Inside a page, give a column an explicit `width` when it should not grow with the preferred size of its content.
 
 ## Naming
 

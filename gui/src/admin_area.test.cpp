@@ -1,3 +1,4 @@
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <slint-testing.h>
 #include <slint.h>
@@ -378,4 +379,27 @@ TEST_CASE_METHOD(AdminAreaPage, "The pump page closes when its pod goes away", "
 
     CHECK(wait_until_gone("Identify"));
     CHECK(find("← Pumpen").empty());
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The window keeps the kiosk size on every admin section", "[admin_area]")
+{
+    activate("System");
+    REQUIRE(wait_for("Not-Stopp alle Pods")); // codespell:ignore
+
+    const auto size = ui->window().size();
+    const float scale = ui->window().scale_factor();
+    CHECK(static_cast<float>(size.width) / scale == Catch::Approx(1280.0F));
+    CHECK(static_cast<float>(size.height) / scale == Catch::Approx(720.0F));
+}
+
+TEST_CASE_METHOD(AdminAreaPage, "The pump page splits its columns evenly", "[admin_area]")
+{
+    activate("Pod-A Pumpe 1");
+    REQUIRE(wait_for("Pflege"));
+
+    // Both columns share the width between the page padding, so the right one starts in the middle.
+    constexpr float kPadding = 16.0F;
+    constexpr float kGap = 16.0F;
+    const float column = (1280.0F - (2 * kPadding) - kGap) / 2;
+    CHECK(only("Pflege").absolute_position().x == Catch::Approx(kPadding + column + kGap).margin(1.0));
 }

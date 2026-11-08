@@ -43,8 +43,9 @@ export {
 
 export component AppWindow inherits Window {
     default-font-family: Typography.font-family;
-    preferred-width: Layout.window-width;
-    preferred-height: Layout.window-height;
+    // The kiosk display is always 1280×720. A fixed size keeps the window from taking the size limits of a page.
+    width: Layout.window-width;
+    height: Layout.window-height;
     private property <bool> device_ready: StationStateContext.station-ready;
     in-out property <bool> boot-screen-confirmed: false;
     out property <Command> popup_command;

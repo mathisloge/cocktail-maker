@@ -1,0 +1,124 @@
+import { TextTone } from "../../theme/colors.slint";
+import { Layout } from "../../theme/layout.slint";
+import { Button } from "../../components/button.slint";
+import { Chip } from "../../components/chip.slint";
+import { SelectBox } from "../../components/select-box.slint";
+import { CaptionText, LabelText } from "../../components/text.slint";
+import { GlassDescriptor } from "../../types/glass.slint";
+import { GlassContext } from "../../globals/glass-context.slint";
+import { GlassCard } from "../../widgets/glass-card.slint";
+
+component SectionTitle inherits LabelText {
+    tone: TextTone.label;
+    emphasized: true;
+}
+
+// The glasses the Station offers, and the volumes each glass offers.
+export component GlassesSection inherits Rectangle {
+    private property <GlassDescriptor> selected-glass;
+    private property <length> select-width: 200px;
+
+    VerticalLayout {
+        padding: Layout.spacing-md;
+        spacing: Layout.spacing-md;
+        alignment: start;
+
+        SectionTitle {
+            text: "Gläser";
+        }
+
+        HorizontalLayout {
+            spacing: Layout.spacing-sm;
+            alignment: start;
+
+            glass-chooser := SelectBox {
+                width: root.select-width;
+                height: Layout.touch-height-sm;
+                model: GlassContext.available-glasses;
+            }
+
+            Button {
+                compact: true;
+                secondary: true;
+                text: "Glas hinzufügen";
+                clicked => {
+                    GlassContext.add-glass(glass-chooser.current-value)
+                }
+            }
+        }
+
+        Flickable {
+            height: Layout.glass-card-height;
+
+            HorizontalLayout {
+                spacing: Layout.spacing-md;
+
+                for descriptor in GlassContext.glasses: GlassCard {
+                    descriptor: descriptor;
+                    selected: root.selected-glass.id == descriptor.id;
+                    clicked => {
+                        root.selected-glass = descriptor;
+                    }
+
+                    Button {
+                        x: parent.width - self.width - Layout.spacing-sm;
+                        y: Layout.spacing-sm;
+                        min-width: Layout.touch-height-sm;
+                        compact: true;
+                        secondary: true;
+                        text: "×";
+                        clicked => {
+                            GlassContext.remove-glass(descriptor.id);
+                        }
+                    }
+                }
+            }
+        }
+
+        SectionTitle {
+            text: root.selected-glass.id != "" ? "Mengen für " + root.selected-glass.display-name : "Mengen";
+        }
+
+        if root.selected-glass.id == "": CaptionText {
+            text: "Ein Glas antippen, um seine Mengen zu bearbeiten.";
+        }
+
+        if root.selected-glass.id != "": HorizontalLayout {
+            spacing: Layout.spacing-sm;
+            alignment: start;
+
+            volume-box := SelectBox {
+                width: root.select-width;
+                height: Layout.touch-height-sm;
+                model: root.selected-glass.common-volumes-ml;
+            }
+
+            Button {
+                compact: true;
+                secondary: true;
+                text: "Menge hinzufügen";
+                clicked => {
+                    GlassContext.add-volume-from-glass(root.selected-glass.id, volume-box.current-value.to-float())
+                }
+            }
+        }
+
+        if root.selected-glass.id != "": Flickable {
+            height: Layout.touch-height-sm;
+
+            HorizontalLayout {
+                spacing: Layout.spacing-sm;
+                alignment: start;
+
+                for volume in root.selected-glass.active-volumes-ml: Chip {
+                    compact: true;
+                    width: Layout.volume-chip-width;
+                    text: volume + " mL ×";
+                    clicked => {
+                        GlassContext.remove-volume-from-glass(root.selected-glass.id, volume.to-float());
+                    }
+                }
+            }
+        }
+    }
+}

@@ -4,7 +4,7 @@ import { LabelText } from "../../components/text.slint";
 import { DispenserCalibrationContext } from "../../globals/dispenser-calibration-context.slint";
 import { StationStateContext } from "../../globals/station-state-context.slint";
 import { Dispenser, Pod } from "../../types/pod.slint";
-import { GlassConfigTab } from "./glass-config-tab.slint";
+import { GlassesSection } from "./glasses-section.slint";
 import { PumpPage } from "./pump-page.slint";
 import { PumpsSection } from "./pumps-section.slint";
 import { SystemSection } from "./system-section.slint";
@@ -143,7 +143,7 @@ export component AdminArea {
             }
 
             // The glasses stay instantiated so that switching keeps their state.
-            GlassConfigTab {
+            GlassesSection {
                 width: 100%;
                 height: 100%;
                 visible: root.section == AdminSection.glasses;

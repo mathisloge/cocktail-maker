@@ -1,4 +1,9 @@
-import { ComboBox } from "std-widgets.slint";
+import { ComboBox, Palette as StdPalette } from "std-widgets.slint";
 
 // The only place that uses the std-widget, so that theming it later is a change in this file.
-export component SelectBox inherits ComboBox { }
+export component SelectBox inherits ComboBox {
+    // The std style follows the system and draws light controls, which would stand out on the dark theme.
+    init => {
+        StdPalette.color-scheme = ColorScheme.dark;
+    }
+}

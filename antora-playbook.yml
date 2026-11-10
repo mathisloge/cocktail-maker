@@ -9,6 +9,9 @@ content:
   - url: .
     branches: HEAD
     start_path: docs/station
+  - url: https://github.com/mathisloge/cocktail-maker-3d.git
+    branches: main
+    start_path: docs
 asciidoc:
   extensions:
     - 'asciidoctor-kroki'

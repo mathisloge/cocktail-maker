@@ -31,6 +31,9 @@ jobs:
         run: npm i
       - name: Generate Site
         run: npx antora antora-playbook.yml
+        env:
+          # Read-only token for the private cocktail-maker-3d repository.
+          GIT_CREDENTIALS: https://x-access-token:${{ secrets.DOCS_3D_TOKEN }}@github.com
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v5
         with:

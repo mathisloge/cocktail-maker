@@ -8,7 +8,7 @@
       "name": "cocktail-maker-docs",
       "source": "./plugins/cocktail-maker-docs",
       "description": "Writing, architecture, ADR and diagram guidelines for the Sir-Mix-A-Lot projects.",
-      "version": "0.5.0"
+      "version": "0.6.0"
     }
   ]
 }

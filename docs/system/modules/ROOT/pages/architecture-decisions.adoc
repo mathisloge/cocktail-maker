@@ -10,3 +10,4 @@ This list shows all System ADRs:
 * xref:adr:005-embedded-os.adoc[]
 * xref:adr:006-protocol-serialization.adoc[]
 * xref:adr:007-calibration-and-fill-level.adoc[]
+* xref:adr:008-enclosure-colours.adoc[]

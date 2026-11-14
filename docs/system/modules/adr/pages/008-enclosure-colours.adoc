@@ -1,0 +1,59 @@
+= SYS-008: Enclosure colours follow the UI palette
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-11-14
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+A Guest sees the touch display and the outside of the Station and the Pods at the same time.
+The UI has one dark art-deco theme, and `gui/ui/theme/colors.slint` holds its colours, such as ink, amber, cream and sand.
+The docs already derive their palette from the same file.
+The parts are printed on a Prusa Core One with INDX, so one part can have several colours (xref:mechanics:adr:003-petg-pump-material.adoc[CM3D-003]).
+No rule fixes the colours of the outside today.
+
+=== Decision Drivers
+
+* **A good look:** the machine should look nice, and the screen and the outside should look like one product (QG-05).
+* **Food-safe flow path:** a colour must never bring a material into the flow path that is not food-safe (QG-02).
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-05[QG-05]: The outside repeats the colours of the UI, so the machine looks like one product to the Guest.
+* xref:system::quality-goals.adoc#QG-02[QG-02]: The rule covers only the outside, so the parts in the flow path keep their food-safe material.
+
+== Decision
+
+The outside of the Station and the Pods follows the colours in `gui/ui/theme/colors.slint` where possible.
+
+== Alternatives Considered
+
+=== A free colour per part
+
+Each part gets the colour that is at hand or looks good on its own.
+
+Rejected: the machine would look like a collection of parts.
+
+=== A neutral outside
+
+All outside parts are black or grey, independent of the UI.
+
+Rejected: it is simple, but the outside would not match the warm colours of the screen.
+
+== Consequences
+
+* **Good:** The screen and the outside look like one product.
+* **Good:** A new part needs no colour decision of its own.
+* **Bad:** A filament never matches a palette colour exactly, so the outside only comes close to the screen.
+* **Bad:** A change of a UI colour can make printed parts outdated.
+* **Bad:** Each colour change in a print costs time and purge material on the INDX.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-05[QG-05]: Better, because the screen and the outside use the same colours.
+* xref:system::quality-goals.adoc#QG-02[QG-02]: Neutral, because the parts in the flow path are outside the rule.

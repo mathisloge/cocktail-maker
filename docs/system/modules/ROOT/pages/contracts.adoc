@@ -1,0 +1,7 @@
+= Contracts
+
+A contract states what crosses one boundary between two blocks or parties of the machine, and what each side guarantees to the other.
+Each contract has an ID of the form `IF-nn`, and each of its requirements has an ID of the form `IF-nn-Rnn`.
+The IDs are stable and never reused.
+Other pages and the subprojects refer to a contract or a requirement by its ID.
+The boundaries come from the blocks of xref:building-blocks.adoc[chapter 5].

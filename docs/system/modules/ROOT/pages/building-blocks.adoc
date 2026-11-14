@@ -40,3 +40,5 @@ The xref:mechanics::building-blocks.adoc[Mechanics building block view] describe
 * **Power Management Unit:** The internal bridge between the external power grid and the low-voltage electronics.
 
 The split of the Station and Pod's is decided in xref:adr:001-system-split.adoc[]
+
+The xref:contracts.adoc[Contracts page] states what crosses each boundary between these blocks.

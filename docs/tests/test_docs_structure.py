@@ -12,6 +12,7 @@ import shutil
 import subprocess
 from html.parser import HTMLParser
 from pathlib import Path
+from typing import NamedTuple
 
 import pytest
 from check_adoc_style import GlossaryRow, load_glossary
@@ -1180,7 +1181,7 @@ ID_PAGES = {
     "QG": "quality-goals.adoc",
     "QS": "quality-requirements.adoc",
     "SM": "safety.adoc",
-    "IF": "building-blocks.adoc",
+    "IF": "contracts.adoc",
 }
 QUALITY_GOALS = ["Human Safety", "Food Safety", "Reliability", "Serviceability", "Usability", "Maintainability"]
 
@@ -1189,7 +1190,8 @@ def id_anchors(path: Path, prefix: str) -> list[str]:
     """Every `[[<prefix>-...]]` anchor of a page, well-formed or not, in document order."""
     if not path.exists():
         return []
-    return re.findall(rf"\[\[({prefix}-[^\]]*)\]\]", path.read_text(encoding="utf-8"))
+    anchors = re.findall(rf"\[\[({prefix}-[^\]]*)\]\]", path.read_text(encoding="utf-8"))
+    return [anchor for anchor in anchors if not re.fullmatch(rf"{prefix}-\d\d-R\d\d", anchor)]
 
 
 def defined_ids(prefix: str) -> list[str]:
@@ -1322,3 +1324,270 @@ def test_adr_goal_problems_reader() -> None:
     assert adr_goal_problems(unassessed) == ["QG-01 has no line in '=== Effect on the Quality Goals'"]
     no_effect = _ADR_GOOD.split("=== Effect")[0]
     assert adr_goal_problems(no_effect) == ["QG-01 has no line in '=== Effect on the Quality Goals'"]
+
+
+CONTRACTS_PAGE = SYSTEM_PAGES / "contracts.adoc"
+
+CONTRACT_SECTIONS = (
+    "What crosses",
+    "Guarantees and limits",
+    "Fault behaviour",
+    "Requirements",
+    "Open questions",
+    "Sources",
+)
+CONTRACT_KINDS = ("data", "power", "fluid", "mechanical")
+CONTRACT_STATUSES = ("Decided", "Partly decided", "Not designed yet")
+
+
+class Requirement(NamedTuple):
+    id: str
+    text: str
+    goals: tuple[str, ...]
+    met_by: str
+
+
+class Contract(NamedTuple):
+    id: str
+    title: str
+    kind: str
+    status: str
+    sections: tuple[str, ...]
+    requirements: tuple[Requirement, ...]
+    anchor: str = ""
+
+
+CONTRACT_ANCHOR = re.compile(r"^\[\[(IF-\d\d)\]\]$", re.MULTILINE)
+CONTRACT_HEADING = re.compile(r"^== (IF-\d\d): (.+)$", re.MULTILINE)
+XREF = re.compile(r"xref:([^\[\s]+)\[([^\]]*)\]")
+
+
+def _definition(chunk: str, term: str) -> str:
+    match = re.search(rf"^{term}::[ \t]*(.*)$", chunk, re.MULTILINE)
+    return match.group(1).strip() if match else ""
+
+
+def parse_contracts(text: str) -> list[Contract]:
+    """The contracts of the Contracts page, split at the lines that are exactly `[[IF-nn]]`."""
+    anchors = list(CONTRACT_ANCHOR.finditer(text))
+    contracts = []
+    for index, anchor in enumerate(anchors):
+        end = anchors[index + 1].start() if index + 1 < len(anchors) else len(text)
+        chunk = text[anchor.end() : end]
+        heading = CONTRACT_HEADING.search(chunk)
+        requirements = []
+        for line in chunk.splitlines():
+            if not line.startswith("| [[IF-"):
+                continue
+            cells = [cell.strip() for cell in line[1:].split("|")]
+            cells += [""] * (4 - len(cells))
+            found = re.match(r"\[\[([^\]]*)\]\]", cells[0])
+            requirements.append(
+                Requirement(
+                    found.group(1) if found else cells[0], cells[1], tuple(re.findall(r"QG-\d\d", cells[2])), cells[3]
+                )
+            )
+        contracts.append(
+            Contract(
+                heading.group(1) if heading else "",
+                heading.group(2) if heading else "",
+                _definition(chunk, "Kind"),
+                _definition(chunk, "Status"),
+                tuple(re.findall(r"^=== (.+)$", chunk, re.MULTILINE)),
+                tuple(requirements),
+                anchor.group(1),
+            )
+        )
+    return contracts
+
+
+def defined_requirement_ids() -> list[str]:
+    """The `IF-nn-Rnn` anchors of the Contracts page, in order."""
+    if not CONTRACTS_PAGE.exists():
+        return []
+    return re.findall(r"\[\[(IF-\d\d-R\d\d)\]\]", CONTRACTS_PAGE.read_text(encoding="utf-8"))
+
+
+def xref_page_exists(xref: str, component: str = "system") -> bool | None:
+    """Whether the page an xref target names exists, `None` when it is in a component that is not checkable here."""
+    parts = xref.split("#", 1)[0].split(":")
+    page = parts[-1]
+    module = "ROOT"
+    match parts[:-1]:
+        case []:
+            pass
+        case [name] if name in ("ROOT", "adr"):
+            module = name
+        case [name, ""] | [name, "ROOT"]:
+            component = name
+        case [name, other]:
+            component, module = name, other
+        case _:
+            return False
+    if component not in ("system", "station"):
+        return None
+    return (REPO / "docs" / component / "modules" / module / "pages" / page).is_file()
+
+
+def _met_by_problems(label: str, cell: str) -> list[str]:
+    if cell == "open":
+        return []
+    xrefs = XREF.findall(cell)
+    rest = XREF.sub(" ", cell)
+    if not xrefs or any(word not in ("", "and") for word in re.split(r"[\s,;]+", rest)):
+        return [f"{label}: Met by is not 'open' or a list of xrefs: '{cell}'"]
+    return [
+        f"{label}: Met by links the missing page {target}" for target, _ in xrefs if xref_page_exists(target) is False
+    ]
+
+
+def contract_problems(text: str) -> list[str]:
+    """What is wrong with the contracts of the Contracts page, as readable messages."""
+    problems: list[str] = []
+    goals = set(defined_ids("QG"))
+    seen: set[str] = set()
+    for contract in parse_contracts(text):
+        label = contract.anchor
+        if contract.id != contract.anchor:
+            problems.append(f"{label}: the heading names '{contract.id or 'no ID'}'")
+        if contract.kind not in CONTRACT_KINDS:
+            problems.append(f"{label}: Kind '{contract.kind}' is not one of {list(CONTRACT_KINDS)}")
+        if contract.status not in CONTRACT_STATUSES:
+            problems.append(f"{label}: Status '{contract.status}' is not one of {list(CONTRACT_STATUSES)}")
+        if contract.sections != CONTRACT_SECTIONS:
+            problems.append(f"{label}: sections {list(contract.sections)} are not {list(CONTRACT_SECTIONS)}")
+        if not contract.requirements:
+            problems.append(f"{label}: no requirement row")
+        for requirement in contract.requirements:
+            name = requirement.id
+            if not re.fullmatch(rf"{re.escape(contract.anchor)}-R\d\d", name):
+                problems.append(f"{label}: requirement ID '{name}' is not {contract.anchor}-Rnn")
+            if name in seen:
+                problems.append(f"{label}: duplicate requirement ID '{name}'")
+            seen.add(name)
+            if not requirement.goals:
+                problems.append(f"{name}: no QG-nn goal")
+            problems += [f"{name}: {goal} is not a defined ID" for goal in requirement.goals if goal not in goals]
+            problems += _met_by_problems(name, requirement.met_by)
+    return problems
+
+
+def _requirement_row(requirement_id: str, goal: str = "QG-02", met_by: str = "open") -> str:
+    return f"| [[{requirement_id}]]{requirement_id} | An outcome. | {goal} | {met_by}\n"
+
+
+def _contract(
+    contract_id: str = "IF-05", rows: str | None = None, sections: tuple[str, ...] = CONTRACT_SECTIONS
+) -> str:
+    rows = _requirement_row(f"{contract_id}-R01") if rows is None else rows
+    parts = [
+        f"[[{contract_id}]]\n== {contract_id}: Bottle to Pod\n\nSides:: A and B\nKind:: fluid\nStatus:: Decided\n\n"
+    ]
+    for section in sections:
+        parts.append(f"=== {section}\n\n")
+        if section == "Requirements":
+            parts.append(
+                f'[cols="2,6,2,3", options="header"]\n|===\n| ID | Requirement | Goals | Met by\n{rows}|===\n\n'
+            )
+        else:
+            parts.append("Text.\n\n")
+    return "".join(parts)
+
+
+_CONTRACTS_GOOD = "= Contracts\n\nLead.\n\n" + _contract()
+
+
+def test_contract_problems_reader() -> None:
+    assert contract_problems("= Contracts\n\nLead.\n") == []
+    assert contract_problems(_CONTRACTS_GOOD) == []
+    no_fault = _contract(sections=tuple(s for s in CONTRACT_SECTIONS if s != "Fault behaviour"))
+    assert any("sections" in p for p in contract_problems(no_fault))
+    swapped = _contract(sections=(*CONTRACT_SECTIONS[1::-1], *CONTRACT_SECTIONS[2:]))
+    assert any("sections" in p for p in contract_problems(swapped))
+    assert any("Status 'Planned'" in p for p in contract_problems(_CONTRACTS_GOOD.replace("Decided", "Planned")))
+    assert any("Kind 'optical'" in p for p in contract_problems(_CONTRACTS_GOOD.replace("fluid", "optical")))
+    copied = _contract("IF-06", _requirement_row("IF-05-R01"))
+    assert any("IF-05-R01" in p and "IF-06" in p for p in contract_problems(copied))
+    twice = _contract("IF-05", _requirement_row("IF-05-R01") + _requirement_row("IF-05-R01"))
+    assert any("duplicate requirement ID 'IF-05-R01'" in p for p in contract_problems(twice))
+    assert any("no QG-nn goal" in p for p in contract_problems(_contract(rows=_requirement_row("IF-05-R01", "none"))))
+    assert any(
+        "QG-07 is not a defined ID" in p
+        for p in contract_problems(_contract(rows=_requirement_row("IF-05-R01", "QG-07")))
+    )
+    assert any("no requirement row" in p for p in contract_problems(_contract(rows="")))
+    wrong_heading = _contract("IF-06").replace("[[IF-06]]", "[[IF-05]]")
+    assert any("heading names 'IF-06'" in p for p in contract_problems(wrong_heading))
+    accepted = [
+        "open",
+        "xref:mechanics::pump.adoc[Mechanics pump page]",
+        "xref:adr:004-power-architecture.adoc[SYS-004]",
+        "xref:system::protocol.adoc#framing[System protocol page]",
+        "xref:protocol.adoc[], xref:adr:004-power-architecture.adoc[SYS-004] and xref:hardware.adoc[]",
+    ]
+    for met_by in accepted:
+        assert contract_problems(_contract(rows=_requirement_row("IF-05-R01", met_by=met_by))) == [], met_by
+    for met_by in (
+        "xref:missing-page.adoc[]",
+        "xref:station::missing-page.adoc[Station page]",
+        "soon",
+        "open, xref:protocol.adoc[]",
+        "xref:protocol.adoc[] maybe",
+    ):
+        assert contract_problems(_contract(rows=_requirement_row("IF-05-R01", met_by=met_by))), met_by
+
+
+def test_xref_page_exists() -> None:
+    assert xref_page_exists("protocol.adoc") is True
+    assert xref_page_exists("ROOT:protocol.adoc") is True
+    assert xref_page_exists("adr:001-system-split.adoc") is True
+    assert xref_page_exists("system::protocol.adoc#framing") is True
+    assert xref_page_exists("system:adr:001-system-split.adoc") is True
+    assert xref_page_exists("station::building-blocks.adoc") is True
+    assert xref_page_exists("station:adr:001-system-split.adoc") is False
+    assert xref_page_exists("missing.adoc") is False
+    assert xref_page_exists("mechanics::pump.adoc") is None
+    assert xref_page_exists("embedded::pump.adoc") is None
+
+
+def test_requirement_anchors_are_not_contract_ids(tmp_path: Path) -> None:
+    page = tmp_path / "page.adoc"
+    page.write_text("[[IF-01]]\n| [[IF-01-R01]]IF-01-R01\n[[IF-1]]\n", encoding="utf-8")
+    assert id_anchors(page, "IF") == ["IF-01", "IF-1"]
+
+
+def test_contracts_page_is_valid() -> None:
+    assert contract_problems(CONTRACTS_PAGE.read_text(encoding="utf-8")) == []
+    assert first_line(CONTRACTS_PAGE) == "= Contracts"
+
+
+def test_contracts_page_is_in_nav_after_hardware() -> None:
+    nav = (SYSTEM_PAGES.parent / "nav.adoc").read_text(encoding="utf-8").splitlines()
+    start = nav.index("** xref:hardware.adoc[]")
+    assert nav[start + 1] == "** xref:contracts.adoc[]"
+
+
+def test_building_blocks_links_contracts() -> None:
+    assert "xref:contracts.adoc[" in (SYSTEM_PAGES / "building-blocks.adoc").read_text(encoding="utf-8")
+
+
+def test_chapter5_diagram_names_every_contract() -> None:
+    page = SYSTEM_PAGES / "building-blocks.adoc"
+    lines = page.read_text(encoding="utf-8").splitlines()
+    blocks = [source for number, source in d2_blocks(page) if 'target="conceptual-blocks"' in lines[number - 1]]
+    assert len(blocks) == 1
+    labels = [
+        label
+        for line in blocks[0]
+        if not line.lstrip().startswith("#") and D2_EDGE.search(without_quoted(line))
+        for label in re.findall(r"""(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')""", line)
+    ]
+    missing = [contract for contract in defined_ids("IF") if not any(contract in label for label in labels)]
+    assert missing == [], f"contracts missing from the chapter 5 diagram: {missing}"
+
+
+@site_test
+def test_contracts_page_renders() -> None:
+    html = (SITE_DIR / "system" / "contracts.html").read_text(encoding="utf-8")
+    for contract_id in defined_ids("IF"):
+        assert f'id="{contract_id}"' in html

@@ -6,6 +6,7 @@
 * xref:solution-strategy.adoc[]
 * xref:building-blocks.adoc[]
 ** xref:hardware.adoc[]
+** xref:contracts.adoc[]
 * xref:runtime-view.adoc[]
 * xref:deployment-view.adoc[]
 * xref:cross-cutting-concepts.adoc[]

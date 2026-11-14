@@ -1355,6 +1355,7 @@ class Contract(NamedTuple):
     sections: tuple[str, ...]
     requirements: tuple[Requirement, ...]
     anchor: str = ""
+    sides: str = ""
 
 
 CONTRACT_ANCHOR = re.compile(r"^\[\[(IF-\d\d)\]\]$", re.MULTILINE)
@@ -1396,6 +1397,7 @@ def parse_contracts(text: str) -> list[Contract]:
                 tuple(re.findall(r"^=== (.+)$", chunk, re.MULTILINE)),
                 tuple(requirements),
                 anchor.group(1),
+                _definition(chunk, "Sides"),
             )
         )
     return contracts
@@ -1450,6 +1452,8 @@ def contract_problems(text: str) -> list[str]:
         label = contract.anchor
         if contract.id != contract.anchor:
             problems.append(f"{label}: the heading names '{contract.id or 'no ID'}'")
+        if not contract.sides:
+            problems.append(f"{label}: Sides is empty")
         if contract.kind not in CONTRACT_KINDS:
             problems.append(f"{label}: Kind '{contract.kind}' is not one of {list(CONTRACT_KINDS)}")
         if contract.status not in CONTRACT_STATUSES:
@@ -1469,6 +1473,11 @@ def contract_problems(text: str) -> list[str]:
                 problems.append(f"{name}: no QG-nn goal")
             problems += [f"{name}: {goal} is not a defined ID" for goal in requirement.goals if goal not in goals]
             problems += _met_by_problems(name, requirement.met_by)
+    problems += [
+        f"requirement row without its anchor: '{line.strip()}'"
+        for line in text.splitlines()
+        if re.match(r"\|\s*IF-\d\d-R\d\d", line)
+    ]
     return problems
 
 
@@ -1516,6 +1525,9 @@ def test_contract_problems_reader() -> None:
         for p in contract_problems(_contract(rows=_requirement_row("IF-05-R01", "QG-07")))
     )
     assert any("no requirement row" in p for p in contract_problems(_contract(rows="")))
+    unanchored = _CONTRACTS_GOOD.replace("| [[IF-05-R01]]IF-05-R01 |", "| IF-05-R01 |")
+    assert any("without its anchor" in p for p in contract_problems(unanchored))
+    assert any("Sides is empty" in p for p in contract_problems(_CONTRACTS_GOOD.replace("Sides:: A and B", "Sides::")))
     wrong_heading = _contract("IF-06").replace("[[IF-06]]", "[[IF-05]]")
     assert any("heading names 'IF-06'" in p for p in contract_problems(wrong_heading))
     accepted = [

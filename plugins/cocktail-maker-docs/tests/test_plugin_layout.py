@@ -1,5 +1,9 @@
 import json
 import re
+import shutil
+import subprocess
+import sys
+import tomllib
 from pathlib import Path
 
 from check_adoc_style import check_text
@@ -85,3 +89,41 @@ def test_adr_template_has_quality_goals():
     assert titles[:2] == ["== Context", "== Quality Goals"]
     section = text.split("\n== Quality Goals\n", 1)[1].split("\n== ", 1)[0]
     assert re.search(r"\bQG-\d\d\b", section)
+
+
+SCRIPT = REPO / "plugins/cocktail-maker-docs/scripts/check_adoc_style.py"
+WHEEL_FILES = {
+    "plugins/cocktail-maker-docs/scripts/check_adoc_style.py": "cm_adoc_style/check_adoc_style.py",
+    "plugins/cocktail-maker-docs/skills/writing-style/avoid-words.tsv": "cm_adoc_style/avoid-words.tsv",
+    "plugins/cocktail-maker-docs/skills/writing-style/glossary-system.tsv": "cm_adoc_style/glossary-system.tsv",
+}
+
+
+def test_hook_installs_as_python_package():
+    # pre-commit installs the hook repo with pip, so the hook runs wherever pre-commit runs.
+    manifest = (REPO / ".pre-commit-hooks.yaml").read_text(encoding="utf-8")
+    assert "  language: python\n" in manifest
+    assert "  entry: adoc-style\n" in manifest
+    pyproject = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))
+    assert pyproject["project"]["scripts"]["adoc-style"] == "cm_adoc_style.check_adoc_style:main"
+    wheel = pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]
+    assert wheel["force-include"] == WHEEL_FILES
+    for source in WHEEL_FILES:
+        assert (REPO / source).is_file(), source
+
+
+def test_installed_checker_finds_its_data_next_to_it(tmp_path):
+    package = tmp_path / "cm_adoc_style"
+    package.mkdir()
+    for source, target in WHEEL_FILES.items():
+        shutil.copy(REPO / source, tmp_path / target)
+    page = tmp_path / "page.adoc"
+    page.write_text("= Page\n\nThe staff use it in order to pour.\n", encoding="utf-8")
+    result = subprocess.run(
+        [sys.executable, "-I", str(package / "check_adoc_style.py"), str(page)],
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+    )
+    assert "avoid-word" in result.stdout
+    assert "glossary-term" in result.stdout

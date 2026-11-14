@@ -2,8 +2,25 @@
 name = "cocktail-maker"
 version = "1.0.0"
 description = "Dev tooling of the Sir-Mix-A-Lot Station: docs plugin checks, tests and release versioning"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 dependencies = []
+
+# The pre-commit hook `adoc-style` installs this project with pip.
+# The wheel holds only the style checker and its data, nothing else of the repo.
+[project.scripts]
+adoc-style = "cm_adoc_style.check_adoc_style:main"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+bypass-selection = true
+
+[tool.hatch.build.targets.wheel.force-include]
+"plugins/cocktail-maker-docs/scripts/check_adoc_style.py" = "cm_adoc_style/check_adoc_style.py"
+"plugins/cocktail-maker-docs/skills/writing-style/avoid-words.tsv" = "cm_adoc_style/avoid-words.tsv"
+"plugins/cocktail-maker-docs/skills/writing-style/glossary-system.tsv" = "cm_adoc_style/glossary-system.tsv"
 
 [dependency-groups]
 dev = ["pytest", "ruff", "pre-commit", "commitizen"]
@@ -18,6 +35,9 @@ pythonpath = ["plugins/cocktail-maker-docs/scripts", "docs/ui/tests", "tools/pal
 
 [tool.ruff]
 line-length = 120
+# The dev tooling runs on Python 3.12, the style checker also runs in other repos' pre-commit on Python 3.10.
+target-version = "py312"
+per-file-target-version = { "plugins/cocktail-maker-docs/scripts/*.py" = "py310" }
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

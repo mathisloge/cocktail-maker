@@ -35,8 +35,15 @@ class Finding(NamedTuple):
     message: str
 
 
-DEFAULT_AVOID_WORDS = Path(__file__).resolve().parent.parent / "skills" / "writing-style" / "avoid-words.tsv"
-DEFAULT_SYSTEM_GLOSSARY = Path(__file__).resolve().parent.parent / "skills" / "writing-style" / "glossary-system.tsv"
+def _data_file(name: str) -> Path:
+    """A data file of the checker: next to it when pip installed it, else in the plugin's writing-style skill."""
+    here = Path(__file__).resolve().parent
+    installed = here / name
+    return installed if installed.is_file() else here.parent / "skills" / "writing-style" / name
+
+
+DEFAULT_AVOID_WORDS = _data_file("avoid-words.tsv")
+DEFAULT_SYSTEM_GLOSSARY = _data_file("glossary-system.tsv")
 GLOSSARY_LEVELS = ("System", "Station", "Pod", "Mechanics", "UI")
 _GLOSSARY_HEADER = ("term", "definition", "level", "code", "avoid")
 OPT_OUT = "// adoc-style: ignore-next-line"

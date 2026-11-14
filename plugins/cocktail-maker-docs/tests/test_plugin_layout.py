@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 from check_adoc_style import check_text
@@ -75,3 +76,12 @@ def test_adr_template_passes_style():
     text = (SKILLS / "writing-adrs/adr-template.adoc").read_text()
     assert [f for f in check_text(text) if f.severity == "error"] == []
     assert "include::partial$adr-header.adoc[]" in text
+
+
+def test_adr_template_has_quality_goals():
+    # A small stand-in for `adr_goal_problems` in docs/tests, so the plugin tests stay self-contained.
+    text = (SKILLS / "writing-adrs/adr-template.adoc").read_text(encoding="utf-8")
+    titles = [line for line in text.splitlines() if line.startswith("==") and not line.startswith("===")]
+    assert titles[:2] == ["== Context", "== Quality Goals"]
+    section = text.split("\n== Quality Goals\n", 1)[1].split("\n== ", 1)[0]
+    assert re.search(r"\bQG-\d\d\b", section)

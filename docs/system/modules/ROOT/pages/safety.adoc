@@ -15,6 +15,6 @@ The power and protocol design directly support the *Human Safety* and *Food Safe
 | Continuous PE conductor across all stages
 | Human Safety
 
-| Food-safe materials on all user-contact parts and flow paths
+| Food-safe materials on all parts that touch a person or a drink, and on all flow paths
 | Food Safety
 |===

@@ -1,9 +1,9 @@
-# Hardware
+= Hardware
 
-The hardware architecture of the cocktail maker is designed with modularity and scalability in mind.
-It is divided into two primary subsystems: the central **Station** (acting as the brain and power distribution center) and expandable **Pods** (individual fluid dispensing modules).
+The hardware architecture of the cocktail-maker is designed with modularity and scalability in mind.
+It is divided into two primary subsystems: the central **Station** (acting as the brain and power distribution center) and expandable **Pods** (individual dispensing units).
 
-This split design allows you to seamlessly add more dispenser pods without needing to rewire or upgrade the core processing unit.
+This split design allows you to add more dispenser pods without needing to rewire or upgrade the core processing unit.
 
 Below is the schematic overview of the hardware components and their relationships:
 
@@ -30,7 +30,7 @@ station: "Station · main control and power" {
   rpi -> display: drives the display over the DSI ribbon {class: data}
 }
 
-pod1: "Pod 1 · dispenser module, one of several" {
+pod1: "Pod 1 · one of several" {
   class: boundary
   mcu: "BIGTREETECH Octopus V1.1 ·\nPod controller" {class: data-part}
 

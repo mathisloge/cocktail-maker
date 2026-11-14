@@ -19,8 +19,15 @@ include::partial$adr-header.adoc[]
 
 === Decision Drivers
 
+* **<Driver>:** <Say why this driver matters for the decision, and name the ID of the quality goal or scenario behind it, for example QG-01>.
 * **<Driver>:** <Say why this driver matters for the decision>.
-* **<Driver>:** <Say why this driver matters for the decision>.
+
+== Quality Goals
+
+// Link every ID to the System docs, for example xref:system::quality-goals.adoc#QG-01[QG-01].
+// Add QS-nn scenarios the same way, once they exist.
+* xref:system::quality-goals.adoc#QG-01[QG-01]: <Say in one line how the decision serves or affects this goal>.
+* xref:system::quality-goals.adoc#QG-01[QG-01]: <List every goal and scenario that the decision serves or affects>.
 
 == Decision
 
@@ -38,3 +45,7 @@ Rejected: <Say why the alternative lost against the decision>.
 
 * **Good:** <Name a benefit of the decision>.
 * **Bad:** <Name a cost or a risk of the decision>.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: <Better, worse or neutral, with the reason>.

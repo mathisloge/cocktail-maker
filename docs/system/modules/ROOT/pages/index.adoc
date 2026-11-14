@@ -1,16 +1,16 @@
 = 1 Introduction and Goals
 
-This document describes the system architecture and design principles of the Cocktail Machine.
+This document describes the system architecture and design principles of the cocktail-maker.
 The system is a fully automated, mechatronic beverage dispenser designed to mix cocktails from various raw ingredients (spirits, juices, syrups) precisely and reliably based on predefined recipes.
 
 A defining characteristic of this project is its highly modular architecture.
-Instead of a monolithic design, the system is strictly divided into a central orchestration unit and autonomous dispensing modules.
+Instead of a monolithic design, the system is strictly divided into a central orchestration unit and autonomous Pods.
 This approach abstracts the complexity of fluid management and hardware control from the user interface, resulting in a highly scalable and maintainable system.
 
 This documentation serves as the central reference point for hardware design, software development, protocol definition, and future maintenance.
 The xref:diagram-conventions.adoc[diagram conventions] explain the shapes, colours and line styles of every diagram.
 
-The following chapters provide a high-level overview of the Cocktail Machine.
+The following chapters provide a high-level overview of the cocktail-maker.
 They define the system boundaries, illustrate the core functional blocks, and document the fundamental architectural decisions that shaped the design before diving into specific hardware or software implementations.
 
 Continue with xref:quality-goals.adoc[].

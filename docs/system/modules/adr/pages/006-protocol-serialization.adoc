@@ -16,6 +16,11 @@ USB CDC presents a raw, continuous byte stream with no built-in message boundari
 Because dispensing commands are safety- and food-safety-relevant, the transport also needs message integrity checking (e.g. a checksum/CRC) rather than assuming the underlying link is error-free.
 Hand-writing and manually keeping the Station and Pod (de)serialization code in sync across two independent codebases is error-prone and does not scale well as the message set grows.
 
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-03[QG-03]: One schema generates both sides of the protocol, so the Station and the Pods cannot drift apart, and the frames carry a CRC.
+* xref:system::quality-goals.adoc#QG-06[QG-06]: One schema replaces hand written (de)serialization code in two codebases.
+
 == Decision
 
 We will use commsdsl (the CommsChampion Tools ecosystem https://commschamp.github.io/) to define the protocol schema and generate the corresponding C++ message and framing code for both the Station and every Pod.
@@ -39,9 +44,15 @@ Rejected: this offers full control with no external codegen dependency, but requ
 == Consequences
 
 * **Good:** commsdsl provides explicit, declarative frame and message definitions, including built-in checksum/CRC layers, which directly addresses message integrity over the byte-oriented USB CDC transport without hand-rolled framing code.
-* **Good:** a single schema generates the C++ code used by both the Station and every Pod, keeping both sides of the protocol in sync by construction and removing an entire class of protocol-drift bugs, supporting the *Reliability* and *Maintainability* quality goals.
+* **Good:** a single schema generates the C++ code used by both the Station and every Pod, keeping both sides of the protocol in sync by construction and removing an entire class of protocol-drift bugs, supporting the *Reliability* (QG-03) and *Maintainability* (QG-06) quality goals.
 * **Good:** the generated C++ code is lightweight compared to a full Protobuf/nanopb runtime, which fits the constrained resources of the Pod controllers.
 * **Good:** the generated code is plain, freestanding C++, so it integrates cleanly with both the Zephyr-based Pod firmware (xref:adr:005-embedded-os.adoc[SYS-005]) and the Station's C++ stack without requiring OS-specific bindings.
 * **Bad:** commsdsl/CommsChampion is a comparatively niche tool with a smaller community and less third-party documentation than Protobuf, so troubleshooting relies more heavily on reading its own documentation and source directly.
 * **Bad:** introduces an additional schema compiler/codegen step into the build that must be installed and version-pinned consistently across the Station and Pod toolchains.
 * **Bad:** fewer established patterns and examples are available online for concerns like protocol versioning and migration, compared to Protobuf's larger ecosystem.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-03[QG-03]: Better, because the Station and every Pod stay in sync by construction and a CRC layer is built in.
+* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because the message set grows in one schema.
+Worse, because commsdsl is a niche tool with fewer examples and the code generator must be installed and pinned in both toolchains.

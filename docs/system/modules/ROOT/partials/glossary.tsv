@@ -1,0 +1,29 @@
+term	definition	level	code	avoid
+cocktail-maker	The project name of the whole product, made of one Station, one or more Pods and a Power Management Unit.	System		cocktail machine
+Sir-Mix-A-Lot	The marketing name of the cocktail-maker.	System		
+Station	The central unit with the touch display that runs the host application and starts every exchange with the Pods.	System	Station	
+Pod	A self-contained dispensing unit with its own controller that weighs and pours ingredients when the Station commands it.	Pod	Pod	dispensing module;dispenser module;hardware module
+Pod ID	The unique name of a Pod, which the Pod reports and the Station uses to address it.	Pod	PodId	
+Pod controller	The embedded controller board of a Pod that drives its actuators and reads its load cells.	Pod		MCU
+Station computer	The Raspberry Pi inside the Station that runs the host application.	Station		
+Power Management Unit	The part of the machine that turns the mains voltage into the low DC voltages for the Station and the Pods.	System		
+Power Grid	The external mains supply that powers the machine.	System		wall outlet
+Raw ingredients	The bottles of spirits, juices and syrups that an Operator puts into the machine.	System		
+Guest	The person who orders and receives a drink and needs no technical knowledge.	System		customer;visitor
+Operator	The person who refills, cleans and calibrates the machine.	System		staff;administrator
+Guest UI	The Station screens where a Guest picks a recipe and a glass.	UI		
+Operator UI	The PIN-protected part of the Station UI where an Operator maintains and calibrates the machine.	UI		admin UI;maintenance UI
+Ingredient	A drink component with a type and a boost category, which recipes use and dispensers hold.	Station	Ingredient, IngredientId	
+Recipe	A named list of dispense and manual steps for one drink, with a nominal serving volume.	Station	Recipe, RecipeId	
+Nominal serving volume	The drink volume that the amounts of a recipe refer to, which the Station scales to the chosen glass.	Station	Recipe::nominal_serving_volume	
+Boost	An adjustment that makes a drink stronger or weaker by shifting volume between its ingredients at the same total volume.	Station	boost_recipe, BoostCategory	
+Glass	A glass type with common and active volumes that a Guest can choose for a drink.	Station	Glass, GlassId	
+Dispenser	The part of a Pod that delivers one ingredient, either a pump or a valve.	Pod	Dispenser, DispenserId	
+Pump	A dispenser that moves liquid with a stepper motor.	Pod	Pump	
+Valve	A dispenser with a servo-driven pinch valve that opens and closes a flow.	Pod	Valve	
+Load cell	The sensor of a Pod that weighs a bottle or a glass.	Pod		
+Calibration	The measurement that ties a load cell reading or a dispenser run to a real amount, which the Pod keeps across power cycles.	Pod		
+Tare	Taking the current load on a load cell as its zero point.	Pod		
+Fill level	The amount of liquid left in the bottle of a dispenser.	System	FillLevelRecord	fill state;filling level
+Dispense	To pour a given volume of one ingredient through one dispenser.	System	DispenseCommand	
+Transaction	One request from the Station and the Pod's answer to it, linked by an ID in the protocol and never shown to a Guest.	System	TransactionId	

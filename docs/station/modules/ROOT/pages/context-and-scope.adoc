@@ -13,7 +13,7 @@ direction: right
 guest: "Guest\norders and receives a drink" {class: actor}
 operator: "Operator\nrefills, cleans, calibrates and configures the machine" {class: actor}
 station: "Station · Raspberry Pi · Slint UI\norchestrates recipes, ingredients, glasses and Pods" {class: boundary}
-pod: "Pod · MCU · Zephyr firmware\none or more autonomous dispensing modules" {class: external}
+pod: "Pod · Pod controller with Zephyr firmware\none or more autonomous Pods" {class: external}
 guest -> station: selects a recipe and glass, starts a mix {class: interaction}
 station -> guest: shows recipes, mix progress and results {class: interaction}
 operator -> station: configures data, assigns dispensers, calibrates {class: interaction}
@@ -41,7 +41,7 @@ Everything else in this document is scoped inside the "Station" box above.
 
 | Persisted ingredient-to-dispenser mapping
 | Filesystem, read and write
-| Station-local configuration, changed by an operator and persisted across restarts.
+| Station-local configuration, changed by an Operator and persisted across restarts.
 
 | Persisted fill levels
 | Filesystem, read and write
@@ -49,7 +49,7 @@ Everything else in this document is scoped inside the "Station" box above.
 
 | Touch display
 | Guest and Operator
-| Sole input and output device. All interaction is touch-based, including operator PIN entry.
+| Sole input and output device. All interaction is touch-based, including Operator PIN entry.
 |===
 
 Continue with xref:solution-strategy.adoc[].

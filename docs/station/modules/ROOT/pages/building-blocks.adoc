@@ -12,7 +12,7 @@ include::system:ROOT:partial$d2-style.d2[]
 direction: down
 station: "Station · Raspberry Pi · Slint UI" {
   class: boundary
-  ui: "User Interface · guest and operator screens\npresents the guest ordering flow\nand the operator maintenance area\non the same window" {class: block}
+  ui: "User Interface · Guest and Operator screens\npresents the Guest ordering flow\nand the Operator UI\non the same window" {class: block}
   domain: "Domain Model & Application ·\nrecipes, ingredients, glasses, Pods\nowns the domain data, tracks Pods,\nand drives recipe execution" {class: block}
   podcomm: "Pod Communication · discovery and wire protocol\ndiscovers Pods and speaks\nthe Station side of the shared protocol" {class: block}
   foundations: "Foundations · shared building blocks\nlogging, strong domain identifiers,\nunit-safe quantities,\nretry and timeout helpers" {class: block}
@@ -35,7 +35,7 @@ Which blocks make up the Station, and which block uses which?
 * Speaks the Station side of the shared wire protocol (xref:system::protocol.adoc[System protocol concept]), independent of which Pods are actually present.
 
 .User Interface
-* Presents the guest ordering flow and the operator maintenance area behind the same window.
+* Presents the Guest ordering flow and the Operator UI behind the same window.
 * Reflects live domain and Pod state without owning any of it itself, and forwards user actions back into the Domain Model.
 
 .Foundations
@@ -62,19 +62,19 @@ A small set of dedicated components sits between the declarative UI and the Doma
 
 | Navigation & Pod Status
 | Owns which screen is active, tracks live Pod connection state and fill levels for display, and gates
-the operator maintenance area behind PIN authentication.
+the Operator UI behind PIN authentication.
 
 | Recipe Browsing & Mixing
-| Publishes the recipe and ingredient catalog to the guest UI, warns when a drink may not fit, and
-drives recipe execution when a guest starts a mix.
+| Publishes the recipe and ingredient catalog to the Guest UI, warns when a drink may not fit, and
+drives recipe execution when a Guest starts a mix.
 
 | Glass Configuration
-| Exposes which glasses and pour volumes a guest may currently choose from, and lets an operator change
+| Exposes which glasses and pour volumes a Guest may currently choose from, and lets an Operator change
 that set.
 
 | Dispenser Calibration
 | Drives load-cell taring, reference-weight calibration, and the timed dispenser calibration for a
-specific dispenser, for the operator maintenance flow.
+specific dispenser, for the Operator maintenance flow.
 |===
 
 Operator authentication itself, PIN verification and attempt-based lockout, is a small policy consumed by Navigation & Pod Status rather than a concern of its own.

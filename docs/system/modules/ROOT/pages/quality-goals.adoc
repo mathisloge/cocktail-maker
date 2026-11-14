@@ -2,25 +2,43 @@
 
 To ensure the machine operates safely and reliably in real-world scenarios, all architectural and design decisions are evaluated against the following strict quality criteria.
 Safety and reliability are the primary drivers for both hardware separation and software state management.
+The IDs are stable.
+Other pages and ADRs refer to a goal by its ID.
+The goals map onto the quality model of ISO/IEC 25010:2023, shown in the last column, and the quality tree of chapter 10 will build on that model.
 
-[cols="1,4", options="header"]
+[cols="1,2,5,3", options="header"]
 |===
-| Quality Goal | Description
+| ID | Quality Goal | Description | ISO 25010:2023
 
+| [[QG-01]]QG-01
 | *Human Safety*
-| No mechanism, electrical fault, or software bug may endanger a user.
+| No mechanism, electrical fault, or software bug may endanger a Guest or an Operator.
+| Safety (fail safe, hazard warning, operational constraint)
 
+| [[QG-02]]QG-02
 | *Food Safety*
-| All user-contact parts and flow paths use food-safe materials.
+| All parts that touch a person or a drink, and all flow paths, use food-safe materials, and no wrong ingredient or quantity reaches a drink.
+| Safety (operational constraint, fail safe)
 
+| [[QG-03]]QG-03
 | *Reliability*
 | The machine must run unattended for long stretches without failure.
+| Reliability (faultlessness, availability, fault tolerance)
 
-| *Maintainability*
+| [[QG-04]]QG-04
+| *Serviceability*
 | Operator can service, refill, and calibrate without deep expertise.
+| Interaction capability (operability, learnability)
 
+| [[QG-05]]QG-05
 | *Usability*
-| Users with no instructions can order and receive a drink intuitively.
+| Guests with no instructions can order and receive a drink intuitively.
+| Interaction capability (appropriateness recognizability, learnability, operability)
+
+| [[QG-06]]QG-06
+| *Maintainability*
+| Developers can change, test and verify the code, the firmware and the hardware design with little effort.
+| Maintainability (modularity, modifiability, testability)
 
 |===
 

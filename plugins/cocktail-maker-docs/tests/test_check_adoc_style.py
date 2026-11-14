@@ -1,9 +1,23 @@
+import shutil
 from pathlib import Path
 
 import pytest
-from check_adoc_style import LineKind, check_text, classify_lines, load_avoid_words, main, reflow
+from check_adoc_style import (
+    DEFAULT_SYSTEM_GLOSSARY,
+    GlossaryRow,
+    LineKind,
+    check_text,
+    classify_lines,
+    find_repo_glossaries,
+    glossary_synonyms,
+    load_avoid_words,
+    load_glossary,
+    main,
+    reflow,
+)
 
 REPO = Path(__file__).resolve().parents[3]
+GLOSSARY_FIXTURES = Path(__file__).resolve().parent / "fixtures" / "glossary"
 
 
 def rules(text):
@@ -371,3 +385,150 @@ def test_styled_paragraph_ends_at_attribute_line():
     text = "[verse]\nThe pump\nturns\n[NOTE]\nThis goes\non.\n"
     assert rules(text) == [(5, "sentence-wrapped")]
     assert reflow(text) == "[verse]\nThe pump\nturns\n[NOTE]\nThis goes on.\n"
+
+
+def glossary_findings(text, glossary):
+    return [(f.line, f.rule, f.severity, f.message) for f in check_text(text, glossary=glossary)]
+
+
+@pytest.fixture
+def fixture_dir():
+    return GLOSSARY_FIXTURES
+
+
+@pytest.fixture
+def fake_repo(tmp_path):
+    repo = tmp_path / "repo"
+    shutil.copytree(GLOSSARY_FIXTURES / "repo", repo)
+    (repo / ".git").mkdir()
+    return repo
+
+
+def test_load_glossary_reads_rows(fixture_dir):
+    rows = load_glossary(fixture_dir / "valid.tsv")
+    assert rows == [
+        GlossaryRow("Pod", "A dispensing module.", "System", "Pod", ("module", "unit")),
+        GlossaryRow("Station", "The host.", "System", "", ()),
+    ]
+    assert glossary_synonyms(rows) == {"module": "Pod", "unit": "Pod"}
+
+
+def test_default_system_glossary_loads():
+    assert isinstance(load_glossary(DEFAULT_SYSTEM_GLOSSARY), list)
+
+
+@pytest.mark.parametrize(
+    ("body", "line"),
+    [
+        ("Pod\tA pod.\n", 2),
+        ("Pod\tA pod.\tSystem\tPod\n", 2),
+        ("Pod\tA pod.\tGalaxy\tPod\t\n", 2),
+        ("Pod\tA pod.\tSystem\tPod\tx\tstray\n", 2),
+    ],
+)
+def test_load_glossary_rejects_bad_rows(tmp_path, body, line):
+    path = tmp_path / "bad.tsv"
+    path.write_text("term\tdefinition\tlevel\tcode\tavoid\n" + body)
+    with pytest.raises(ValueError, match=rf"bad\.tsv:{line}:"):
+        load_glossary(path)
+
+
+def test_glossary_term_warns_on_synonym():
+    assert glossary_findings("The module pours.\n", {"module": "Pod"}) == [
+        (1, "glossary-term", "warning", 'Use the glossary term "Pod" instead of "module".')
+    ]
+
+
+def test_glossary_term_matches_plural_and_case():
+    found = glossary_findings("Modules pour.\nThe modules pour.\n", {"module": "Pod"})
+    assert [(line, rule) for line, rule, _, _ in found] == [(1, "glossary-term"), (2, "glossary-term")]
+
+
+def test_glossary_term_matches_plural_of_multi_word_synonym():
+    found = glossary_findings("The dispensing modules pour.\n", {"dispensing module": "Pod"})
+    assert [(line, rule) for line, rule, _, _ in found] == [(1, "glossary-term")]
+
+
+def test_glossary_term_not_inside_canonical_term():
+    glossary = {"computer": "Station computer"}
+    assert glossary_findings("The Station computer pours.\n", glossary) == []
+    assert glossary_findings("The Station computers pour.\n", glossary) == []
+    assert len(glossary_findings("The computer pours.\n", glossary)) == 1
+
+
+def test_glossary_term_ignores_code_and_macros():
+    text = "Use `module` here.\nSee xref:module.adoc[the page].\n:module-name: x\n\n[d2]\n----\nmodule -> pod\n----\n"
+    assert glossary_findings(text, {"module": "Pod"}) == []
+
+
+def test_glossary_opt_out():
+    text = "// adoc-style: ignore-next-line\nThe C++ module pours.\n"
+    assert glossary_findings(text, {"module": "Pod"}) == []
+
+
+def test_find_repo_glossaries(fake_repo, tmp_path_factory):
+    found = find_repo_glossaries(fake_repo / "docs" / "station")
+    assert [path.relative_to(fake_repo).as_posix() for path in found] == [
+        "docs/station/modules/ROOT/partials/glossary.tsv",
+        "docs/system/modules/ROOT/partials/glossary.tsv",
+    ]
+    assert find_repo_glossaries(tmp_path_factory.mktemp("outside")) == []
+
+
+def test_main_uses_plugin_copy_without_repo_glossary(tmp_path, capsys):
+    page = tmp_path / "page.adoc"
+    page.write_text("The module pours.\n")
+    assert main([str(page)]) == 0
+    assert capsys.readouterr().err == ""
+
+
+def test_main_applies_repo_glossary(fake_repo, capsys):
+    page = fake_repo / "docs" / "station" / "page.adoc"
+    page.write_text("The module pours.\n")
+    assert main([str(page)]) == 0
+    assert (
+        f'{page}:1: warning: glossary-term: Use the glossary term "Pod" instead of "module".' in capsys.readouterr().out
+    )
+
+
+def test_main_reports_malformed_glossary(fake_repo, capsys):
+    (fake_repo / "docs/system/modules/ROOT/partials/glossary.tsv").write_text("Pod\tx\n")
+    page = fake_repo / "docs" / "station" / "page.adoc"
+    page.write_text("Text.\n")
+    assert main([str(page)]) == 1
+    assert "glossary.tsv:1:" in capsys.readouterr().out
+
+
+def test_glossary_cover_includes_terms_without_synonyms():
+    text = "The Power Management Unit and unit.\n"
+    found = check_text(text, glossary={"unit": "Pod"}, glossary_terms=["Pod", "Power Management Unit"])
+    assert [(f.line, f.rule) for f in found] == [(1, "glossary-term")]
+    assert len(found) == 1
+
+
+@pytest.mark.parametrize(
+    ("text", "count"),
+    [("The MCUboot loads.\n", 0), ("The MCUs load.\n", 1), ("Staffing is hard.\n", 0), ("The staff pours.\n", 1)],
+)
+def test_glossary_synonym_allows_only_plural_suffix(text, count):
+    glossary = {"mcu": "Pod controller", "staff": "Operator"}
+    assert len([f for f in check_text(text, glossary=glossary) if f.rule == "glossary-term"]) == count
+
+
+def test_glossary_plurals_of_synonyms_still_warn():
+    assert len(check_text("Two pumps run.\n", glossary={"pump": "Dispenser"})) == 1
+    assert len(check_text("The dispensing modules.\n", glossary={"dispensing module": "Pod"})) == 1
+    assert len(check_text("The boxes.\n", glossary={"box": "Crate"})) == 1
+
+
+def test_load_glossary_accepts_bom(tmp_path):
+    path = tmp_path / "bom.tsv"
+    path.write_text("term\tdefinition\tlevel\tcode\tavoid\nPod\tA pod.\tSystem\t\t\n", encoding="utf-8-sig")
+    assert [row.term for row in load_glossary(path)] == ["Pod"]
+
+
+def test_short_glossary_row_error_explains_trailing_tabs(tmp_path):
+    path = tmp_path / "short.tsv"
+    path.write_text("term\tdefinition\tlevel\tcode\tavoid\nPod\tA pod.\tSystem\n")
+    with pytest.raises(ValueError, match=r"trailing tabs.*glossary.*tsv"):
+        load_glossary(path)

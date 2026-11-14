@@ -8,12 +8,12 @@ See xref:system::index.adoc[System introduction], xref:system::quality-goals.ado
 == Requirements Overview
 
 The Station is the machine's sole orchestrator.
-It hosts the guest-facing ordering interface and the operator's maintenance interface on the same touch display, owns the domain model (recipes, ingredients, glasses, and the ingredient-to-dispenser mapping), discovers and tracks connected Pods, and turns a selected recipe into a sequence of dispensing commands sent to those Pods.
+It hosts the Guest UI and the Operator UI on the same touch display, owns the domain model (recipes, ingredients, glasses, and the ingredient-to-dispenser mapping), discovers and tracks connected Pods, and turns a selected recipe into a sequence of dispensing commands sent to those Pods.
 
-* Let a guest browse available recipes, select a glass, and start a mix without any instructions.
+* Let a Guest browse available recipes, select a glass, and start a mix without any instructions.
 * Turn a recipe into a sequence of dispensing actions, scaled to the chosen glass, and carry them out by commanding the appropriate Pods.
 * Track which Pods are connected and reflect their live state to the UI.
-* Let an operator configure recipes' supporting data (ingredients, glasses, pod-to-ingredient assignment) and calibrate a dispenser, gated behind authentication.
+* Let an Operator configure recipes' supporting data (ingredients, glasses, pod-to-ingredient assignment) and calibrate a dispenser, gated behind authentication.
 
 == Quality Goals
 

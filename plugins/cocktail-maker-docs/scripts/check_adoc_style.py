@@ -7,9 +7,17 @@ import argparse
 import enum
 import re
 import sys
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import NamedTuple
+
+
+class GlossaryRow(NamedTuple):
+    term: str
+    definition: str
+    level: str
+    code: str
+    avoid: tuple[str, ...]
 
 
 class LineKind(enum.Enum):
@@ -28,6 +36,9 @@ class Finding(NamedTuple):
 
 
 DEFAULT_AVOID_WORDS = Path(__file__).resolve().parent.parent / "skills" / "writing-style" / "avoid-words.tsv"
+DEFAULT_SYSTEM_GLOSSARY = Path(__file__).resolve().parent.parent / "skills" / "writing-style" / "glossary-system.tsv"
+GLOSSARY_LEVELS = ("System", "Station", "Pod", "Mechanics", "UI")
+_GLOSSARY_HEADER = ("term", "definition", "level", "code", "avoid")
 OPT_OUT = "// adoc-style: ignore-next-line"
 
 _DELIMITER = re.compile(r"^(-{4,}|\.{4,}|\+{4,}|/{4,}|[|,!]===+|`{3,}.*)$")
@@ -217,13 +228,78 @@ def load_avoid_words(path: Path = DEFAULT_AVOID_WORDS) -> dict[str, str]:
     return words
 
 
+def load_glossary(path: Path) -> list[GlossaryRow]:
+    """Read a glossary TSV, and raise a ValueError naming the file and line on a malformed row."""
+    rows: list[GlossaryRow] = []
+    for number, line in enumerate(path.read_text(encoding="utf-8-sig").splitlines(), start=1):
+        if not line.strip():
+            continue
+        cells = line.split("\t")
+        if number == 1 and tuple(cells) == _GLOSSARY_HEADER:
+            continue
+        if len(cells) != len(_GLOSSARY_HEADER):
+            raise ValueError(
+                f"{path}:{number}: expected {len(_GLOSSARY_HEADER)} tab-separated columns, got {len(cells)}. "
+                "Keep the trailing tabs of empty cells, because Asciidoctor does not pad a short row. "
+                "A whitespace hook must exclude glossary TSV files, "
+                "e.g. `exclude: glossary.*\\.tsv$` on trailing-whitespace."
+            )
+        term, definition, level, code, avoid = (cell.strip() for cell in cells)
+        if not term:
+            raise ValueError(f"{path}:{number}: the term is empty")
+        if level not in GLOSSARY_LEVELS:
+            raise ValueError(f"{path}:{number}: unknown level {level!r}, use one of {', '.join(GLOSSARY_LEVELS)}")
+        synonyms = tuple(part.strip() for part in avoid.split(";") if part.strip())
+        rows.append(GlossaryRow(term, definition, level, code, synonyms))
+    return rows
+
+
+def find_repo_glossaries(start: Path) -> list[Path]:
+    """Find the glossary files of the git repository that holds start, or none outside a repository."""
+    start = start.resolve()
+    for directory in (start, *start.parents):
+        if (directory / ".git").exists():
+            return sorted(directory.glob("docs/**/partials/glossary.tsv"))
+    return []
+
+
+def glossary_synonyms(rows: Iterable[GlossaryRow]) -> dict[str, str]:
+    return {synonym.lower(): row.term for row in rows for synonym in row.avoid}
+
+
+def _word_pattern(word: str, inflect: bool = False) -> re.Pattern[str]:
+    """Match a word or phrase; inflect lets the last word carry a suffix, like a plural."""
+    parts = word.split()
+    if inflect:
+        suffix = r"(?:s|es)?\b"
+    else:
+        suffix = r"\w*" if len(parts) == 1 else r"\b"
+    return re.compile(r"\b" + r" ".join(re.escape(part) for part in parts) + suffix, re.IGNORECASE)
+
+
+def _glossary_findings(
+    number: int, masked: str, glossary: Mapping[str, str], terms: Iterable[str] = ()
+) -> list[Finding]:
+    hits: list[tuple[int, Finding]] = []
+    # A synonym inside a canonical term that occurs at the same place is no synonym use.
+    covered = [
+        match.span()
+        for term in {*terms, *glossary.values()}
+        for match in re.finditer(r"\b" + re.escape(term) + r"\w*", masked, re.IGNORECASE)
+    ]
+    for synonym, term in glossary.items():
+        for match in _word_pattern(synonym, inflect=True).finditer(masked):
+            if any(start <= match.start() and match.end() <= end for start, end in covered):
+                continue
+            message = f'Use the glossary term "{term}" instead of "{match.group(0)}".'
+            hits.append((match.start(), Finding(number, "glossary-term", "warning", message)))
+    return [finding for _, finding in sorted(hits, key=lambda hit: hit[0])]
+
+
 def _avoid_word_findings(number: int, masked: str, avoid_words: Mapping[str, str]) -> list[Finding]:
     hits: list[tuple[int, Finding]] = []
     for word, replacement in avoid_words.items():
-        parts = word.split()
-        suffix = r"\w*" if len(parts) == 1 else r"\b"
-        pattern = re.compile(r"\b" + r" ".join(re.escape(part) for part in parts) + suffix, re.IGNORECASE)
-        for match in pattern.finditer(masked):
+        for match in _word_pattern(word).finditer(masked):
             message = f'Avoid "{match.group(0)}", use: {replacement}.'
             hits.append((match.start(), Finding(number, "avoid-word", "warning", message)))
     return [finding for _, finding in sorted(hits, key=lambda hit: hit[0])]
@@ -235,7 +311,13 @@ def _line_is_finished(masked: str) -> bool:
     return end.endswith(" +") or end.rstrip("*_'\")]").endswith((".", "!", "?", ":"))
 
 
-def check_text(text: str, avoid_words: Mapping[str, str] | None = None) -> list[Finding]:
+def check_text(
+    text: str,
+    avoid_words: Mapping[str, str] | None = None,
+    glossary: Mapping[str, str] | None = None,
+    glossary_terms: Iterable[str] | None = None,
+) -> list[Finding]:
+    terms = tuple(glossary_terms or ())
     lines = text.splitlines()
     kinds, hardbreaks = _classify(lines)
     findings: list[Finding] = []
@@ -255,6 +337,8 @@ def check_text(text: str, avoid_words: Mapping[str, str] | None = None) -> list[
             findings.append(Finding(number, "dash", "error", "Avoid dashes, use a comma or a new sentence."))
         if avoid_words:
             findings.extend(_avoid_word_findings(number, masked, avoid_words))
+        if glossary:
+            findings.extend(_glossary_findings(number, masked, glossary, terms))
         if kind is LineKind.HEADING or hardbreaks:
             # With hard line breaks on, every line break shows on the page, so the layout rules do not apply.
             continue
@@ -308,12 +392,28 @@ def reflow(text: str) -> str:
     return "\n".join(out)
 
 
+def _glossary_for(
+    path: Path, plugin_rows: list[GlossaryRow], cache: dict[Path, list[GlossaryRow]]
+) -> tuple[dict[str, str], list[str]]:
+    """Merge the synonym maps and terms of the plugin glossary and the glossaries of the repository around path."""
+    merged = glossary_synonyms(plugin_rows)
+    terms = [row.term for row in plugin_rows]
+    for glossary_path in find_repo_glossaries(path.resolve().parent):
+        if glossary_path not in cache:
+            cache[glossary_path] = load_glossary(glossary_path)
+        merged.update(glossary_synonyms(cache[glossary_path]))
+        terms.extend(row.term for row in cache[glossary_path])
+    return merged, terms
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Check the writing style of AsciiDoc files.")
     parser.add_argument("files", nargs="*", type=Path)
     parser.add_argument("--fix", action="store_true", help="rewrite files to fix what can be fixed")
     args = parser.parse_args(argv)
     avoid_words = load_avoid_words()
+    plugin_rows = load_glossary(DEFAULT_SYSTEM_GLOSSARY)
+    repo_glossaries: dict[Path, list[GlossaryRow]] = {}
     failed = False
     for path in args.files:
         try:
@@ -327,7 +427,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             if fixed != text:
                 path.write_text(fixed, encoding="utf-8")
                 text = fixed
-        for finding in check_text(text, avoid_words):
+        try:
+            glossary, terms = _glossary_for(path, plugin_rows, repo_glossaries)
+        except (OSError, UnicodeDecodeError, ValueError) as error:
+            print(f"{path}: error: {error}")
+            failed = True
+            continue
+        for finding in check_text(text, avoid_words, glossary, terms):
             print(f"{path}:{finding.line}: {finding.severity}: {finding.rule}: {finding.message}")
             failed = failed or finding.severity == "error"
     return 1 if failed else 0

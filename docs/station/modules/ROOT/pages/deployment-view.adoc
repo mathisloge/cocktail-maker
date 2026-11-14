@@ -18,9 +18,9 @@ rpi: "Raspberry Pi (Station) · Station computer" {
   app -> workdir.data: "reads at startup" {class: data}
   app -> workdir.mapping: "reads and writes" {class: [data; key]}
 }
-pod1: "Pod · MCU · Zephyr firmware" {class: external}
-pod2: "Pod · MCU · Zephyr firmware" {class: external}
-podN: "Pod (0..N) · MCU · Zephyr firmware" {class: external}
+pod1: "Pod · Pod controller with Zephyr firmware" {class: external}
+pod2: "Pod · Pod controller with Zephyr firmware" {class: external}
+podN: "Pod (0..N) · Pod controller with Zephyr firmware" {class: external}
 rpi.app -> pod1: "talks over USB CDC" {class: data}
 rpi.app -> pod2: "talks over USB CDC" {class: data}
 rpi.app -> podN: "talks over USB CDC" {class: data}
@@ -32,7 +32,7 @@ This keeps the deployment self-contained on a single device, at the cost of tyin
 See xref:risks-and-technical-debt.adoc[].
 
 Two build configurations exist side by side from the same codebase.
-A development and CI configuration runs against simulated Pods, so the guest and operator flows and the test suite can run without any Pod physically attached.
+A development and CI configuration runs against simulated Pods, so the Guest and Operator flows and the test suite can run without any Pod physically attached.
 The production configuration, the one built and packaged for the Raspberry Pi, always talks to real Pods over USB.
 Which one a given build uses is fixed at compile time, not chosen at runtime, so a shipped build cannot end up running against simulated hardware by accident.
 

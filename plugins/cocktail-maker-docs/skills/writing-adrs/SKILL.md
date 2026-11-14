@@ -95,9 +95,25 @@ The template has these sections:
 
 - Context: the problem, the facts that shape it and the ADR that this one supersedes.
 - Decision Drivers: the forces that the decision must satisfy, one bullet each.
+  A driver refers to the ID of the quality goal or scenario behind it.
+- Quality Goals: the goals and scenarios that the decision serves or affects, by ID, with one line each on how.
 - Decision: what we do, in one or two active sentences.
 - Alternatives Considered: each real alternative and why it lost.
-- Consequences: the good and the bad results, one bullet each.
+- Consequences: the good and the bad results, one bullet each, and an assessment of each listed goal.
+
+## Tie the ADR to the quality goals
+
+Every ADR has the section `== Quality Goals` directly after `== Context`.
+Only `=== Decision Drivers` may sit between them.
+An ADR without a goal reference is incomplete.
+
+- List each goal (`QG-nn`) and scenario (`QS-nn`) that the decision serves or affects, with one line each on how.
+- Use only IDs that exist.
+  The goals are defined on the Quality Goals page of the System docs, the scenarios in its chapter 10.
+- Link each ID, for example `xref:system::quality-goals.adoc#QG-01[QG-01]`.
+- Refer to these IDs in the decision drivers.
+- In the consequences, assess each listed goal as better, worse or neutral, with the reason.
+  Do it in a subsection `=== Effect on the Quality Goals`.
 
 Name at least one bad consequence.
 A decision without costs is usually a decision that nobody looked at closely.
@@ -106,6 +122,7 @@ A decision without costs is usually a decision that nobody looked at closely.
 
 - The decision earns an ADR, and it is in the right component.
 - The title has the right prefix and the number from the file name.
+- The section `== Quality Goals` is directly after `== Context`, lists at least one `QG-nn`, and the consequences assess each listed goal.
 - The status is set, and a superseded ADR points at its successor.
 - The page is in the `nav.adoc` of the component and in the ADR list on the chapter 9 page.
 - The prose follows `writing-style`, and the checker reports no errors.

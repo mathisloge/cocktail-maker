@@ -7,7 +7,7 @@ All electrical energy for the machine originates from a single external 230V AC 
 ----
 include::system:ROOT:partial$d2-style.d2[]
 direction: right
-machine: "Sir-Mix-A-Lot · cocktail machine\na continuous protective earth (PE) conductor runs through every stage,\nindependent of the voltage domain" {
+machine: "Sir-Mix-A-Lot · cocktail-maker\na continuous protective earth (PE) conductor runs through every stage,\nindependent of the voltage domain" {
   class: boundary
   inlet: "IEC C14 Inlet · mains inlet\n230 V AC entry point" {class: power-part}
   main_switch: "Main Switch · mains switch\nmanual mains disconnect" {class: power-part}
@@ -26,7 +26,7 @@ machine: "Sir-Mix-A-Lot · cocktail machine\na continuous protective earth (PE) 
 ----
 How does the mains energy reach the actuators and the Raspberry Pi?
 
-The main switch provides a single, clearly labeled point at which an operator can fully disconnect the machine from mains power.
+The main switch provides a single, clearly labeled point at which an Operator can fully disconnect the machine from mains power.
 The RCD/circuit breaker protects against both residual current faults and overcurrent conditions before any DC conversion takes place.
 A continuous protective earth (PE) conductor is maintained across all stages, from the inlet through to the Station and every Pod.
 The detailed rationale for this power architecture is documented in xref:adr:004-power-architecture.adoc[SYS-004].

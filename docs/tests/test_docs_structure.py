@@ -14,6 +14,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 import pytest
+from check_adoc_style import GlossaryRow, load_glossary
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -268,8 +269,8 @@ def test_example_adr_is_gone() -> None:
 
 CROSS_COMPONENT_XREF = re.compile(r"xref:(?:system|station|mechanics|embedded):[^\[\s]*\[([^\]]*)\]")
 
-# Words that name a component in a link text: the component names and the ADR prefixes.
-COMPONENT_NAMES = re.compile(r"\b(?:System|Station|Mechanics|Embedded|SYS-|STA-|EMB-|CM3D-)")
+# Words that name a component in a link text: the component names, the ADR prefixes and the stable System IDs.
+COMPONENT_NAMES = re.compile(r"\b(?:System|Station|Mechanics|Embedded|SYS-|STA-|EMB-|CM3D-|QG-|QS-|SM-|IF-)")
 
 
 def test_cross_component_xrefs_name_the_component() -> None:
@@ -1053,3 +1054,271 @@ def test_off_palette_colours_finds_mask_colours_outside_a_mask() -> None:
 def test_off_palette_colours_needs_an_ink_background() -> None:
     svg = '<svg><rect fill="#1c1510" /><rect fill="#0a0806" /></svg>'
     assert off_palette_colours(svg, PALETTE) == ['the first rect has fill="#1c1510", not the ink colour #0a0806']
+
+
+SYSTEM_GLOSSARY = SYSTEM_PAGES.parent / "partials" / "glossary.tsv"
+
+PLUGIN_GLOSSARY = REPO / "plugins" / "cocktail-maker-docs" / "skills" / "writing-style" / "glossary-system.tsv"
+
+GLOSSARY_COLUMNS = ["term", "definition", "level", "code", "avoid"]
+
+
+def glossary_problems(system: list[GlossaryRow], others: dict[str, list[GlossaryRow]]) -> list[str]:
+    """Report glossary rows that break the rules: avoided synonyms, redefined System terms and duplicates."""
+    problems: list[str] = []
+    glossaries = {"System": system, **others}
+    terms = {row.term.lower(): name for name, rows in glossaries.items() for row in rows}
+    seen: dict[str, str] = {}
+    for name, rows in glossaries.items():
+        for row in rows:
+            key = row.term.lower()
+            if key in seen:
+                problems.append(f"{name}: duplicate term '{row.term}' (also in {seen[key]})")
+            seen.setdefault(key, name)
+    for name, rows in glossaries.items():
+        for row in rows:
+            for synonym in row.avoid:
+                if synonym.lower() in terms:
+                    problems.append(
+                        f"{name}: '{synonym}' is avoided for '{row.term}' but is a term in {terms[synonym.lower()]}"
+                    )
+    owners: dict[str, str] = {}
+    for name, rows in glossaries.items():
+        for row in rows:
+            for synonym in row.avoid:
+                owner = owners.setdefault(synonym.lower(), row.term)
+                if owner != row.term:
+                    problems.append(f"{name}: '{synonym}' is avoided for both '{owner}' and '{row.term}'")
+    for name, rows in glossaries.items():
+        for row in rows:
+            for synonym in row.avoid:
+                for other_name, other_rows in glossaries.items():
+                    for other in other_rows:
+                        if other is not row and re.search(rf"\b{re.escape(synonym)}\b", other.term, re.IGNORECASE):
+                            problems.append(
+                                f"{name}: '{synonym}' is avoided for '{row.term}' but is a word of the term "
+                                f"'{other.term}' in {other_name}"
+                            )
+    system_avoided = {synonym.lower() for row in system for synonym in row.avoid}
+    system_terms = {row.term.lower() for row in system}
+    for name, rows in others.items():
+        for row in rows:
+            if row.term.lower() in system_terms:
+                problems.append(f"{name}: '{row.term}' redefines a System term")
+            elif row.term.lower() in system_avoided:
+                problems.append(f"{name}: '{row.term}' is a System synonym")
+    return problems
+
+
+def test_glossary_problems_reader() -> None:
+    system = [GlossaryRow("Pod", "d", "System", "", ("module", "unit"))]
+    assert glossary_problems(system, {"station": [GlossaryRow("Recipe", "d", "Station", "", ("cocktail",))]}) == []
+    overlap = glossary_problems(system, {"station": [GlossaryRow("Unit", "d", "Station", "", ())]})
+    assert any("'Unit' is a System synonym" in p for p in overlap)
+    assert any("'unit' is avoided for 'Pod'" in p for p in overlap)
+    redefined = glossary_problems(system, {"station": [GlossaryRow("pod", "d", "Station", "", ())]})
+    assert any("redefines a System term" in p for p in redefined)
+    assert any("duplicate term" in p for p in redefined)
+    duplicate = glossary_problems(
+        [GlossaryRow("Pod", "d", "System", "", ()), GlossaryRow("Pod", "e", "System", "", ())], {}
+    )
+    assert duplicate == ["System: duplicate term 'Pod' (also in System)"]
+    own = glossary_problems([GlossaryRow("Pod", "d", "System", "", ("pod",))], {})
+    assert len(own) == 1
+    shared = glossary_problems(
+        [GlossaryRow("Pod", "d", "System", "", ("unit",)), GlossaryRow("Station", "d", "System", "", ("Unit",))], {}
+    )
+    assert shared == ["System: 'Unit' is avoided for both 'Pod' and 'Station'"]
+    inside = glossary_problems(
+        [GlossaryRow("Pod", "d", "System", "", ("unit",)), GlossaryRow("Power Management Unit", "d", "System", "", ())],
+        {},
+    )
+    assert inside == ["System: 'unit' is avoided for 'Pod' but is a word of the term 'Power Management Unit' in System"]
+
+
+def test_plugin_glossary_copy_is_in_sync() -> None:
+    assert PLUGIN_GLOSSARY.read_bytes() == SYSTEM_GLOSSARY.read_bytes()
+
+
+def test_glossaries_are_consistent() -> None:
+    others = {
+        path.parents[3].name: load_glossary(path)
+        for path in sorted((REPO / "docs").glob("*/modules/ROOT/partials/glossary.tsv"))
+        if path != SYSTEM_GLOSSARY
+    }
+    assert glossary_problems(load_glossary(SYSTEM_GLOSSARY), others) == []
+
+
+class _TableHeaderParser(HTMLParser):
+    """Collects the header cell texts of every table."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.headers: list[str] = []
+        self._in_th = False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self._in_th = tag == "th"
+
+    def handle_endtag(self, tag: str) -> None:
+        self._in_th = False
+
+    def handle_data(self, data: str) -> None:
+        if self._in_th:
+            self.headers.append(data.strip())
+
+
+@site_test
+def test_glossary_page_renders_the_table() -> None:
+    parser = _TableHeaderParser()
+    parser.feed((SITE_DIR / "system" / "glossary.html").read_text(encoding="utf-8"))
+    parser.close()
+    assert parser.headers == GLOSSARY_COLUMNS
+
+
+ID_PAGES = {
+    "QG": "quality-goals.adoc",
+    "QS": "quality-requirements.adoc",
+    "SM": "safety.adoc",
+    "IF": "building-blocks.adoc",
+}
+QUALITY_GOALS = ["Human Safety", "Food Safety", "Reliability", "Serviceability", "Usability", "Maintainability"]
+
+
+def id_anchors(path: Path, prefix: str) -> list[str]:
+    """Every `[[<prefix>-...]]` anchor of a page, well-formed or not, in document order."""
+    if not path.exists():
+        return []
+    return re.findall(rf"\[\[({prefix}-[^\]]*)\]\]", path.read_text(encoding="utf-8"))
+
+
+def defined_ids(prefix: str) -> list[str]:
+    """The IDs of one prefix, as anchors on the page that defines them. Empty while that page has none."""
+    return id_anchors(SYSTEM_PAGES / ID_PAGES[prefix], prefix)
+
+
+def test_quality_goal_ids() -> None:
+    assert defined_ids("QG") == [f"QG-{n:02d}" for n in range(1, len(QUALITY_GOALS) + 1)]
+    rows = (SYSTEM_PAGES / ID_PAGES["QG"]).read_text(encoding="utf-8").split("\n| [[")[1:]
+    for goal_id, name, row in zip(defined_ids("QG"), QUALITY_GOALS, rows, strict=True):
+        assert row.startswith(f"{goal_id}]]{goal_id}\n")
+        assert f"*{name}*" in row
+
+
+def test_ids_are_defined_only_on_their_page() -> None:
+    for prefix, page in ID_PAGES.items():
+        for other in sorted((REPO / "docs").glob("*/modules/*/pages/*.adoc")):
+            if other == SYSTEM_PAGES / page:
+                continue
+            assert id_anchors(other, prefix) == [], f"{other} defines a {prefix} anchor"
+
+
+@pytest.mark.parametrize("prefix", sorted(ID_PAGES))
+def test_ids_are_unique_and_well_formed(prefix: str) -> None:
+    ids = defined_ids(prefix)
+    assert all(re.fullmatch(rf"{prefix}-\d{{2}}", i) for i in ids), ids
+    assert len(ids) == len(set(ids)), ids
+
+
+@site_test
+def test_quality_goal_anchor_resolves() -> None:
+    html = (SITE_DIR / "system" / "quality-goals.html").read_text(encoding="utf-8")
+    for goal_id in defined_ids("QG"):
+        assert f'id="{goal_id}"' in html
+    assert 'id="QG-01"' in html
+
+
+def adr_goal_problems(text: str) -> list[str]:
+    """What is wrong with the `== Quality Goals` section of one ADR page, as readable messages."""
+    lines = text.splitlines()
+    headings = [(i, line) for i, line in enumerate(lines) if re.match(r"==+ ", line)]
+    titles = [line for _, line in headings]
+    if "== Quality Goals" not in titles:
+        return ["missing section '== Quality Goals'"]
+    problems: list[str] = []
+    start = titles.index("== Quality Goals")
+    before = titles[:start]
+    if "== Context" not in before:
+        problems.append("'== Quality Goals' does not come after '== Context'")
+    else:
+        between = before[before.index("== Context") + 1 :]
+        if any(title != "=== Decision Drivers" for title in between):
+            problems.append("'== Quality Goals' is not directly after '== Context'")
+    end = headings[start + 1][0] if start + 1 < len(headings) else len(lines)
+    section = "\n".join(lines[headings[start][0] + 1 : end])
+    refs = re.findall(r"\b(?:QG|QS)-\d+\b", section)
+    if not any(ref.startswith("QG-") for ref in refs):
+        problems.append("'== Quality Goals' has no QG-nn reference")
+    defined = set(defined_ids("QG")) | set(defined_ids("QS"))
+    problems += [f"{ref} is not a defined ID" for ref in dict.fromkeys(refs) if ref not in defined]
+    for anchor, label in re.findall(r"xref:\S*?#(QG-\d+)\[([^\]]*)\]", text):
+        if anchor != label:
+            problems.append(f"link to {anchor} has the text '{label}'")
+    effect = [i for i, title in enumerate(titles) if title == "=== Effect on the Quality Goals"]
+    effect_text = ""
+    if effect:
+        effect_start = headings[effect[0]][0]
+        effect_end = headings[effect[0] + 1][0] if effect[0] + 1 < len(headings) else len(lines)
+        effect_text = "\n".join(lines[effect_start + 1 : effect_end])
+    assessed = {m for line in effect_text.splitlines() for m in re.findall(r"\bQG-\d+\b", line)}
+    problems += [
+        f"{ref} has no line in '=== Effect on the Quality Goals'"
+        for ref in dict.fromkeys(refs)
+        if ref.startswith("QG-") and ref in defined and ref not in assessed
+    ]
+    return problems
+
+
+_ADR_GOOD = """= SYS-001: X
+
+== Context
+
+Text.
+
+=== Decision Drivers
+
+* **A:** QG-01.
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: how.
+
+== Decision
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: Better.
+"""
+
+
+ALL_ADR_PAGES = sorted(
+    [
+        *(REPO / "docs/system/modules/adr/pages").glob("*.adoc"),
+        *(REPO / "docs/station/modules/adr/pages").glob("*.adoc"),
+    ]
+)
+
+
+@pytest.mark.parametrize("adr", ALL_ADR_PAGES, ids=lambda p: f"{p.parts[-5]}-{p.name}")
+def test_adrs_name_their_quality_goals(adr: Path) -> None:
+    assert adr_goal_problems(adr.read_text(encoding="utf-8")) == []
+
+
+def test_adr_goal_problems_reader() -> None:
+    assert adr_goal_problems(_ADR_GOOD) == []
+    no_section = _ADR_GOOD.replace("== Quality Goals", "== Other")
+    assert adr_goal_problems(no_section) == ["missing section '== Quality Goals'"]
+    moved = _ADR_GOOD.replace("=== Decision Drivers", "== Alternatives Considered")
+    assert adr_goal_problems(moved) == ["'== Quality Goals' is not directly after '== Context'"]
+    before_context = "== Quality Goals\n\n* QG-01.\n\n== Context\n\nText.\n"
+    assert "'== Quality Goals' does not come after '== Context'" in adr_goal_problems(before_context)
+    no_qg = _ADR_GOOD.replace("QG-01]: how", "x]: how").replace("#QG-01[", "#x[")
+    assert adr_goal_problems(no_qg) == ["'== Quality Goals' has no QG-nn reference"]
+    unknown = _ADR_GOOD.replace("QG-01]: how.", "QG-01]: how.\n* QG-09: how.")
+    assert adr_goal_problems(unknown) == ["QG-09 is not a defined ID"]
+    mismatch = _ADR_GOOD.replace("#QG-01[QG-01]: how", "#QG-02[QG-01]: how")
+    assert "link to QG-02 has the text 'QG-01'" in adr_goal_problems(mismatch)
+    unassessed = _ADR_GOOD.replace("* xref:system::quality-goals.adoc#QG-01[QG-01]: Better.", "* Better.")
+    assert adr_goal_problems(unassessed) == ["QG-01 has no line in '=== Effect on the Quality Goals'"]
+    no_effect = _ADR_GOOD.split("=== Effect")[0]
+    assert adr_goal_problems(no_effect) == ["QG-01 has no line in '=== Effect on the Quality Goals'"]

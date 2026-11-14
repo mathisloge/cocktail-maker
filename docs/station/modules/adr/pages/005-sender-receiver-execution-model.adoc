@@ -12,10 +12,16 @@ Cancellation in Boost.Cobalt is also reported as an exception (`operation_aborte
 
 === Decision Drivers
 
-* **Standard Alignment:** Follow the {cpp}26 asynchronous model so the code base can move to `std::execution` with little more than a namespace change once standard libraries ship it.
-* **Structured Concurrency:** Every piece of background work must be owned by a scope that can be stopped and awaited, so the Station can shut down without work outliving the objects it references.
-* **Explicit Cancellation:** A stop request must be distinguishable from an error, so that aborting a recipe reliably triggers the safe-state handling instead of an error path.
-* **Keep STA-003's guarantees:** One shared execution context, no shared state across threads, a timeout on every Pod exchange.
+* **Standard Alignment:** Follow the {cpp}26 asynchronous model so the code base can move to `std::execution` with little more than a namespace change once standard libraries ship it (QG-06).
+* **Structured Concurrency:** Every piece of background work must be owned by a scope that can be stopped and awaited, so the Station can shut down without work outliving the objects it references (QG-03).
+* **Explicit Cancellation:** A stop request must be distinguishable from an error, so that aborting a recipe reliably triggers the safe-state handling instead of an error path (QG-01).
+* **Keep STA-003's guarantees:** One shared execution context, no shared state across threads, a timeout on every Pod exchange (QG-01, QG-03).
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: A stop request is its own completion, so aborting a recipe reliably runs the safe state handling.
+* xref:system::quality-goals.adoc#QG-03[QG-03]: Every background operation belongs to a scope that is stopped and joined on shutdown, and the timeout on every Pod exchange stays.
+* xref:system::quality-goals.adoc#QG-06[QG-06]: The code follows the C++26 standard model, so moving to `std::execution` is mostly mechanical.
 
 == Decision
 We use the reference implementation of `std::execution`, https://github.com/NVIDIA/stdexec[stdexec] (pinned to a `main` commit), on top of the existing Boost.Asio execution context:
@@ -57,3 +63,10 @@ The `cm::Task` alias and the other building blocks are reached through `import c
 * **Bad:** for the same reason, UndefinedBehaviorSanitizer's function-type check is disabled: stdexec's sender descriptors are lambdas whose types differ between translation units, which that check reports although the calls are sound.
 * **Bad:** tasks are lazy.
 Anything that must happen at call time, like registering for a Pod response before sending the request, has to be done before the task is created and not inside it.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: Better, because abortion triggers the safe state handling through `upon_stopped` and not through exception matching.
+* xref:system::quality-goals.adoc#QG-03[QG-03]: Better, because no work outlives the objects it references.
+* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because the move to the standard is mostly mechanical.
+Worse, because the stdexec `main` branch is a moving target, module units have strict rules for coroutine bodies and includes, and the function type check of UBSan is disabled.

@@ -1,6 +1,6 @@
 = 5 Building Block View
 
-The xref:context-and-scope.adoc[system context] shows the Cocktail Machine as one black box.
+The xref:context-and-scope.adoc[system context] shows the cocktail-maker as one black box.
 Zooming into the machine, the system is partitioned into three functional domains.
 
 .Building blocks of the machine
@@ -9,17 +9,17 @@ Zooming into the machine, the system is partitioned into three functional domain
 include::system:ROOT:partial$d2-style.d2[]
 direction: down
 guest: "Guest" {class: actor}
-operator: "Operator\nstaff/owner" {class: actor}
-power_grid: "Power Grid · wall outlet" {class: external}
+operator: "Operator" {class: actor}
+power_grid: "Power Grid · mains socket" {class: external}
 ingredients: "Raw Ingredients · bottles" {class: external}
-machine: "Sir-Mix-A-Lot · cocktail machine" {
+machine: "Sir-Mix-A-Lot · cocktail-maker" {
   class: boundary
   station: "Station · Raspberry Pi, touchscreen · C++/Slint\norchestrates the entire system,\nruns the UI, manages recipes\nand handles Pod state" {class: block}
-  pod: "Pod · MCU · steppers, load cells, valves\nautonomous hardware module,\none or more per machine,\ndispenses exact ingredient amounts\nand reports back" {class: block}
+  pod: "Pod · Pod controller, steppers, load cells, valves\nautonomous unit,\none or more per machine,\ndispenses exact ingredient amounts\nand reports back" {class: block}
   power_management_unit: "Power Management Unit · power supply\ninternally transforms\nexternal 230 V AC to safe\n5 V/12 V/24 V DC levels" {class: power-part}
 }
 guest -> machine.station: "interacts with UI\nto order drinks" {class: interaction}
-operator -> machine.station: "uses maintenance UI\n(calibration, cleaning cycles)" {class: interaction}
+operator -> machine.station: "uses Operator UI\n(calibration, cleaning cycles)" {class: interaction}
 operator -> machine.pod: "performs physical maintenance\n(tube swaps, refilling)" {class: interaction}
 operator -> ingredients: replaces empty bottles {class: interaction}
 power_grid -> machine.power_management_unit: supplies 230 V AC {class: power}
@@ -30,8 +30,8 @@ ingredients -> machine.pod: "are drawn into tubing\nvia pumps" {class: fluid}
 ----
 Which blocks make up the machine, and how do they work with the people and inputs around it?
 
-* **Station:** Handles all high-level logic and user interactions.
-Both the Guest UI and the Operator Maintenance UI are hosted here.
+* **Station:** Handles all high-level logic and the interactions with Guests and Operators.
+Both the Guest UI and the Operator UI are hosted here.
 The xref:station::building-blocks.adoc[Station building block view] shows its inner blocks.
 * **Pod(s):** Handle the low-level, real-time hardware execution.
 A Pod receives a command, executes it autonomously by driving its actuators, and reports back.

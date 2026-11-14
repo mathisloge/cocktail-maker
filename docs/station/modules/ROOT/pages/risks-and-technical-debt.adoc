@@ -12,7 +12,7 @@ Up to about 20 g in an hour has been measured, on an unloaded and uncalibrated c
 A pour lasts seconds and doesn't notice, but a fill level kept over hours can be that far off.
 The Station doesn't compensate for it, and the warning before a drink only leaves a reserve of 20 mL.
 * *A false empty followed by a small top-up:* the Station takes the top-up for the whole content of the bottle, as it can't tell this from a real refill.
-The warning then shows too little until the next refill or the button in the maintenance area.
+The warning then shows too little until the next refill or the button in the Operator UI.
 * *A Pod on another release can look silent:* the Station checks the protocol release only after it has decoded the whole `DeviceInfoResponse`.
 A release that changes the rest of that message gives a reply that doesn't decode, and then the Station only logs a hint instead of naming the release.
 Reading `ProtocolVersion` from the frame before decoding the rest would close that gap.
@@ -26,13 +26,13 @@ A per-exchange timeout bounds any single exchange, but a very slow or misbehavin
 
 * *Running a pump until stopped:* cleaning a pump with hot water needs it to run until someone stops it.
 The protocol only has `Dispense`, which pours a fixed amount, and the calibration run, which runs for a fixed time.
-The maintenance area will offer the action per pump.
+The Operator UI will offer the action per pump.
 It needs a new protocol message and support in the Pod firmware before it does anything.
 * *Running a pump backwards:* emptying the tubes needs a pump to run in reverse.
 Neither the protocol nor the Pod firmware can do this yet.
-The maintenance area will offer the action per pump, and it stays without effect until both are extended.
+The Operator UI will offer the action per pump, and it stays without effect until both are extended.
 * *Restarting a Pod:* the protocol has no message that restarts a Pod.
-The maintenance area will offer a restart per Pod, and it stays without effect until the protocol and the Pod firmware support it.
+The Operator UI will offer a restart per Pod, and it stays without effect until the protocol and the Pod firmware support it.
 * *Reconnecting a Pod:* discovery only reports a port when it appears, so a Pod whose session ended stays away until it is unplugged.
-The maintenance area will offer a reconnect per Pod.
+The Operator UI will offer a reconnect per Pod.
 It needs the Station to end that Pod's session and open its port again.

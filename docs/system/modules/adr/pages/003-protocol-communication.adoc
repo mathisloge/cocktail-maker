@@ -11,8 +11,13 @@ include::partial$adr-header.adoc[]
 
 == Context
 
-With the Station acting as orchestrator and each Pod as an autonomous dispensing module (xref:adr:001-system-split.adoc[SYS-001]), we need a communication model between them.
+With the Station acting as orchestrator and each Pod as an autonomous unit (xref:adr:001-system-split.adoc[SYS-001]), we need a communication model between them.
 Dispensing is a safety- and food-safety-relevant action, so it must always be traceable to an explicit, single point of control, and the interaction pattern must be simple enough to implement reliably on constrained Pod microcontrollers.
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: The Station is the sole initiator, so every dispensing action traces back to one explicit point of control.
+* xref:system::quality-goals.adoc#QG-02[QG-02]: The same single point of control keeps every pour traceable.
 
 == Decision
 
@@ -22,9 +27,15 @@ It only acts in response to a request from the Station, and reports status and e
 
 == Consequences
 
-* **Good:** A single point of control (the Station) makes it straightforward to reason about when and why a Pod acts, which directly supports the *Human Safety* and *Food Safety* quality goals.
+* **Good:** A single point of control (the Station) makes it straightforward to reason about when and why a Pod acts, which directly supports the *Human Safety* (QG-01) and *Food Safety* (QG-02) quality goals.
 * **Good:** Pods do not need to arbitrate between multiple initiators or handle concurrent, conflicting commands, simplifying their firmware.
 * **Good:** The interaction pattern is simple to implement and test in isolation, since each exchange is a single request followed by one or more responses.
 * **Bad:** A Pod cannot proactively push time-critical events (e.g. a fault) the instant they occur.
 The Station must poll, which introduces latency bounded by the polling interval.
 * **Bad:** The Station becomes a single point of failure for observability: if the Station stalls or crashes, no Pod status or event can be retrieved until it recovers.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: Better, because a Pod never acts on its own.
+The cost is that a Pod cannot push a fault, so the Station has to poll and the latency is bounded by the polling interval.
+* xref:system::quality-goals.adoc#QG-02[QG-02]: Better, because no Pod can start a pour that the Station did not request.

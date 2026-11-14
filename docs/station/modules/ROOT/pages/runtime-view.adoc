@@ -29,7 +29,7 @@ other_release: "else: Another release" {
 ----
 How does a new Pod become available, and what happens when it speaks another protocol release?
 
-A Pod on another protocol release stays unused, and the maintenance area shows something like "Protokoll 2.2.0, erwartet 2.1.0".
+A Pod on another protocol release stays unused, and the Operator UI shows something like "Protokoll 2.2.0, erwartet 2.1.0".
 It doesn't hold back the other Pods, just like an unplugged one.
 A Pod that never answers the device info may speak a release whose reply doesn't decode, and the log says so (xref:system::protocol.adoc#_versioning[System protocol versioning]).
 
@@ -38,10 +38,10 @@ See <<A Pod Comes Back After a Power Loss>>.
 
 == A Guest Mixes a Drink
 
-A guest browses the recipe catalog, selects a recipe and, if needed, a glass.
-The Station scales the recipe to the chosen volume and executes it as a sequence of dispensing actions against the owning Pods, reporting progress back to the guest until the mix succeeds or fails.
+A Guest browses the recipe catalog, selects a recipe and, if needed, a glass.
+The Station scales the recipe to the chosen volume and executes it as a sequence of dispensing actions against the owning Pods, reporting progress back to the Guest until the mix succeeds or fails.
 
-.A guest mixes a drink
+.A Guest mixes a drink
 [d2, target="runtime-guest-mixes", format="svg", link=self]
 ----
 include::system:ROOT:partial$d2-style.d2[]
@@ -70,7 +70,7 @@ each_ingredient: "loop: Each ingredient" {
 domain -> ui: "Mix complete" {class: normal}
 ui -> guest: "Show success screen" {class: interaction}
 ----
-How does the order of a guest turn into dispensing actions on the Pods?
+How does the order of a Guest turn into dispensing actions on the Pods?
 
 The warning leaves a reserve of 20 mL, because the fill level is only a guide.
 It doesn't block a drink, and it stays out of the way for a dispenser with no known fill level.
@@ -102,13 +102,13 @@ only a pour with nothing at all counts. Such a pour then counts as an empty bott
 A rest of up to 1.5 mL ends the pour, because that is within the Pod's tolerance.
 The Station ignores the `DispenseProgress` that arrives during a pour or a calibration run.
 
-If a dispense fails or the guest cancels partway through, the Station stops the remaining actions, sends an `EmergencyStop` to every Pod, and returns the guest to a known-good screen naming the affected ingredient rather than a generic failure.
+If a dispense fails or the Guest cancels partway through, the Station stops the remaining actions, sends an `EmergencyStop` to every Pod, and returns the Guest to a known-good screen naming the affected ingredient rather than a generic failure.
 
 == A Bottle Runs Empty and Gets Refilled
 
 A pour that counts as an empty bottle by the table above only makes the Station suspect that the bottle is empty.
 It can't store 0 yet, because a blocked pump looks just the same and the bottle may still be full.
-The suspected bottle counts as empty for the warning, and the maintenance area says "vermutlich leer".
+The suspected bottle counts as empty for the warning, and the Operator UI says "vermutlich leer".
 
 .A bottle runs empty and gets refilled
 [d2, target="runtime-bottle-refilled", format="svg", link=self]
@@ -124,7 +124,7 @@ domain -> podcomm: "Read the weight" {class: data}
 podcomm -> domain: "Reading" {class: data}
 domain.suspected: "Suspected empty, a refill counts from this reading" {class: boundary}
 domain -> ui: "Ask for a refill" {class: [interaction; key]}
-ui -> person: "Name the ingredient, ask to call the staff" {class: interaction}
+ui -> person: "Name the ingredient, ask to call the Operator" {class: interaction}
 person -> ui: "Done" {class: interaction}
 domain.settle: "Wait 1 s for the load to settle" {class: boundary}
 domain -> podcomm: "Read the weight" {class: data}
@@ -141,26 +141,26 @@ domain -> podcomm: "Dispense the rest" {class: data}
 ----
 How does the Station find out whether a bottle it suspects to be empty got refilled?
 
-The dialog needs no PIN, because a guest may stand at the machine.
+The dialog needs no PIN, because a Guest may stand at the machine.
 Confirming without a refill changes nothing and only costs a dry run of about 6.5 s, after which the dialog comes back.
 The dialog also offers to cancel the drink.
 If the next pour doesn't end short, the suspicion was wrong and goes away by itself.
 
-The maintenance area has a button of its own for each dispenser, behind the operator PIN.
+The Operator UI has a button of its own for each dispenser, behind the Operator PIN.
 A rise counts as above.
-Without a rise, the operator is saying that the bottle is full, so the fill level goes back to the last 100 %.
+Without a rise, the Operator is saying that the bottle is full, so the fill level goes back to the last 100 %.
 This covers a bottle refilled while the Station was off, which the correction at connect can't see.
 
 A bottle topped up without any button still shows, because the fill level always follows the reading.
 
 == An Operator Calibrates a Dispenser
 
-An operator authenticates, opens the maintenance area, and works through up to three steps for a specific dispenser.
+An Operator authenticates, opens the Operator UI, and works through up to three steps for a specific dispenser.
 The load cell comes first, because the dispenser calibration measures with it, but it only needs doing once, when the load cell is fitted.
 So the dispenser calibration can run on its own.
 The exchanges follow the patterns from the xref:system::protocol.adoc[System protocol concept].
 
-.An operator calibrates a dispenser
+.An Operator calibrates a dispenser
 [d2, target="runtime-operator-calibrates", format="svg", link=self]
 ----
 include::system:ROOT:partial$d2-style.d2[]
@@ -211,7 +211,7 @@ The Pod derives the calibration from that run, uses it at once, and keeps it acr
 So the Station needs to know nothing about motor steps, and the same flow works for pumps and valves.
 A new run replaces the calibration.
 
-The run pours real liquid, so a glass has to stand under the dispenser, and the operator can stop it.
+The run pours real liquid, so a glass has to stand under the dispenser, and the Operator can stop it.
 A longer run gives a more accurate calibration, because the load cell reads to about 1 g.
 That is about 5 % at 20 mL and about 2 % at 50 mL.
 The run time is 1 s to 30 s and starts at 15 s, and the Station hints at a longer run below 50 mL.

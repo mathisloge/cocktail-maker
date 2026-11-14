@@ -12,7 +12,13 @@ include::partial$adr-header.adoc[]
 == Context
 
 The machine draws power from a single external 230V AC mains connection and must safely distribute it to multiple internal voltage domains: the Raspberry Pi (Station) and the pumps, valves, and stepper motors (Pods).
-The power design must support the *Human Safety* quality goal by providing a clearly labeled disconnect point, protection against residual current and overcurrent faults, and a continuous protective earth (PE) conductor.
+The power design must support the *Human Safety* (QG-01) quality goal by providing a clearly labeled disconnect point, protection against residual current and overcurrent faults, and a continuous protective earth (PE) conductor.
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: The main switch, the residual current and overcurrent protection and the continuous PE conductor protect people from electrical faults.
+* xref:system::quality-goals.adoc#QG-06[QG-06]: A single, linear power chain is simple to document and verify.
+* xref:system::quality-goals.adoc#QG-03[QG-03]: One SMPS powers the Station and all Pods.
 
 == Decision
 
@@ -22,8 +28,14 @@ A continuous PE conductor runs through every stage, independent of the voltage d
 
 == Consequences
 
-* **Good:** A single main switch gives the operator one clearly labeled point to fully disconnect the machine from mains power, directly supporting *Human Safety*.
-* **Good:** A single, linear power chain keeps the internal wiring simple to document and verify, supporting *Maintainability*.
+* **Good:** A single main switch gives the Operator one clearly labeled point to fully disconnect the machine from mains power, directly supporting *Human Safety* (QG-01).
+* **Good:** A single, linear power chain keeps the internal wiring simple to document and verify, supporting *Maintainability* (QG-06).
 * **Bad:** The single SMPS is a single point of failure for the entire machine.
-If it fails, both the Station and all Pods lose power simultaneously, working against *Reliability*.
+If it fails, both the Station and all Pods lose power simultaneously, working against *Reliability* (QG-03).
 * **Bad:** All Pods share the same 24V DC rail, requiring careful current budgeting and fusing as more Pods are added, which limits scaling without revisiting the power design.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: Better, because one main switch gives the Operator a single labeled point to disconnect the machine from mains.
+* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because the single power chain keeps the internal wiring simple to document and verify.
+* xref:system::quality-goals.adoc#QG-03[QG-03]: Worse, because the single SMPS is a single point of failure for the Station and all Pods.

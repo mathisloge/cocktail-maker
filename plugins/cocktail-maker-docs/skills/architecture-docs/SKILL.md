@@ -41,7 +41,7 @@ The table shows which chapters each component has.
 | 9 Architecture Decisions | yes | yes |
 | 10 Quality Requirements | yes | no, System only |
 | 11 Risks and Technical Debt | yes | yes |
-| 12 Glossary | yes | no, System only |
+| 12 Glossary | yes | optional, only for terms that the subproject alone needs, with the same TSV columns, a link to the System glossary and no System term |
 
 ## Numbering
 
@@ -75,12 +75,30 @@ See the xref:system::solution-strategy.adoc[System solution strategy].
 ```
 
 An ADR ID such as `SYS-002` also names the component.
+So does a stable ID such as `QG-01`, because stable IDs are defined only in System.
 
 ## Only in System
 
-Quality goals, the glossary and the naming conventions live only in System.
+Quality goals and the naming conventions live only in System, and so do the terms of the System glossary.
 Subprojects link to them, for example with `xref:system::quality-goals.adoc[System quality goals]`.
 Subprojects never repeat them.
+
+## Stable IDs
+
+Items that other pages refer to carry an ID.
+The ID is an AsciiDoc anchor such as `[[QG-01]]`, and it is also shown as text next to the item.
+
+| Prefix | Item | Defined on |
+|---|---|---|
+| `QG-nn` | quality goal | System chapter 1, Quality Goals page |
+| `QS-nn` | quality scenario | System chapter 10 |
+| `SM-nn` | safety measure | System chapter 8, Safety page |
+| `IF-nn` | contract | System chapter 5 |
+
+- Two digits, zero-padded, for example `QG-01`.
+- An ID is never changed and never reused, even when its item is removed.
+- IDs are defined only in System.
+  Subprojects refer to them with `xref:system::quality-goals.adoc#QG-01[QG-01]`.
 
 ## Zoom from System into a subproject
 
@@ -142,6 +160,6 @@ It covers the diagram type per chapter, boxes, arrows, layout, names and the sha
 - Every System block in chapter 5 links to its subproject, and each subproject chapter 5 links back.
 - Every cross-component xref names the component in its link text.
 - How-to content is in a guide and not in a chapter.
-- No subproject repeats the quality goals, the glossary or the naming conventions.
+- No subproject repeats the quality goals, the naming conventions or a System glossary term.
 - Every diagram is a D2 block.
 - The prose follows `writing-style`, and the checker reports no errors.

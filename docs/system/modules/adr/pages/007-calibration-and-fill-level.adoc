@@ -19,6 +19,11 @@ So a reading says how far the weight has moved since the last zero point, not ho
 A Pod also needs to know how much a dispenser delivers per motor step, so that a pour doesn't have to wait on the scale the whole way.
 `Dispense` carries only millilitres, and the Station has no other use for motor steps.
 
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-03[QG-03]: The Station keeps the fill level on disk and the Pod pours by weight change, so a power cycle with half full bottles does not disturb pouring.
+* xref:system::quality-goals.adoc#QG-04[QG-04]: The Pod owns its calibration, so it can be recalibrated or swapped as a single unit.
+
 == Decision
 
 The Pod owns calibration.
@@ -37,12 +42,19 @@ The Pod pours by how far the weight falls, so it needs no absolute weight.
 * **Good:** A Pod stays self-contained, so it can be recalibrated or swapped as a single unit (xref:adr:001-system-split.adoc[SYS-001]).
 * **Good:** The Station knows nothing about motor steps, and the same message works for pumps and valves.
 * **Good:** A power cycle with half full bottles doesn't disturb pouring.
-* **Bad:** An operator can't review a calibration before it applies.
+* **Bad:** An Operator can't review a calibration before it applies.
 A wrong one is replaced by running again.
 * **Bad:** The accuracy depends on the run time, because the load cell reads to about 1 g.
 A short run gives a rough calibration, and a long one costs more liquid.
 * **Bad:** A bottle refilled while the Station is off stays unnoticed until someone corrects its fill level.
 * **Bad:** Load cell readings drift, by up to about 20 g in an hour as measured, so a fill level kept over hours can be that far off.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-03[QG-03]: Better for power cycles, because pouring needs no absolute weight.
+Worse for fill levels, because a bottle refilled while the Station is off goes unnoticed and load cell drift of up to about 20 g in an hour can offset a kept fill level.
+* xref:system::quality-goals.adoc#QG-04[QG-04]: Better, because the Pod stays self-contained and calibrates itself from a run time.
+Worse, because an Operator cannot review a calibration before it applies, and a wrong one is only replaced by running again.
 
 == Alternatives Considered
 

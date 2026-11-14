@@ -12,7 +12,12 @@ include::partial$adr-header.adoc[]
 == Context
 
 Following the Station/Pod split (xref:adr:001-system-split.adoc[SYS-001]), the Station and every Pod need a physical/electrical interface over which the communication protocol can be carried.
-Pods must be connectable and removable by an operator without special tools, must each be individually addressable, and the interface must be cheap and widely supported on both the Raspberry Pi (Station) and low-cost microcontrollers (Pods).
+Pods must be connectable and removable by an Operator without special tools, must each be individually addressable, and the interface must be cheap and widely supported on both the Raspberry Pi (Station) and low-cost microcontrollers (Pods).
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-04[QG-04]: Pods connect and disconnect without special tools, and USB enumeration detects them without a custom mechanism.
+* xref:system::quality-goals.adoc#QG-03[QG-03]: Once there are more Pods than Station ports, a USB hub adds a component and a possible point of failure.
 
 == Decision
 
@@ -23,7 +28,7 @@ Each Pod enumerates as its own USB CDC device when connected.
 
 === CAN
 
-CAN is a differential, multi-drop bus widely used in automotive and industrial systems, offering robust, deterministic communication and longer cable runs than USB without a hub.
+CAN is a differential, multi-drop bus widely used in automotive and industrial systems, offering deterministic, noise-resistant communication and longer cable runs than USB without a hub.
 
 Rejected: the Raspberry Pi has no native CAN interface, so the Station would need an additional CAN controller/transceiver, adding cost and complexity on the Station side as well as the Pod side.
 CAN also has no native hot-plug/enumeration mechanism equivalent to USB, so Pod presence detection and identification would need to be built as a custom layer on top of the protocol.
@@ -44,3 +49,8 @@ IP-based addressing also requires additional configuration (static IPs or DHCP) 
 * **Bad:** USB is host-centric and point-to-point per port.
 Connecting more Pods than the Station has native ports requires a USB hub, adding a component and a potential point of failure.
 * **Bad:** Unlike a shared multi-drop bus (e.g. RS-485, CAN), USB does not scale to large Pod counts without additional hubs, and total bandwidth is shared across all connected Pods.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-04[QG-04]: Better, because USB CDC needs no custom drivers and gives hot plug detection for free.
+* xref:system::quality-goals.adoc#QG-03[QG-03]: Worse, because a hub is a potential point of failure.

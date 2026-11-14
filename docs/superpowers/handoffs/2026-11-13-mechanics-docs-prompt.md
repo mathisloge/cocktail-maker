@@ -34,8 +34,8 @@ If `.gitignore` ignores `.claude/`, change that entry to these two lines so `set
 !.claude/settings.json
 ```
 
-The plugin must be at version 0.4.1 or newer.
-That version holds the diagram rules, the shared diagram style and the rules for the layout engine.
+The plugin must be at version 0.5.0 or newer.
+That version holds the diagram rules, the shared diagram style, the rules for the layout engine, the System glossary and the rules for the quality goals of an ADR.
 Then restart the session or reload the plugins.
 Use these four skills from the plugin for all the work below: `writing-style`, `architecture-docs`, `writing-adrs` and `writing-diagrams`.
 Read them before you change any page.
@@ -221,12 +221,38 @@ Exit code 0 and an `<svg` in the output mean that the source compiles.
 - Do not rename or delete ADR files.
 - Do not use `--no-verify` and do not disable the hook in any other way.
 - Do not reword the avoid-word warnings.
+  The `glossary-term` warnings are fixed in Step 8.
 - Do not copy the shared style partial into this repo, and set a layout engine in a diagram only as `writing-diagrams` describes.
 - Do not add a diagram that no page needs.
 - Do not use semicolons or dash breaks in your own prose, such as commit messages and nav text.
 - Do not edit the main repo `mathisloge/cocktail-maker`.
 
-## Step 8: When you finish
+## Step 8: Glossary terms and the quality goals of the ADRs
+
+The System docs have a glossary in `docs/system/modules/ROOT/partials/glossary.tsv` of the main repo.
+The plugin ships a copy, and the checker warns with `glossary-term` when a page uses a word that the glossary avoids.
+
+- Use the System glossary terms exactly, for example Pod, Dispenser, Pump, Valve, Load cell and Operator.
+  Replace each word that a `glossary-term` warning names with the term from the warning, without changing the meaning.
+  If a word has a correct second meaning there, put `// adoc-style: ignore-next-line` above the line and name the case in your report.
+- Mechanics may add its own glossary for mechanical terms that only this repo needs.
+  Put it in `docs/modules/ROOT/partials/glossary.tsv`, with the same five tab-separated columns as the System file: `term`, `definition`, `level`, `code` and `avoid`.
+  The level of every row is `Mechanics`.
+  Keep the trailing tabs of empty cells, because Asciidoctor does not pad a short row.
+  If the repo has a trailing-whitespace hook, exclude the glossary files from it with `exclude: glossary.*\.tsv$`.
+  Render it on a page `= 12 Glossary` that links the System glossary with `xref:system::glossary.adoc[System glossary]`, and add the page to `nav.adoc`.
+  Never redefine a System term, and never use a System term or a word that the System glossary avoids as a Mechanics term.
+  Show the owner the rows before you commit them, and commit only the rows that the owner confirmed.
+- Every CM3D ADR gets the section `== Quality Goals` directly after `== Context`, as `writing-adrs` describes.
+  It names the System quality goals that the decision serves or affects, from `QG-01` to `QG-06`, with one line each on how.
+  Link each ID as `xref:system::quality-goals.adoc#QG-01[QG-01]`.
+  The consequences get the subsection `=== Effect on the Quality Goals`.
+  Draft the references for all ADRs first and show them to the owner.
+  Apply only the references that the owner confirmed, and leave the decision text unchanged.
+
+Commit the glossary terms, the Mechanics glossary and the ADR goals as separate steps.
+
+## Step 9: When you finish
 
 Run `pre-commit run --all-files` and the docs build.
 Both must pass.

@@ -8,11 +8,28 @@ include::partial$adr-header.adoc[]
 
 == Context
 
-In the first version of the cocktail machine, everything was controlled directly by the Raspberry Pi.
+In the first version of the cocktail-maker, everything was controlled directly by the Raspberry Pi.
 Even though it ran a Linux-RT kernel, explicit step modulation for the stepper motors still led to stalls and increased mechanical stress on the pumps, since step pulses were generated centrally and were subject to timing jitter.
 
-Furthermore, the number of GPIOs available on the Raspberry Pi is limited.
+The number of GPIOs available on the Raspberry Pi is also limited.
 Additional GPIO expanders were required to drive the growing number of steppers, valves, and load cells, which added I/O latency and further degraded step timing accuracy.
+
+== Quality Goals
+
+This decision directly supports the following quality goals:
+
+[cols="1,4", options="header"]
+|===
+| Quality Goal | Relation to this Decision
+
+| xref:system::quality-goals.adoc#QG-03[QG-03] *Reliability*
+| Moving stepper control and load-cell readout onto each Pod's own controller removes the step pulse jitter and stalls previously caused by centralized, non-deterministic timing on the Station.
+Eliminating this failure mode directly supports unattended, long-term operation.
+
+| xref:system::quality-goals.adoc#QG-04[QG-04] *Serviceability*
+| Because a Pod is a self-contained, physically independent module, it can be inspected, recalibrated, or swapped out as a single unit without the Operator needing to access or understand the Station's internals.
+This keeps servicing within reach of an Operator without deep technical expertise.
+|===
 
 == Decision
 
@@ -23,23 +40,6 @@ The Station no longer generates step pulses or reads load cells directly.
 It acts purely as the orchestrator, sending high-level dispensing commands to Pods and consuming their status/event reports.
 
 The choice of physical/electrical interface between Station and Pods (e.g. USB, RS-485, CAN) is intentionally out of scope for this ADR and is addressed separately.
-
-== Related Quality Goals
-
-This decision directly supports the following quality goals:
-
-[cols="1,4", options="header"]
-|===
-| Quality Goal | Relation to this Decision
-
-| *Reliability*
-| Moving stepper control and load-cell readout onto each Pod's own controller removes the step pulse jitter and stalls previously caused by centralized, non-deterministic timing on the Station.
-Eliminating this failure mode directly supports unattended, long-term operation.
-
-| *Maintainability*
-| Because a Pod is a self-contained, physically independent module, it can be inspected, recalibrated, or swapped out as a single unit without the operator needing to access or understand the Station's internals.
-This keeps servicing within reach of an operator without deep technical expertise.
-|===
 
 == Alternatives Considered
 
@@ -73,3 +73,10 @@ This protocol becomes a long-term maintenance surface in its own right.
 * Each Pod now carries its own embedded controller that must be programmed and maintained independently, increasing the number of components that can fail or need updates across the machine.
 * Fault diagnosis becomes a distributed-systems problem: a fault may originate in the Station, the protocol, the inter-device transport, or an individual Pod, requiring correlated diagnostics across devices rather than a single control point.
 * Pod identification and enumeration must be handled at runtime (assigning identity to each Pod and detecting connect/disconnect events), which the Station-only design did not need to consider.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-03[QG-03]: Better, because each Pod controls its steppers and load cells locally, which removes the stalls from central step timing.
+The cost is more components that can fail, since every Pod carries its own controller.
+* xref:system::quality-goals.adoc#QG-04[QG-04]: Better for servicing, because a Pod can be swapped or recalibrated as a single unit.
+Worse for diagnosis, because a fault can now sit in the Station, the protocol, the transport or a Pod.

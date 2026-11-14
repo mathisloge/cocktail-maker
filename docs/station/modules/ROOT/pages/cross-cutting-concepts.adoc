@@ -27,17 +27,17 @@ The Station's local state, which physical dispenser serves which ingredient and 
 
 == Operator Authentication
 
-The operator maintenance area is gated behind a PIN with attempt-based lockout, entered through a hidden gesture rather than a permanently visible control.
-This keeps it out of a guest's way while still requiring a deliberate, authenticated action before any calibration or configuration change.
+The Operator UI is gated behind a PIN with attempt-based lockout, entered through a hidden gesture rather than a permanently visible control.
+This keeps it out of a Guest's way while still requiring a deliberate, authenticated action before any calibration or configuration change.
 
 == Logging and Observability
 
-Application logging is captured centrally and made visible directly on the device, in the operator maintenance area, rather than requiring separate tooling.
-This lets an operator diagnose a problem without extra equipment, supporting the *Maintainability* goal in the xref:system::quality-goals.adoc[System quality goals].
+Application logging is captured centrally and made visible directly on the device, in the Operator UI, rather than requiring separate tooling.
+This lets an Operator diagnose a problem without extra equipment, supporting the *Serviceability* goal in the xref:system::quality-goals.adoc[System quality goals].
 
 == Error Handling Toward the Guest
 
-A failure during a mix, such as a dispenser running out of ingredient, is translated into a guest-facing error screen naming the affected ingredient rather than a generic failure, and the guest is always returned to a known-good screen.
+A failure during a mix, such as a dispenser running out of ingredient, is translated into a Guest-facing error screen naming the affected ingredient rather than a generic failure, and the Guest is always returned to a known-good screen.
 This supports *Usability* alongside *Reliability*.
 
 Continue with xref:risks-and-technical-debt.adoc[].

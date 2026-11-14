@@ -122,6 +122,15 @@ In AsciiDoc, the line `// adoc-style: ignore-next-line` turns the check off for 
 Use it only when no rewording works.
 In Markdown, the checker reads a `---` rule in the text as a dash, so use a heading instead.
 
+## Glossary terms
+
+Use each glossary term exactly, and never one of its avoided synonyms.
+The glossaries are the `partials/glossary.tsv` files under `docs/` of the repository and the plugin copy `glossary-system.tsv` next to this skill.
+The checker warns with the rule `glossary-term` and names the term to use.
+When a synonym is correct in its other meaning, for example "module" for a C++ module, put `// adoc-style: ignore-next-line` above the line.
+A glossary TSV keeps the tabs of empty cells, because Asciidoctor does not pad a short row.
+A repo with a trailing-whitespace hook excludes the glossary files from it with `exclude: glossary.*\.tsv$`.
+
 ## Before you finish
 
 - Each line holds one sentence.

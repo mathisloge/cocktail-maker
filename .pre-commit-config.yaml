@@ -12,6 +12,7 @@ repos:
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
+        exclude: glossary.*\.tsv$
       - id: end-of-file-fixer
       - id: check-yaml
         exclude: ^(mkdocs|.clang-format)

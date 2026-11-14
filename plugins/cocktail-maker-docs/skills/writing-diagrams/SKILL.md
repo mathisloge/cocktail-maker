@@ -55,7 +55,7 @@ The `actor` class fixes the size of the figure, so never set a size on a person.
 host: Main controller
 # Right
 station: "Station · Raspberry Pi · Slint UI" {class: block}
-pod: "Pod · MCU · Zephyr firmware" {class: block}
+pod: "Pod · Pod controller with Zephyr firmware" {class: block}
 ```
 
 Every shape and every container carries exactly one shape class.
@@ -173,8 +173,8 @@ Anything unusual goes in the caption.
 direction: right
 guest: Guest {class: actor}
 operator: Operator {class: actor}
-power_grid: "Power Grid · wall outlet · 230 V AC" {class: external}
-machine: "Sir-Mix-A-Lot · cocktail machine" {class: boundary}
+power_grid: "Power Grid · mains socket · 230 V AC" {class: external}
+machine: "Sir-Mix-A-Lot · cocktail-maker" {class: boundary}
 guest -> machine: orders a drink {class: [interaction; key]}
 operator -> machine: refills, cleans and calibrates {class: interaction}
 power_grid -> machine: supplies 230 V AC {class: power}
@@ -197,7 +197,7 @@ include::system:ROOT:partial$d2-style.d2[]
 direction: down
 gui: "cm.gui · C++ module · Slint" {class: block}
 lib: "cm · C++ module · stdexec" {class: block}
-pod: "Pod · MCU · Zephyr firmware" {class: external}
+pod: "Pod · Pod controller with Zephyr firmware" {class: external}
 gui -> lib: calls the domain model {class: normal}
 lib -> pod: sends commands over USB CDC {class: [data; key]}
 ----

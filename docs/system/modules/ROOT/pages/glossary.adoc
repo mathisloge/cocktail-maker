@@ -1,5 +1,10 @@
 = 12 Glossary
 
-Station, Pod, and their related terms follow a single, canonical naming convention used consistently across hardware documentation, protocol definitions, and both software architecture documents.
-This convention is not repeated here.
-See xref:naming-conventions.adoc[].
+This glossary fixes one word for each concept of the system.
+The `avoid` column lists the synonyms that the style checker reports.
+The naming rules for Station, Pod and their related terms are in xref:naming-conventions.adoc[].
+
+[%header,format=tsv,cols="2,5,1,2,2"]
+|===
+include::partial$glossary.tsv[]
+|===

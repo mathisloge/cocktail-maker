@@ -26,7 +26,7 @@ It is not part of the navigation and exists to check the dark theme by eye.
 ** A nested item
 
 Station:: The host application on the Raspberry Pi.
-Pod:: A self-contained dispensing module.
+Pod:: A self-contained unit that dispenses ingredients.
 
 == Code
 
@@ -109,12 +109,12 @@ See xref:protocol.adoc[the protocol page] for the frame layout.
 include::system:ROOT:partial$d2-style.d2[]
 direction: right
 guest: "Guest" {class: actor}
-power_grid: "Power Grid · wall outlet · 230 V AC" {class: external}
+power_grid: "Power Grid · mains socket · 230 V AC" {class: external}
 bottles: "Raw Ingredients · bottles" {class: external}
-machine: "Sir-Mix-A-Lot · cocktail machine" {
+machine: "Sir-Mix-A-Lot · cocktail-maker" {
   class: boundary
   station: "Station · Raspberry Pi · Slint UI" {class: block}
-  pod: "Pod · MCU · steppers, load cells, valves" {class: block}
+  pod: "Pod · Pod controller, steppers, load cells, valves" {class: block}
   glass: "Glass · on the load cell" {class: block}
 }
 guest -> machine.station: orders a drink {class: interaction}

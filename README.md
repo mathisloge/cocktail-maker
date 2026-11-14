@@ -50,7 +50,7 @@ Station per machine.
 
 ### Pod
 
-A **Pod** is a self-contained dispensing module holding one or more bottles, along with
+A **Pod** is a self-contained unit that dispenses ingredients, holding one or more bottles, along with
 the embedded board, stepper motors, servos, valves, and load cells needed to measure and
 dispense its ingredients autonomously. Each Pod communicates with the Station over a USB
 CDC interface using a defined serial request-response protocol, and is identified by a

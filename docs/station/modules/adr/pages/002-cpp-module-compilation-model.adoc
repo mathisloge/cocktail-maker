@@ -10,9 +10,13 @@ The Station's {cpp} codebase is organized into several internal libraries with c
 Those boundaries need to be enforced by the compiler rather than by convention alone, and the traditional {cpp} header pitfalls, repeatedly re-parsed headers and implementation detail leaking into every file that includes a header, should be avoided as the codebase grows.
 
 === Decision Drivers
-* **Strong Encapsulation:** Enforce architectural boundaries between internal libraries via the compiler rather than by convention alone.
-* **Build Scalability:** Avoid the traditional {cpp} pitfalls of implementation details leaking into headers and repeated header re-parsing across translation units.
+* **Strong Encapsulation:** Enforce architectural boundaries between internal libraries via the compiler rather than by convention alone (QG-06).
+* **Build Scalability:** Avoid the traditional {cpp} pitfalls of implementation details leaking into headers and repeated header re-parsing across translation units (QG-06).
 * **Technology Exploration:** Since this is an experimental hobby project, a primary driver is the opportunity to evaluate emerging technologies like {cpp}26 modules in a low-risk environment.
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-06[QG-06]: The compiler enforces the boundaries between the internal libraries, so implementation details cannot leak.
 
 == Decision
 We will organize all first-party Station code as {cpp} modules rather than the traditional header-and-source-file split, with each internal library exposed as a single named module assembled from module interface partitions and plain module implementation units (`module cm;`).
@@ -30,3 +34,8 @@ The same header content is also reparsed by the compiler once per translation un
 * **Good:** avoids repeatedly reparsing the same declarations across translation units, compared to a large traditional header hierarchy.
 * **Bad:** {cpp} modules and their build-system support are still a comparatively new and evolving part of the {cpp} ecosystem, so the compiler and CMake versions the Station builds with are more tightly pinned than a traditional header-based project would need.
 * **Bad:** editor, IDE, and static-analysis tooling support for modules is less mature than for traditional headers, so some tooling may lag behind or require extra configuration.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because each library's public interface is explicit and enforced by module exports.
+Worse, because modules are still young, so the compiler and CMake versions are pinned tightly and tooling support is less mature.

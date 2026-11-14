@@ -185,7 +185,7 @@ def test_station_chapter_titles(file: str, title: str) -> None:
 def test_zoom_links_both_ways() -> None:
     system = (SYSTEM_PAGES / "building-blocks.adoc").read_text(encoding="utf-8")
     assert "xref:station::building-blocks.adoc[" in system
-    assert "xref:mechanics::index.adoc[" in system
+    assert "xref:mechanics::building-blocks.adoc[" in system
     station = (STATION_PAGES / "building-blocks.adoc").read_text(encoding="utf-8").splitlines()[:6]
     assert any("xref:system::building-blocks.adoc[" in line for line in station)
     linking = [

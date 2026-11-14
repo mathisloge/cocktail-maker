@@ -36,7 +36,7 @@ The xref:station::building-blocks.adoc[Station building block view] shows its in
 * **Pod(s):** Handle the low-level, real-time hardware execution.
 A Pod receives a command, executes it autonomously by driving its actuators, and reports back.
 Operators interact physically with Pods for maintenance.
-The xref:mechanics::index.adoc[Mechanics docs] describe the mechanical parts of a Pod.
+The xref:mechanics::building-blocks.adoc[Mechanics building block view] describes the mechanical parts of a Pod.
 * **Power Management Unit:** The internal bridge between the external power grid and the low-voltage electronics.
 
 The split of the Station and Pod's is decided in xref:adr:001-system-split.adoc[]

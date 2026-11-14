@@ -77,6 +77,11 @@ def test_d2_has_the_classes_and_background():
     assert set(re.findall(r"#[0-9a-f]{6}", d2)) <= allowed
 
 
+def test_d2_actor_has_a_fixed_small_size():
+    actor = d2_class(render_d2(colors()), "actor")
+    assert "width: 64" in actor and "height: 80" in actor
+
+
 def test_d2_uses_the_tala_layout_engine():
     d2 = render_d2(colors())
     assert "layout-engine: tala" in d2

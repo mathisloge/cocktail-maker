@@ -47,7 +47,8 @@ pod -> station: reports the dispensed mass {class: data}
 
 Every box carries a name, a type and the technology, separated by `·`.
 The name is exactly the glossary term.
-A person shape for an actor carries only the name.
+A person shape for an actor carries the name, and a context diagram may add a short description line below it.
+The `actor` class fixes the size of the figure, so never set a size on a person.
 
 ```d2
 # Wrong

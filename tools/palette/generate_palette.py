@@ -112,6 +112,8 @@ classes: {{
 {parts}
   actor: {{
     shape: person
+    width: 64
+    height: 80
     style: {{
       fill: "{c["ink-elevated"]}"
       stroke: "{c["amber-light"]}"

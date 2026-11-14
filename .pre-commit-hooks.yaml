@@ -1,0 +1,7 @@
+- id: adoc-style
+  name: AsciiDoc writing style
+  description: Checks AsciiDoc prose against the cocktail-maker writing-style rules. Needs Python 3.10 or newer.
+  entry: plugins/cocktail-maker-docs/scripts/check_adoc_style.py
+  language: script
+  files: \.adoc$
+  verbose: true

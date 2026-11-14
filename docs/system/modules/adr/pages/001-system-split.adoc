@@ -1,8 +1,8 @@
-= ADR-001: Decentralized Hardware Architecture (Station + Pods)
+= SYS-001: Decentralized Hardware Architecture (Station + Pods)
 :adr-status: Accepted
 :adr-date: 2026-05-01
 :adr-authors: {gh}mathisloge[@mathisloge]
-// :adr-superseded-by: xref:0005-use-mysql.adoc[ADR 0005]
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
 
 include::partial$adr-header.adoc[]
 
@@ -19,7 +19,8 @@ Additional GPIO expanders were required to drive the growing number of steppers,
 We split the hardware into a single Station and one or more Pods.
 Each Pod is a self-contained module with its own embedded controller board, driving its connected stepper pumps, valves, and load cells locally and in real time.
 A Pod is controlled by the Station through a defined, hardware-independent request-response protocol.
-The Station no longer generates step pulses or reads load cells directly; it acts purely as the orchestrator, sending high-level dispensing commands to Pods and consuming their status/event reports.
+The Station no longer generates step pulses or reads load cells directly.
+It acts purely as the orchestrator, sending high-level dispensing commands to Pods and consuming their status/event reports.
 
 The choice of physical/electrical interface between Station and Pods (e.g. USB, RS-485, CAN) is intentionally out of scope for this ADR and is addressed separately.
 
@@ -46,8 +47,9 @@ This keeps servicing within reach of an operator without deep technical expertis
 
 One controller board would drive the Raspberry Pi's display/UI as well as all steppers, valves, and load cells across all ingredient slots directly, with no separate Pod controllers.
 
-Rejected: a single controller forces a trade-off between UI responsiveness and real-time actuator control on the same device, which was the exact problem observed in the first version — undermining *Usability*.
-It also ties every ingredient slot to one fixed board, making Pods hard-wired rather than physically and electrically independent, modular units — undermining *Maintainability*.
+Rejected: a single controller forces a trade-off between UI responsiveness and real-time actuator control on the same device, which was the exact problem observed in the first version, undermining *Usability*.
+It also ties every ingredient slot to one fixed board, making Pods hard-wired rather than physically and electrically independent, modular units.
+This undermines *Maintainability*.
 
 == Consequences
 
@@ -66,7 +68,8 @@ GPIO expanders are no longer needed.
 === Negative
 
 * Bill-of-materials and per-unit cost increase, since every Pod requires its own controller board and power regulation, instead of sharing the Raspberry Pi's I/O.
-* A dedicated Station↔Pod protocol must be designed, versioned, and documented, including message framing, timeouts, and error/event semantics; this protocol becomes a long-term maintenance surface in its own right.
+* A dedicated Station↔Pod protocol must be designed, versioned, and documented, including message framing, timeouts, and error/event semantics.
+This protocol becomes a long-term maintenance surface in its own right.
 * Each Pod now carries its own embedded controller that must be programmed and maintained independently, increasing the number of components that can fail or need updates across the machine.
 * Fault diagnosis becomes a distributed-systems problem: a fault may originate in the Station, the protocol, the inter-device transport, or an individual Pod, requiring correlated diagnostics across devices rather than a single control point.
 * Pod identification and enumeration must be handled at runtime (assigning identity to each Pod and detecting connect/disconnect events), which the Station-only design did not need to consider.

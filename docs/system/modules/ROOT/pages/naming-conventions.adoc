@@ -1,13 +1,13 @@
 = Naming Conventions
 
-To ensure consistency across hardware documentation, software identifiers, protocol definitions, and API boundaries, the system relies on two distinct hardware entities with well-defined roles. Each entity has a canonical name.
+To ensure consistency across hardware documentation, software identifiers, protocol definitions, and API boundaries, the system relies on two distinct hardware entities with well-defined roles.
+Each entity has a canonical name.
 
 == Station
 
-The *Station* is the central unit of the system. It houses the Raspberry Pi, the user-facing
-display, and the glass placement area. It acts as the orchestrator of the entire machine by
-running the main application, hosting the UI, managing connected Pods, and coordinating
-dispensing sequences.
+The *Station* is the central unit of the system.
+It houses the Raspberry Pi, the user-facing display, and the glass placement area.
+It acts as the orchestrator of the entire machine by running the main application, hosting the UI, managing connected Pods, and coordinating dispensing sequences.
 
 There is exactly *one Station* per machine.
 
@@ -27,18 +27,14 @@ StationStatus                   // runtime state
 
 == Pod
 
-A *Pod* is a self-contained dispensing module. Each Pod holds one or more bottles and
-contains the embedded controller, stepper motors, servos, valves, and load cells required
-to autonomously measure and dispense its ingredients.
+A *Pod* is a self-contained dispensing module.
+Each Pod holds one or more bottles and contains the embedded controller, stepper motors, servos, valves, and load cells required to autonomously measure and dispense its ingredients.
 
-A Pod exposes a USB CDC interface and communicates with the Station using the defined
-serial protocol.
+A Pod exposes a USB CDC interface and communicates with the Station using the defined serial protocol.
 
-A machine can contain *one or more Pods*, each identified by a unique `PodId` assigned
-when the Pod connects to the Station.
+A machine can contain *one or more Pods*, each identified by a unique `PodId` assigned when the Pod connects to the Station.
 The Pod reports it as its name in `DeviceInfoResponse`.
-The firmware derives that name from the controller's unique ID, so it differs between Pods and stays the
-same across power cycles.
+The firmware derives that name from the controller's unique ID, so it differs between Pods and stays the same across power cycles.
 
 .Responsibilities
 * Controls its actuators (steppers, servos, and valves) on command
@@ -58,25 +54,28 @@ PodDescriptor                   // static metadata (capabilities, slot count)
 
 == Relationship
 
-[mermaid, target="station-pod-container", format="svg"]
-....
-flowchart LR
+.The Station and its Pods
+[d2, target="station-pod-container", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+vars: { d2-config: { layout-engine: dagre } }
+direction: down
+station: "Station · Raspberry Pi · Slint UI" {
+  class: boundary
+  platform: "Raspberry Pi + Display + UI" {class: block}
+}
+pods: "Pods · MCU · Zephyr firmware" {
+  class: boundary
+  pod_0: "Pod 0" {class: block}
+  pod_1: "Pod 1" {class: block}
+  pod_n: "Pod N" {class: block}
+}
+station -> pods: "starts every exchange\nover USB CDC" {class: [data; key]}
+----
+How many Stations and Pods does a machine have, and which side starts the communication?
 
-    subgraph Pods["Pods"]
-        direction TB
-        Pod0["Pod 0"]
-        Pod1["Pod 1"]
-        PodN["Pod N"]
-
-    end
-    subgraph Station["Station"]
-        direction TB
-        Platform["Raspberry Pi + Display + UI"]
-    end
-....
-
-The Station maintains a registry of connected Pods. Each Pod is an independent device,
-while the Station is the sole initiator of communication.
+The Station maintains a registry of connected Pods.
+Each Pod is an independent device, while the Station is the sole initiator of communication.
 
 == Naming Rules
 

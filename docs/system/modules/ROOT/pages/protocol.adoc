@@ -1,18 +1,36 @@
 = Protocol
 
-xref:system-design.adoc[] establishes the Station-Pod link as a request-response protocol with the
-Station as sole initiator, and names three conceptual message categories: commands, status queries,
-and events.
-This page defines the wire-level realization of that model: the frame layout, how a request is
-correlated with its response, and the concrete communication patterns built on top of that
-correlation.
-The request-response model itself and the choice to generate the protocol code with commsdsl are
-decisions made elsewhere and are not repeated here. See xref:adr:003-protocol-communication.adoc[ADR-003]
-and xref:adr:006-protocol-serialization.adoc[ADR-006].
+The section <<Station-Pod Communication Protocol>> below establishes the Station-Pod link as a request-response protocol with the Station as sole initiator, and names three conceptual message categories: commands, status queries, and events.
+This page defines the wire-level realization of that model: the frame layout, how a request is correlated with its response, and the concrete communication patterns built on top of that correlation.
+The decision for the request-response model and the decision to generate the protocol code with commsdsl are recorded in ADRs.
+See xref:adr:003-protocol-communication.adoc[SYS-003] and xref:adr:006-protocol-serialization.adoc[SYS-006].
 
-The protocol is defined as a single schema shared by the Station and every Pod, so both sides agree
-on the same frame layout, message set, and field encoding by construction.
+The protocol is defined as a single schema shared by the Station and every Pod, so both sides agree on the same frame layout, message set, and field encoding by construction.
 Schema: {gh}mathisloge/cocktail-maker-protocol[cocktail-maker-protocol].
+
+== Station-Pod Communication Protocol
+
+The Station and every Pod communicate through a request-response protocol.
+The Station is the sole initiator of communication.
+A Pod never sends unsolicited commands.
+Every Pod is addressed by a unique identifier assigned at connection time, allowing the Station to route commands to a specific Pod and to attribute status and events back to their origin.
+This request-response model, including the Station's role as sole initiator, is decided in xref:adr:003-protocol-communication.adoc[SYS-003].
+
+The protocol distinguishes three conceptual message categories:
+
+* **Commands:** issued by the Station to trigger an action on a Pod, e.g. dispense a given volume.
+* **Status queries:** issued by the Station to poll a Pod's current state, e.g. connected, idle, dispensing, fault.
+* **Events:** emitted by a Pod in response to a command or an internal condition, e.g. dispensing completed, calibration done, error raised.
+
+This section defines the protocol's role and message categories at a conceptual level.
+The exact wire format, framing, and versioning strategy are defined in <<Framing>> and <<Versioning>>.
+
+== Physical Transport
+
+The Station and Pods are physically connected via USB, using the USB CDC class to carry the protocol described above.
+This choice keeps each Pod a self-contained, hot-pluggable unit that can be connected, removed, or replaced without rewiring the Station.
+
+The detailed rationale, trade-offs, and alternatives considered (CAN, Ethernet) behind this interface choice are out of scope for this page and are captured separately in xref:adr:002-pysical-pod-connection.adoc[SYS-002], since the Station/Pod split (xref:adr:001-system-split.adoc[SYS-001]) was decided independently of the transport used to realize it.
 
 == Framing
 
@@ -47,80 +65,77 @@ Every exchange between the Station and a Pod is carried in a single frame:
 | Computed over Size through Payload. Protects the frame's integrity on the wire.
 |===
 
-There is no byte-stuffing or escaping layer. Framing relies on Sync, Size, and the CRC alone.
+There is no byte-stuffing or escaping layer.
+Framing relies on Sync, Size, and the CRC alone.
 
 == Transaction Correlation
 
-`TransactionId` is not a field of any individual message. It is a transport-level field carried by
-every frame, regardless of which message it holds.
-The Station generates a `TransactionId` for each request it sends and reuses it for every frame that
-belongs to the same exchange. This includes an immediate `Ack`/`Nak`, a dedicated response, and any
-event that concludes a longer-running action later on.
-A Pod must echo the `TransactionId` of the request it is reacting to on every frame it sends back for
-that exchange.
-Because a `TransactionId` is only required to be unique among requests that are currently pending, the
-Station is free to reuse a value once its exchange has concluded.
+`TransactionId` is not a field of any individual message.
+It is a transport-level field carried by every frame, regardless of which message it holds.
+The Station generates a `TransactionId` for each request it sends and reuses it for every frame that belongs to the same exchange.
+This includes an immediate `Ack`/`Nak`, a dedicated response, and any event that concludes a longer-running action later on.
+A Pod must echo the `TransactionId` of the request it is reacting to on every frame it sends back for that exchange.
+Because a `TransactionId` is only required to be unique among requests that are currently pending, the Station is free to reuse a value once its exchange has concluded.
 
-[mermaid, target="transaction-correlation", format="svg"]
-....
-sequenceDiagram
-    participant Station
-    participant Pod
+.Correlation by TransactionId
+[d2, target="transaction-correlation", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+shape: sequence_diagram
+station: "Station" {class: block}
+pod: "Pod" {class: block}
+station -> pod: "Request (TransactionId=N)" {class: data}
+pod -> station: "Response (TransactionId=N)" {class: [data; key]}
+----
+How does the Station match a frame from a Pod to its request?
 
-    Station->>Pod: Request (TransactionId=N)
-    Pod-->>Station: Response (TransactionId=N)
-....
-
-This is the only correlation mechanism the protocol has. There is no separate request or session
-identifier.
-`TransactionId` scopes exactly one request/response exchange. It does not identify any higher-level
-operation a caller of the protocol may be carrying out, and such an operation may itself require
-several such exchanges.
+This is the only correlation mechanism the protocol has.
+There is no separate request or session identifier.
+`TransactionId` scopes exactly one request/response exchange.
+It does not identify any higher-level operation a caller of the protocol may be carrying out, and such an operation may itself require several such exchanges.
 
 == Communication Patterns
 
-Every message exchange follows one of three patterns, distinguished by how many frames a Pod sends
-back for a single request and how far apart in time they arrive.
+Every message exchange follows one of three patterns, distinguished by how many frames a Pod sends back for a single request and how far apart in time they arrive.
 
 === Request / Response
 
-The simplest pattern: a request is answered by exactly one dedicated response message, carrying the
-same `TransactionId`.
-Used by `Ping`/`Pong` (keep-alive), `DeviceInfoRequest`/`DeviceInfoResponse`, and
-`LoadCellWeightRequest`/`LoadCellWeightResponse`.
+The simplest pattern: a request is answered by exactly one dedicated response message, carrying the same `TransactionId`.
+Used by `Ping`/`Pong` (keep-alive), `DeviceInfoRequest`/`DeviceInfoResponse`, and `LoadCellWeightRequest`/`LoadCellWeightResponse`.
 A `LoadCellWeightRequest` is answered by a `Nak` instead if the load cell can't be read.
 
-[mermaid, target="pattern-request-response", format="svg"]
-....
-sequenceDiagram
-    participant Station
-    participant Pod
-
-    Station->>Pod: DeviceInfoRequest (TransactionId=N)
-    Pod-->>Station: DeviceInfoResponse (TransactionId=N)
-....
+.Request and response
+[d2, target="pattern-request-response", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+shape: sequence_diagram
+station: "Station" {class: block}
+pod: "Pod" {class: block}
+station -> pod: "DeviceInfoRequest (TransactionId=N)" {class: data}
+pod -> station: "DeviceInfoResponse (TransactionId=N)" {class: [data; key]}
+----
+How does a Pod answer a request with one dedicated response?
 
 === Request / Acknowledgement
 
-A request that only needs to confirm it was carried out is answered by the generic `Ack`, or `Nak` if
-it could not be executed.
-`Nak` carries an `ErrorCode` explaining the reason, rather than each command defining its own failure
-message.
+A request that only needs to confirm it was carried out is answered by the generic `Ack`, or `Nak` if it could not be executed.
+`Nak` carries an `ErrorCode` explaining the reason, rather than each command defining its own failure message.
 Used by `EmergencyStop`, `LoadCellCalibrateWithRefWeight`, `LoadCellTare`, and `HighlightDispenser`.
 
 `LoadCellTare` and `LoadCellCalibrateWithRefWeight` take a little over a second.
-The Pod samples the load first, then waits until the load cell's weight shows the result, and only
-then replies.
+The Pod samples the load first, then waits until the load cell's weight shows the result, and only then replies.
 
-[mermaid, target="pattern-request-ack", format="svg"]
-....
-sequenceDiagram
-    participant Station
-    participant Pod
-
-    Station->>Pod: LoadCellTare (TransactionId=N)
-    Pod-->>Station: Ack or Nak (TransactionId=N)
-....
+.Request and acknowledgement
+[d2, target="pattern-request-ack", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+shape: sequence_diagram
+station: "Station" {class: block}
+pod: "Pod" {class: block}
+station -> pod: "LoadCellTare (TransactionId=N)" {class: data}
+pod -> station: "Ack or Nak (TransactionId=N)" {class: [data; key]}
+----
+How does a Pod confirm a command, or refuse it?
 
 .ErrorCode values
 [cols="1,3", options="header"]
@@ -167,41 +182,37 @@ this, including `Dispense` and `DispenserStartCalibration`.
 
 === Request / Acknowledgement / Event
 
-Some requests trigger a physical action whose duration cannot be bounded tightly enough to hold a
-single response open. Dispensing a liquid and running a dispenser calibration are both examples
-of this.
-These are acknowledged immediately with `Ack`/`Nak`, and once the underlying action completes, the Pod
-sends a dedicated event carrying the *same* `TransactionId` as the original request.
-This is the mechanism that lets the Station attribute an event arriving seconds later back to the
-exact request that caused it, even though other exchanges may have started and finished with
-different transaction ids in the meantime.
-Used by `Dispense` (followed by `DispenseFinished`) and `DispenserStartCalibration` (followed by
-`DispenserFinishedCalibrationResponse`). The completion event must reuse the `TransactionId` of the
-request that triggered it.
+Some requests trigger a physical action whose duration cannot be bounded tightly enough to hold a single response open.
+Dispensing a liquid and running a dispenser calibration are both examples of this.
+These are acknowledged immediately with `Ack`/`Nak`, and once the underlying action completes, the Pod sends a dedicated event carrying the *same* `TransactionId` as the original request.
+This is the mechanism that lets the Station attribute an event arriving seconds later back to the exact request that caused it, even though other exchanges may have started and finished with different transaction ids in the meantime.
+Used by `Dispense` (followed by `DispenseFinished`) and `DispenserStartCalibration` (followed by `DispenserFinishedCalibrationResponse`).
+The completion event must reuse the `TransactionId` of the request that triggered it.
 
-While the action runs, the Pod sends a `DispenseProgress` about four times a second under the same
-`TransactionId`.
+While the action runs, the Pod sends a `DispenseProgress` about four times a second under the same `TransactionId`.
 It only comes between the `Ack` and the final reply, and it is only for display.
 The final reply alone holds the real amount.
 The Station drops it for now, so that it can't crowd out the final reply.
 
-[mermaid, target="pattern-request-ack-event", format="svg"]
-....
-sequenceDiagram
-    participant Station
-    participant Pod
+.Request, acknowledgement and event
+[d2, target="pattern-request-ack-event", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+shape: sequence_diagram
+station: "Station" {class: block}
+pod: "Pod" {class: block}
+station -> pod: "Dispense (TransactionId=N)" {class: data}
+pod -> station: "Ack (TransactionId=N)" {class: data}
+progress: "loop: About four times a second while the dispenser runs" {
+  class: boundary
+  pod -> station: "DispenseProgress (TransactionId=N)" {class: data}
+}
+pod.measures: "Pod measures the amount at rest" {class: boundary}
+pod -> station: "DispenseFinished (TransactionId=N)" {class: [data; key]}
+----
+How does a Pod report the end of a long action under the TransactionId of its request?
 
-    Station->>Pod: Dispense (TransactionId=N)
-    Pod-->>Station: Ack (TransactionId=N)
-    loop About four times a second while the dispenser runs
-        Pod-->>Station: DispenseProgress (TransactionId=N)
-    end
-    Note over Pod: Pod measures the amount at rest
-    Pod-->>Station: DispenseFinished (TransactionId=N)
-....
-
-A `Nak` can still arrive in place of the event if the action fails after having been accepted, so a
-caller of this pattern must be prepared to receive either outcome under the same `TransactionId`.
+A `Nak` can still arrive in place of the event if the action fails after having been accepted, so a caller of this pattern must be prepared to receive either outcome under the same `TransactionId`.
 
 `DispenseFinished` says how the pour ended:
 
@@ -225,8 +236,7 @@ hose looks the same.
 |===
 
 Only `Completed` reaches the requested amount.
-None of them is an error, so a pour that came up short still ends with `DispenseFinished` and not with a
-`Nak`.
+None of them is an error, so a pour that came up short still ends with `DispenseFinished` and not with a `Nak`.
 
 === Reply Times
 
@@ -271,19 +281,17 @@ The Station doesn't repeat a tare, a load cell calibration, a `Dispense` or a `D
 
 == Load Cell Weights
 
-`LoadCellWeightResponse` reports the weight relative to the load cell's zero point, so it can be
-negative.
+`LoadCellWeightResponse` reports the weight relative to the load cell's zero point, so it can be negative.
 `LoadCellTare` sets that zero point, and so does every power up of the load cell.
 The reading therefore says how far the weight has moved, not how full a bottle is.
-The Station keeps the fill level. See xref:station::runtime-view.adoc[] and
-xref:adr:007-calibration-and-fill-level.adoc[ADR-007].
+The Station keeps the fill level.
+See the xref:station::runtime-view.adoc[Station runtime view] and xref:adr:007-calibration-and-fill-level.adoc[SYS-007].
 
 == Versioning
 
 The schema is released with semantic version numbers.
 Its `version` attribute carries the same number as `0xMMmmpp`, so `0x020100` is release 2.1.0.
-`DeviceInfoResponse` starts with `ProtocolVersion` in that form, and it stays the first field in every
-release.
+`DeviceInfoResponse` starts with `ProtocolVersion` in that form, and it stays the first field in every release.
 
 The Station accepts exactly the release it was built against.
 A Pod on another release stays unused, and the Station names both releases.

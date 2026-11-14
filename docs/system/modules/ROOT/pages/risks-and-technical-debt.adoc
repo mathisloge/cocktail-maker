@@ -1,0 +1,9 @@
+= 11 Risks and Technical Debt
+
+[NOTE]
+====
+Not written yet.
+====
+
+This chapter will list the known risks and the technical debt of the whole machine.
+Until then, see xref:station::risks-and-technical-debt.adoc[the Station risks and technical debt].

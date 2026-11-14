@@ -1,0 +1,8 @@
+= 2 Constraints
+
+[NOTE]
+====
+Not written yet.
+====
+
+This chapter will list the technical, organizational and legal constraints that the whole machine must work within.

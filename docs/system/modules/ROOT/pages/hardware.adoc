@@ -7,160 +7,71 @@ This split design allows you to seamlessly add more dispenser pods without needi
 
 Below is the schematic overview of the hardware components and their relationships:
 
-[d2, target="cocktail-maker-hardware", format="svg"]
+.Hardware of the Station and a Pod
+[d2, target="cocktail-maker-hardware", format="svg", link=self]
 ----
-# --- GLOBAL CONFIG & LAYOUT ---
+include::system:ROOT:partial$d2-style.d2[]
 direction: down
-vars: {
-  d2-config: {
-    layout-engine: elk
-  }
+
+station: "Station · main control and power" {
+  class: boundary
+  ac_in: "AC Mains Input · mains inlet\n110 V/230 V AC" {class: power-part}
+  switch: "Main Switch · mains switch" {class: power-part}
+  psu: "MeanWell NDR-120-24 · power supply\n120 W | 24 V | 5 A" {class: power-part}
+  step_down: "5 V Step-Down · DC/DC converter" {class: power-part}
+  rpi: "Raspberry Pi 5 · Station computer" {class: data-part}
+  display: "RPi Touch Display 2 · touch display" {class: interaction-part}
+  fluid_hub: "Station Fluid Hub · manifold / collection" {class: fluid-part}
+
+  ac_in -> switch: supplies AC {class: power}
+  switch -> psu: supplies AC {class: power}
+  psu -> step_down: supplies 24 V {class: power}
+  step_down -> rpi: supplies 5 V DC {class: power}
+  rpi -> display: drives the display over the DSI ribbon {class: data}
 }
 
-# --- VISUAL CLASSES (STYLING) ---
-classes: {
-  power: {
-    style: {
-      fill: "#fff3cd"
-      stroke: "#ffc107"
-      stroke-width: 2
-    }
+pod1: "Pod 1 · dispenser module, one of several" {
+  class: boundary
+  mcu: "BIGTREETECH Octopus V1.1 ·\nPod controller" {class: data-part}
+
+  # One group of parts for each kind of peripheral of a dispenser
+  stepper_group: "Stepper Drive Group" {
+    class: boundary
+    driver: "TMC5160T Driver · stepper driver" {class: data-part}
+    motor: "Nema17 Stepper Motor · actuator" {class: mechanical-part}
   }
-  controller: {
-    style: {
-      fill: "#d1e7dd"
-      stroke: "#198754"
-      stroke-width: 2
-      border-radius: 4
-    }
+
+  weight_group: "Weighing System" {
+    class: boundary
+    hx711: "M5Stack Weight · load cell amplifier ·\nHX711 I2C" {class: data-part}
+    load_cell: "Load Cell · sensor" {class: mechanical-part}
   }
-  actuator: {
-    style: {
-      fill: "#cfe2ff"
-      stroke: "#0d6efd"
-    }
+
+  valve_group: "Valve Control Group" {
+    class: boundary
+    pca9685: "M5Stack Servo2 · servo driver ·\nPCA9685 16-Ch" {class: data-part}
+    valve: "Pinch Valve · actuator ·\nservo controlled" {class: mechanical-part}
   }
-  sensor: {
-    style: {
-      fill: "#f8d7da"
-      stroke: "#dc3545"
-    }
-  }
-  fluid: {
-    shape: cylinder
-    style: {
-      fill: "#e2e3e5"
-      stroke: "#495057"
-      stroke-width: 2
-    }
-  }
-  mechanic: {
-    style: {
-      stroke: "#6c757d"
-      stroke-dash: 2
-    }
-  }
+
+  dispenser: "Dispenser Unit · fluid output" {class: fluid-part}
+
+  mcu -> stepper_group.driver: "sends steps\nover SPI / Step-Dir" {class: data}
+  stepper_group.driver -> stepper_group.motor: "drives the motor\nover the motor leads" {class: power}
+
+  mcu -> weight_group.hx711: "reads over\nthe I2C bus" {class: data}
+  weight_group.hx711 -> weight_group.load_cell: "excites and reads\nover E+ | E- | A+ | A-" {class: data}
+
+  mcu -> valve_group.pca9685: "commands over\nthe I2C bus" {class: data}
+  valve_group.pca9685 -> valve_group.valve: "drives over 3-pin PWM\n(SIG, 5 V, GND)" {class: data}
+
+  # Mechanical links at the dispenser
+  stepper_group.motor -> dispenser: "pumps by\nmechanical drive" {class: mechanical}
+  valve_group.valve -> dispenser: "mechanically opens /\ncloses flow" {class: mechanical}
+  weight_group.load_cell -> dispenser: "mechanically weighs\nbottle / glass" {class: mechanical}
 }
 
-# --- STATION (MAIN CONTROL & POWER) ---
-station: Station (Main Control & Power) {
-  style.fill: "#f8f9fa"
-  style.stroke: "#adb5bd"
-
-  # Components
-  ac_in: "AC Mains Input\n(110V/230V AC)" { class: power }
-  switch: "Main Switch" {
-    shape: diamond
-    class: power
-  }
-  psu: "MeanWell NDR-120-24\n(120W | 24V | 5A)" { class: power }
-  step_down: "5V Step-Down" { class: power }
-
-  rpi: "Raspberry Pi 5" { class: controller }
-  display: "RPi Touch Display 2" { class: controller }
-
-  fluid_hub: "Station Fluid Hub\n(Manifold / Collection)" { class: fluid }
-
-  # Internal Station Wiring
-  ac_in -> switch: "AC"
-  switch -> psu: "AC"
-  psu -> step_down: "24V"
-  step_down -> rpi: "5V DC"
-  rpi -> display: "DSI Ribbon"
-}
-
-# --- POD 1 (EXPANDABLE UNIT) ---
-pod1: Pod 1 (Dispenser Module) {
-  style.fill: "#f8f9fa"
-  style.stroke: "#6c757d"
-  style.stroke-dash: 4
-
-  mcu: "BIGTREETECH\nOctopus V1.1" { class: controller }
-
-  # Logical grouping of peripherals per channel/dispenser
-  stepper_group: Stepper Drive Group {
-    style.stroke: "#0d6efd"
-    style.fill: "#f1f8ff"
-    driver: "TMC5160T\nDriver" { class: controller }
-    motor: "Nema17\nStepper Motor" { class: actuator }
-  }
-
-  weight_group: Weighing System {
-    style.stroke: "#dc3545"
-    style.fill: "#fff5f5"
-    hx711: "M5Stack Weight\n(HX711 I2C)" { class: sensor }
-    load_cell: "Load Cell" { class: sensor }
-  }
-
-  valve_group: Valve Control Group {
-    style.stroke: "#0d6efd"
-    style.fill: "#f1f8ff"
-    pca9685: "M5Stack Servo2\n(PCA9685 16-Ch)" { class: controller }
-    valve: "Pinch Valve\n(Servo Controlled)" { class: actuator }
-  }
-
-  dispenser: "Dispenser Unit\n(Fluid Output)" { class: fluid }
-
-  # Internal Pod Wiring (Direct node-to-node routing for clean layout)
-  mcu -> stepper_group.driver: "SPI / Step-Dir"
-  stepper_group.driver -> stepper_group.motor: "Motor Leads"
-
-  mcu -> weight_group.hx711: "I2C Bus"
-  weight_group.hx711 -> weight_group.load_cell: "E+ | E- | A+ | A-"
-
-  mcu -> valve_group.pca9685: "I2C Bus"
-  valve_group.pca9685 -> valve_group.valve: "3-Pin PWM\n(SIG, 5V, GND)"
-
-  # Mechanical & Physical Interactions at the Dispenser
-  stepper_group.motor -> dispenser: "Mechanical Drive" { class: mechanic }
-  valve_group.valve -> dispenser: "Opens / Closes Flow" { class: mechanic }
-  weight_group.load_cell -> dispenser: "Weighs Bottle / Glass" { class: mechanic }
-}
-
-# --- CROSS-CONTAINER CONNECTIONS ---
-
-# 1. Power (Orange, bold)
-station.psu -> pod1.mcu: "24V DC Power" {
-  style: {
-    stroke: "#d97706"
-    stroke-width: 3
-  }
-}
-
-# 2. Data (Blue, dashed)
-station.rpi -> pod1.mcu: "USB (Serial Data)" {
-  style: {
-    stroke: "#2563eb"
-    stroke-width: 2
-    stroke-dash: 5
-  }
-}
-
-# 3. Fluid / Tubing (Teal, bold)
-pod1.dispenser -> station.fluid_hub: "Fluid Tubing (Cocktail)" {
-  style: {
-    stroke: "#0d9488"
-    stroke-width: 4
-  }
-}
+station.psu -> pod1.mcu: "supplies 24 V DC power" {class: power}
+station.rpi -> pod1.mcu: "sends serial data over USB" {class: [data; key]}
+pod1.dispenser -> station.fluid_hub: "delivers cocktail\nthrough fluid tubing" {class: fluid}
 ----
+Which hardware parts make up the Station and a Pod, and how are they wired and mechanically linked?

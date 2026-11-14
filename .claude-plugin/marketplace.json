@@ -1,0 +1,14 @@
+{
+  "name": "cocktail-maker",
+  "owner": {
+    "name": "Mathis Logemann"
+  },
+  "plugins": [
+    {
+      "name": "cocktail-maker-docs",
+      "source": "./plugins/cocktail-maker-docs",
+      "description": "Writing, architecture, ADR and diagram guidelines for the Sir-Mix-A-Lot projects.",
+      "version": "0.4.1"
+    }
+  ]
+}

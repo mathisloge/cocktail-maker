@@ -93,7 +93,7 @@ The rules from piece 1 shape how pieces 3 and 4 are written.
 **Plugin layout**
 
 - `.claude-plugin/marketplace.json` at the repo root makes this repo the marketplace `cocktail-maker`.
-- The plugin `cocktail-maker-docs` lives in `plugins/cocktail-maker-docs/`, with its manifest and three skills.
+- The plugin `cocktail-maker-docs` lives in `plugins/cocktail-maker-docs/`, with its manifest and four skills: `writing-style`, `architecture-docs`, `writing-adrs` and `writing-diagrams`.
 - This repo is public, so the 3D repo (private) and others can load the marketplace and the hook from it without credentials.
 - This repo enables the plugin in a committed `.claude/settings.json`. `settings.local.json` stays personal. Before the plugin is pushed, test it by adding the marketplace from the local checkout. Other repos add:
 
@@ -141,7 +141,22 @@ It builds on `writing-style`.
 - **Template:** the existing structure with the `adr-header` partial and its statuses (Proposed, Accepted, Deprecated, Superseded).
 - **When a decision earns an ADR:** the skill states this.
 - **Where an ADR goes:** a decision that affects more than one part goes in System, and anything else goes in its own part.
-- **ID prefix:** the title carries a component prefix: SYS, STA, EMB or MEC, as in "SYS-007". File names stay as they are.
+- **ID prefix:** the title carries a component prefix: SYS, STA, EMB or CM3D (the 3D project's internal prefix), as in "SYS-007". File names stay as they are.
+
+**Skill `writing-diagrams`** (added by the owner during piece 1)
+
+It builds on `writing-style`, and `architecture-docs` points to it for every diagram.
+In piece 1 it holds the content rules. Piece 4 adds the visual style (colours, shapes, the shared D2 style partial) to the same skill.
+
+- **One diagram type per arc42 chapter:** context diagram in chapter 3, building blocks in chapter 5 (one zoom level per diagram), sequence diagrams in chapter 6, deployment diagram in chapter 7. Zoom levels are never mixed in one picture.
+- **Title and caption:** every diagram has a title and a one-line caption that says which question it answers.
+- **Boxes:** every box carries a name, a type and the technology (for example "Station · Raspberry Pi · Slint UI"). Names are exactly the glossary terms.
+- **Arrows:** every arrow points one way and carries a verb or intent ("sends commands"). Physical quantities carry their unit ("230 V AC"). Protocols go in the label ("USB CDC").
+- **Highlight:** at most one highlighted connection per diagram, the most important one.
+- **Reading direction:** flows go left to right, hierarchies top to bottom. A diagram with more than about 10 boxes is split.
+- **Consistency:** the same element keeps the same name, shape and colour in every diagram. Actors are person shapes, external systems are dashed, the machine or subproject is a framed boundary.
+- **No legend boxes:** the shared style explains itself. Anything unusual goes in the caption.
+- **Source and names:** the diagram source sits next to its text in the `.adoc` file. The `target` name follows `<component>-<chapter>-<topic>`.
 
 **Pre-commit hook**
 
@@ -167,7 +182,7 @@ Once the skills exist, write a prompt that an agent in the 3D repo can run. It s
 - enable the plugin and the hook
 - bring the Mechanics docs up to the mechanical rules
 - add the arc42 subset skeleton next to the existing pages, under "Architecture" and "Guides"
-- add the MEC prefix to the ADR titles
+- add the CM3D prefix to the ADR titles
 - move the Mechanics diagrams to D2 with the shared style, if there are any
 
 ### Piece 2: navigation

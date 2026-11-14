@@ -1,66 +1,60 @@
-= Building Block View
+= 5 Building Block View
+
+The Station is the host block in the xref:system::building-blocks.adoc[System building block view].
+This page shows the blocks inside the Station.
 
 == Level 1: Station Building Blocks
 
-[plantuml, target="station-building-blocks", format="svg"]
-....
-!include <C4/C4_Component>
-skinparam wrapWidth 200
-
-Component(ui, "User Interface", "Guest and operator screens", "Presents the guest ordering flow and the operator maintenance area on the same window.")
-Component(domain, "Domain Model & Application", "Recipes, ingredients, glasses, Pods", "Owns the domain data, tracks Pods, and drives recipe execution.")
-Component(podcomm, "Pod Communication", "Discovery and wire protocol", "Discovers Pods and speaks the Station side of the shared protocol.")
-Component(foundations, "Foundations", "Shared building blocks", "Logging, strong domain identifiers, unit-safe quantities, retry and timeout helpers.")
-
-Rel(ui, domain, "Reads state, forwards user actions")
-Rel(domain, podcomm, "Dispatches commands, receives status and events")
-Rel(domain, foundations, "Uses")
-Rel(podcomm, foundations, "Uses")
-Rel(ui, foundations, "Uses")
-
-SHOW_LEGEND()
-....
+.Building blocks of the Station
+[d2, target="station-building-blocks", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+direction: down
+station: "Station · Raspberry Pi · Slint UI" {
+  class: boundary
+  ui: "User Interface · guest and operator screens\npresents the guest ordering flow\nand the operator maintenance area\non the same window" {class: block}
+  domain: "Domain Model & Application ·\nrecipes, ingredients, glasses, Pods\nowns the domain data, tracks Pods,\nand drives recipe execution" {class: block}
+  podcomm: "Pod Communication · discovery and wire protocol\ndiscovers Pods and speaks\nthe Station side of the shared protocol" {class: block}
+  foundations: "Foundations · shared building blocks\nlogging, strong domain identifiers,\nunit-safe quantities,\nretry and timeout helpers" {class: block}
+  ui -> domain: "reads state,\nforwards user actions" {class: normal}
+  domain -> podcomm: "dispatches commands,\nreceives status and events" {class: [data; key]}
+  domain -> foundations: "uses" {class: normal}
+  podcomm -> foundations: "uses" {class: normal}
+  ui -> foundations: "uses" {class: normal}
+}
+----
+Which blocks make up the Station, and which block uses which?
 
 .Domain Model & Application
-* Owns the recipe, ingredient, and glass catalogs, the persisted ingredient-to-dispenser mapping, and
-  the persisted fill level of each dispenser.
+* Owns the recipe, ingredient, and glass catalogs, the persisted ingredient-to-dispenser mapping, and the persisted fill level of each dispenser.
 * Tracks which Pods are connected and what each one reports about itself.
 * Turns a selected recipe into a sequence of dispensing actions and coordinates their execution.
 
 .Pod Communication
-* Discovers Pods, whether physically connected or simulated for development, behind one common
-  interface.
-* Speaks the Station side of the shared wire protocol (xref:system::protocol.adoc[]), independent of
-  which Pods are actually present.
+* Discovers Pods, whether physically connected or simulated for development, behind one common interface.
+* Speaks the Station side of the shared wire protocol (xref:system::protocol.adoc[System protocol concept]), independent of which Pods are actually present.
 
 .User Interface
 * Presents the guest ordering flow and the operator maintenance area behind the same window.
-* Reflects live domain and Pod state without owning any of it itself, and forwards user actions back
-  into the Domain Model.
+* Reflects live domain and Pod state without owning any of it itself, and forwards user actions back into the Domain Model.
 
 .Foundations
-* Provides logging, strong domain identifiers, unit-safe physical quantities, and retry and timeout
-  helpers shared by every other building block.
+* Provides logging, strong domain identifiers, unit-safe physical quantities, and retry and timeout helpers shared by every other building block.
 
 == Level 2: Domain Model & Application
 
-* *Catalogs* — the recipe, ingredient, and glass data loaded from the local data files described in
-  xref:context-and-scope.adoc[].
-* *Station configuration and state* — the persisted ingredient-to-dispenser mapping and fill levels,
-  and the live, in-memory state of each connected Pod that the UI observes.
-* *Pod registry and dispatch* — tracks connected Pods and routes a command to the right one.
-* *Recipe execution* — scales and adjusts a recipe for the chosen glass, and executes it as a sequence
-  of commands dispatched to the owning Pods, reporting progress as it goes. A single pour asks for a
-  refill and pours the rest when it comes up short, and leaves the dialog itself to the UI.
-* *Fill level* — works out what is in each bottle from the weight readings, corrects that when a Pod
-  connects, and persists it. It also says which ingredients may not be enough for a drink.
+* *Catalogs:* the recipe, ingredient, and glass data loaded from the local data files described in xref:context-and-scope.adoc[].
+* *Station configuration and state:* the persisted ingredient-to-dispenser mapping and fill levels, and the live, in-memory state of each connected Pod that the UI observes.
+* *Pod registry and dispatch:* tracks connected Pods and routes a command to the right one.
+* *Recipe execution:* scales and adjusts a recipe for the chosen glass, and executes it as a sequence of commands dispatched to the owning Pods, reporting progress as it goes.
+A single pour asks for a refill and pours the rest when it comes up short, and leaves the dialog itself to the UI.
+* *Fill level:* works out what is in each bottle from the weight readings, corrects that when a Pod connects, and persists it.
+It also says which ingredients may not be enough for a drink.
 
 == Level 2: User Interface
 
-The UI never owns domain or Pod state itself. A small set of dedicated components sits between the
-declarative UI and the Domain Model, each responsible for one concern: it reflects the relevant part
-of the live domain or Pod state into the UI, and translates user actions back into calls on the Domain
-Model.
+The UI never owns domain or Pod state itself.
+A small set of dedicated components sits between the declarative UI and the Domain Model, each responsible for one concern: it reflects the relevant part of the live domain or Pod state into the UI, and translates user actions back into calls on the Domain Model.
 
 [cols="1,3", options="header"]
 |===
@@ -83,7 +77,6 @@ that set.
 specific dispenser, for the operator maintenance flow.
 |===
 
-Operator authentication itself, PIN verification and attempt-based lockout, is a small policy
-consumed by Navigation & Pod Status rather than a concern of its own.
+Operator authentication itself, PIN verification and attempt-based lockout, is a small policy consumed by Navigation & Pod Status rather than a concern of its own.
 
 Continue with xref:runtime-view.adoc[].

@@ -1,0 +1,168 @@
+= Diagram Conventions
+
+Every diagram on this site uses the same shapes, colours and line styles.
+This page explains them, so it is the legend of every diagram.
+
+.The shapes and edges of every diagram
+[d2, target="system-1-diagram-conventions", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+direction: right
+person: "actor · a person" {class: actor}
+outside: "external · a system outside\nthe subject of the diagram" {class: external}
+machine: "boundary · the machine, a subproject or a group" {
+  class: boundary
+  from: "block · a building block" {class: block}
+  to: "block · another building block" {class: block}
+  from -> to: "power · electrical power" {class: power}
+  from -> to: "data · data and communication" {class: data}
+  from -> to: "fluid · liquid flow" {class: fluid}
+  from -> to: "mechanical · a mechanical link" {class: mechanical}
+  from -> to: "fault · a fault or an error path" {class: fault}
+  from -> to: "key · the one highlighted connection" {class: [data; key]}
+}
+parts: "boundary · the parts of a detailed diagram" {
+  class: boundary
+  power: "power-part · supplies power" {class: power-part}
+  data: "data-part · computes or controls" {class: data-part}
+  fluid: "fluid-part · carries liquid" {class: fluid-part}
+  mechanical: "mechanical-part · moves or weighs" {class: mechanical-part}
+  interaction: "interaction-part · a person uses it" {class: interaction-part}
+}
+person -> machine.from: "interaction · a person uses the machine" {class: interaction}
+outside -> machine.from: "normal · a connection without a kind" {class: normal}
+----
+What does each shape and each edge of a diagram mean?
+
+Colour is never the only cue.
+The label of an edge says the same, and for data and mechanical edges the dashes do too.
+
+== Edges
+
+The colour and the line style of an edge show its kind.
+The meanings are the same in every diagram of every component.
+
+[cols="2,3,4,3,2,4", options="header"]
+|===
+| Sample | Edge class | Meaning | Colour | Hex | Line style
+
+| [.edge-sample.edge-power]#&#8203;#
+| `power`
+| electrical power
+| orange red
+| `#d0654a`
+| solid, width 2
+
+| [.edge-sample.edge-data]#&#8203;#
+| `data`
+| data and communication
+| light slate
+| `#86aebd`
+| dashed, width 2
+
+| [.edge-sample.edge-fluid]#&#8203;#
+| `fluid`
+| liquid flow
+| green
+| `#5cad75`
+| solid, width 2
+
+| [.edge-sample.edge-mechanical]#&#8203;#
+| `mechanical`
+| a physical, mechanical link
+| violet
+| `#8c7ee0`
+| short dashes, width 2
+
+| [.edge-sample.edge-interaction]#&#8203;#
+| `interaction`
+| a person using the machine, or the machine telling or asking a person
+| light amber
+| `#e8b86d`
+| solid, width 2
+
+| [.edge-sample.edge-fault]#&#8203;#
+| `fault`
+| an actual fault or an error path, such as a timeout
+| pink
+| `#e07aa8`
+| solid, width 2
+
+| [.edge-sample.edge-normal]#&#8203;#
+| `normal`
+| a connection without a kind
+| muted sand
+| `#867f6b`
+| solid, width 1
+
+| [.edge-sample.edge-data.edge-key]#&#8203;#
+| `key`
+| the one highlighted connection of a diagram, added to its kind
+| the colour of its kind
+| none
+| width 3 and a bold label
+|===
+
+== Shapes
+
+The class of a shape follows what the shape is in its diagram.
+A part class colours only the outline, and every outline is solid.
+
+[cols="2,4,6,3,2", options="header"]
+|===
+| Sample | Shape class | Put it on | Outline | Hex
+
+| [.shape-sample.shape-actor]#&#8203;#
+| `actor`
+| a person, such as the Guest or the Operator
+| light amber
+| `#e8b86d`
+
+| [.shape-sample.shape-external]#&#8203;#
+| `external`
+| a system outside the subject of the diagram, such as the Power Grid
+| sand, dashed
+| `#d9cfae`
+
+| [.shape-sample.shape-boundary]#&#8203;#
+| `boundary`
+| the frame of the machine or of a subproject, a group, or a note in a sequence diagram
+| amber, width 2
+| `#c8913a`
+
+| [.shape-sample.shape-block]#&#8203;#
+| `block`
+| a building block without a specific area, such as the Station or a Pod
+| amber
+| `#c8913a`
+
+| [.shape-sample.shape-power-part]#&#8203;#
+| `power-part`
+| a part that supplies power, such as the mains inlet, the main switch, a power supply or a DC/DC converter
+| orange red
+| `#d0654a`
+
+| [.shape-sample.shape-data-part]#&#8203;#
+| `data-part`
+| a computer, a controller or other electronics, such as the Raspberry Pi, the Pod controller or a stepper driver
+| light slate
+| `#86aebd`
+
+| [.shape-sample.shape-fluid-part]#&#8203;#
+| `fluid-part`
+| a part that carries liquid, such as the fluid hub or the dispenser unit
+| green
+| `#5cad75`
+
+| [.shape-sample.shape-mechanical-part]#&#8203;#
+| `mechanical-part`
+| an actuator or a mechanical part, such as a stepper motor, a pinch valve or a load cell
+| violet
+| `#8c7ee0`
+
+| [.shape-sample.shape-interaction-part]#&#8203;#
+| `interaction-part`
+| a part that a person uses, such as the touch display
+| light amber
+| `#e8b86d`
+|===

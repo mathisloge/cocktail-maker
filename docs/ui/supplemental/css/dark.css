@@ -1,0 +1,543 @@
+/* Sir-Mix-A-Lot docs: the dark theme for every part of the default UI that site-extra.css does not style.
+   Every colour comes from palette.css.
+   Each rule that sets a text colour names its colour pair in a contrast comment, and the tests check its ratio.
+   The selectors repeat the ones of the default site.css exactly, so that each rule overrides the light one.
+   Vendor-prefixed selectors get a rule of their own, because a browser drops a whole rule with a selector it does not know. */
+
+/* --- page ----------------------------------------------------------------- */
+
+body {
+  background: var(--cm-ink);
+  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink */
+}
+
+::selection {
+  background: var(--cm-amber);
+  color: var(--cm-ink); /* contrast: --cm-ink on --cm-amber */
+}
+
+@media (pointer: fine) {
+  @supports (scrollbar-width: thin) {
+    html {
+      scrollbar-color: var(--cm-sand-muted) var(--cm-ink);
+    }
+
+    body * {
+      scrollbar-color: var(--cm-sand-muted) transparent;
+    }
+  }
+
+  html::-webkit-scrollbar {
+    background-color: var(--cm-ink);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--cm-sand-muted);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--cm-sand-soft);
+  }
+}
+
+/* --- header parts that the header partial does not use -------------------- */
+
+.navbar-item,
+.navbar-link {
+  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink, --cm-sand on --cm-ink-raised */
+}
+
+.navbar-menu .navbar-link:hover {
+  background: var(--cm-ink-elevated);
+}
+
+.navbar-divider {
+  background-color: var(--cm-sand-muted);
+}
+
+.navbar .button {
+  background: var(--cm-ink-elevated);
+  border-color: var(--cm-sand-muted);
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink-elevated */
+}
+
+.navbar-dropdown {
+  background: var(--cm-ink-raised);
+  border-color: var(--cm-ink-elevated);
+}
+
+.navbar-dropdown a.navbar-item:hover {
+  background: var(--cm-ink-elevated);
+}
+
+#search-input {
+  background: var(--cm-ink-elevated);
+  border-color: var(--cm-sand-muted);
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink-elevated */
+}
+
+#search-input:disabled {
+  background-color: var(--cm-ink-raised);
+}
+
+#search-input:disabled::-webkit-input-placeholder {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-raised */
+}
+
+#search-input:disabled::-moz-placeholder {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-raised */
+}
+
+#search-input:disabled:-ms-input-placeholder {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-raised */
+}
+
+#search-input:disabled::-ms-input-placeholder {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-raised */
+}
+
+#search-input:disabled::placeholder {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-raised */
+}
+
+/* --- sidebar -------------------------------------------------------------- */
+
+.nav {
+  background: var(--cm-ink-raised);
+  box-shadow: 1px 0 0 var(--cm-ink-elevated);
+  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink-raised */
+}
+
+.nav-menu h3.title {
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink-raised */
+}
+
+/* The fold icons are black in the default UI. */
+.nav-menu-toggle,
+.nav-menu-toggle.is-active {
+  filter: invert(1);
+}
+
+/* The component explorer is gone (see nav-explore.hbs), but its rules stay dark in case it comes back. */
+.nav-panel-explore {
+  background: var(--cm-ink-raised);
+}
+
+.nav-panel-explore .context {
+  box-shadow: 0 -1px 0 var(--cm-ink-elevated);
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-raised */
+}
+
+.nav-panel-explore .context .version::after {
+  filter: invert(1);
+}
+
+.nav-panel-explore .components {
+  background: var(--cm-ink);
+  box-shadow: inset 0 1px 5px var(--cm-black);
+}
+
+.nav-panel-explore .component .version a {
+  background: var(--cm-ink-elevated);
+}
+
+.nav-panel-explore .component .is-current a {
+  background: var(--cm-amber);
+  color: var(--cm-ink); /* contrast: --cm-ink on --cm-amber */
+}
+
+/* --- toolbar and breadcrumbs ---------------------------------------------- */
+
+.toolbar {
+  background-color: var(--cm-ink-raised);
+  box-shadow: 0 1px 0 var(--cm-ink-elevated);
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-raised */
+}
+
+.toolbar .edit-this-page a {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-raised */
+}
+
+/* After the rule above, because both have the same specificity. */
+.toolbar a:hover {
+  color: var(--cm-amber-light); /* contrast: --cm-amber-light on --cm-ink-raised */
+}
+
+/* The toolbar icons are dark images, so they become masks over a palette colour. */
+.home-link {
+  background: var(--cm-sand-soft);
+  -webkit-mask: url(../img/home-o.svg) no-repeat 50% / contain;
+  mask: url(../img/home-o.svg) no-repeat 50% / contain;
+}
+
+.home-link.is-current,
+.home-link:hover {
+  background: var(--cm-amber-light);
+  -webkit-mask-image: url(../img/home.svg);
+  mask-image: url(../img/home.svg);
+}
+
+.nav-toggle {
+  background: var(--cm-sand-soft);
+  -webkit-mask: url(../img/menu.svg) no-repeat 50% 47.5% / 49%;
+  mask: url(../img/menu.svg) no-repeat 50% 47.5% / 49%;
+}
+
+/* The default UI sets the dark back arrow as a background image here, so it is removed. */
+.nav-toggle.is-active {
+  background-image: none;
+  -webkit-mask-image: url(../img/back.svg);
+  mask-image: url(../img/back.svg);
+  -webkit-mask-size: 41.5%;
+  mask-size: 41.5%;
+}
+
+/* --- page versions -------------------------------------------------------- */
+
+.page-versions .version-menu-toggle {
+  background-image: none;
+}
+
+/* The chevron is a mask in the text colour, because the default image is dark grey. */
+.page-versions .version-menu-toggle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  width: 0.75em;
+  height: 0.75em;
+  transform: translateY(-50%);
+  background: currentColor;
+  -webkit-mask: url(../img/chevron.svg) no-repeat 50% / contain;
+  mask: url(../img/chevron.svg) no-repeat 50% / contain;
+}
+
+.page-versions .version-menu {
+  background: var(--cm-ink-elevated);
+  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink-elevated */
+}
+
+.page-versions .version.is-missing {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-elevated */
+}
+
+/* --- table of contents ---------------------------------------------------- */
+
+.toc-menu {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink */
+}
+
+.toc .toc-menu h3 {
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink */
+}
+
+.toc .toc-menu a {
+  border-left-color: var(--cm-ink-elevated);
+}
+
+.toc .toc-menu a:hover {
+  color: var(--cm-amber-light); /* contrast: --cm-amber-light on --cm-ink */
+}
+
+.toc .toc-menu a.is-active {
+  border-left-color: var(--cm-amber);
+  color: var(--cm-amber-light); /* contrast: --cm-amber-light on --cm-ink */
+}
+
+.sidebar.toc .toc-menu a:focus {
+  background: var(--cm-ink-elevated);
+}
+
+/* --- content -------------------------------------------------------------- */
+
+.doc {
+  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink */
+}
+
+.doc h1,
+.doc h2,
+.doc h3,
+.doc h4,
+.doc h5,
+.doc h6 {
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink */
+}
+
+.doc h1.sect0 {
+  background: var(--cm-ink-elevated);
+}
+
+.doc h2:not(.discrete) {
+  border-bottom-color: var(--cm-sand-muted);
+}
+
+.doc a {
+  color: var(--cm-amber-light); /* contrast: --cm-amber-light on --cm-ink, --cm-amber-light on --cm-ink-raised */
+}
+
+.doc a:visited {
+  color: var(--cm-amber); /* contrast: --cm-amber on --cm-ink, --cm-amber on --cm-ink-raised */
+}
+
+.doc a:hover {
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink, --cm-cream on --cm-ink-raised */
+}
+
+.doc a.unresolved {
+  color: var(--cm-ember-light); /* contrast: --cm-ember-light on --cm-ink */
+}
+
+.doc hr {
+  border-color: var(--cm-sand-muted);
+}
+
+nav.pagination {
+  border-top-color: var(--cm-sand-muted);
+}
+
+nav.pagination span::before,
+nav.pagination a::after,
+nav.pagination a::before {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink */
+}
+
+/* Block titles and captions. */
+.doc .admonitionblock .title,
+.doc .exampleblock .title,
+.doc .imageblock .title,
+.doc .listingblock .title,
+.doc .literalblock .title,
+.doc .openblock .title,
+.doc .videoblock .title,
+.doc table.tableblock caption,
+.doc details.result > summary {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink, --cm-sand-soft on --cm-ink-raised */
+}
+
+/* --- inline code and keys ------------------------------------------------- */
+
+.doc .colist > table code,
+.doc p code,
+.doc thead code {
+  background: var(--cm-ink-elevated);
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink-elevated */
+}
+
+/* Code in a link keeps the link colour. */
+.doc a code {
+  color: inherit; /* contrast: --cm-amber-light on --cm-ink-elevated, --cm-amber on --cm-ink-elevated */
+}
+
+.doc kbd {
+  background: var(--cm-ink-elevated);
+  border-color: var(--cm-sand-muted);
+  box-shadow: 0 1px 0 var(--cm-sand-muted);
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink-elevated */
+}
+
+/* --- listing and source blocks -------------------------------------------- */
+
+.doc .listingblock pre:not(.highlight),
+.doc .literalblock pre,
+.doc pre.highlight > code {
+  background: var(--cm-ink-elevated);
+  box-shadow: none;
+  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink-elevated */
+}
+
+.doc .source-toolbox {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-elevated */
+}
+
+.doc .source-toolbox .copy-toast {
+  background-color: var(--cm-amber);
+  color: var(--cm-ink); /* contrast: --cm-ink on --cm-amber */
+}
+
+.doc .source-toolbox .copy-toast::after {
+  border-left-color: var(--cm-amber);
+}
+
+/* Syntax highlighting: highlight.js tokens on the code background --cm-ink-elevated. */
+.hljs-comment,
+.hljs-quote {
+  color: var(--cm-sand-muted); /* contrast: --cm-sand-muted on --cm-ink-elevated */
+}
+
+.hljs-keyword,
+.hljs-selector-tag {
+  color: var(--cm-amber-light); /* contrast: --cm-amber-light on --cm-ink-elevated */
+}
+
+.hljs-subst {
+  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink-elevated */
+}
+
+.hljs-literal,
+.hljs-number,
+.hljs-tag .hljs-attr,
+.hljs-template-variable,
+.hljs-variable {
+  color: var(--cm-ember-light); /* contrast: --cm-ember-light on --cm-ink-elevated */
+}
+
+.hljs-doctag,
+.hljs-string {
+  color: var(--cm-green); /* contrast: --cm-green on --cm-ink-elevated */
+}
+
+.hljs-section,
+.hljs-selector-id,
+.hljs-title {
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink-elevated */
+}
+
+.hljs-class .hljs-title,
+.hljs-type {
+  color: var(--cm-slate-light); /* contrast: --cm-slate-light on --cm-ink-elevated */
+}
+
+.hljs-attribute,
+.hljs-name,
+.hljs-tag {
+  color: var(--cm-amber); /* contrast: --cm-amber on --cm-ink-elevated */
+}
+
+.hljs-link,
+.hljs-regexp {
+  color: var(--cm-green); /* contrast: --cm-green on --cm-ink-elevated */
+}
+
+.hljs-bullet,
+.hljs-symbol {
+  color: var(--cm-ember-light); /* contrast: --cm-ember-light on --cm-ink-elevated */
+}
+
+.hljs-built_in,
+.hljs-builtin-name {
+  color: var(--cm-slate-light); /* contrast: --cm-slate-light on --cm-ink-elevated */
+}
+
+.hljs-meta {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-elevated */
+}
+
+.hljs-addition {
+  background: var(--cm-ink-raised);
+  color: var(--cm-green); /* contrast: --cm-green on --cm-ink-raised */
+}
+
+.hljs-deletion {
+  background: var(--cm-ink-raised);
+  color: var(--cm-ember-light); /* contrast: --cm-ember-light on --cm-ink-raised */
+}
+
+/* --- tables --------------------------------------------------------------- */
+
+.doc table.tableblock,
+.doc table.tableblock > * > tr > * {
+  border-color: var(--cm-sand-muted);
+}
+
+.doc table.tableblock > thead th {
+  background: var(--cm-ink-elevated);
+  border-bottom-color: var(--cm-amber);
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink-elevated */
+}
+
+.doc table.stripes-all > tbody > tr,
+.doc table.stripes-even > tbody > tr:nth-of-type(2n),
+.doc table.stripes-hover > tbody > tr:hover,
+.doc table.stripes-odd > tbody > tr:nth-of-type(odd) {
+  background: var(--cm-ink-raised);
+}
+
+.doc table.tableblock > tfoot {
+  background: var(--cm-ink-elevated);
+}
+
+/* --- admonitions ---------------------------------------------------------- */
+
+.doc .admonitionblock td.content {
+  background: var(--cm-ink-raised);
+  border-left: 3px solid var(--cm-sand-muted);
+}
+
+.doc .admonitionblock.note td.content {
+  border-left-color: var(--cm-slate-light);
+}
+
+.doc .admonitionblock.tip td.content {
+  border-left-color: var(--cm-green);
+}
+
+.doc .admonitionblock.important td.content {
+  border-left-color: var(--cm-red);
+}
+
+.doc .admonitionblock.warning td.content {
+  border-left-color: var(--cm-amber);
+}
+
+.doc .admonitionblock.caution td.content {
+  border-left-color: var(--cm-ember-light);
+}
+
+/* The label at the top left of each admonition. */
+.doc .admonitionblock td.icon i.icon-note {
+  background-color: var(--cm-slate-light);
+  color: var(--cm-ink); /* contrast: --cm-ink on --cm-slate-light */
+}
+
+.doc .admonitionblock td.icon i.icon-tip {
+  background-color: var(--cm-green);
+  color: var(--cm-ink); /* contrast: --cm-ink on --cm-green */
+}
+
+.doc .admonitionblock td.icon i.icon-important {
+  background-color: var(--cm-red);
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-red */
+}
+
+.doc .admonitionblock td.icon i.icon-warning {
+  background-color: var(--cm-amber);
+  color: var(--cm-ink); /* contrast: --cm-ink on --cm-amber */
+}
+
+.doc .admonitionblock td.icon i.icon-caution {
+  background-color: var(--cm-ember-light);
+  color: var(--cm-ink); /* contrast: --cm-ink on --cm-ember-light */
+}
+
+/* --- example, sidebar and quote blocks ------------------------------------ */
+
+.doc .exampleblock > .content,
+.doc details.result > .content {
+  background: var(--cm-ink);
+  border: 1px solid var(--cm-sand-muted);
+}
+
+.doc .sidebarblock {
+  background: var(--cm-ink-elevated);
+}
+
+.doc .sidebarblock > .content > .title {
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink-elevated */
+}
+
+.doc .quoteblock,
+.doc .verseblock {
+  background: var(--cm-ink-raised);
+  border-left-color: var(--cm-amber);
+  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink-raised */
+}
+
+.doc .quoteblock .attribution {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-raised */
+}
+
+#preamble .abstract blockquote {
+  background: var(--cm-ink-raised);
+  border-left-color: var(--cm-sand-muted);
+  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink-raised */
+}

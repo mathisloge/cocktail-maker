@@ -68,7 +68,7 @@ export struct FillLevelOptions
 };
 
 /**
- * @brief Keeps the fill level of every dispenser, which the Station owns (ADR-007).
+ * @brief Keeps the fill level of every dispenser, which the Station owns (SYS-007).
  *
  * A load cell only says how far the weight has moved since its zero point, and that point moves at every power up. So the
  * level always is `reading + correction`, and the correction is worked out again when a Pod connects.

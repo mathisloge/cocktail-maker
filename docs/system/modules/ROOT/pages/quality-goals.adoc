@@ -24,4 +24,4 @@ Safety and reliability are the primary drivers for both hardware separation and 
 
 |===
 
-Continue with xref:system-design.adoc[].
+Continue with xref:context-and-scope.adoc[].

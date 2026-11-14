@@ -1,17 +1,17 @@
-= ADR-002: Physical Pod Connection
+= SYS-002: Physical Pod Connection
 // Fill in the variables
 // one-of: Proposed, Accepted, Deprecated, Superseded
 :adr-status: Accepted
 :adr-date: 2026-07-14
 :adr-authors: {gh}mathisloge[@mathisloge]
 // when adr-status == Superseded provide the new ADR.
-// :adr-superseded-by: xref:0005-use-xyz.adoc[ADR 0005]
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
 
 include::partial$adr-header.adoc[]
 
 == Context
 
-Following the Station/Pod split (xref:adr:001-system-split.adoc[ADR-001]), the Station and every Pod need a physical/electrical interface over which the communication protocol can be carried.
+Following the Station/Pod split (xref:adr:001-system-split.adoc[SYS-001]), the Station and every Pod need a physical/electrical interface over which the communication protocol can be carried.
 Pods must be connectable and removable by an operator without special tools, must each be individually addressable, and the interface must be cheap and widely supported on both the Raspberry Pi (Station) and low-cost microcontrollers (Pods).
 
 == Decision
@@ -41,5 +41,6 @@ IP-based addressing also requires additional configuration (static IPs or DHCP) 
 * **Good:** USB enumeration provides hot-plug detection for free, allowing Pods to be connected or removed without additional wiring or a custom presence-detection mechanism.
 * **Good:** Each Pod's USB device identity can be used as the basis for assigning its Pod identifier, simplifying addressing.
 * **Bad:** USB cable length is limited (typically a few meters without active extension/hubs), which constrains the physical layout of Pods relative to the Station.
-* **Bad:** USB is host-centric and point-to-point per port; connecting more Pods than the Station has native ports requires a USB hub, adding a component and a potential point of failure.
+* **Bad:** USB is host-centric and point-to-point per port.
+Connecting more Pods than the Station has native ports requires a USB hub, adding a component and a potential point of failure.
 * **Bad:** Unlike a shared multi-drop bus (e.g. RS-485, CAN), USB does not scale to large Pod counts without additional hubs, and total bandwidth is shared across all connected Pods.

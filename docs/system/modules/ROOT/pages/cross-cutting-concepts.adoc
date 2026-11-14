@@ -1,0 +1,4 @@
+= 8 Cross-cutting Concepts
+
+Some concerns affect both the Station and every Pod and are therefore defined once, here, rather than repeated in the Station or Pod software architecture documents.
+The pages of this chapter are xref:protocol.adoc[], xref:power.adoc[], xref:safety.adoc[] and xref:naming-conventions.adoc[].

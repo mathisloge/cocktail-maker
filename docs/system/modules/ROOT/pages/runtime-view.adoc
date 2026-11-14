@@ -1,0 +1,9 @@
+= 6 Runtime View
+
+[NOTE]
+====
+Not written yet.
+====
+
+This chapter will show how the Station and the Pods work together at runtime for the main scenarios.
+Until then, see xref:station::runtime-view.adoc[the Station runtime view].

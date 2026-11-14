@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Move the repo's dev tooling to Python (uv, pytest, ruff, commitizen). Then ship the `cocktail-maker-docs` Claude Code plugin with three skills and an AsciiDoc style checker that runs as a pre-commit hook here and in other repos. Make the existing System and Station docs pass the checker, and write a handoff prompt for the 3D repo.
+**Goal:** Move the repo's dev tooling to Python (uv, pytest, ruff, commitizen). Then ship the `cocktail-maker-docs` Claude Code plugin with four skills (`writing-style`, `architecture-docs`, `writing-adrs`, `writing-diagrams`) and an AsciiDoc style checker that runs as a pre-commit hook here and in other repos. Make the existing System and Station docs pass the checker, and write a handoff prompt for the 3D repo.
 
 **Architecture:**
 - **Python tooling:** a non-package `pyproject.toml` at the repo root holds the dev tools and their config, as in the 3D repo. Commitizen owns the version, and CMake reads it from `pyproject.toml`.
@@ -24,7 +24,7 @@
   - no dashes as sentence breaks (` - `, `–`, `—`, and AsciiDoc's ` -- `). Hyphens in compound words such as "Station-Pod" are allowed.
 - **Severity:** avoid-list words only warn. Every other rule fails the hook.
 - **Skipped by the hook:** listing and literal blocks, diagram blocks, tables, attribute entries, comments, and lines that only hold an xref, include or other block macro.
-- **Names:** marketplace `cocktail-maker`, plugin `cocktail-maker-docs`, skills `writing-style`, `architecture-docs` and `writing-adrs`, hook id `adoc-style`.
+- **Names:** marketplace `cocktail-maker`, plugin `cocktail-maker-docs`, skills `writing-style`, `architecture-docs`, `writing-adrs` and `writing-diagrams`, hook id `adoc-style`.
 - **Mechanical pass scope:** every `.adoc` file under `docs/system/` and `docs/station/`, and nothing else. Moved or reflowed text keeps its meaning.
 - **Out of scope here:** ADR renames and ID prefixes belong to piece 3. The `writing-adrs` skill only describes the prefix rule.
 - **Checker dependencies:** the checker script imports only the Python standard library. That way `language: script` works in any repo with `python3`. pytest and ruff are dev tools only.
@@ -615,7 +615,7 @@ git commit -m "feat(docs): add the cocktail-maker-docs plugin with the writing-s
 - **When a decision earns an ADR:** it is hard to reverse, it affects more than one module or part, or it chooses between real alternatives that someone will question later.
 - **Where an ADR goes:** a decision that affects more than one part goes in `system`. Anything else goes in its own part's `adr` module.
 - **IDs:**
-  - The prefixes are `SYS`, `STA`, `EMB` and `MEC`.
+  - The prefixes are `SYS`, `STA`, `EMB` and `CM3D`.
   - The title format is `= SYS-007: <decision as a short phrase>`, with the number taken from the file name (`007-...adoc`).
   - File names never change, and numbers are never reused.
 - **Statuses:** Proposed, Accepted, Deprecated and Superseded. To supersede an ADR, set `:adr-superseded-by:` on the old one, and name the old one in the new ADR's Context.
@@ -821,7 +821,7 @@ It tells the agent to:
   - Guides holds printing, pump assembly and service, and purchasing.
   - The agent decides where the existing pages fit.
   - Chapter 5 opens with its place in System chapter 5. Link the System chapter 5 page once piece 3 lands, and the System start page until then.
-- **ADR titles:** prefix them with `MEC`, as in `= MEC-011: ...`. File names stay, and every reference in the repo is updated.
+- **ADR titles:** prefix them with `CM3D`, as in `= CM3D-011: ...`. File names stay, and every reference in the repo is updated.
 - **Diagrams:** do not convert existing diagrams yet. The D2 style comes with piece 4 in this repo.
 - **Commits:** use conventional commits. The repo already checks them with commitizen.
 
@@ -842,6 +842,56 @@ git commit -m "docs: add the handoff prompt for the Mechanics docs"
 ```
 
 - [ ] **Step 4: Show the prompt to the owner in the final report, ready to paste.**
+
+---
+
+### Task 10: `writing-diagrams` skill
+
+Added by the owner during execution. It runs after Task 7 and before Task 8. The spec section "Skill `writing-diagrams`" holds the rules.
+
+**Files:**
+- Create: `plugins/cocktail-maker-docs/skills/writing-diagrams/SKILL.md`
+- Modify: `plugins/cocktail-maker-docs/skills/architecture-docs/SKILL.md` (its "Diagram style" section)
+- Modify: `plugins/cocktail-maker-docs/.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` (the description mentions diagrams)
+- Modify: `plugins/cocktail-maker-docs/tests/test_plugin_layout.py`
+
+**Interfaces:**
+- Consumes: `skill_dirs()`, `check_text` and the layout tests from Tasks 4 and 5
+
+**`writing-diagrams/SKILL.md` requirements:**
+- **Description:** `Use when drawing, changing or reviewing a diagram in any Sir-Mix-A-Lot docs (architecture chapters, protocol pages, guides): which diagram type to use, what goes in boxes and on arrows, layout and naming. Diagrams are D2, rendered through Kroki.`
+- **Builds on:** it says it builds on `writing-style`, and it names `architecture-docs` for the chapter structure.
+- **Content rules:** every bullet of the spec section, each with one short D2 example or wrong/right pair.
+- **Chapter mapping:** a table from arc42 chapter to diagram type (3: context, 5: building blocks with one zoom level, 6: sequence, 7: deployment).
+- **Style section:** "Visual style" says the shared style (colours, shapes) comes from System's D2 style partial, which a later change adds. Until then, write plain D2 and use the `class` names `actor`, `external`, `boundary`, `block` and `key` on shapes, and `key` on the one highlighted edge, so the shared style can attach later without edits. Don't invent the partial's file name.
+- **AsciiDoc block form:** a short example of a `[d2, target="station-5-building-blocks", format="svg"]` block with a `.Title` line above it and a caption sentence below it.
+
+**`architecture-docs` change:** its "Diagram style" section shrinks to one or two sentences that point to `writing-diagrams`.
+
+- [ ] **Step 1: Write the failing test**
+
+Change `test_expected_skills_present` to expect `{"writing-style", "architecture-docs", "writing-adrs", "writing-diagrams"}`.
+
+- [ ] **Step 2: Run tests to verify it fails**
+
+Run: `uv run pytest -v`
+Expected: `test_expected_skills_present` FAILS, because `writing-diagrams` is missing
+
+- [ ] **Step 3: Write the skill, shorten the architecture-docs section, update both manifest descriptions**
+
+The descriptions in both manifests read `"Writing, architecture, ADR and diagram guidelines for the Sir-Mix-A-Lot projects."`, and the plugin `version` becomes `0.2.0` in both.
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `uv run pytest -v`
+Expected: all tests PASS. That includes `test_skills_follow_the_style` for the new skill.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add plugins/cocktail-maker-docs .claude-plugin/marketplace.json
+git commit -m "feat(docs): add the writing-diagrams skill"
+```
 
 ---
 

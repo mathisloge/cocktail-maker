@@ -1,0 +1,15 @@
+<footer class="footer">
+  <div class="footer-brand">{{site.title}}</div>
+  <ul class="footer-links">
+    {{#with (site-sections)}}
+    {{#if system}}
+    <li><a class="footer-section" href="{{{relativize system.url}}}">{{system.title}}</a></li>
+    {{/if}}
+    {{#each subprojects}}
+    <li><a class="footer-section" href="{{{relativize ./url}}}">{{./title}}</a></li>
+    {{/each}}
+    {{/with}}
+    <li><a class="footer-source" href="https://github.com/mathisloge/cocktail-maker">Source on GitHub</a></li>
+  </ul>
+  <p class="footer-note">Built with Antora.</p>
+</footer>

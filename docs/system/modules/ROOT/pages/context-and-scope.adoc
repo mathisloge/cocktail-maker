@@ -1,0 +1,27 @@
+= 3 Context and Scope
+
+The system context describes the Cocktail Machine as a "black box" and identifies all external actors and systems that interact with it.
+
+.Context of the machine
+[d2, target="system-context", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+direction: right
+guest: "Guest\na guest who wants to order and receive a drink intuitively" {class: actor}
+operator: "Operator\nstaff, responsible for refilling, cleaning and calibrating" {class: actor}
+machine: "Sir-Mix-A-Lot · cocktail machine\nautomated mechatronic beverage dispenser\nbased on Station/Pod architecture" {class: boundary}
+power_grid: "Power Grid\nexternal 230 V AC mains wall outlet" {class: external}
+ingredients: "Raw Ingredients\nphysical bottles containing spirits, juices and syrups" {class: external}
+guest -> machine: selects recipe and orders drink {class: [interaction; key]}
+machine -> guest: dispenses cocktail {class: fluid}
+operator -> machine: refills, cleans and calibrates {class: interaction}
+power_grid -> machine: supplies 230 V AC energy {class: power}
+ingredients -> machine: supplies fluids {class: fluid}
+----
+Who and what does the machine interact with?
+
+* **User (Guest):** Interacts with the system purely to order and receive drinks.
+Requires zero technical knowledge.
+* **Operator (Staff):** Responsible for refilling ingredients, executing cleaning cycles, and calibrating pods.
+Interacts with a dedicated admin UI.
+* **Power & Ingredients:** The physical inputs required for operation.

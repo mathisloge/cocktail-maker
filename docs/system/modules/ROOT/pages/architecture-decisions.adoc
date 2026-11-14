@@ -1,0 +1,12 @@
+= 9 Architecture Decisions
+
+Each decision that affects more than one part of the machine has its own ADR.
+This list shows all System ADRs:
+
+* xref:adr:001-system-split.adoc[]
+* xref:adr:002-pysical-pod-connection.adoc[]
+* xref:adr:003-protocol-communication.adoc[]
+* xref:adr:004-power-architecture.adoc[]
+* xref:adr:005-embedded-os.adoc[]
+* xref:adr:006-protocol-serialization.adoc[]
+* xref:adr:007-calibration-and-fill-level.adoc[]

@@ -1,0 +1,40 @@
+= SYS-NNN: <Decision>
+// Replace SYS with the prefix of the component: SYS, STA, EMB or CM3D.
+// Replace NNN with the number from the file name.
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Proposed
+:adr-date: YYYY-MM-DD
+:adr-authors: {gh}<github-user>[@<github-user>]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+<Describe the problem that needs a decision>.
+<Name the facts and limits that shape the decision>.
+<If this ADR supersedes an older ADR, name the old ADR and link to it>.
+
+=== Decision Drivers
+
+* **<Driver>:** <Say why this driver matters for the decision>.
+* **<Driver>:** <Say why this driver matters for the decision>.
+
+== Decision
+
+<State the decision in one or two active sentences, for example "We use X for Y">.
+
+== Alternatives Considered
+
+=== <Alternative>
+
+<Describe the alternative>.
+
+Rejected: <Say why the alternative lost against the decision>.
+
+== Consequences
+
+* **Good:** <Name a benefit of the decision>.
+* **Bad:** <Name a cost or a risk of the decision>.

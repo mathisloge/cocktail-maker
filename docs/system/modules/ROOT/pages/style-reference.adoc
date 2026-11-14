@@ -1,0 +1,134 @@
+= Style Reference
+:adr-status: Superseded
+:adr-date: 2026-01-01
+:adr-authors: Docs Team
+:adr-superseded-by: xref:adr:003-protocol-communication.adoc[SYS-003]
+
+This page shows every element of the documentation theme once.
+It is not part of the navigation and exists to check the dark theme by eye.
+
+== Headings
+
+=== Third level
+
+==== Fourth level
+
+===== Fifth level
+
+== Lists
+
+. First step
+. Second step
+. Third step
+
+* One item
+* Another item
+** A nested item
+
+Station:: The host application on the Raspberry Pi.
+Pod:: A self-contained dispensing module.
+
+== Code
+
+Inline code looks like `PodId` in a sentence.
+
+----
+A plain listing block.
+It keeps its line breaks.
+----
+
+[source,cpp]
+----
+auto volume = 30 * mp_units::si::unit_symbols::ml;
+----
+
+== Tables
+
+[options="header"]
+|===
+| Name | Meaning
+
+| Station
+| The host.
+
+| Pod
+| The dispenser.
+|===
+
+[cols="1,2,3", options="header"]
+|===
+| Field | Type | Purpose
+
+| Sync
+| `uint16` (`0xabcd`)
+| Fixed marker that lets a receiver find the start of the next frame on the raw USB CDC byte stream.
+
+| Size
+| `uint16`
+| Number of bytes from MsgId through Payload, used to know when a full frame has been received.
+|===
+
+== Admonitions
+
+NOTE: A note.
+
+TIP: A tip.
+
+IMPORTANT: An important hint.
+
+CAUTION: A caution.
+
+WARNING: A warning.
+
+== Blocks
+
+.An example
+====
+The content of an example block.
+====
+
+.A sidebar
+****
+The content of a sidebar block.
+****
+
+[quote, A Author, A Source]
+____
+The content of a quote block.
+____
+
+== Links
+
+See xref:protocol.adoc[the protocol page] for the frame layout.
+
+== Diagram
+
+.Edge kinds on the dark page
+[d2, target="system-style-reference", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+direction: right
+guest: "Guest" {class: actor}
+power_grid: "Power Grid · wall outlet · 230 V AC" {class: external}
+bottles: "Raw Ingredients · bottles" {class: external}
+machine: "Sir-Mix-A-Lot · cocktail machine" {
+  class: boundary
+  station: "Station · Raspberry Pi · Slint UI" {class: block}
+  pod: "Pod · MCU · steppers, load cells, valves" {class: block}
+  glass: "Glass · on the load cell" {class: block}
+}
+guest -> machine.station: orders a drink {class: interaction}
+power_grid -> machine: supplies 230 V AC {class: power}
+machine.station -> machine.pod: sends a dispense command {class: [data; key]}
+machine.pod -> machine.station: reports a timeout {class: fault}
+bottles -> machine.pod: supplies the ingredients {class: fluid}
+machine.pod -> machine.glass: weighs the glass {class: mechanical}
+machine.station -> machine.glass: knows its active volume {class: normal}
+----
+How do the six edge kinds, the key edge and a normal edge look on the dark page?
+
+The xref:diagram-conventions.adoc[diagram conventions] show every class of the shared style.
+
+== ADR header
+
+include::adr:partial$adr-header.adoc[]

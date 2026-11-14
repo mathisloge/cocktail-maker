@@ -1,4 +1,4 @@
-= ADR-004: Domain Type Safety (strong_type and mp-units)
+= STA-004: Domain Type Safety (strong_type and mp-units)
 :adr-status: Accepted
 :adr-date: 2026-07-24
 :adr-authors: {gh}mathisloge[@mathisloge]
@@ -10,7 +10,7 @@ The Station interacts with various hardware components and dispenses ingredients
 In the domain model, we deal with numerous identifiers (e.g., a Pod's identity versus a dispenser's identity) and physical quantities (e.g., volumes, mass, durations).
 Using plain primitive types (`int`, `std::string`, `double`) for these values makes them fundamentally indistinguishable to the C++ compiler.
 Accidentally passing a Pod ID to a function expecting a Dispenser ID, or a plain number of milliliters to a function expecting liters, would result in a successful compilation but a critical runtime bug.
-Because dispensing is a safety- and food-safety-relevant action (xref:system::quality-goals.adoc[]), an incorrect physical quantity (e.g., overdosing an ingredient) is a direct food-safety concern.
+Because dispensing is a safety- and food-safety-relevant action (xref:system::quality-goals.adoc[System quality goals]), an incorrect physical quantity (e.g., overdosing an ingredient) is a direct food-safety concern.
 Therefore, the domain model must enforce strict distinctions between different kinds of values.
 
 === Decision Drivers
@@ -38,7 +38,8 @@ C++ allows implicit conversions between these types, meaning a simple typo or wr
 === Standard C++ Type Aliases (`typedef` / `using`)
 Creating type aliases such as `using PodId = std::string;` and `using Volume = double;`.
 
-Rejected: C++ aliases do not provide any type safety; they are merely synonyms.
+Rejected: C++ aliases do not provide any type safety.
+They are merely synonyms.
 The compiler will still happily accept a `PodId` where a `DispenserId` is expected.
 
 === Custom Wrapper Classes for Physical Units

@@ -1,0 +1,9 @@
+= 10 Quality Requirements
+
+[NOTE]
+====
+Not written yet.
+====
+
+This chapter will hold the quality scenarios that make the quality goals measurable.
+The quality goals themselves stay in xref:quality-goals.adoc[] in chapter 1.

@@ -18,6 +18,15 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    services:
+      # Renders the D2 diagrams at build time. Bump the tag here to update Kroki.
+      # Pinned to 0.36.0. The shared D2 style (docs/system/modules/ROOT/partials/d2-style.d2) was
+      # verified against D2 v0.9.0 as rendered by kroki.io and uses the TALA layout engine, so check the diagrams after a bump.
+      # docs/ui/extensions/d2-blend.js rewrites a CSS rule of D2 and fails the build if a new D2 changed that rule.
+      kroki:
+        image: yuzutech/kroki:0.36.0
+        ports:
+          - "8000:8000"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -29,11 +38,33 @@ jobs:
           node-version: "latest"
       - name: Install Antora
         run: npm i
+      - name: Test the Antora extensions
+        run: node --test 'docs/ui/extensions/*.test.js'
+      - name: Wait for Kroki
+        run: |
+          for _ in $(seq 60); do
+            if curl --silent --fail http://localhost:8000/health > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Kroki did not answer on http://localhost:8000/health within 60 s" >&2
+          exit 1
+      # The playbook fetches every diagram into the site. Here it fetches from the pinned Kroki instead of kroki.io.
       - name: Generate Site
-        run: npx antora antora-playbook.yml
+        run: >-
+          npx antora
+          --attribute kroki-server-url=http://localhost:8000
+          antora-playbook.yml
         env:
           # Read-only token for the private cocktail-maker-3d repository.
           GIT_CREDENTIALS: https://x-access-token:${{ secrets.DOCS_3D_TOKEN }}@github.com
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Check Site Navigation
+        run: uv run pytest docs/ui/tests docs/tests -v
+        env:
+          DOCS_SITE_DIR: build/site
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v5
         with:

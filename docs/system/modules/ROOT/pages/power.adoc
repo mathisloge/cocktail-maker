@@ -1,0 +1,32 @@
+= Power
+
+All electrical energy for the machine originates from a single external 230V AC mains connection and is distributed internally as follows:
+
+.Power chain of the machine
+[d2, target="power-architecture", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+direction: right
+machine: "Sir-Mix-A-Lot · cocktail machine\na continuous protective earth (PE) conductor runs through every stage,\nindependent of the voltage domain" {
+  class: boundary
+  inlet: "IEC C14 Inlet · mains inlet\n230 V AC entry point" {class: power-part}
+  main_switch: "Main Switch · mains switch\nmanual mains disconnect" {class: power-part}
+  fi_ls: "RCD/Circuit Breaker · protective device\nresidual current + overcurrent protection" {class: power-part}
+  smps: "SMPS · power supply\n230 V AC -> 24 V DC" {class: power-part}
+  dcdc: "DC/DC Converter · converter\n24 V DC -> 5 V DC" {class: power-part}
+  actuators: "Pumps, Valves, Steppers · actuators\n24 V DC consumers" {class: mechanical-part}
+  rpi: "Raspberry Pi · Station computer\n5 V DC consumer" {class: data-part}
+  inlet -> main_switch: supplies 230 V AC {class: power}
+  main_switch -> fi_ls: supplies 230 V AC {class: power}
+  fi_ls -> smps: supplies protected 230 V AC {class: [power; key]}
+  smps -> actuators: supplies 24 V DC {class: power}
+  smps -> dcdc: supplies 24 V DC {class: power}
+  dcdc -> rpi: supplies 5 V DC {class: power}
+}
+----
+How does the mains energy reach the actuators and the Raspberry Pi?
+
+The main switch provides a single, clearly labeled point at which an operator can fully disconnect the machine from mains power.
+The RCD/circuit breaker protects against both residual current faults and overcurrent conditions before any DC conversion takes place.
+A continuous protective earth (PE) conductor is maintained across all stages, from the inlet through to the Station and every Pod.
+The detailed rationale for this power architecture is documented in xref:adr:004-power-architecture.adoc[SYS-004].

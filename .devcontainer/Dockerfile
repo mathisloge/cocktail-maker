@@ -51,14 +51,10 @@ RUN set -eux; \
     test "${manifest}" != "<NOT PRESENT>"; \
     test -f "$(dirname "${manifest}")/../share/libc++/v1/std.cppm"
 
-# The repo's lint hooks (.pre-commit-config.yaml) run through pre-commit. PEP 668
-# marks Ubuntu's python3 as externally managed, so pre-commit gets its own venv;
-# python3-venv is also what its python-language hooks (gersemi, codespell, reuse,
-# clang-format, ...) need to build theirs on first run.
+# The repo's dev tooling (pre-commit, pytest, ruff, commitizen) is managed by uv
+# (pyproject.toml). python3-venv is what pre-commit's python-language hooks
+# (gersemi, codespell, reuse, ...) need to build their environments on first run.
+COPY --from=ghcr.io/astral-sh/uv:0.13.8 /uv /uvx /bin/
 RUN apt-get update && apt-get install -y --no-install-recommends \
         python3 python3-venv \
-    && rm -rf /var/lib/apt/lists/* \
-    && python3 -m venv /opt/pre-commit \
-    && /opt/pre-commit/bin/pip install --no-cache-dir pre-commit \
-    && ln -s /opt/pre-commit/bin/pre-commit /usr/local/bin/pre-commit \
-    && pre-commit --version
+    && rm -rf /var/lib/apt/lists/*

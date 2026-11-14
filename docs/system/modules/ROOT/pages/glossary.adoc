@@ -1,0 +1,5 @@
+= 12 Glossary
+
+Station, Pod, and their related terms follow a single, canonical naming convention used consistently across hardware documentation, protocol definitions, and both software architecture documents.
+This convention is not repeated here.
+See xref:naming-conventions.adoc[].

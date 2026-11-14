@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "cocktail-maker": {
+      "source": {
+        "source": "github",
+        "repo": "mathisloge/cocktail-maker"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "cocktail-maker-docs@cocktail-maker": true
+  }
+}

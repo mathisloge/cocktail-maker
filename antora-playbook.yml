@@ -12,10 +12,28 @@ content:
   - url: https://github.com/mathisloge/cocktail-maker-3d.git
     branches: main
     start_path: docs
+antora:
+  extensions:
+    # Makes the group frames of D2 sequence diagrams visible on the dark page, see the comment in the file.
+    - ./docs/ui/extensions/d2-blend.js
 asciidoc:
+  attributes:
+    # Every build fetches the diagrams and serves them as SVG files of the site, so d2-blend.js can rewrite them.
+    # Local builds use kroki.io. CI overrides the server with its pinned Kroki container.
+    kroki-server-url: https://kroki.io
+    kroki-fetch-diagram: true
   extensions:
     - 'asciidoctor-kroki'
 ui:
+  # The default UI, vendored so that dark.css always overrides the same site.css.
+  # Source: the bundle-stable job 15385706035 of antora-ui-default, commit 0e38223 (2026-07-16).
+  # GitLab deletes the artifacts of older jobs, so a job URL does not stay valid.
+  # To update the bundle:
+  #   1. Download the latest bundle to docs/ui/bundle/ui-bundle.zip from this URL:
+  #      https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
+  #   2. Write the job ID that the URL redirects to, and the commit of that job, into this comment.
+  #   3. Build the site and run `DOCS_SITE_DIR=build/site uv run pytest docs/ui/tests`.
+  #      The dark theme tests list every new light rule that dark.css must override.
   bundle:
-    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
-    snapshot: true
+    url: ./docs/ui/bundle/ui-bundle.zip
+  supplemental_files: ./docs/ui/supplemental

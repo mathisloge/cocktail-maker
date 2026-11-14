@@ -1,0 +1,12 @@
+= 4 Solution Strategy
+
+The following technology choices are established at the system level and are assumed as given in the Station, Pod, and Protocol software architecture documents that build on this chapter.
+Only the decision itself is stated here.
+The rationale and alternatives considered are documented in the referenced ADR.
+
+* **Physical Transport:** Station and Pods communicate over USB, using the USB CDC device class, as decided in xref:adr:002-pysical-pod-connection.adoc[SYS-002].
+* **Pod Embedded OS:** Pods run on Zephyr RTOS with C++ application support enabled, as decided in xref:adr:005-embedded-os.adoc[SYS-005].
+* **Protocol Codegen:** The Station-Pod protocol schema and its generated C++ code are produced using commsdsl (CommsChampion Tools), as decided in xref:adr:006-protocol-serialization.adoc[SYS-006].
+
+These three decisions are interdependent: the protocol code generated via commsdsl (xref:adr:006-protocol-serialization.adoc[SYS-006]) targets plain, freestanding C++, which is what makes it usable unmodified on both the Station and on Zephyr-based Pods (xref:adr:005-embedded-os.adoc[SYS-005]), over the USB CDC transport established in xref:adr:002-pysical-pod-connection.adoc[SYS-002].
+The Station, Pod, and Protocol software architecture documents build directly on this combination rather than re-deriving it.

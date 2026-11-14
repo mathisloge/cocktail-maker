@@ -24,7 +24,7 @@
     // safe.directory entry also has to land before pre-commit touches .git/hooks.
     // dialout group membership lets vscode open the Pods' /dev/ttyACM* devices
     // (root:dialout, 0660) without running the Station as root.
-    "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && pre-commit install && sudo usermod -aG dialout vscode",
+    "postCreateCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && uv sync && uv run pre-commit install && sudo usermod -aG dialout vscode",
 
     "customizations": {
         "vscode": {

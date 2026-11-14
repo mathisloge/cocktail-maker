@@ -1,42 +1,39 @@
-= Deployment View
+= 7 Deployment View
 
-The Station runs as a single, systemd-managed service on the machine's Raspberry Pi, restarted
-automatically if it fails, and started once the graphical session established by
-xref:system::system-design.adoc[]'s power-up sequence is available.
+The Station runs as a single, systemd-managed service on the machine's Raspberry Pi, restarted automatically if it fails, and started once the graphical session established by the power-up sequence from the xref:system::power.adoc[System power concept] is available.
 
-[plantuml, target="station-deployment", format="svg"]
-....
-node "Raspberry Pi (Station)" {
-  artifact "cocktail-maker service" as app
-  folder "Working directory" {
-    file "Recipe, ingredient, and glass data" as data
-    file "Ingredient-to-dispenser mapping" as mapping
+.Deployment of the Station
+[d2, target="station-deployment", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+direction: right
+rpi: "Raspberry Pi (Station) · Station computer" {
+  class: boundary
+  app: "cocktail-maker service · systemd-managed service" {class: block}
+  workdir: "Working directory · plain files" {
+    class: boundary
+    data: "Recipe, ingredient, and glass data · plain data files" {class: block}
+    mapping: "Ingredient-to-dispenser mapping · plain file" {class: block}
   }
+  app -> workdir.data: "reads at startup" {class: data}
+  app -> workdir.mapping: "reads and writes" {class: [data; key]}
 }
+pod1: "Pod · MCU · Zephyr firmware" {class: external}
+pod2: "Pod · MCU · Zephyr firmware" {class: external}
+podN: "Pod (0..N) · MCU · Zephyr firmware" {class: external}
+rpi.app -> pod1: "talks over USB CDC" {class: data}
+rpi.app -> pod2: "talks over USB CDC" {class: data}
+rpi.app -> podN: "talks over USB CDC" {class: data}
+----
+Where does the Station run, which files does it keep, and how does it reach the Pods?
 
-node "Pod" as pod1
-node "Pod" as pod2
-node "Pod (0..N)" as podN
+All data the Station persists, the recipe/ingredient/glass catalog, the ingredient-to-dispenser mapping and the fill levels, lives as plain files under the service's working directory rather than a database server.
+This keeps the deployment self-contained on a single device, at the cost of tying correct operation to the service always being started from the intended working directory.
+See xref:risks-and-technical-debt.adoc[].
 
-app --> data : reads at startup
-app --> mapping : reads and writes
-app --> pod1 : USB CDC
-app --> pod2 : USB CDC
-app --> podN : USB CDC
-....
-
-All data the Station persists, the recipe/ingredient/glass catalog, the ingredient-to-dispenser mapping
-and the fill levels, lives as plain files under the service's working directory rather than a database
-server.
-This keeps the deployment self-contained on a single device, at the cost of tying correct operation to
-the service always being started from the intended working directory. See
-xref:risks-and-technical-debt.adoc[].
-
-Two build configurations exist side by side from the same codebase. A development and CI
-configuration runs against simulated Pods, so the guest and operator flows and the test suite can run
-without any Pod physically attached. The production configuration, the one built and packaged for the
-Raspberry Pi, always talks to real Pods over USB. Which one a given build uses is fixed at compile
-time, not chosen at runtime, so a shipped build cannot end up running against simulated hardware by
-accident.
+Two build configurations exist side by side from the same codebase.
+A development and CI configuration runs against simulated Pods, so the guest and operator flows and the test suite can run without any Pod physically attached.
+The production configuration, the one built and packaged for the Raspberry Pi, always talks to real Pods over USB.
+Which one a given build uses is fixed at compile time, not chosen at runtime, so a shipped build cannot end up running against simulated hardware by accident.
 
 Continue with xref:cross-cutting-concepts.adoc[].

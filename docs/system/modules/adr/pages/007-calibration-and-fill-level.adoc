@@ -1,17 +1,17 @@
-= ADR-007: Calibration and Fill Level Ownership
+= SYS-007: Calibration and Fill Level Ownership
 // Fill in the variables
 // one-of: Proposed, Accepted, Deprecated, Superseded
 :adr-status: Accepted
 :adr-date: 2026-11-03
 :adr-authors: {gh}mathisloge[@mathisloge]
 // when adr-status == Superseded provide the new ADR.
-// :adr-superseded-by: xref:0005-use-xyz.adoc[ADR 0005]
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
 
 include::partial$adr-header.adoc[]
 
 == Context
 
-Each dispenser weighs its bottle with its own load cell (xref:adr:001-system-split.adoc[ADR-001]).
+Each dispenser weighs its bottle with its own load cell (xref:adr:001-system-split.adoc[SYS-001]).
 The load cell keeps its calibration across power cycles, but takes its current load as the zero point at every power up.
 Bottles stay in place and are refilled from the top, and power can cycle with half full bottles on the scales.
 So a reading says how far the weight has moved since the last zero point, not how full a bottle is.
@@ -34,11 +34,13 @@ The Pod pours by how far the weight falls, so it needs no absolute weight.
 
 == Consequences
 
-* **Good:** A Pod stays self-contained, so it can be recalibrated or swapped as a single unit (xref:adr:001-system-split.adoc[ADR-001]).
+* **Good:** A Pod stays self-contained, so it can be recalibrated or swapped as a single unit (xref:adr:001-system-split.adoc[SYS-001]).
 * **Good:** The Station knows nothing about motor steps, and the same message works for pumps and valves.
 * **Good:** A power cycle with half full bottles doesn't disturb pouring.
-* **Bad:** An operator can't review a calibration before it applies. A wrong one is replaced by running again.
-* **Bad:** The accuracy depends on the run time, because the load cell reads to about 1 g. A short run gives a rough calibration, and a long one costs more liquid.
+* **Bad:** An operator can't review a calibration before it applies.
+A wrong one is replaced by running again.
+* **Bad:** The accuracy depends on the run time, because the load cell reads to about 1 g.
+A short run gives a rough calibration, and a long one costs more liquid.
 * **Bad:** A bottle refilled while the Station is off stays unnoticed until someone corrects its fill level.
 * **Bad:** Load cell readings drift, by up to about 20 g in an hour as measured, so a fill level kept over hours can be that far off.
 

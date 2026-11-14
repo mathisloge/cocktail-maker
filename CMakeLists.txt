@@ -3,14 +3,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 cmake_minimum_required(VERSION 4.4)
-file(READ "${CMAKE_SOURCE_DIR}/package.json" PACKAGE_JSON)
-string(JSON PACKAGE_JSON_PROJECT_VERSION GET "${PACKAGE_JSON}" version)
-string(
-    REGEX REPLACE "^([0-9]+\\.[0-9]+\\.[0-9]+)-dev\\.([0-9]+)"
-    "\\1.\\2"
-    BASE_VERSION
-    "${PACKAGE_JSON_PROJECT_VERSION}"
-)
+include(cmake/read_project_version.cmake)
+cm_read_project_version("${CMAKE_SOURCE_DIR}/pyproject.toml" BASE_VERSION)
 
 set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "f35a9ac6-8463-4d38-8eec-5d6008153e7d")
 

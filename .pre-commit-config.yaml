@@ -3,12 +3,11 @@ default_install_hook_types:
   - commit-msg
 
 repos:
-  - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v4.4.0
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.19.3
     hooks:
-      - id: conventional-pre-commit
+      - id: commitizen
         stages: [commit-msg]
-        args: [--no-color]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
@@ -16,7 +15,17 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
         exclude: ^(mkdocs|.clang-format)
+      - id: check-toml
       - id: check-added-large-files
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.4
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^(plugins|docs/ui|docs/tests|tools/palette)/
+      - id: ruff-format
+        files: ^(plugins|docs/ui|docs/tests|tools/palette)/
 
   - repo: https://github.com/BlankSpruce/gersemi-pre-commit
     rev: 0.28.1
@@ -46,3 +55,15 @@ repos:
         pass_filenames: true
         language: python
         stages: [ manual ]
+      - id: adoc-style
+        name: AsciiDoc writing style
+        entry: plugins/cocktail-maker-docs/scripts/check_adoc_style.py
+        language: script
+        files: ^docs/(system|station)/.*\.adoc$
+        verbose: true
+      - id: palette-generated
+        name: Docs palette matches colors.slint
+        entry: tools/palette/generate_palette.py --check
+        language: script
+        pass_filenames: false
+        files: ^(gui/ui/theme/colors\.slint|tools/palette/.*|docs/ui/supplemental/css/palette\.css|docs/system/modules/ROOT/partials/d2-style\.d2)$

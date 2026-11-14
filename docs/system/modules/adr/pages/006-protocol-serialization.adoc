@@ -1,17 +1,17 @@
-= ADR-006: Protocol Serialization & Codegen Tooling
+= SYS-006: Protocol Serialization & Codegen Tooling
 // Fill in the variables
 // one-of: Proposed, Accepted, Deprecated, Superseded
 :adr-status: Accepted
 :adr-date: 2026-07-14
 :adr-authors: {gh}mathisloge[@mathisloge]
 // when adr-status == Superseded provide the new ADR.
-// :adr-superseded-by: xref:0005-use-xyz.adoc[ADR 0005]
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
 
 include::partial$adr-header.adoc[]
 
 == Context
 
-The Station-Pod protocol follows a request-response model with the Station as sole initiator (xref:adr:003-protocol-communication.adoc[ADR-003]), carried over USB CDC (xref:adr:002-pysical-pod-connection.adoc[ADR-002]), with the Pod side running Zephyr/C++ (xref:adr:005-embedded-os.adoc[ADR-005]).
+The Station-Pod protocol follows a request-response model with the Station as sole initiator (xref:adr:003-protocol-communication.adoc[SYS-003]), carried over USB CDC (xref:adr:002-pysical-pod-connection.adoc[SYS-002]), with the Pod side running Zephyr/C++ (xref:adr:005-embedded-os.adoc[SYS-005]).
 USB CDC presents a raw, continuous byte stream with no built-in message boundaries, so the protocol implementation needs an explicit framing mechanism, not just message field serialization.
 Because dispensing commands are safety- and food-safety-relevant, the transport also needs message integrity checking (e.g. a checksum/CRC) rather than assuming the underlying link is error-free.
 Hand-writing and manually keeping the Station and Pod (de)serialization code in sync across two independent codebases is error-prone and does not scale well as the message set grows.
@@ -26,7 +26,8 @@ We will use commsdsl (the CommsChampion Tools ecosystem https://commschamp.githu
 
 Protobuf is a widely used, schema-driven serialization format, with nanopb providing a lightweight C implementation targeted at constrained microcontrollers.
 
-Rejected: Protobuf messages are not self-framing; the format defines how a single message's fields are encoded, but not how message boundaries are detected on a continuous byte stream, so an additional framing layer would still need to be designed and hand-written on top of it.
+Rejected: Protobuf messages are not self-framing.
+The format defines how a single message's fields are encoded, but not how message boundaries are detected on a continuous byte stream, so an additional framing layer would still need to be designed and hand-written on top of it.
 Protobuf also has no built-in checksum/integrity layer, meaning CRC or similar protection would need to be added separately, whereas this is a first-class concern in commsdsl-generated protocols.
 
 === Custom hand-rolled binary protocol
@@ -40,7 +41,7 @@ Rejected: this offers full control with no external codegen dependency, but requ
 * **Good:** commsdsl provides explicit, declarative frame and message definitions, including built-in checksum/CRC layers, which directly addresses message integrity over the byte-oriented USB CDC transport without hand-rolled framing code.
 * **Good:** a single schema generates the C++ code used by both the Station and every Pod, keeping both sides of the protocol in sync by construction and removing an entire class of protocol-drift bugs, supporting the *Reliability* and *Maintainability* quality goals.
 * **Good:** the generated C++ code is lightweight compared to a full Protobuf/nanopb runtime, which fits the constrained resources of the Pod controllers.
-* **Good:** the generated code is plain, freestanding C++, so it integrates cleanly with both the Zephyr-based Pod firmware (xref:adr:005-embedded-os.adoc[ADR-005]) and the Station's C++ stack without requiring OS-specific bindings.
+* **Good:** the generated code is plain, freestanding C++, so it integrates cleanly with both the Zephyr-based Pod firmware (xref:adr:005-embedded-os.adoc[SYS-005]) and the Station's C++ stack without requiring OS-specific bindings.
 * **Bad:** commsdsl/CommsChampion is a comparatively niche tool with a smaller community and less third-party documentation than Protobuf, so troubleshooting relies more heavily on reading its own documentation and source directly.
 * **Bad:** introduces an additional schema compiler/codegen step into the build that must be installed and version-pinned consistently across the Station and Pod toolchains.
 * **Bad:** fewer established patterns and examples are available online for concerns like protocol versioning and migration, compared to Protobuf's larger ecosystem.

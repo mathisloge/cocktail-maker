@@ -1,0 +1,291 @@
+/* Sir-Mix-A-Lot docs: the header, the footer and the sidebar menu in the kiosk's colours.
+   Every colour comes from palette.css.
+   dark.css makes the rest of the page dark.
+   Each rule that sets a text colour names its colour pair in a contrast comment, and the tests check its ratio. */
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("../font/SpaceGrotesk.ttf") format("truetype");
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+/* --- header --------------------------------------------------------------- */
+
+.navbar {
+  background: var(--cm-ink);
+  border-bottom: 2px solid var(--cm-amber);
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.navbar-brand .brand {
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink */
+  gap: 0.5rem;
+  letter-spacing: 0.04em;
+}
+
+.navbar-brand .brand:hover {
+  color: var(--cm-amber-light); /* contrast: --cm-amber-light on --cm-ink */
+}
+
+.brand-mark {
+  width: 1.4rem;
+  height: 1.4rem;
+  color: var(--cm-amber); /* contrast: --cm-amber on --cm-ink */
+  flex: none;
+}
+
+.navbar-burger span {
+  background-color: var(--cm-cream);
+}
+
+.navbar-menu {
+  background: var(--cm-ink-raised);
+}
+
+.navbar-menu .navbar-item {
+  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink, --cm-sand on --cm-ink-raised */
+  gap: 0.4rem;
+}
+
+/* The default UI sets a hover background on `a.navbar-item` (menu and GitHub link), so these selectors need the `a`. */
+.navbar-menu a.navbar-item:hover,
+.navbar-end > a.navbar-item:hover {
+  background: var(--cm-ink-elevated);
+  color: var(--cm-amber-light); /* contrast: --cm-amber-light on --cm-ink-elevated */
+}
+
+.navbar-burger:focus-visible,
+.navbar-menu .navbar-item:focus-visible {
+  outline: 2px solid var(--cm-amber-light);
+  outline-offset: -2px;
+}
+
+.navbar-menu .section-link.is-current {
+  color: var(--cm-amber-light); /* contrast: --cm-amber-light on --cm-ink, --cm-amber-light on --cm-ink-raised */
+  box-shadow: inset 3px 0 0 var(--cm-amber);
+}
+
+/* On narrow screens the menu is a column, so the divider is a horizontal line between System and the subprojects. */
+.section-divider {
+  display: block;
+  height: 1px;
+  margin: 0.25rem 1rem;
+  background: var(--cm-sand);
+  opacity: 0.3;
+}
+
+.section-group {
+  display: block;
+}
+
+.github-link svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+@media screen and (min-width: 1024px) {
+  .navbar-menu {
+    background: none;
+    flex: auto;
+  }
+
+  .navbar-start {
+    display: flex;
+    align-items: stretch;
+    margin-left: 2rem;
+  }
+
+  .navbar-end {
+    margin-left: auto;
+  }
+
+  .navbar-menu .navbar-item {
+    padding: 0.5rem 1rem;
+  }
+
+  .navbar-menu .section-link.is-current {
+    box-shadow: inset 0 -3px 0 var(--cm-amber);
+  }
+
+  .section-divider {
+    align-self: center;
+    width: 1px;
+    height: 1.4rem;
+    margin: 0 0.5rem;
+  }
+
+  .section-group {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .github-label {
+    display: none;
+  }
+}
+
+/* --- sidebar -------------------------------------------------------------- */
+
+/* The explore drawer is gone, so the menu takes the full height. */
+.nav-panel-menu {
+  height: 100%;
+}
+
+/* dark.css gives the sidebar the --cm-ink-raised surface and the sand text. */
+.nav-menu .title a {
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink-raised */
+}
+
+.nav-menu a:hover {
+  color: var(--cm-amber-light); /* contrast: --cm-amber-light on --cm-ink-raised */
+}
+
+.nav-item.is-current-page > .nav-link {
+  color: var(--cm-amber-light); /* contrast: --cm-amber-light on --cm-ink-raised */
+  font-weight: 600;
+  text-decoration: underline 2px var(--cm-amber);
+  text-underline-offset: 0.25em;
+}
+
+/* --- footer --------------------------------------------------------------- */
+
+/* The default UI styles `footer.footer`, so a plain `.footer` would lose to its grey. */
+footer.footer {
+  background: var(--cm-ink);
+  border-top: 2px solid var(--cm-amber);
+  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink */
+  font-family: "Space Grotesk", sans-serif;
+  padding: 1.5rem 1rem;
+}
+
+.footer-brand {
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink */
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  list-style: none;
+  margin: 0.75rem 0;
+  padding: 0;
+}
+
+.footer a {
+  color: var(--cm-amber-light); /* contrast: --cm-amber-light on --cm-ink */
+}
+
+.footer a:hover {
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink */
+}
+
+.footer-note {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin: 0;
+}
+
+/* --- diagram legend --------------------------------------------------------- */
+
+/* The tables of the Diagram Conventions page show a sample of each class of d2-style.d2.
+   Each sample draws in the colour, the width and the dashes that D2 renders for the class. */
+.edge-sample {
+  display: inline-block;
+  width: 3em;
+  height: 2px;
+  vertical-align: middle;
+}
+
+.edge-normal {
+  height: 1px;
+  background: var(--cm-sand-muted);
+}
+
+.edge-power {
+  background: var(--cm-orange-red);
+}
+
+.edge-data {
+  background: repeating-linear-gradient(to right, var(--cm-slate-light) 0 8px, transparent 8px 16px);
+}
+
+.edge-fluid {
+  background: var(--cm-green);
+}
+
+.edge-mechanical {
+  background: repeating-linear-gradient(to right, var(--cm-violet) 0 4px, transparent 4px 8px);
+}
+
+.edge-interaction {
+  background: var(--cm-amber-light);
+}
+
+.edge-fault {
+  background: var(--cm-pink);
+}
+
+/* `key` adds width to the kind of its edge, and D2 scales the dashes with the width. */
+.edge-sample.edge-key {
+  height: 3px;
+}
+
+.edge-data.edge-key {
+  background: repeating-linear-gradient(to right, var(--cm-slate-light) 0 12px, transparent 12px 24px);
+}
+
+.shape-sample {
+  display: inline-block;
+  width: 2.5em;
+  height: 1.25em;
+  vertical-align: middle;
+  border: 2px solid var(--cm-amber);
+}
+
+.shape-actor {
+  background: var(--cm-ink-elevated);
+  border-color: var(--cm-amber-light);
+  border-radius: 1em 1em 0.25em 0.25em;
+}
+
+.shape-block,
+.shape-power-part,
+.shape-data-part,
+.shape-fluid-part,
+.shape-mechanical-part,
+.shape-interaction-part {
+  background: var(--cm-ink-elevated);
+  border-radius: 4px;
+}
+
+.shape-power-part {
+  border-color: var(--cm-orange-red);
+}
+
+.shape-data-part {
+  border-color: var(--cm-slate-light);
+}
+
+.shape-fluid-part {
+  border-color: var(--cm-green);
+}
+
+.shape-mechanical-part {
+  border-color: var(--cm-violet);
+}
+
+.shape-interaction-part {
+  border-color: var(--cm-amber-light);
+}
+
+.shape-boundary {
+  background: var(--cm-ink-raised);
+}
+
+.shape-external {
+  background: var(--cm-ink);
+  border: 2px dashed var(--cm-sand);
+}

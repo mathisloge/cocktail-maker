@@ -1,26 +1,27 @@
-= ADR-003: Asynchronous Execution Model (Boost.Asio + Boost.Cobalt Coroutines)
+= STA-003: Asynchronous Execution Model (Boost.Asio + Boost.Cobalt Coroutines)
 :adr-status: Superseded
 :adr-date: 2026-07-24
 :adr-authors: {gh}mathisloge[@mathisloge]
-:adr-superseded-by: xref:005-sender-receiver-execution-model.adoc[ADR-005]
+:adr-superseded-by: xref:005-sender-receiver-execution-model.adoc[STA-005]
 
 include::partial$adr-header.adoc[]
 
 == Context
-The Station must carry out many operations that take an unpredictable amount of time without blocking the guest- or operator-facing UI: communicating with several independently timed Pods at once, and driving a recipe as a sequence of dispensing actions, each waiting on its own Pod's acknowledgement and, for longer-running actions, a later completion event (xref:system::protocol.adoc[]).
-Dispensing is a safety- and food-safety-relevant action (xref:system::quality-goals.adoc[]).
+The Station must carry out many operations that take an unpredictable amount of time without blocking the guest- or operator-facing UI: communicating with several independently timed Pods at once, and driving a recipe as a sequence of dispensing actions, each waiting on its own Pod's acknowledgement and, for longer-running actions, a later completion event (xref:system::protocol.adoc[System protocol concept]).
+Dispensing is a safety- and food-safety-relevant action (xref:system::quality-goals.adoc[System quality goals]).
 Therefore, the concurrency model must make it easy to reason about which operations can run simultaneously and what state they can affect, rather than opening the door to data races across freely spawned threads.
 === Decision Drivers
 
-* **Safety & State Simplicity:** Dispensing is a safety-critical domain; the architecture must prevent data races and complex mutex synchronization around shared domain and UI state.
+* **Safety & State Simplicity:** Dispensing is a safety-critical domain.
+The architecture must prevent data races and complex mutex synchronization around shared domain and UI state.
 * **Sequential Readability:** Multi-step asynchronous protocols (request → acknowledgement → delayed completion event) should be readable as straight-line code rather than fragmented callback chains.
-* **Technology Exploration:** As an experimental hobby project, a primary driver is evaluating modern {cpp}20 coroutine ecosystems—specifically the recently introduced Boost.Cobalt library—in a realistic architectural setting.
+* **Technology Exploration:** As an experimental hobby project, a primary driver is evaluating modern {cpp}20 coroutine ecosystems, specifically the recently introduced Boost.Cobalt library, in a realistic architectural setting.
 == Decision
 We will run Pod communication and recipe execution as coroutines on a single shared Boost.Asio execution context, using Boost.Cobalt for coroutine-friendly building blocks such as awaitable results and channels.
 == Alternatives Considered
 === Callback-based asynchronous I/O
 Boost.Asio can be used directly with completion-handler callbacks, without a coroutine layer on top.
-Rejected: the Station's communication patterns—a request followed by an acknowledgement and, for some commands, a later completion event—are naturally sequential.
+Rejected: the Station's communication patterns (a request followed by an acknowledgement and, for some commands, a later completion event) are naturally sequential.
 Expressing them as chained callbacks was judged significantly harder to read, maintain, and debug than expressing the same sequence as a coroutine that cleanly suspends and resumes at each step.
 === A thread per Pod
 Each connected Pod could be handled on its own dedicated OS thread, communicating with the rest of the Station through explicit thread synchronization (mutexes, condition variables).
@@ -32,4 +33,5 @@ In a system where reasoning correctly about concurrency is a food-safety concern
 * **Good:** every pending exchange carries its own timeout, so an unresponsive Pod suspends only its specific coroutine and cannot block the execution context or affect other running Pods.
 * **Bad:** Boost.Cobalt is a comparatively young and less widely adopted part of the Boost ecosystem than Boost.Asio itself, meaning fewer best-practice examples and community resources are available.
 * **Bad:** debugging a suspended {cpp}20 coroutine is currently less straightforward in standard IDEs than stepping through a traditional synchronous call stack.
-* **Bad:** cooperative multitasking on a single execution context requires strict discipline; any accidental synchronous blocking call (e.g., `std::this_thread::sleep_for`) or heavy CPU-bound computation will stall the entire context and delay unrelated, concurrent coroutines.
+* **Bad:** cooperative multitasking on a single execution context requires strict discipline.
+Any accidental synchronous blocking call (e.g., `std::this_thread::sleep_for`) or heavy CPU-bound computation will stall the entire context and delay unrelated, concurrent coroutines.

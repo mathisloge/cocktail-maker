@@ -1,33 +1,29 @@
-= Context and Scope
+= 3 Context and Scope
 
-This chapter scopes the rest of this document to the Station application itself, one of the two
-building blocks introduced in xref:system::system-design.adoc[]. It defines who and what the Station
-exchanges information with, without repeating the machine-wide black-box view already covered there.
+This chapter scopes the rest of this document to the Station application itself, one of the two building blocks introduced in the xref:system::building-blocks.adoc[System building block view].
+It defines who and what the Station exchanges information with, without repeating the machine-wide black-box view, which xref:system::context-and-scope.adoc[System context and scope] already covers.
 
 == Business Context
 
-[plantuml, target="station-business-context", format="svg"]
-....
-!include <C4/C4_Context>
+.Context of the Station
+[d2, target="station-business-context", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+direction: right
+guest: "Guest\norders and receives a drink" {class: actor}
+operator: "Operator\nrefills, cleans, calibrates and configures the machine" {class: actor}
+station: "Station · Raspberry Pi · Slint UI\norchestrates recipes, ingredients, glasses and Pods" {class: boundary}
+pod: "Pod · MCU · Zephyr firmware\none or more autonomous dispensing modules" {class: external}
+guest -> station: selects a recipe and glass, starts a mix {class: interaction}
+station -> guest: shows recipes, mix progress and results {class: interaction}
+operator -> station: configures data, assigns dispensers, calibrates {class: interaction}
+station -> pod: sends dispensing commands over USB CDC, reads status and events {class: [data; key]}
+----
+Who and what does the Station exchange information with?
 
-Person(user, "Guest", "Orders and receives a drink.")
-Person(operator, "Operator", "Refills, cleans, calibrates, and configures the machine.")
-
-System(station, "Station", "Orchestrates recipes, ingredients, glasses, and Pods.")
-
-System_Ext(pods, "Pod(s)", "One or more autonomous dispensing modules.")
-
-Rel(user, station, "Selects a recipe and glass, starts a mix")
-Rel(station, user, "Shows recipes, mix progress, and results")
-Rel(operator, station, "Configures data, assigns dispensers, calibrates")
-Rel(station, pods, "Sends dispensing commands, reads status and events")
-
-SHOW_LEGEND()
-....
-
-The Guest and Operator both interact with the Station exclusively through its touch display. Every
-Pod is reached only through the wire protocol described in xref:system::protocol.adoc[]. Everything
-else in this document is scoped inside the "Station" box above.
+The Guest and Operator both interact with the Station exclusively through its touch display.
+Every Pod is reached only through the wire protocol described in the xref:system::protocol.adoc[System protocol concept].
+Everything else in this document is scoped inside the "Station" box above.
 
 == Technical Context
 
@@ -37,7 +33,7 @@ else in this document is scoped inside the "Station" box above.
 
 | USB CDC serial
 | Each connected Pod
-| Bidirectional, Station-initiated request-response exchange (xref:system::protocol.adoc[]).
+| Bidirectional, Station-initiated request-response exchange (xref:system::protocol.adoc[System protocol concept]).
 
 | Local recipe/ingredient/glass data
 | Filesystem, read-only at runtime

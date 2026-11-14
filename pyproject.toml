@@ -1,0 +1,28 @@
+[project]
+name = "cocktail-maker"
+version = "1.0.0"
+description = "Dev tooling of the Sir-Mix-A-Lot Station: docs plugin checks, tests and release versioning"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest", "ruff", "pre-commit", "commitizen"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["plugins/cocktail-maker-docs/tests", "docs/ui/tests", "docs/tests", "tools/palette/tests"]
+addopts = "--import-mode=importlib"
+pythonpath = ["plugins/cocktail-maker-docs/scripts", "docs/ui/tests", "tools/palette"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "pep621"
+tag_format = "v$version"

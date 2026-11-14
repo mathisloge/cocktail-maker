@@ -10,7 +10,9 @@ node_modules/
 .qmlls.ini
 .DS_Store
 CLAUDE.md
-.claude/
+.claude/*
+!.claude/settings.json
+.superpowers/
 
 #####
 #

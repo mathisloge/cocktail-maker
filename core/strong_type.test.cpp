@@ -30,7 +30,7 @@ static_assert(std::is_constructible_v<Meter, double>);
 static_assert(!std::is_convertible_v<double, Meter>);
 static_assert(!std::is_convertible_v<Meter, double>);
 static_assert(!plusable<Meter, Second>);
-// Quantities are mp-units types (ADR-004), so a strong type offers no arithmetic.
+// Quantities are mp-units types (STA-004), so a strong type offers no arithmetic.
 static_assert(!plusable<Meter, Meter>);
 static_assert(!comparable_to<Meter, Second>);
 static_assert(!std::same_as<Meter, Second>);

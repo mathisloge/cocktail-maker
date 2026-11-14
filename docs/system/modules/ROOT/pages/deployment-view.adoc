@@ -1,0 +1,9 @@
+= 7 Deployment View
+
+[NOTE]
+====
+Not written yet.
+====
+
+This chapter will show the hardware that the Station and the Pods run on, and how this hardware is connected.
+Until then, see xref:hardware.adoc[] and xref:station::deployment-view.adoc[the Station deployment view].

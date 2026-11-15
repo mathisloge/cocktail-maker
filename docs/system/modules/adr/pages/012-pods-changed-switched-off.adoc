@@ -1,0 +1,50 @@
+= SYS-012: The supply of a Pod is connected only when the machine is off
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-11-15
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+A Pod connects to the Station through USB, which is hot-pluggable (xref:adr:002-pysical-pod-connection.adoc[SYS-002]).
+A Pod also takes its 24 V supply from the Power Management Unit (xref:adr:010-pod-supply-24v.adoc[SYS-010]).
+Connecting or disconnecting a supply conductor under load can cause sparks or a short circuit.
+
+=== Decision Drivers
+
+* **No live work:** an Operator never connects or disconnects a powered supply conductor (QG-01).
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: The Operator connects or disconnects the supply of a Pod only when the machine is off.
+* xref:system::quality-goals.adoc#QG-04[QG-04]: Connecting or disconnecting the supply of a Pod takes one more step, switching the machine off.
+
+== Decision
+
+An Operator connects or disconnects the supply of a Pod only when the machine is switched off at its main switch.
+The USB cable of a Pod may be replugged while the machine runs, as SYS-002 allows.
+
+== Alternatives Considered
+
+=== Hot plugging of the Pod supply
+
+An Operator connects or disconnects the supply of a Pod while the machine runs.
+
+Rejected: it needs a supply plug that is safe to connect under load, and it is not designed how a Pod behaves when it gets power.
+
+== Consequences
+
+* **Good:** No supply conductor is connected or disconnected under load.
+* **Good:** The supply plug of a Pod needs no rating for switching under load.
+* **Bad:** Adding or removing a Pod interrupts the service, because the whole machine is off while its supply is changed.
+* **Bad:** The rule is a procedure, and no part of the machine enforces it.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: Better, because the Operator never works on powered supply conductors.
+* xref:system::quality-goals.adoc#QG-04[QG-04]: Worse, because the Operator switches the whole machine off to change the supply of one Pod.

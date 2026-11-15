@@ -101,6 +101,18 @@ The ID is an AsciiDoc anchor such as `[[QG-01]]`, and it is also shown as text n
 - IDs are defined only in System.
   Subprojects refer to them with `xref:system::quality-goals.adoc#QG-01[QG-01]`.
 
+## No code, no owner as a source
+
+An architecture page names no function, method, class, type, file or code constant, and it quotes no value from the code.
+The code is not a source.
+A source is a docs page or an ADR.
+A decision that no ADR records gets an ADR (see `writing-adrs`), and the page links that ADR.
+Never cite a source such as "owner decision", and never list a person as an owner of a side or a decision.
+A statement that only the code supports is left out, or it becomes an open question without code names.
+Protocol message names stay, because the protocol page defines them.
+An ADR that chooses a library may name that library, but no file, function or class.
+A docs test checks the System pages, ADRs included, for file names, C++ scope names and phrases such as "code only", "owner decision", "user decision", "owner decided" and "owner confirmed".
+
 ## Zoom from System into a subproject
 
 System chapter 5 shows the whole machine as blocks.
@@ -154,7 +166,7 @@ Each one is a level-2 section in this form.
 [[IF-05]]
 == IF-05: Bottle to Pod
 
-Sides:: <the two blocks or parties, and which docs own each side>
+Sides:: <the two blocks or parties, and which docs describe each side>
 Kind:: <data, power, fluid or mechanical>
 Status:: <Decided, Partly decided or Not designed yet>
 
@@ -197,6 +209,57 @@ Status:: <Decided, Partly decided or Not designed yet>
   Never change an ID and never reuse one, also when a requirement is dropped.
 - Subprojects only link contracts, with `xref:system::contracts.adoc#IF-05[IF-05]`, and never define them.
 
+## Runtime scenarios
+
+A runtime scenario shows in which order the blocks and the people act in one situation, and which contract each step relies on.
+A chapter 6 page holds the scenarios of normal operation.
+A fault page under chapter 6 holds the scenarios of faults.
+Each scenario is a level-2 section with an explicit kebab-case anchor, so other pages can link it.
+
+```adoc
+[[switching-on]]
+== Switching On
+
+<one or two sentences: the trigger and the end state>
+
+.Switching on
+[d2, target="system-6-switching-on", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+shape: sequence_diagram
+...
+----
+<one-line caption that names the question of the diagram>
+
+=== Contracts
+* xref:contracts.adoc#IF-03[IF-03], xref:contracts.adoc#IF-03-R04[IF-03-R04]: <one line on how the scenario relies on it>
+
+=== Open
+* <one line per open behaviour, with the open requirement it depends on, or "Nothing open.">
+
+=== Details
+* <links to the Station sequence, the protocol pattern or the Mechanics page that show the details, or "No further details.">
+```
+
+- Keep the three level-3 sections and their order.
+- Each scenario has exactly one D2 block, with `shape: sequence_diagram` and the target `<component>-6-<anchor>`, as the `writing-diagrams` skill names it.
+  In System the target is `system-6-<anchor>`, so it never clashes with a subproject target.
+- Take the participants from chapter 3 and chapter 5, and show only the ones the scenario needs.
+- One arrow may stand for a whole exchange.
+  The protocol page or the runtime view of the subproject shows the messages.
+- Show behaviour that is not decided as open, with the `(open, <ID>)` label that the `writing-diagrams` skill describes.
+  `<ID>` is a defined `IF-nn-Rnn` or `IF-nn`, and a label may name several IDs, separated by commas.
+  Use a `fault` edge only for a fault that occurs.
+- Every `Contracts` entry and every `Open` bullet is one line and names a defined `IF-nn` or `IF-nn-Rnn`.
+  Only when nothing is open, the `Open` section is exactly the line "Nothing open.".
+- Every ID of an `(open, <ID>)` label also appears in the `Open` section, as a whole ID.
+  A bullet that names only `IF-01-R11` does not cover `IF-01`.
+- A scenario anchor is lowercase kebab-case and never looks like an ID.
+- The first sentence of a fault scenario names its end state, or says that the end state is open.
+  Never end in a safe state that nobody decided.
+- Write only what the owner confirmed, and mark every step as taken from a source or as an assumption in the draft.
+- A subproject keeps the software details in its own runtime view and links the System scenario.
+
 ## Diagrams
 
 All diagrams are D2, rendered through Kroki.
@@ -216,4 +279,5 @@ It covers the diagram type per chapter, boxes, arrows, layout, names and the sha
 - How-to content is in a guide and not in a chapter.
 - No subproject repeats the quality goals, the naming conventions or a System glossary term.
 - Every diagram is a D2 block.
+- No page names code, and no source is an owner decision: each source is a docs page or an ADR.
 - The prose follows `writing-style`, and the checker reports no errors.

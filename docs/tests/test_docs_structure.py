@@ -61,7 +61,6 @@ SYSTEM_CHAPTER_FILES = [
 # The System chapters that have no content yet.
 SYSTEM_PLACEHOLDERS = [
     "constraints.adoc",
-    "runtime-view.adoc",
     "deployment-view.adoc",
     "quality-requirements.adoc",
     "risks-and-technical-debt.adoc",
@@ -313,7 +312,12 @@ D2_CLASS = re.compile(r"\bclass:\s*(\[[^\]]*\]|[\w-]+)")
 
 def d2_blocks(path: Path) -> list[tuple[int, list[str]]]:
     """The `[d2]` blocks of an AsciiDoc file, as the line number of the block attribute line and the source lines."""
-    lines = path.read_text(encoding="utf-8").splitlines()
+    return d2_blocks_in(path.read_text(encoding="utf-8"))
+
+
+def d2_blocks_in(text: str) -> list[tuple[int, list[str]]]:
+    """The `[d2]` blocks of AsciiDoc text, as the line number of the block attribute line and the source lines."""
+    lines = text.splitlines()
     blocks = []
     number = 0
     while number < len(lines):
@@ -1666,3 +1670,310 @@ def test_contracts_page_renders() -> None:
     assert 'id="IF-01"' in html
     for contract_id in defined_ids("IF"):
         assert f'id="{contract_id}"' in html
+
+
+RUNTIME_PAGE = SYSTEM_PAGES / "runtime-view.adoc"
+FAULT_PAGE = SYSTEM_PAGES / "fault-scenarios.adoc"
+NORMAL_SCENARIOS = ("switching-on", "drink-end-to-end", "refilling", "switching-off")
+FAULT_SCENARIOS = (
+    "link-breaks-during-pour",
+    "power-fails-during-pour",
+    "guest-cancels",
+    "bottle-empty-during-pour",
+    "pump-lid-opened",
+)
+SCENARIO_SECTIONS = ("Contracts", "Open", "Details")
+
+
+class Scenario(NamedTuple):
+    anchor: str
+    title: str
+    diagrams: tuple[tuple[str, str], ...]
+    sections: tuple[str, ...]
+    contracts: tuple[str, ...]
+    open_lines: tuple[str, ...]
+    open_labels: tuple[str, ...]
+    contract_lines: tuple[str, ...]
+    first_sentence: str
+
+
+SCENARIO_ANCHOR = re.compile(r"^\[\[([a-z0-9]+(?:-[a-z0-9]+)*)\]\]$\n+(?=== )", re.MULTILINE)
+CONTRACT_REFERENCE = re.compile(r"\bIF-\d\d(?:-R\d\d)?\b")
+OPEN_LABEL = re.compile(r"\(open, ([^)]*)\)")
+
+
+def _section_body(chunk: str, title: str) -> str:
+    match = re.search(rf"^=== {title}\n(.*?)(?=^=== |\Z)", chunk, re.MULTILINE | re.DOTALL)
+    return match.group(1) if match else ""
+
+
+def parse_scenarios(text: str) -> list[Scenario]:
+    """The scenarios of a runtime page, split at each `[[<kebab-case>]]` line before a `== ` heading."""
+    anchors = list(SCENARIO_ANCHOR.finditer(text))
+    scenarios = []
+    for index, anchor in enumerate(anchors):
+        end = anchors[index + 1].start() if index + 1 < len(anchors) else len(text)
+        chunk = text[anchor.end() : end]
+        lines = chunk.splitlines()
+        diagrams = []
+        for number, source in d2_blocks_in(chunk):
+            target = re.search(r'target="([^"]*)"', lines[number - 1])
+            diagrams.append((target.group(1) if target else "", "\n".join(source)))
+        open_body = _section_body(chunk, "Open")
+        contract_body = _section_body(chunk, "Contracts")
+        first_sentence = next((line.strip() for line in lines[1:] if line.strip()), "")
+        scenarios.append(
+            Scenario(
+                anchor.group(1),
+                lines[0][3:].strip() if lines else "",
+                tuple(diagrams),
+                tuple(re.findall(r"^=== (.+)$", chunk, re.MULTILINE)),
+                tuple(CONTRACT_REFERENCE.findall(_section_body(chunk, "Contracts"))),
+                tuple(line.strip() for line in open_body.splitlines() if line.strip()),
+                tuple(
+                    reference
+                    for _, source in diagrams
+                    for label in OPEN_LABEL.findall(source)
+                    for reference in CONTRACT_REFERENCE.findall(label)
+                ),
+                tuple(line.strip() for line in contract_body.splitlines() if line.strip()),
+                first_sentence,
+            )
+        )
+    return scenarios
+
+
+def scenario_problems(text: str, expected: tuple[str, ...]) -> list[str]:
+    """What is wrong with the scenarios of a runtime page. A page with only its lead has none."""
+    scenarios = parse_scenarios(text)
+    anchors = tuple(scenario.anchor for scenario in scenarios)
+    problems = []
+    if anchors != expected[: len(anchors)]:
+        problems.append(f"scenario anchors {list(anchors)} are not an ordered prefix of {list(expected)}")
+    defined = set(defined_ids("IF")) | set(defined_requirement_ids())
+    for scenario in scenarios:
+        name = scenario.anchor
+        if len(scenario.diagrams) != 1:
+            problems.append(f"{name}: {len(scenario.diagrams)} D2 blocks instead of one")
+        for target, source in scenario.diagrams:
+            if target != f"system-6-{name}":
+                problems.append(f"{name}: D2 target '{target}' is not 'system-6-{name}'")
+            if "shape: sequence_diagram" not in source.splitlines():
+                problems.append(f"{name}: the D2 block is not a sequence diagram")
+        if scenario.sections != SCENARIO_SECTIONS:
+            problems.append(f"{name}: sections {list(scenario.sections)} are not {list(SCENARIO_SECTIONS)}")
+            continue
+        if expected is FAULT_SCENARIOS and "end state" not in scenario.first_sentence.lower():
+            problems.append(f"{name}: the first sentence does not name the end state")
+        if not scenario.contract_lines:
+            problems.append(f"{name}: the Contracts section names no contract or requirement ID")
+        for line in scenario.contract_lines:
+            references = CONTRACT_REFERENCE.findall(line)
+            if not references:
+                problems.append(f"{name}: Contracts entry '{line}' names no defined ID")
+            for reference in references:
+                if reference not in defined:
+                    problems.append(f"{name}: Contracts names {reference}, which is not a defined ID")
+        if scenario.open_lines != ("Nothing open.",):
+            if not scenario.open_lines:
+                problems.append(f"{name}: the Open section is empty")
+            for line in scenario.open_lines:
+                if not any(reference in defined for reference in CONTRACT_REFERENCE.findall(line)):
+                    problems.append(f"{name}: Open line '{line}' names no defined ID")
+        open_ids = set(CONTRACT_REFERENCE.findall("\n".join(scenario.open_lines)))
+        for label in scenario.open_labels:
+            if label not in defined:
+                problems.append(f"{name}: label (open, {label}) is not a defined ID")
+            elif label not in open_ids:
+                problems.append(f"{name}: label (open, {label}) is missing from the Open section")
+    return problems
+
+
+def _scenario(
+    anchor: str = "switching-on",
+    target: str | None = None,
+    diagram: str = "shape: sequence_diagram\na -> b: x {class: data}",
+    contracts: str = "* xref:contracts.adoc#IF-01[IF-01]: relies on it",
+    open_section: str = "* Nothing decided, see IF-01-R01.",
+    sections: tuple[str, ...] = SCENARIO_SECTIONS,
+    blocks: int = 1,
+    lead: str = "Trigger and end state.",
+) -> str:
+    target = f"system-6-{anchor}" if target is None else target
+    block = (
+        f'.Title\n[d2, target="{target}", format="svg", link=self]\n----\n'
+        f"include::system:ROOT:partial$d2-style.d2[]\n{diagram}\n----\nCaption?\n\n"
+    )
+    bodies = {"Contracts": contracts, "Open": open_section, "Details": "No further details."}
+    parts = [f"[[{anchor}]]\n== Title\n\n{lead}\n\n", block * blocks]
+    for section in sections:
+        parts.append(f"=== {section}\n{bodies[section]}\n\n")
+    return "".join(parts)
+
+
+def test_scenario_problems_reader() -> None:
+    lead = "= 6 Runtime View\n\nLead.\n\n"
+    assert scenario_problems(lead, NORMAL_SCENARIOS) == []
+    assert scenario_problems(lead + _scenario(), NORMAL_SCENARIOS) == []
+    two = lead + _scenario("switching-on") + _scenario("drink-end-to-end")
+    assert scenario_problems(two, NORMAL_SCENARIOS) == []
+    assert any("ordered prefix" in p for p in scenario_problems(lead + _scenario("refilling"), NORMAL_SCENARIOS))
+    assert any("ordered prefix" in p for p in scenario_problems(lead + _scenario("made-up"), NORMAL_SCENARIOS))
+    swapped = lead + _scenario("drink-end-to-end") + _scenario("switching-on")
+    assert any("ordered prefix" in p for p in scenario_problems(swapped, NORMAL_SCENARIOS))
+    assert any("2 D2 blocks" in p for p in scenario_problems(lead + _scenario(blocks=2), NORMAL_SCENARIOS))
+    assert any("0 D2 blocks" in p for p in scenario_problems(lead + _scenario(blocks=0), NORMAL_SCENARIOS))
+    assert any(
+        "not a sequence diagram" in p
+        for p in scenario_problems(lead + _scenario(diagram="a -> b: x {class: data}"), NORMAL_SCENARIOS)
+    )
+    clash = scenario_problems(lead + _scenario(target="runtime-guest-mixes"), NORMAL_SCENARIOS)
+    assert any("runtime-guest-mixes" in p for p in clash)
+    reordered = _scenario(sections=("Open", "Contracts", "Details"))
+    assert any("sections" in p for p in scenario_problems(lead + reordered, NORMAL_SCENARIOS))
+    no_details = _scenario(sections=("Contracts", "Open"))
+    assert any("sections" in p for p in scenario_problems(lead + no_details, NORMAL_SCENARIOS))
+    for bad in ("* xref:contracts.adoc#IF-09[IF-09]: x", "* IF-01-R12: x"):
+        assert any(
+            "not a defined ID" in p for p in scenario_problems(lead + _scenario(contracts=bad), NORMAL_SCENARIOS)
+        )
+    assert any("no contract" in p for p in scenario_problems(lead + _scenario(contracts=""), NORMAL_SCENARIOS))
+    one_bad = "* xref:contracts.adoc#IF-01[IF-01]: x\n* the Station relies on nothing"
+    assert any(
+        "Contracts entry" in p and "names no defined ID" in p
+        for p in scenario_problems(lead + _scenario(contracts=one_bad), NORMAL_SCENARIOS)
+    )
+    faults = lead + _scenario("link-breaks-during-pour")
+    assert scenario_problems(faults, FAULT_SCENARIOS) == []
+    no_end = scenario_problems(faults.replace("Trigger and end state.", "A link breaks."), FAULT_SCENARIOS)
+    assert any("end state" in p for p in no_end)
+    normal = lead + _scenario("switching-on", lead="The machine starts.")
+    assert scenario_problems(normal, NORMAL_SCENARIOS) == []
+    assert any(
+        "names no defined ID" in p
+        for p in scenario_problems(lead + _scenario(open_section="* something"), NORMAL_SCENARIOS)
+    )
+    assert any(
+        "names no defined ID" in p
+        for p in scenario_problems(lead + _scenario(open_section="* see IF-09"), NORMAL_SCENARIOS)
+    )
+    assert scenario_problems(lead + _scenario(open_section="Nothing open."), NORMAL_SCENARIOS) == []
+    labelled = "shape: sequence_diagram\na -> b: x (open, IF-01-R01) {class: data}"
+    assert scenario_problems(lead + _scenario(diagram=labelled), NORMAL_SCENARIOS) == []
+    missing = scenario_problems(lead + _scenario(diagram=labelled, open_section="* Open, see IF-01."), NORMAL_SCENARIOS)
+    assert any("(open, IF-01-R01) is missing from the Open section" in p for p in missing)
+    only_requirement = scenario_problems(
+        lead + _scenario(diagram=labelled.replace("IF-01-R01", "IF-01"), open_section="* See IF-01-R01."),
+        NORMAL_SCENARIOS,
+    )
+    assert any("(open, IF-01) is missing from the Open section" in p for p in only_requirement)
+    several = labelled.replace("IF-01-R01", "IF-01-R01, IF-01")
+    assert (
+        scenario_problems(lead + _scenario(diagram=several, open_section="* IF-01-R01 and IF-01."), NORMAL_SCENARIOS)
+        == []
+    )
+    assert any(
+        "(open, IF-01) is missing" in p for p in scenario_problems(lead + _scenario(diagram=several), NORMAL_SCENARIOS)
+    )
+    undefined = labelled.replace("IF-01-R01", "IF-01-R11")
+    assert any("IF-01-R11" in p for p in scenario_problems(lead + _scenario(diagram=undefined), NORMAL_SCENARIOS))
+
+
+def test_parse_scenarios_reads_the_parts() -> None:
+    (scenario,) = parse_scenarios(_scenario())
+    assert scenario.anchor == "switching-on"
+    assert scenario.title == "Title"
+    assert scenario.sections == SCENARIO_SECTIONS
+    assert scenario.contracts == ("IF-01", "IF-01")
+    assert scenario.diagrams[0][0] == "system-6-switching-on"
+    assert parse_scenarios("= Page\n\n[[not-followed]]\nText.\n") == []
+
+
+def test_runtime_pages_are_valid() -> None:
+    assert scenario_problems(RUNTIME_PAGE.read_text(encoding="utf-8"), NORMAL_SCENARIOS) == []
+    assert scenario_problems(FAULT_PAGE.read_text(encoding="utf-8"), FAULT_SCENARIOS) == []
+    assert first_line(FAULT_PAGE) == "= Fault Scenarios"
+
+
+def test_runtime_view_is_complete() -> None:
+    anchors = tuple(s.anchor for s in parse_scenarios(RUNTIME_PAGE.read_text(encoding="utf-8")))
+    assert anchors == NORMAL_SCENARIOS
+
+
+def test_fault_scenarios_are_complete() -> None:
+    anchors = tuple(s.anchor for s in parse_scenarios(FAULT_PAGE.read_text(encoding="utf-8")))
+    assert anchors == FAULT_SCENARIOS
+
+
+def test_fault_scenarios_in_nav_under_chapter_6() -> None:
+    nav = (SYSTEM_PAGES.parent / "nav.adoc").read_text(encoding="utf-8").splitlines()
+    start = nav.index("* xref:runtime-view.adoc[]")
+    assert nav[start + 1] == "** xref:fault-scenarios.adoc[]"
+
+
+def test_runtime_pages_link_each_other() -> None:
+    system = RUNTIME_PAGE.read_text(encoding="utf-8")
+    assert "xref:fault-scenarios.adoc[" in system
+    assert "xref:station::runtime-view.adoc[Station runtime view]" in system
+    station = (STATION_PAGES / "runtime-view.adoc").read_text(encoding="utf-8")
+    assert "xref:system::runtime-view.adoc[" in station
+    assert "xref:system::fault-scenarios.adoc[" in station
+
+
+SYSTEM_MODULES = REPO / "docs" / "system" / "modules"
+MACRO_TARGET = re.compile(r"\b(?:xref|link|image|include|mailto):[^\s\[]*(?=\[)|https?://[^\s\[\]]*[^\s\[\].,;:!?)]")
+CODE_FILE_REFERENCE = re.compile(r"[\w./-]+\.(?:cpp|cppm|hpp|h|py|slint)\b")
+CODE_SCOPE_NAME = re.compile(r"\b\w+::\w+")
+SOURCE_BANNED = (
+    (re.compile(r"\bcode only\b", re.IGNORECASE), "a code-only mark"),
+    (re.compile(r"owner decision", re.IGNORECASE), "an owner decision as a source"),
+    (re.compile(r"user decision", re.IGNORECASE), "a user decision as a source"),
+    (re.compile(r"owner decided", re.IGNORECASE), "an owner decision as a source"),
+    (re.compile(r"owner confirmed", re.IGNORECASE), "an owner confirmation as a source"),
+)
+
+
+def architecture_code_problems(text: str) -> list[str]:
+    """Code names, code-only marks and owner decisions that an architecture page must not carry."""
+    masked = MACRO_TARGET.sub("", text)
+    problems = [f"file reference {m.group()!r}" for m in CODE_FILE_REFERENCE.finditer(masked)]
+    problems += [f"C++ scope name {m.group()!r}" for m in CODE_SCOPE_NAME.finditer(masked)]
+    problems += [f"{what} ({m.group()!r})" for pattern, what in SOURCE_BANNED for m in pattern.finditer(masked)]
+    return problems
+
+
+def test_architecture_code_problems_reader() -> None:
+    assert architecture_code_problems("See xref:station::runtime-view.adoc[Station runtime view].") == []
+    assert architecture_code_problems("A link https://example.org/a.py[text] and xref:adr:001-x.adoc[SYS-001].") == []
+    assert architecture_code_problems("In `cocktail-maker/pod.cpp` the code runs.") != []
+    assert architecture_code_problems("The module `core/retry.cppm` holds it.") != []
+    assert architecture_code_problems("The file `gui/ui/pages/mix.slint` shows it.") != []
+    assert architecture_code_problems("`Pod::keep_alive` repeats the ping.") != []
+    assert architecture_code_problems("* Code only, not yet in a doc: the Station repeats it.") != []
+    assert architecture_code_problems("* Owner decision, 2026-11-15, on the mains voltage") != []
+    assert architecture_code_problems("The owner decided it.") != []
+    assert architecture_code_problems("The owner confirmed it.") != []
+    assert architecture_code_problems("This was a user decision.") != []
+    assert architecture_code_problems("The decoder is code only for now.") != []
+    assert architecture_code_problems("The Station is a decoder, and the barcode only counts.") == []
+
+
+# Pages that name code on purpose: the naming rules (file names are the convention) and the quantity and unit
+# style reference. No ADR is exempt.
+CODE_NAMING_PAGES = (
+    "docs/system/modules/ROOT/pages/naming-conventions.adoc",
+    "docs/system/modules/ROOT/pages/style-reference.adoc",
+)
+
+
+def test_system_architecture_names_no_code() -> None:
+    pages = [
+        p for p in sorted(SYSTEM_MODULES.glob("*/pages/**/*.adoc")) if str(p.relative_to(REPO)) not in CODE_NAMING_PAGES
+    ]
+    assert pages
+    problems = {
+        str(page.relative_to(REPO)): found
+        for page in pages
+        if (found := architecture_code_problems(page.read_text(encoding="utf-8")))
+    }
+    assert problems == {}

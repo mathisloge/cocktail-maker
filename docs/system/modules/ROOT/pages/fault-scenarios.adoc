@@ -1,0 +1,241 @@
+= Fault Scenarios
+
+This page shows what happens across the whole machine when a fault occurs.
+Each scenario names the contracts that its steps rely on, and lists what is still open.
+Normal operation is in xref:runtime-view.adoc[chapter 6].
+
+[[link-breaks-during-pour]]
+== The Link to a Pod Breaks During a Pour
+
+The USB link to a Pod breaks while the Pod pours, and the end state is open.
+The Station fails the mix and sends an `EmergencyStop` to every Pod, but nobody has decided whether the Pod that lost its link ends its pour.
+
+.The link to a Pod breaks during a pour
+[d2, target="system-6-link-breaks-during-pour", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+
+shape: sequence_diagram
+guest: "Guest" {class: actor}
+station: "Station" {class: block}
+pod: "Pod" {class: block}
+glass: "glass" {class: block}
+station -> pod: "dispenses the ingredient\nand the amount" {class: data}
+pod -> glass: "pumps the ingredient" {class: fluid}
+station -> pod: "USB link breaks, no reply comes back,\nthe Station notices the silent Pod\nwithin a bounded time (open, IF-01-R06)" {class: fault}
+station.drops: "Station stops the mix" {class: boundary}
+pod -> glass: "may pump on, 30 s at the latest,\nor stop, nobody decided that\n(open, IF-01-R11)" {class: fluid}
+station -> pod: "sends an EmergencyStop to every Pod,\nwhether it reaches this Pod is open\n(open, IF-01-R07)" {class: [data; key]}
+station -> guest: "shows an error screen\nand returns to a known-good screen" {class: interaction}
+----
+What does the machine do when the link to a Pod breaks during a pour, and what does the Pod do?
+
+=== Contracts
+* xref:contracts.adoc#IF-01[IF-01], xref:contracts.adoc#IF-01-R06[IF-01-R06]: The Station notices a Pod that does not answer within a bounded time, and the other Pods and the UI are not stalled.
+* xref:contracts.adoc#IF-01-R07[IF-01-R07]: The Station can stop every pump and valve of a Pod at once, and it does so for every Pod.
+* xref:contracts.adoc#IF-01-R11[IF-01-R11]: A Pod should end a running pour on its own when the link breaks, which is open.
+* xref:contracts.adoc#IF-07[IF-07], xref:contracts.adoc#IF-07-R03[IF-07-R03]: A pulled or pinched cable never leaves a Pod pouring, which is open.
+
+=== Open
+* Whether a Pod ends a running pour on its own when the USB link breaks, and who guarantees it, because the only known bound is the limit of 30 s for a pour (IF-01-R11, IF-07-R03).
+* Which bounded time the Station needs to notice a silent Pod, and what it does with a Pod that stays silent and with the requests that are pending for it (IF-01-R06).
+* Whether the `EmergencyStop` reaches the Pod with the broken link, and what that Pod does when it does not (IF-01-R07).
+
+=== Details
+* xref:contracts.adoc#IF-01[IF-01], section Fault behaviour: every Pod exchange has its own timeout, so the Station notices a silent Pod within a bounded time, and how the request fails is open.
+* xref:station::runtime-view.adoc#_a_guest_mixes_a_drink[Station runtime view, A Guest Mixes a Drink]: a failed dispense stops the remaining actions and sends an `EmergencyStop` to every Pod.
+* xref:protocol.adoc#_reply_times[Protocol page, reply times]: the timeouts of the Station.
+
+[[power-fails-during-pour]]
+== The Power Fails During a Pour
+
+The power fails during a pour, and the end state is an unfinished drink in the glass.
+The Station and every Pod stop at once, and when the power returns, the Station starts again from its state files and corrects the fill levels.
+What a Pod actuator does at that moment is open.
+
+.The power fails during a pour
+[d2, target="system-6-power-fails-during-pour", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+
+shape: sequence_diagram
+power_grid: "Power Grid" {class: external}
+pmu: "Power Management Unit" {class: block}
+station: "Station" {class: block}
+pod: "Pod" {class: block}
+glass: "glass" {class: block}
+station -> pod: "dispenses the ingredient\nand the amount" {class: data}
+pod -> glass: "pumps the ingredient" {class: fluid}
+power_grid -> pmu: "stops supplying 230 V AC" {class: fault}
+pmu -> station: "stops the 5 V DC\n(open, IF-02)" {class: power}
+pmu -> pod: "stops the 24 V DC,\nthe pump stops with it" {class: [power; key]}
+station.files: "The state files on disk are whole,\nbecause each is written in one step" {class: boundary}
+pod.calibration: "Calibrations stay in the Pod,\nthe load cell forgets its zero point" {class: boundary}
+power_grid -> pmu: "supplies 230 V AC again" {class: power}
+pmu -> station: "supplies 5 V DC again" {class: power}
+pmu -> pod: "supplies 24 V DC again,\nno actuator may move before\nthe Station starts the Pod\n(open, IF-03-R04)" {class: power}
+station.boots: "Station starts from its state files" {class: boundary}
+station -> pod: "finds the Pod and reads\nthe weight of each dispenser" {class: data}
+pod -> station: "reports the weights" {class: data}
+station.levels: "Station corrects the fill levels\nfrom the weights" {class: boundary}
+----
+What happens to a running pour when the power fails, and how does the machine come back?
+
+=== Contracts
+* xref:contracts.adoc#IF-04[IF-04]: The Power Grid supplies the 230 V AC, and a mains of 230 V AC at 50 Hz is the only one the machine takes.
+* xref:contracts.adoc#IF-02[IF-02], xref:contracts.adoc#IF-02-R03[IF-02-R03]: A power cut at any moment leaves the Station able to start again with its data intact.
+* xref:contracts.adoc#IF-03[IF-03], xref:contracts.adoc#IF-03-R04[IF-03-R04]: All Pods take their power from the one 24 V rail, and no actuator should move before the Station has started the Pod again.
+* xref:contracts.adoc#IF-01-R01[IF-01-R01]: A Pod never acts without a request from the Station, so it does not go on with the pour by itself.
+
+=== Open
+* Whether the Station gets a warning or a short run-on time before the 5 V stops, and what it does on a brown-out of the 5 V (IF-02).
+* What a Pod does when the 24 V drops or returns during a pour, and who guarantees that no actuator moves before the Station has started the Pod (IF-03-R04).
+
+=== Details
+* xref:station::runtime-view.adoc#_a_pod_comes_back_after_a_power_loss[Station runtime view, A Pod Comes Back After a Power Loss]: how the Station corrects the fill levels after the load cells took a new zero point.
+* xref:runtime-view.adoc#switching-on[Switching On]: how the machine starts and how the Station finds its Pods.
+* xref:station:adr:006-nixos-deployment.adoc[STA-006]: once the Station is deployed with NixOS, the NixOS configuration will start the Station program after the boot, so the Station will start by itself when the power returns.
+* xref:adr:004-power-architecture.adoc[SYS-004]: the single power supply is a single point of failure, so a power supply fault ends the same way.
+
+[[guest-cancels]]
+== A Guest Cancels
+
+A Guest cancels a running drink, and the end state is that every pump and valve of every Pod has stopped and the Guest is on a known-good screen.
+A Pod that does not acknowledge the stop leaves this end state open.
+
+.A Guest cancels
+[d2, target="system-6-guest-cancels", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+
+shape: sequence_diagram
+guest: "Guest" {class: actor}
+station: "Station" {class: block}
+pod: "Pod" {class: block}
+guest -> station: "cancels the drink\nwhile it is poured" {class: interaction}
+station.stops: "Station stops the remaining actions" {class: boundary}
+station -> pod: "sends an EmergencyStop\nto every Pod" {class: [data; key]}
+pod.stops: "Pod stops every pump and valve at once,\na running pour ends with a Nak" {class: boundary}
+pod -> station: "acknowledges the stop\nwithin 500 ms" {class: data}
+station -> guest: "returns to a known-good screen" {class: interaction}
+no_ack: "opt: A Pod does not acknowledge the stop" {
+  class: boundary
+  station -> pod: "gets no acknowledgement,\nthe pour ends after 30 s at the latest\n(open, IF-01-R11)" {class: fault}
+}
+----
+What does a Guest set off by cancelling a drink, and what stops where?
+
+=== Contracts
+* xref:contracts.adoc#IF-01[IF-01], xref:contracts.adoc#IF-01-R07[IF-01-R07]: The Station can stop every pump and valve of a Pod at once.
+* xref:contracts.adoc#IF-01-R06[IF-01-R06]: A Pod that does not answer is noticed within a bounded time, and it stalls neither another Pod nor the UI.
+* xref:contracts.adoc#IF-01-R11[IF-01-R11]: A Pod should end a running pour on its own when the link breaks, which is open.
+* xref:contracts.adoc#IF-08[IF-08]: The `EmergencyStop` stops every pump and valve, and a running tare or load cell calibration carries on.
+
+=== Open
+* What the Station does when a Pod does not acknowledge the `EmergencyStop`, and whether the Guest or the Operator is told, because the sources decide nothing more than the limit of 30 s for a pour (IF-01-R11).
+
+=== Details
+* xref:station::runtime-view.adoc#_a_guest_mixes_a_drink[Station runtime view, A Guest Mixes a Drink]: a cancel stops the remaining actions and sends an `EmergencyStop` to every Pod.
+* xref:protocol.adoc#_request_acknowledgement[Protocol page, request and acknowledgement]: every `Dispense` and `DispenserStartCalibration` that is running ends with a `Nak`, and a running tare or load cell calibration carries on.
+* The Guest can also cancel in the refill dialog, and the Station then stops the Pods in the same way (see <<bottle-empty-during-pour>>).
+
+[[bottle-empty-during-pour]]
+== A Bottle Runs Empty During a Pour
+
+A bottle runs empty during a pour, and the end state is a finished drink after a refill, or an ended drink after a cancel.
+A blocked line looks the same as an empty bottle, so the Station only suspects that the bottle is empty, and a cancel in the dialog ends the drink instead.
+
+.A bottle runs empty during a pour
+[d2, target="system-6-bottle-empty-during-pour", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+
+shape: sequence_diagram
+guest: "Guest" {class: actor}
+operator: "Operator" {class: actor}
+station: "Station" {class: block}
+pod: "Pod" {class: block}
+bottle: "bottle" {class: block}
+station -> pod: "dispenses the ingredient\nand the amount" {class: data}
+bottle -> pod: "weight on the load cell\nstops falling" {class: mechanical}
+pod -> station: "reports the pour as BottleEmpty\nwith the amount in mL that came out" {class: [fault; key]}
+station.suspects: "Station counts the amount that came out\nand suspects an empty bottle" {class: boundary}
+station -> guest: "names the ingredient and asks\nto call the Operator" {class: interaction}
+refilled: "alt: Someone refills the bottle" {
+  class: boundary
+  operator -> bottle: "tops up or replaces the bottle\n(open, IF-08-R03)" {class: interaction}
+  bottle -> pod: "weight on the load cell rises" {class: mechanical}
+  operator -> station: "confirms the refill, no PIN" {class: interaction}
+  station -> pod: "reads the weight of the dispenser" {class: data}
+  pod -> station: "reports the weight" {class: data}
+  station -> pod: "dispenses the rest" {class: data}
+}
+canceled: "else: Someone cancels the drink" {
+  class: boundary
+  guest -> station: "cancels the drink in the dialog" {class: interaction}
+  station -> pod: "sends an EmergencyStop to every Pod" {class: data}
+}
+----
+What does the machine do when a bottle runs empty during a pour, and who has to act?
+
+=== Contracts
+* xref:contracts.adoc#IF-05[IF-05], xref:contracts.adoc#IF-05-R05[IF-05-R05]: An empty bottle is noticed, and its missing amount is never counted as poured.
+* xref:contracts.adoc#IF-01-R08[IF-01-R08]: The Pod reports the amount that really came out, and a pour that came up short is never reported as complete.
+* xref:contracts.adoc#IF-05-R03[IF-05-R03]: An Operator refills a bottle from the top while the Pod keeps weighing it.
+* xref:contracts.adoc#IF-08[IF-08], xref:contracts.adoc#IF-08-R03[IF-08-R03]: The Operator reaches every point that service needs with the Pod installed.
+
+=== Open
+* How the Operator reaches the bottle during a drink, and whether the Pod must be opened for it (IF-08-R03).
+* The Station does not notice an Operator who puts the wrong ingredient into the bottle (IF-05-R02).
+
+=== Details
+* xref:station::runtime-view.adoc#_a_bottle_runs_empty_and_gets_refilled[Station runtime view, A Bottle Runs Empty and Gets Refilled]: the dialog without PIN, the wait of 1 s, the rise of 50 g and the dry run of about 6.5 s when someone confirms without a refill.
+* xref:station::runtime-view.adoc#_a_guest_mixes_a_drink[Station runtime view, A Guest Mixes a Drink]: which pour results count as an empty bottle.
+* xref:protocol.adoc#_request_acknowledgement_event[Protocol page, request, acknowledgement and event]: the `BottleEmpty` result of the `DispenseFinished` event.
+* <<guest-cancels>>: what a cancel sets off.
+* xref:runtime-view.adoc#refilling[Refilling in chapter 6]: how an Operator refills outside a drink.
+
+[[pump-lid-opened]]
+== The Pump Lid Is Opened While the Pump Can Move
+
+The end state is open, because the pump has no interlock: opening the lid does not stop the pump, and a finger can be trapped when the pump can still move.
+This is the residual risk that IF-08 states, and the lid, the rule never to run the pump without the lid and the service steps are the precaution.
+
+.The pump lid is opened while the pump can move
+[d2, target="system-6-pump-lid-opened", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+
+shape: sequence_diagram
+operator: "Operator" {class: actor}
+station: "Station" {class: block}
+pod: "Pod" {class: block}
+stopped_first: "alt: The Operator stops the pump first, as the service steps say" {
+  class: boundary
+  operator -> station: "stops the pumps with the emergency stop\nin the Operator UI\n(open, IF-08-R04)" {class: interaction}
+  station -> pod: "sends an EmergencyStop to every Pod" {class: data}
+  pod.rest: "Pod stops every pump and valve" {class: boundary}
+  operator -> pod: "removes the three lid screws\nand pulls the lid off" {class: interaction}
+}
+moving: "else: The lid is opened while the pump can move" {
+  class: boundary
+  operator -> pod: "removes the lid screws\nand pulls the lid off" {class: interaction}
+  pod -> operator: "pump keeps moving, the nip between roller\nand tube can trap a finger,\nno interlock stops it\n(open, IF-08-R04)" {class: [fault; key]}
+}
+----
+What stops the pump when an Operator opens its lid, and what does the machine leave to the Operator?
+
+=== Contracts
+* xref:contracts.adoc#IF-08[IF-08], xref:contracts.adoc#IF-08-R01[IF-08-R01]: An Operator cannot reach a moving part or a pinch point while a Pod can still move, and the lid is the guard of the pump.
+* xref:contracts.adoc#IF-08-R04[IF-08-R04]: An Operator can bring every actuator of a Pod to rest before opening it, which is open.
+* xref:contracts.adoc#IF-01-R07[IF-01-R07]: The Station can stop every pump and valve of a Pod at once.
+* xref:contracts.adoc#IF-01-R01[IF-01-R01]: A Pod never acts without a request from the Station.
+
+=== Open
+* What brings every actuator of a Pod to rest when an Operator opens it, because the pump has no interlock, and how the Operator stops the pump before the service steps (IF-08-R04).
+
+=== Details
+* xref:mechanics::pump.adoc[Mechanics pump page]: the warning never to run the pump without the lid, because the nip between roller and tube can trap a finger.
+* xref:mechanics::pump-service.adoc[Mechanics pump service page]: the tube change starts with stopping the pump and draining the line, then the three lid screws.
+* xref:mechanics:adr:002-pump-fixed-occlusion-bed.adoc[CM3D-002]: the pump has no interlock.
+* xref:mechanics:adr:004-pump-closed-housing-bearing-lid.adoc[CM3D-004]: the lid of the closed housing is the guard.

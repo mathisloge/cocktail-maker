@@ -1,0 +1,53 @@
+= SYS-010: Pods take only 24 V DC
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-11-15
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+The Power Management Unit supplies the Pods from one 24 V DC rail (xref:adr:004-power-architecture.adoc[SYS-004]).
+The servos of a Pod need 5 V (xref:ROOT:hardware.adoc[Hardware page]).
+The chosen Pod board, the BIGTREETECH Octopus, already converts 24 V down to 5 V.
+No page names a part that needs 12 V.
+
+=== Decision Drivers
+
+* **One rail to the Pods:** every voltage that runs to a Pod is another conductor and another fault to guard (QG-01, QG-03).
+* **Use what the Pod board has:** the Pod board already makes its 5 V from the 24 V (QG-06).
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: Only one supply voltage runs from the Power Management Unit to a Pod.
+* xref:system::quality-goals.adoc#QG-03[QG-03]: A Pod does not depend on a second rail that can fail on its own.
+* xref:system::quality-goals.adoc#QG-06[QG-06]: The Pod design makes its own low voltages without a change to the Station.
+
+== Decision
+
+A Pod takes only 24 V DC as its input and makes the lower voltages it needs, such as the 5 V for the servos, itself.
+
+== Alternatives Considered
+
+=== The Power Management Unit makes 5 V and sends it to the Pods as well
+
+The Power Management Unit sends the 5 V that a Pod needs next to the 24 V.
+
+Rejected: the Pod board already converts 24 V down to 5 V, so a 5 V rail would only add conductors and plugs.
+
+== Consequences
+
+* **Good:** One rail and one plug per Pod for the supply.
+* **Good:** A Pod can change its low voltages without a change to the Station or the Power Management Unit.
+* **Bad:** A Pod relies on the converter of its board, and another Pod board must also make its 5 V from 24 V.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: Better, because only one supply voltage runs to a Pod.
+* xref:system::quality-goals.adoc#QG-03[QG-03]: Better, because no second rail can fail.
+* xref:system::quality-goals.adoc#QG-06[QG-06]: Better and worse.
+The Pod design is free in its low voltages, but another Pod board must also make its 5 V from 24 V.

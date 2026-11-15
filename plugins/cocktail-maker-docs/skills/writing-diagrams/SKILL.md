@@ -127,6 +127,9 @@ station -> pod: sends commands over USB CDC {class: [data; key]}
 power_management_unit -> pod: supplies 24 V DC {class: power}
 ```
 
+A step whose behaviour is not decided yet keeps the edge class of its kind.
+Its quoted label holds `(open, <ID>)` on one line, where `<ID>` is the contract or requirement that is still open, as in `"sends the stop command (open, IF-01-R11)"`.
+
 ## Reading direction
 
 Flows go left to right, so set `direction: right`.

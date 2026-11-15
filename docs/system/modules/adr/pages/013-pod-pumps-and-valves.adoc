@@ -1,0 +1,48 @@
+= SYS-013: A Pod has 8 pumps and 2 valves
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-11-15
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+A Pod holds 10 bottles (xref:mechanics::index.adoc[Mechanics overview page]).
+A carbonated drink expands while it is pumped, and the pump then runs slower.
+
+=== Decision Drivers
+
+* **Pumps keep their speed:** a carbonated drink must not slow down the pump that moves it (QG-05).
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-05[QG-05]: Carbonated drinks do not slow down the pumps, so a drink is not delayed by them.
+* xref:system::quality-goals.adoc#QG-02[QG-02]: A bottle at the wrong kind of dispenser puts a wrong amount into a drink.
+
+== Decision
+
+A Pod has 10 dispensers, 8 pumps for still ingredients and 2 valves for carbonated drinks.
+
+== Alternatives Considered
+
+=== Only pumps
+
+Every dispenser is a pump.
+
+Rejected: a carbonated drink expands while it is pumped and slows the pump down.
+
+== Consequences
+
+* **Good:** Carbonated drinks do not slow down the pumps.
+* **Bad:** A Pod has two kinds of dispensers, with their own calibration and service.
+* **Bad:** Only 2 bottles of a Pod can hold a carbonated drink.
+* **Bad:** An Operator must put each ingredient into a bottle at the right kind of dispenser, and a mix-up puts a wrong amount into a drink.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-05[QG-05]: Better, because carbonated drinks do not slow down the pumps.
+* xref:system::quality-goals.adoc#QG-02[QG-02]: Worse, because a bottle at the wrong kind of dispenser puts a wrong amount into a drink.

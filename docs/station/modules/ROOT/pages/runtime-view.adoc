@@ -2,6 +2,7 @@
 
 This chapter walks through the Station's key scenarios at the level of its own building blocks (xref:building-blocks.adoc[]).
 The wire-level exchange with a Pod inside any of these scenarios follows the patterns defined in the xref:system::protocol.adoc[System protocol concept] and is not repeated here.
+For the whole machine, see xref:system::runtime-view.adoc[System chapter 6] and the xref:system::fault-scenarios.adoc[System Fault Scenarios].
 
 == A Pod Connects
 

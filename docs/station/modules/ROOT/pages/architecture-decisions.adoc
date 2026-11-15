@@ -8,3 +8,4 @@ This list shows all Station ADRs:
 * xref:adr:003-asynchronous-execution-model.adoc[]
 * xref:adr:004-domain-type-safety.adoc[]
 * xref:adr:005-sender-receiver-execution-model.adoc[]
+* xref:adr:006-nixos-deployment.adoc[]

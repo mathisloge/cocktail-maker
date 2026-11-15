@@ -12,8 +12,8 @@ include::partial$adr-header.adoc[]
 == Context
 
 A Guest sees the touch display and the outside of the Station and the Pods at the same time.
-The UI has one dark art-deco theme, and `gui/ui/theme/colors.slint` holds its colours, such as ink, amber, cream and sand.
-The docs already derive their palette from the same file.
+The UI has one dark art-deco theme, and its palette holds its colours, such as ink, amber, cream and sand.
+The docs already derive their colours from the same palette.
 The parts are printed on a Prusa Core One with INDX, so one part can have several colours (xref:mechanics:adr:003-petg-pump-material.adoc[CM3D-003]).
 No rule fixes the colours of the outside today.
 
@@ -29,7 +29,7 @@ No rule fixes the colours of the outside today.
 
 == Decision
 
-The outside of the Station and the Pods follows the colours in `gui/ui/theme/colors.slint` where possible.
+The outside of the Station and the Pods follows the colours of the UI palette where possible.
 
 == Alternatives Considered
 

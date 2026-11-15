@@ -1,0 +1,51 @@
+= STA-006: The Station moves to NixOS
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-11-15
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:NNN-new-decision.adoc[STA-NNN]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+The repo ships a systemd service that starts the Station program on Raspberry Pi OS (xref:ROOT:deployment-view.adoc[Station deployment view]).
+The configuration of that operating system and the libraries it installs are not defined in the repo.
+The Station is not deployed with NixOS yet.
+
+=== Decision Drivers
+
+* **Maintainability first:** the operating system and every library it installs are defined as code, so the Station always runs a correctly configured system (QG-06).
+* **A machine that starts by itself:** after switching on, the Station program runs without a person starting it (QG-03).
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-06[QG-06]: The operating system, its installed libraries and the start of the Station program are defined as code.
+* xref:system::quality-goals.adoc#QG-03[QG-03]: The Station program starts by itself after the boot.
+
+== Decision
+
+The Station moves to NixOS, and the NixOS configuration starts the Station program after the boot.
+The migration is not done yet, and the deployment view is updated when it is.
+
+== Alternatives Considered
+
+=== Keep Raspberry Pi OS and the systemd service
+
+The Station stays on Raspberry Pi OS, and the systemd service keeps starting the Station program.
+
+Rejected: the configuration of the operating system and its installed libraries would stay outside the code.
+
+== Consequences
+
+* **Good:** The Station always runs an operating system that is configured by code.
+* **Good:** The configuration shows which libraries are installed.
+* **Bad:** The initial setup is harder than with Raspberry Pi OS.
+* **Bad:** The move from the current setup to NixOS is work that is not done yet.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because the operating system and its libraries are defined as code.
+* xref:system::quality-goals.adoc#QG-03[QG-03]: Neutral, because the systemd service already starts the Station program by itself.

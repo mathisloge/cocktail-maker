@@ -12,3 +12,7 @@ This list shows all System ADRs:
 * xref:adr:007-calibration-and-fill-level.adoc[]
 * xref:adr:008-enclosure-colours.adoc[]
 * xref:adr:009-wetted-parts.adoc[]
+* xref:adr:010-pod-supply-24v.adoc[]
+* xref:adr:011-german-mains.adoc[]
+* xref:adr:012-pods-changed-switched-off.adoc[]
+* xref:adr:013-pod-pumps-and-valves.adoc[]

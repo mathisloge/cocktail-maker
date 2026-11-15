@@ -16,6 +16,7 @@ Write an ADR when at least one of these is true:
 - The decision is hard to reverse.
 - It affects more than one module or part.
 - It chooses between real alternatives that someone will question later.
+- A page cites it as the source of a fact, such as a value or a rule in a contract.
 
 If none is true, a code comment or the commit message is enough.
 If the decision changes an existing ADR, supersede that ADR.

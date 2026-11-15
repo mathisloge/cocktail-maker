@@ -1,0 +1,45 @@
+= SYS-011: The machine runs on German mains only
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-11-15
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+The machine connects to the external mains through one inlet (xref:adr:004-power-architecture.adoc[SYS-004]).
+The Hardware page once named 110 V and 230 V AC for the inlet, while the power page and SYS-004 name 230 V AC.
+The machine is designed for the German standard mains.
+
+=== Decision Drivers
+
+* **One mains voltage:** a power supply, a protection and a label for one voltage are simpler to choose (QG-01).
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: The protection and the labels are chosen for one mains voltage.
+
+== Decision
+
+The machine is built for the German standard mains voltage, 230 V AC at 50 Hz, and for no other mains voltage.
+
+== Alternatives Considered
+
+=== 110 V and 230 V AC
+
+The machine accepts both mains voltages.
+
+Rejected: it needs a wide-range power supply and protection for both voltages, and the machine does not need to run on another mains.
+
+== Consequences
+
+* **Good:** The power supply, the protection and the labels are chosen for one voltage.
+* **Bad:** The machine is not designed, protected or labelled for another mains voltage.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: Better, because the electrical protection is designed and checked for one mains voltage.

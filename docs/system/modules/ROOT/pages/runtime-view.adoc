@@ -1,9 +1,198 @@
 = 6 Runtime View
 
-[NOTE]
-====
-Not written yet.
-====
+This chapter shows how the parts of the machine act in time order in normal operation.
+Each scenario names the contracts from xref:contracts.adoc[] that its steps rely on, and lists what is still open.
+Faults have their own page, xref:fault-scenarios.adoc[].
+For the software details, see the xref:station::runtime-view.adoc[Station runtime view].
 
-This chapter will show how the Station and the Pods work together at runtime for the main scenarios.
-Until then, see xref:station::runtime-view.adoc[the Station runtime view].
+[[switching-on]]
+== Switching On
+
+The Operator switches the main switch on.
+The Station starts, finds its Pods and corrects the fill levels from the weights that the Pods report.
+
+.Switching on
+[d2, target="system-6-switching-on", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+
+shape: sequence_diagram
+operator: "Operator" {class: actor}
+power_grid: "Power Grid" {class: external}
+pmu: "Power Management Unit" {class: block}
+station: "Station" {class: block}
+pod: "Pod" {class: block}
+operator -> pmu: "switches the main switch on" {class: interaction}
+power_grid -> pmu: "supplies 230 V AC" {class: power}
+pmu -> station: "supplies 5 V DC" {class: power}
+pmu -> pod: "supplies 24 V DC,\nno actuator may move before\nthe Station starts the Pod\n(open, IF-03-R04)" {class: power}
+station.boots: "Station starts, loads its catalogs\nand its state files" {class: boundary}
+station -> pod: "asks for the device info\nover USB CDC" {class: [data; key]}
+pod -> station: "answers with its identity\nand its protocol release" {class: data}
+station -> pod: "reads the weight of each dispenser" {class: data}
+pod -> station: "reports the weights" {class: data}
+station.levels: "Station corrects the fill levels\nfrom the weights" {class: boundary}
+----
+Which parts start in which order, and how does the Station find its Pods?
+
+=== Contracts
+* xref:contracts.adoc#IF-04[IF-04], xref:contracts.adoc#IF-04-R01[IF-04-R01]: The main switch is the one labeled point that connects the machine to the mains, and the Power Grid supplies 230 V AC behind it.
+* xref:contracts.adoc#IF-02[IF-02]: The Power Management Unit supplies the 5 V DC of the Station.
+* xref:contracts.adoc#IF-03[IF-03], xref:contracts.adoc#IF-03-R04[IF-03-R04]: The Power Management Unit supplies the 24 V DC of every Pod, and no actuator may move before the Station has started the Pod.
+* xref:contracts.adoc#IF-01[IF-01], xref:contracts.adoc#IF-01-R04[IF-01-R04], xref:contracts.adoc#IF-01-R09[IF-01-R09]: The Station finds each Pod over its own USB CDC device, tells the Pods apart and uses only a Pod on its own protocol release.
+* xref:contracts.adoc#IF-02-R03[IF-02-R03]: The Station starts again from the state files on disk.
+
+=== Open
+* What a Pod actuator does while the Pod starts, and who guarantees that none moves before the Station has started the Pod (IF-03-R04).
+
+=== Details
+* xref:station::runtime-view.adoc#_a_pod_connects[Station runtime view, A Pod Connects]: how the Station finds a Pod, and what happens to a Pod on another protocol release.
+* xref:station::runtime-view.adoc#_a_pod_comes_back_after_a_power_loss[Station runtime view, A Pod Comes Back After a Power Loss]: how the Station corrects the fill levels after the load cells took a new zero point.
+* xref:protocol.adoc#_communication_patterns[Protocol page, communication patterns]: the `DeviceInfoRequest` and `LoadCellWeightRequest` exchanges.
+* xref:station:adr:006-nixos-deployment.adoc[STA-006]: once the Station is deployed with NixOS, the NixOS configuration will start the Station program after the boot.
+
+[[drink-end-to-end]]
+== A Drink End to End
+
+A Guest orders a drink, and the Station plans it and sends each ingredient to the Pod that holds it.
+The ingredients flow through the Station fluid hub into the glass, and the Guest sees a success screen.
+
+.A drink end to end
+[d2, target="system-6-drink-end-to-end", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+
+shape: sequence_diagram
+guest: "Guest" {class: actor}
+station: "Station" {class: block}
+pod: "Pod" {class: block}
+bottle: "bottle" {class: block}
+glass: "glass" {class: block}
+guest -> station: "selects a recipe and a glass,\nstarts the mix" {class: interaction}
+guest -> glass: "places the glass in the glass\nplacement area\n(open, IF-06-R05)" {class: interaction}
+station -> pod: "reads the weight of each dispenser\nthat the recipe needs" {class: data}
+pod -> station: "reports the weights" {class: data}
+not_enough: "opt: An ingredient may not be enough" {
+  class: boundary
+  station -> guest: "warns and names the ingredient" {class: interaction}
+  guest -> station: "starts anyway or cancels" {class: interaction}
+}
+each_ingredient: "loop: Each ingredient" {
+  class: boundary
+  station -> pod: "dispenses the ingredient\nand the amount" {class: [data; key]}
+  bottle -> pod: "supplies the ingredient\nto the pump" {class: fluid}
+  pod -> glass: "pumps the ingredient through\nthe Station fluid hub\n(open, IF-06-R02)" {class: fluid}
+  bottle -> pod: "weight on the load cell falls" {class: mechanical}
+  pod -> station: "reports how the pour ended\nand the amount in mL" {class: data}
+}
+station.levels: "Station updates the fill levels\nand saves them to disk" {class: boundary}
+station -> guest: "shows the success screen" {class: interaction}
+----
+How does the order of a Guest become a drink in a glass, across the Station, the Pod and the fluid path?
+
+=== Contracts
+* xref:contracts.adoc#IF-01[IF-01], xref:contracts.adoc#IF-01-R08[IF-01-R08]: The Station starts every dispense, and the Pod reports the amount that really came out.
+* xref:contracts.adoc#IF-05[IF-05], xref:contracts.adoc#IF-05-R05[IF-05-R05]: The ingredient flows from the bottle into the pump, the load cell weighs the bottle, and an empty bottle is noticed.
+* xref:contracts.adoc#IF-06[IF-06], xref:contracts.adoc#IF-06-R05[IF-06-R05]: The ingredient leaves the Pod through the Station fluid hub into the glass, and a pour should start only when a glass stands in place.
+
+=== Open
+* How the machine knows that a glass stands in the glass placement area, and when the Guest places it (IF-06-R05).
+* The Station fluid hub is not designed, so the path from the dispenser outlet to the glass has no tubing, material or outlet position yet, and whether it merges all ingredients is open (IF-06-R02, IF-06-R03).
+
+=== Details
+* xref:station::runtime-view.adoc#_a_guest_mixes_a_drink[Station runtime view, A Guest Mixes a Drink]: the warning, the pour results and what the Station does with a pour that came up short.
+* xref:protocol.adoc#_request_acknowledgement_event[Protocol page, request, acknowledgement and event]: the `Dispense` exchange.
+
+[[refilling]]
+== Refilling
+
+An Operator tops up a bottle or replaces it, and tells the Station.
+The Station reads the weight again, and the fill level and the weighing carry on from the new weight.
+
+.Refilling
+[d2, target="system-6-refilling", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+
+shape: sequence_diagram
+operator: "Operator" {class: actor}
+station: "Station" {class: block}
+pod: "Pod" {class: block}
+bottle: "bottle" {class: block}
+operator -> station: "enters the Operator PIN,\nopens the refill of one dispenser" {class: interaction}
+topped_up: "alt: The Operator tops up the bottle" {
+  class: boundary
+  operator -> bottle: "pours into the bottle from the top\n(open, IF-05-R04, IF-08-R03)" {class: interaction}
+  bottle -> pod: "weight on the load cell rises,\nthe Pod keeps weighing" {class: mechanical}
+}
+replaced: "else: The Operator replaces the bottle" {
+  class: boundary
+  operator -> bottle: "swaps the bottle\n(open, IF-05-R04, IF-08-R03)" {class: interaction}
+  bottle -> pod: "weight on the load cell changes" {class: mechanical}
+}
+operator -> station: "confirms the refill" {class: interaction}
+station.settle: "Station waits 1 s for the load to settle" {class: boundary}
+station -> pod: "reads the weight of the dispenser" {class: [data; key]}
+pod -> station: "reports the weight" {class: data}
+risen: "alt: Risen by at least 50 g" {
+  class: boundary
+  station.new_full: "The rise is the fill level\nand the new 100 %" {class: boundary}
+}
+no_rise: "else: Hardly any rise" {
+  class: boundary
+  station.back: "Fill level goes back\nto the last 100 %" {class: boundary}
+}
+----
+How does the Station notice a refilled or replaced bottle, and what does the Operator have to do?
+
+=== Contracts
+* xref:contracts.adoc#IF-05[IF-05], xref:contracts.adoc#IF-05-R03[IF-05-R03], xref:contracts.adoc#IF-05-R04[IF-05-R04]: An Operator refills a bottle from the top while the Pod keeps weighing it, and replaces a bottle without tools.
+* xref:contracts.adoc#IF-08[IF-08], xref:contracts.adoc#IF-08-R03[IF-08-R03]: The Operator reaches every point that service needs with the Pod installed.
+* xref:contracts.adoc#IF-01[IF-01], xref:contracts.adoc#IF-01-R09[IF-01-R09]: The Station reads the weight of the right dispenser of the right Pod.
+
+=== Open
+* How the Operator reaches the bottle, whether the Pod must be opened for it and whether the Pod must be at rest first (IF-05-R04, IF-08-R03, IF-08-R04).
+* What a bottle holder, a supply line and a changed bottle look like, because the bottle side of the line is not designed (IF-05-R04).
+* The Station does not notice an Operator who puts the wrong ingredient into a bottle (IF-05-R02).
+
+=== Details
+* xref:station::runtime-view.adoc#_a_bottle_runs_empty_and_gets_refilled[Station runtime view, A Bottle Runs Empty and Gets Refilled]: the dialog during a drink, the Operator button behind the PIN and the rise of 50 g.
+* xref:adr:007-calibration-and-fill-level.adoc[SYS-007]: why the Station owns the fill level, and why a bottle refilled while the Station is off stays unnoticed.
+
+[[switching-off]]
+== Switching Off
+
+The Operator switches the main switch off, and the machine loses all power at once.
+The state files on the Station stay whole, and the Pods keep their calibration.
+
+.Switching off
+[d2, target="system-6-switching-off", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+
+shape: sequence_diagram
+operator: "Operator" {class: actor}
+pmu: "Power Management Unit" {class: block}
+station: "Station" {class: block}
+pod: "Pod" {class: block}
+operator -> pmu: "switches the main switch off" {class: [interaction; key]}
+pmu -> station: "stops the 5 V DC\n(open, IF-02)" {class: power}
+pmu -> pod: "stops the 24 V DC" {class: power}
+station.files: "The state files on disk are whole,\nbecause each is written in one step" {class: boundary}
+pod.calibration: "Calibrations stay in the Pod,\nthe load cell forgets its zero point" {class: boundary}
+----
+What happens to the Station, the Pods and the stored state when the Operator switches the machine off?
+
+=== Contracts
+* xref:contracts.adoc#IF-04[IF-04], xref:contracts.adoc#IF-04-R01[IF-04-R01]: One labeled main switch disconnects the machine from the mains.
+* xref:contracts.adoc#IF-02[IF-02], xref:contracts.adoc#IF-02-R03[IF-02-R03]: A power cut leaves the Station able to start again with its data intact.
+* xref:contracts.adoc#IF-03[IF-03]: The Pods take all their power from the one 24 V rail, so they stop with it.
+
+=== Open
+* Whether the Station gets a warning or a short run-on time before the 5 V stops, so that it ends orderly (IF-02).
+* What happens to a drink that is running when the Operator switches off, which the fault scenario "power fails during a pour" covers (IF-03).
+
+=== Details
+* xref:fault-scenarios.adoc[Fault Scenarios]: power fails during a pour.
+* xref:station::runtime-view.adoc#_a_pod_comes_back_after_a_power_loss[Station runtime view, A Pod Comes Back After a Power Loss]: what the Station corrects at the next start.
+* xref:adr:007-calibration-and-fill-level.adoc[SYS-007]: which calibration stays where.

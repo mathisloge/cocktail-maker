@@ -155,4 +155,14 @@ def test_manifest_versions_agree_and_are_recent():
     plugin = json.loads((REPO / "plugins/cocktail-maker-docs/.claude-plugin/plugin.json").read_text(encoding="utf-8"))
     version = market["plugins"][0]["version"]
     assert plugin["version"] == version
-    assert tuple(int(part) for part in version.split(".")) >= (0, 6, 0)
+    assert tuple(int(part) for part in version.split(".")) >= (0, 7, 0)
+
+
+def test_architecture_skill_has_the_runtime_scenario_template():
+    text = (SKILLS / "architecture-docs/SKILL.md").read_text(encoding="utf-8")
+    assert "## Runtime scenarios\n" in text
+    section = text.split("## Runtime scenarios\n", 1)[1].split("\n## ", 1)[0]
+    positions = [section.find(f"=== {title}\n") for title in ("Contracts", "Open", "Details")]
+    assert all(position >= 0 for position in positions)
+    assert positions == sorted(positions)
+    assert "shape: sequence_diagram" in section

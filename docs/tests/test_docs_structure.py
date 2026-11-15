@@ -62,7 +62,6 @@ SYSTEM_CHAPTER_FILES = [
 SYSTEM_PLACEHOLDERS = [
     "constraints.adoc",
     "deployment-view.adoc",
-    "quality-requirements.adoc",
     "risks-and-technical-debt.adoc",
 ]
 
@@ -413,6 +412,11 @@ D2_RESERVED_KEYS = frozenset(
         "link",
         "width",
         "height",
+        "grid-columns",
+        "grid-rows",
+        "grid-gap",
+        "vertical-gap",
+        "horizontal-gap",
     }
 )
 D2_KEY = re.compile(r"^([\w.-]+)\s*:")
@@ -1182,11 +1186,13 @@ def test_glossary_page_renders_the_table() -> None:
 
 
 ID_PAGES = {
-    "QG": "quality-goals.adoc",
-    "QS": "quality-requirements.adoc",
-    "SM": "safety.adoc",
-    "IF": "contracts.adoc",
+    "QG": ("quality-goals.adoc", "quality-requirements.adoc"),
+    "QS": ("quality-requirements.adoc",),
+    "SM": ("safety.adoc",),
+    "IF": ("contracts.adoc",),
 }
+# QG-01 to QG-05 are the top goals of chapter 1, and QG-06 is a further goal in chapter 10.
+GOALS_ON_PAGE = {"quality-goals.adoc": 5, "quality-requirements.adoc": 1}
 QUALITY_GOALS = ["Human Safety", "Food Safety", "Reliability", "Serviceability", "Usability", "Maintainability"]
 
 
@@ -1207,21 +1213,45 @@ def requirement_anchors(path: Path) -> list[str]:
 
 def defined_ids(prefix: str) -> list[str]:
     """The IDs of one prefix, as anchors on the page that defines them. Empty while that page has none."""
-    return id_anchors(SYSTEM_PAGES / ID_PAGES[prefix], prefix)
+    return [anchor for page in ID_PAGES[prefix] for anchor in id_anchors(SYSTEM_PAGES / page, prefix)]
 
 
 def test_quality_goal_ids() -> None:
     assert defined_ids("QG") == [f"QG-{n:02d}" for n in range(1, len(QUALITY_GOALS) + 1)]
-    rows = (SYSTEM_PAGES / ID_PAGES["QG"]).read_text(encoding="utf-8").split("\n| [[")[1:]
+    for page, count in GOALS_ON_PAGE.items():
+        assert len(id_anchors(SYSTEM_PAGES / page, "QG")) == count, page
+    rows = []
+    for page in ID_PAGES["QG"]:
+        rows += (SYSTEM_PAGES / page).read_text(encoding="utf-8").split("\n| [[QG-")[1:]
+    rows = ["QG-" + row for row in rows]
     for goal_id, name, row in zip(defined_ids("QG"), QUALITY_GOALS, rows, strict=True):
         assert row.startswith(f"{goal_id}]]{goal_id}\n")
         assert f"*{name}*" in row
 
 
+def goal_pages() -> dict[str, str]:
+    """The name of the page that defines each quality goal, from the anchors of the goal pages."""
+    return {goal: page for page in ID_PAGES["QG"] for goal in id_anchors(SYSTEM_PAGES / page, "QG")}
+
+
+GOAL_XREF = re.compile(r"xref:(\S*?)#(QG-\d+)\[")
+
+
+def goal_xref_problems(text: str) -> list[str]:
+    """Each `#QG-nn` xref of a page that does not target the page that defines that goal."""
+    defining = goal_pages()
+    problems = []
+    for target, goal in GOAL_XREF.findall(text):
+        page = target.split(":")[-1]
+        if goal in defining and page != defining[goal]:
+            problems.append(f"link to {goal} targets {page or 'no page'}, and {defining[goal]} defines it")
+    return problems
+
+
 def test_ids_are_defined_only_on_their_page() -> None:
-    for prefix, page in ID_PAGES.items():
+    for prefix, pages in ID_PAGES.items():
         for other in sorted((REPO / "docs").glob("*/modules/*/pages/*.adoc")):
-            if other == SYSTEM_PAGES / page:
+            if other in [SYSTEM_PAGES / page for page in pages]:
                 continue
             assert id_anchors(other, prefix) == [], f"{other} defines a {prefix} anchor"
             if prefix == "IF":
@@ -1237,10 +1267,26 @@ def test_ids_are_unique_and_well_formed(prefix: str) -> None:
 
 @site_test
 def test_quality_goal_anchor_resolves() -> None:
-    html = (SITE_DIR / "system" / "quality-goals.html").read_text(encoding="utf-8")
-    for goal_id in defined_ids("QG"):
-        assert f'id="{goal_id}"' in html
-    assert 'id="QG-01"' in html
+    for page in ID_PAGES["QG"]:
+        html = (SITE_DIR / "system" / page.replace(".adoc", ".html")).read_text(encoding="utf-8")
+        for goal_id in id_anchors(SYSTEM_PAGES / page, "QG"):
+            assert f'id="{goal_id}"' in html, goal_id
+
+
+def test_goal_xref_problems_reader() -> None:
+    good = "xref:quality-goals.adoc#QG-01[QG-01] xref:system::quality-requirements.adoc#QG-06[QG-06]"
+    assert goal_xref_problems(good) == []
+    assert len(goal_xref_problems("xref:system::quality-goals.adoc#QG-06[QG-06]")) == 1
+    assert "quality-requirements.adoc" in goal_xref_problems("xref:system::quality-goals.adoc#QG-06[QG-06]")[0]
+    assert len(goal_xref_problems("xref:quality-requirements.adoc#QG-02[QG-02]")) == 1
+    assert goal_xref_problems("xref:quality-goals.adoc#QG-09[QG-09]") == []
+
+
+@pytest.mark.parametrize(
+    "page", sorted((REPO / "docs").glob("*/modules/*/pages/*.adoc")), ids=lambda p: f"{p.parts[-4]}-{p.name}"
+)
+def test_goal_xrefs_target_the_defining_page(page: Path) -> None:
+    assert goal_xref_problems(page.read_text(encoding="utf-8")) == []
 
 
 def adr_goal_problems(text: str) -> list[str]:
@@ -1266,6 +1312,7 @@ def adr_goal_problems(text: str) -> list[str]:
         problems.append("'== Quality Goals' has no QG-nn reference")
     defined = set(defined_ids("QG")) | set(defined_ids("QS"))
     problems += [f"{ref} is not a defined ID" for ref in dict.fromkeys(refs) if ref not in defined]
+    problems += goal_xref_problems(text)
     for anchor, label in re.findall(r"xref:\S*?#(QG-\d+)\[([^\]]*)\]", text):
         if anchor != label:
             problems.append(f"link to {anchor} has the text '{label}'")
@@ -1333,6 +1380,10 @@ def test_adr_goal_problems_reader() -> None:
     assert adr_goal_problems(unknown) == ["QG-09 is not a defined ID"]
     mismatch = _ADR_GOOD.replace("#QG-01[QG-01]: how", "#QG-02[QG-01]: how")
     assert "link to QG-02 has the text 'QG-01'" in adr_goal_problems(mismatch)
+    wrong_page = _ADR_GOOD.replace("system::quality-goals.adoc#QG-01[", "system::quality-requirements.adoc#QG-01[")
+    assert any("QG-01" in p and "quality-goals.adoc" in p for p in adr_goal_problems(wrong_page))
+    moved_goal = _ADR_GOOD.replace("system::quality-goals.adoc#QG-01[", "system::quality-goals.adoc#QG-06[")
+    assert any("quality-requirements.adoc" in p for p in adr_goal_problems(moved_goal))
     unassessed = _ADR_GOOD.replace("* xref:system::quality-goals.adoc#QG-01[QG-01]: Better.", "* Better.")
     assert adr_goal_problems(unassessed) == ["QG-01 has no line in '=== Effect on the Quality Goals'"]
     no_effect = _ADR_GOOD.split("=== Effect")[0]
@@ -1918,6 +1969,565 @@ def test_runtime_pages_link_each_other() -> None:
     station = (STATION_PAGES / "runtime-view.adoc").read_text(encoding="utf-8")
     assert "xref:system::runtime-view.adoc[" in station
     assert "xref:system::fault-scenarios.adoc[" in station
+
+
+QUALITY_PAGE = SYSTEM_PAGES / "quality-requirements.adoc"
+GOALS_PAGE = SYSTEM_PAGES / "quality-goals.adoc"
+GOAL_PAGES = (GOALS_PAGE, SYSTEM_PAGES / "quality-requirements.adoc")
+Q42_TAGS = (
+    "#efficient",
+    "#flexible",
+    "#maintainable",
+    "#operable",
+    "#reliable",
+    "#safe",
+    "#secure",
+    "#suitable",
+    "#usable",
+)
+QS_FIELDS = (
+    "Goal",
+    "Q42",
+    "Source",
+    "Stimulus",
+    "Artifact",
+    "Environment",
+    "Response",
+    "Measure",
+    "Verification",
+    "Value",
+    "State",
+    "Checks",
+)
+QS_STATES = ("Target", "Provisional", "Open", "Withdrawn")
+QS_VERIFICATIONS = ("Test", "Inspection", "Analysis", "Demonstration")
+QS_ANCHOR = re.compile(r"^\[\[(QS-\d\d)\]\]$", re.MULTILINE)
+QS_FIELD_LINE = re.compile(r"^([A-Z][A-Za-z0-9 ]*)::(?: (.*))?$")
+QS_VALUE = re.compile(r"\d+(?:[.,]\d+)?\s+\S.*")
+QS_GOAL_VALUE = re.compile(r"xref:(quality-(?:goals|requirements)\.adoc)#(QG-\d\d)\[(QG-\d\d)\]")
+QS_TREE_TARGET = "system-10-quality-tree"
+QS_TABLE_HEADER = ("QS", "Goal", "Q42", "Artifact", "Verification", "State", "Value")
+Q42_TAG = re.compile(r"#[a-z0-9]+")
+
+
+def _table_rows(text: str, first_header_cell: str | None = None) -> list[list[str]]:
+    """The rows of the first table in `text`, header first, one cell per `|` part of a line.
+
+    With `first_header_cell`, it is the first table whose header starts with that cell.
+
+    A row ends at a blank line, and a line holds one or more cells.
+    """
+    rows: list[list[str]] = []
+    inside = False
+    row: list[str] = []
+    for line in text.splitlines():
+        if line.strip() == "|===":
+            if inside:
+                if row:
+                    rows.append(row)
+                if first_header_cell is None or (rows and rows[0][:1] == [first_header_cell]):
+                    return rows
+                rows, row, inside = [], [], False
+                continue
+            inside = True
+            continue
+        if not inside:
+            continue
+        if line.startswith("|"):
+            row.extend(cell.strip() for cell in line[1:].split("|"))
+        elif not line.strip() and row:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
+    return rows
+
+
+def goal_tags(*pages: Path) -> dict[str, tuple[str, ...]]:
+    """The Q42 tags of each goal, from the `Q42` column of the goal tables of the given pages.
+
+    The default pages are the Quality Goals page and the Quality Requirements page.
+    A page without such a table adds nothing.
+    """
+    tags: dict[str, tuple[str, ...]] = {}
+    for page in pages or GOAL_PAGES:
+        rows = _table_rows(page.read_text(encoding="utf-8")) if page.exists() else []
+        column = next((i for i, cell in enumerate(rows[0]) if cell.startswith("Q42")), None) if rows else None
+        if column is None:
+            continue
+        for row in rows[1:]:
+            match = re.fullmatch(r"\[\[(QG-\d\d)\]\]QG-\d\d", row[0]) if row else None
+            if match and column < len(row):
+                tags[match.group(1)] = tuple(Q42_TAG.findall(row[column]))
+    return tags
+
+
+class QualityScenario(NamedTuple):
+    id: str
+    title: str
+    fields: dict[str, str]
+    field_order: tuple[str, ...]
+
+
+def parse_quality_scenarios(text: str) -> list[QualityScenario]:
+    """The scenarios of a quality page, split at each line that is exactly `[[QS-nn]]`.
+
+    A field runs from its `Name::` line until the next such line.
+    `title` is the text of the `==` or `===` heading after the anchor, empty when there is none.
+    """
+    anchors = list(QS_ANCHOR.finditer(text))
+    scenarios = []
+    for index, anchor in enumerate(anchors):
+        end = anchors[index + 1].start() if index + 1 < len(anchors) else len(text)
+        lines = text[anchor.end() : end].splitlines()
+        heading = next((line for line in lines if line.strip()), "")
+        title = re.sub(r"^={2,3} ", "", heading).strip() if re.match(r"={2,3} ", heading) else ""
+        fields: dict[str, list[str]] = {}
+        order: list[str] = []
+        current: str | None = None
+        for line in lines:
+            match = QS_FIELD_LINE.match(line)
+            if match:
+                current = match.group(1)
+                order.append(current)
+                fields.setdefault(current, []).append(match.group(2) or "")
+            elif current is not None and line.strip():
+                fields[current][-1] += "\n" + line.strip()
+        scenarios.append(
+            QualityScenario(
+                anchor.group(1),
+                title,
+                {name: " ".join(values[0].split()) for name, values in fields.items()},
+                tuple(order),
+            )
+        )
+    return scenarios
+
+
+def _quality_check_problems(label: str, value: str) -> list[str]:
+    xrefs = XREF.findall(value)
+    rest = XREF.sub(" ", value)
+    if not xrefs or any(word not in ("", "and") for word in re.split(r"[\s,;]+", rest)):
+        return [f"{label}: Checks is not a list of xrefs: '{value}'"]
+    problems = []
+    defined = set(defined_ids("IF")) | set(defined_requirement_ids())
+    for target, _ in xrefs:
+        page, _, anchor = target.partition("#")
+        if xref_page_exists(target) is False:
+            problems.append(f"{label}: Checks links the missing page {target}")
+        elif ":" not in page or page.startswith("system:"):
+            name = page.split(":")[-1]
+            if name == "contracts.adoc" and anchor and anchor not in defined:
+                problems.append(f"{label}: Checks names {target}, which is not a defined IF ID")
+            elif name in ("runtime-view.adoc", "fault-scenarios.adoc") and anchor:
+                known = NORMAL_SCENARIOS if name == "runtime-view.adoc" else FAULT_SCENARIOS
+                if anchor not in known:
+                    problems.append(f"{label}: Checks names {target}, which is not a scenario of {name}")
+    return problems
+
+
+def quality_scenario_problems(text: str, goal_tags: dict[str, tuple[str, ...]] | None = None) -> list[str]:
+    """What is wrong with the quality scenarios of a page. A page with only its lead has none.
+
+    `goal_tags` maps a goal to its Q42 tags, and the page's own table is the default.
+    The rule that a scenario carries a tag of its goal applies only when the map is not empty.
+    """
+    tags_of_goal = globals()["goal_tags"]() if goal_tags is None else goal_tags
+    scenarios = parse_quality_scenarios(text)
+    problems = []
+    ids = [scenario.id for scenario in scenarios]
+    if ids != [f"QS-{n:02d}" for n in range(1, len(ids) + 1)]:
+        problems.append(f"scenario IDs {ids} are not consecutive from QS-01")
+    goals = set(defined_ids("QG"))
+    for scenario in scenarios:
+        name = scenario.id
+        if not scenario.title.startswith(f"{name}: ") or not scenario.title[len(name) + 2 :].strip():
+            problems.append(f"{name}: the heading '{scenario.title}' is not '{name}: <title>'")
+        if scenario.field_order != QS_FIELDS:
+            missing = [field for field in QS_FIELDS if field not in scenario.field_order]
+            kind = f"misses {missing}" if missing else "has its fields out of order or repeated"
+            problems.append(f"{name}: {kind}, the fields must be {list(QS_FIELDS)}")
+            continue
+        fields = scenario.fields
+        goal_match = QS_GOAL_VALUE.fullmatch(fields["Goal"])
+        goal = goal_match.group(2) if goal_match and goal_match.group(2) == goal_match.group(3) else None
+        if goal is None:
+            problems.append(f"{name}: Goal is not one xref to the page that defines a goal: '{fields['Goal']}'")
+        elif goal not in goals:
+            problems.append(f"{name}: Goal {goal} is not a defined quality goal")
+        elif goal_match.group(1) != goal_pages()[goal]:  # type: ignore[union-attr]
+            problems.append(f"{name}: Goal {goal} links {goal_match.group(1)}, and {goal_pages()[goal]} defines it")
+        tags = [tag for tag in re.split(r"[,\s]+", fields["Q42"]) if tag]
+        unknown = [tag for tag in tags if tag not in Q42_TAGS]
+        if not tags or unknown:
+            problems.append(f"{name}: Q42 '{fields['Q42']}' is empty or holds tags that are not Q42 tags: {unknown}")
+        elif goal in tags_of_goal and not set(tags) & set(tags_of_goal[goal]):
+            problems.append(f"{name}: Q42 {tags} holds no tag of {goal}, which has {list(tags_of_goal[goal])}")
+        if fields["Verification"] not in QS_VERIFICATIONS:
+            problems.append(f"{name}: Verification '{fields['Verification']}' is not one of {list(QS_VERIFICATIONS)}")
+        state, value = fields["State"], fields["Value"]
+        if state not in QS_STATES:
+            problems.append(f"{name}: State '{state}' is not one of {list(QS_STATES)}")
+        elif state in ("Open", "Withdrawn"):
+            if value != "none":
+                problems.append(f"{name}: Value '{value}' must be 'none' for the state {state}")
+        elif not QS_VALUE.fullmatch(value):
+            problems.append(f"{name}: Value '{value}' is not a number with a unit or noun for the state {state}")
+        problems.extend(_quality_check_problems(name, fields["Checks"]))
+    return problems
+
+
+def _tree_nesting_problems(tree: str, scenarios: list[QualityScenario]) -> list[str]:
+    """The scenarios whose node does not sit inside the goal block of their `Goal` field.
+
+    A block opens on a line `key: "label" {` that has more `{` than `}`, and it closes on a `}` line.
+    """
+    stack: list[str] = []
+    inside: dict[str, list[str]] = {}
+    for line in tree.splitlines():
+        node = re.match(r'\s*\w+:\s*"([^"]*)"', line)
+        label = node.group(1) if node else ""
+        scenario = re.match(r"QS-\d\d\b", label)
+        if scenario:
+            inside[scenario.group(0)] = [item[:5] for item in stack if re.match(r"QG-\d\d\b", item)]
+        for brace in re.findall(r"[{}]", line):
+            if brace == "{":
+                stack.append(label)
+            elif stack:
+                stack.pop()
+    problems = []
+    for scenario in scenarios:
+        goal = QS_GOAL_VALUE.fullmatch(scenario.fields.get("Goal", ""))
+        if goal and scenario.id in inside and goal.group(2) not in inside[scenario.id]:
+            where = inside[scenario.id]
+            problems.append(
+                f"{scenario.id}: the tree node is not inside the block of {goal.group(2)}, but inside {where}"
+            )
+    return problems
+
+
+def quality_tree_problems(text: str) -> list[str]:
+    """Whether the tree, the traceability table and the sections of a quality page agree.
+
+    A page with no scenario and no tree has nothing to agree.
+    """
+    scenarios = parse_quality_scenarios(text)
+    trees = [
+        "\n".join(source) for number, source in d2_blocks_in(text) if QS_TREE_TARGET in text.splitlines()[number - 1]
+    ]
+    if not scenarios and not trees:
+        return []
+    problems = []
+    if len(trees) != 1:
+        problems.append(f"{len(trees)} quality tree blocks with the target {QS_TREE_TARGET} instead of one")
+    else:
+        named_goals = set(re.findall(r"\bQG-\d\d\b", trees[0]))
+        named_scenarios = set(re.findall(r"\bQS-\d\d\b", trees[0]))
+        defined_goals = set(defined_ids("QG"))
+        sections = {scenario.id for scenario in scenarios}
+        if named_goals != defined_goals:
+            problems.append(f"the tree names the goals {sorted(named_goals)} and not {sorted(defined_goals)}")
+        if named_scenarios != sections:
+            problems.append(f"the tree names the scenarios {sorted(named_scenarios)} and not {sorted(sections)}")
+        problems.extend(_tree_nesting_problems(trees[0], scenarios))
+    rows = [row for row in _table_rows(text, "QS") if row and re.search(r"\bQS-\d\d\b", row[0])]
+    if not any(row[: len(QS_TABLE_HEADER)] == list(QS_TABLE_HEADER) for row in _table_rows(text, "QS")):
+        problems.append(f"the traceability table has no header {' | '.join(QS_TABLE_HEADER)}")
+    by_id: dict[str, list[list[str]]] = {}
+    for row in rows:
+        by_id.setdefault(re.search(r"\bQS-\d\d\b", row[0]).group(0), []).append(row)  # type: ignore[union-attr]
+    for scenario in scenarios:
+        found = by_id.pop(scenario.id, [])
+        if len(found) != 1:
+            problems.append(f"{scenario.id}: {len(found)} table rows instead of one")
+            continue
+        row = found[0] + [""] * len(QS_TABLE_HEADER)
+        fields = scenario.fields
+        goal = QS_GOAL_VALUE.fullmatch(fields.get("Goal", ""))
+        same = {
+            "Goal": re.findall(r"\bQG-\d\d\b", row[1]) == ([goal.group(2)] if goal else None),
+            "Q42": set(Q42_TAG.findall(row[2])) == set(Q42_TAG.findall(fields.get("Q42", ""))),
+            "Artifact": " ".join(row[3].split()) == fields.get("Artifact"),
+            "Verification": " ".join(row[4].split()) == fields.get("Verification"),
+            "State": " ".join(row[5].split()) == fields.get("State"),
+            "Value": " ".join(row[6].split()) == fields.get("Value"),
+        }
+        problems.extend(
+            f"{scenario.id}: the table column {name} differs from the section" for name, ok in same.items() if not ok
+        )
+    problems.extend(f"{name}: a table row for a scenario that has no section" for name in by_id)
+    return problems
+
+
+QS_VALID = """[[QS-01]]
+== QS-01: A title
+
+Goal:: xref:quality-goals.adoc#QG-01[QG-01]
+Q42:: #safe
+Source:: A Guest.
+Stimulus:: Something happens.
+Artifact:: The machine
+Environment:: Normal operation
+Response:: The machine reacts.
+Measure:: Drinks that fail, counted in a test.
+Verification:: Test
+Value:: 0 drinks
+State:: Provisional
+Checks:: xref:contracts.adoc#IF-01[IF-01] and xref:adr:001-system-split.adoc[SYS-001]
+"""
+QS_LEAD = "= 10 Quality Requirements\n\nLead.\n\n"
+QS_TAGS = {"QG-01": ("#safe",)}
+
+
+def _qs(**changes: str) -> str:
+    """The valid scenario `QS-01` with some field values replaced, and a value of `None` is not a replacement."""
+    text = QS_VALID
+    for name, value in changes.items():
+        text = re.sub(rf"^{name}:: .*$", f"{name}:: {value}", text, flags=re.MULTILINE)
+    return text
+
+
+def test_quality_scenario_problems_reader() -> None:
+    def problems(body: str) -> list[str]:
+        return quality_scenario_problems(QS_LEAD + body, QS_TAGS)
+
+    assert problems("") == []
+    assert problems(QS_VALID) == []
+    assert any("not consecutive" in p for p in problems(QS_VALID + "\n" + QS_VALID.replace("QS-01", "QS-03")))
+    assert problems(QS_VALID + "\n" + QS_VALID.replace("QS-01", "QS-02")) == []
+    assert any("heading" in p for p in problems(QS_VALID.replace("== QS-01: A", "== QS-02: A")))
+    assert any("misses ['Source']" in p for p in problems(QS_VALID.replace("Source:: A Guest.\n", "")))
+    swapped = QS_VALID.replace(
+        "Source:: A Guest.\nStimulus:: Something happens.", "Stimulus:: Something happens.\nSource:: A Guest."
+    )
+    assert any("out of order" in p for p in problems(swapped))
+    long_value = QS_VALID.replace("Response:: The machine reacts.", "Response:: The machine reacts.\nIt does so twice.")
+    assert problems(long_value) == []
+    assert any("Goal" in p for p in problems(_qs(Goal="xref:quality-goals.adoc#QG-09[QG-09]")))
+    assert any("Goal" in p for p in problems(_qs(Goal="QG-01")))
+    wrong_page = problems(_qs(Goal="xref:quality-requirements.adoc#QG-01[QG-01]"))
+    assert any("Goal" in p and "quality-goals.adoc" in p for p in wrong_page)
+    assert any("quality-requirements.adoc" in p for p in problems(_qs(Goal="xref:quality-goals.adoc#QG-06[QG-06]")))
+    assert problems(_qs(Goal="xref:quality-requirements.adoc#QG-06[QG-06]", Q42="#safe, #maintainable")) == []
+    assert any("tag" in p for p in problems(_qs(Q42="#fast")))
+    assert any("no tag of QG-01" in p for p in problems(_qs(Q42="#reliable")))
+    assert problems(_qs(Q42="#safe, #reliable")) == []
+    assert quality_scenario_problems(QS_LEAD + _qs(Q42="#reliable"), {}) == []
+    assert any("Verification" in p for p in problems(_qs(Verification="Review")))
+    assert any("State" in p for p in problems(_qs(State="Done")))
+    assert any("Value" in p for p in problems(_qs(Value="none")))
+    assert any("Value" in p for p in problems(_qs(Value="2")))
+    assert any("Value" in p for p in problems(_qs(Value="3 s", State="Open")))
+    assert problems(_qs(Value="30 s")) == []
+    assert problems(_qs(Value="0 drinks", State="Target")) == []
+    assert problems(_qs(Value="none", State="Withdrawn")) == []
+    assert problems(_qs(Value="none", State="Open")) == []
+    for checks in (
+        "see the protocol",
+        "xref:contracts.adoc#IF-09[IF-09]",
+        "xref:contracts.adoc#IF-01-R99[IF-01-R99]",
+        "xref:runtime-view.adoc#no-such[x]",
+        "xref:fault-scenarios.adoc#switching-on[x]",
+        "xref:adr:099-missing.adoc[SYS-099]",
+        "xref:no-such-page.adoc[Missing page]",
+        "xref:station::no-such-page.adoc[Missing Station page]",
+        "",
+    ):
+        assert any("Checks" in p for p in problems(_qs(Checks=checks))), checks
+    good = (
+        "xref:runtime-view.adoc#refilling[x], xref:fault-scenarios.adoc#guest-cancels[y]"
+        " and xref:mechanics:adr:001-x.adoc[M]"
+    )
+    assert problems(_qs(Checks=good)) == []
+    for checks in (
+        "xref:protocol.adoc[Protocol page]",
+        "xref:protocol.adoc#no-such-anchor[Protocol page]",
+        "xref:station::runtime-view.adoc#no-such-anchor[Station runtime view]",
+        "xref:station::building-blocks.adoc[Station building block view]",
+        "xref:mechanics::pump-service.adoc[Mechanics page]",
+    ):
+        assert problems(_qs(Checks=checks)) == [], checks
+    assert problems(QS_VALID.replace("== QS-01: A", "=== QS-01: A")) == []
+    assert any("heading" in p for p in problems(QS_VALID.replace("== QS-01: A", "==== QS-01: A")))
+
+
+def test_parse_quality_scenarios_reads_the_fields() -> None:
+    (scenario,) = parse_quality_scenarios(QS_LEAD + QS_VALID)
+    assert scenario.id == "QS-01"
+    assert scenario.title == "QS-01: A title"
+    assert scenario.field_order == QS_FIELDS
+    assert scenario.fields["Q42"] == "#safe"
+    assert parse_quality_scenarios(QS_LEAD) == []
+
+
+def _tree(goals: str = "QG-01 QG-02 QG-03 QG-04 QG-05 QG-06", scenarios: str = "QS-01", under: str = "QG-01") -> str:
+    """A quality tree in the form of the page: one block per goal, and the scenarios inside the goal `under`."""
+    lines = ["tree: Quality goals {", "  class: boundary", "  grid-columns: 3"]
+    for goal in goals.split():
+        lines += [f'  {goal.lower().replace("-", "")}: "{goal} Name" {{', "    class: block", "    grid-columns: 1"]
+        if goal == under:
+            lines += ['    t_safe: "#safe" {', "      class: boundary", "      grid-columns: 1"]
+            lines += [f'      {x.lower().replace("-", "")}: "{x} Short" {{class: block}}' for x in scenarios.split()]
+            lines.append("    }")
+        lines.append("  }")
+    lines.append("}")
+    source = "\n".join(lines)
+    return (
+        '.Tree\n[d2, target="system-10-quality-tree", format="svg", link=self]\n----\n'
+        f"include::system:ROOT:partial$d2-style.d2[]\n{source}\n----\nCaption.\n\n"
+    )
+
+
+def _table(row: str = "| QS-01 | QG-01 | #safe | The machine | Test | Provisional | 0 drinks") -> str:
+    return (
+        f"|===\n| {' | '.join(QS_TABLE_HEADER)}\n\n{row}\n|===\n\n"
+        if row
+        else f"|===\n| {' | '.join(QS_TABLE_HEADER)}\n|===\n\n"
+    )
+
+
+def test_quality_tree_problems_reader() -> None:
+    page = QS_LEAD + _tree() + _table() + QS_VALID
+    assert quality_tree_problems(QS_LEAD) == []
+    assert quality_tree_problems(page) == []
+    assert any("quality tree" in p for p in quality_tree_problems(QS_LEAD + _table() + QS_VALID))
+    assert any("scenarios" in p for p in quality_tree_problems(QS_LEAD + _tree(scenarios="") + _table() + QS_VALID))
+    assert any(
+        "scenarios" in p for p in quality_tree_problems(QS_LEAD + _tree(scenarios="QS-01 QS-07") + _table() + QS_VALID)
+    )
+    assert any("goals" in p for p in quality_tree_problems(QS_LEAD + _tree(goals="QG-01") + _table() + QS_VALID))
+    other_goal = quality_tree_problems(QS_LEAD + _tree(under="QG-02") + _table() + QS_VALID)
+    assert any("QS-01" in p and "QG-01" in p and "inside" in p for p in other_goal)
+    flat = QS_LEAD + _tree().replace("  qg01:", "  x01:").replace('"QG-01 Name"', '"Name"') + _table() + QS_VALID
+    assert any("inside" in p for p in quality_tree_problems(flat))
+    assert any("0 table rows" in p for p in quality_tree_problems(QS_LEAD + _tree() + _table("") + QS_VALID))
+    assert any("no section" in p for p in quality_tree_problems(page.replace("QS-01 | QG-01", "QS-02 | QG-01")))
+    assert any("State" in p for p in quality_tree_problems(page.replace("| Provisional |", "| Open |")))
+    assert any("Value" in p for p in quality_tree_problems(page.replace("| 0 drinks\n", "| 1 drinks\n")))
+    assert any("Q42" in p for p in quality_tree_problems(page.replace("| #safe |", "| #usable |")))
+    assert any("Artifact" in p for p in quality_tree_problems(page.replace("| The machine |", "| A Pod |")))
+    assert any("Verification" in p for p in quality_tree_problems(page.replace("| Test |", "| Inspection |")))
+    assert any("Goal" in p for p in quality_tree_problems(page.replace("| QG-01 | #safe", "| QG-02 | #safe")))
+    assert any(
+        "header" in p for p in quality_tree_problems(page.replace("| Artifact | Verification", "| Verification"))
+    )
+
+
+def test_quality_page_is_valid() -> None:
+    text = QUALITY_PAGE.read_text(encoding="utf-8")
+    assert quality_scenario_problems(text) == []
+    assert quality_tree_problems(text) == []
+
+
+def test_quality_page_is_complete() -> None:
+    text = QUALITY_PAGE.read_text(encoding="utf-8")
+    scenarios = parse_quality_scenarios(text)
+    ids = [s.id for s in scenarios]
+    assert ids, "the page has no scenario"
+    assert ids == [f"QS-{n:02d}" for n in range(1, len(ids) + 1)]
+    for goal in defined_ids("QG"):
+        assert any(f"#{goal}[" in s.fields.get("Goal", "") for s in scenarios), f"{goal} has no scenario"
+    assert text.count(f'target="{QS_TREE_TARGET}"') == 1
+    assert "| QS | Goal | Q42 | Artifact | Verification | State | Value" in text
+
+
+def test_goal_tags_skip_a_page_without_the_q42_column() -> None:
+    tags = goal_tags()
+    assert set(tags) <= set(defined_ids("QG"))
+    assert all(tag in Q42_TAGS for goal in tags.values() for tag in goal)
+
+
+def test_goal_tags_reader(tmp_path: Path) -> None:
+    page = tmp_path / "quality-goals.adoc"
+    page.write_text(
+        "|===\n| ID | Goal | Q42\n\n| [[QG-01]]QG-01\n| *Human Safety*\n| `#safe`\n\n"
+        "| [[QG-02]]QG-02\n| *Food*\n| #safe, #suitable\n|===\n",
+        encoding="utf-8",
+    )
+    assert goal_tags(page) == {"QG-01": ("#safe",), "QG-02": ("#safe", "#suitable")}
+    page.write_text("|===\n| ID | Goal | ISO\n\n| [[QG-01]]QG-01\n| *Human Safety*\n| Safety\n|===\n", encoding="utf-8")
+    assert goal_tags(page) == {}
+
+
+def test_goal_tags_read_several_pages(tmp_path: Path) -> None:
+    first = tmp_path / "a.adoc"
+    second = tmp_path / "b.adoc"
+    first.write_text("|===\n| ID | Goal | Q42\n\n| [[QG-01]]QG-01\n| *A*\n| `#safe`\n|===\n", encoding="utf-8")
+    second.write_text("|===\n| ID | Goal | Q42\n\n| [[QG-06]]QG-06\n| *B*\n| `#maintainable`\n|===\n", encoding="utf-8")
+    assert goal_tags(first, second) == {"QG-01": ("#safe",), "QG-06": ("#maintainable",)}
+
+
+def _goal_table_header(text: str) -> list[str]:
+    return _table_rows(text)[0]
+
+
+def test_chapter_1_holds_the_top_goals_as_scenarios() -> None:
+    text = GOALS_PAGE.read_text(encoding="utf-8")
+    assert _goal_table_header(text) == ["ID", "Quality Goal", "Scenario", "Q42"]
+    assert "order of the table is the priority" in text
+    assert "QG-06" not in text
+    assert "Maintainab" not in text
+
+
+def test_chapter_10_holds_the_further_goals() -> None:
+    text = QUALITY_PAGE.read_text(encoding="utf-8")
+    assert "== Further Quality Goals" in text
+    assert text.index("== Further Quality Goals") < text.index(".Quality tree")
+    assert _goal_table_header(text) == ["ID", "Quality Goal", "Scenario", "Q42"]
+    assert "[[QG-06]]QG-06" in text
+
+
+def test_goal_tags_read_the_goals_page() -> None:
+    assert goal_tags() == {
+        "QG-01": ("#safe",),
+        "QG-02": ("#safe", "#suitable"),
+        "QG-03": ("#reliable",),
+        "QG-04": ("#operable", "#secure"),
+        "QG-05": ("#usable", "#efficient"),
+        "QG-06": ("#maintainable",),
+    }
+
+
+def test_chapter_1_has_requirements_and_stakeholders() -> None:
+    text = (SYSTEM_PAGES / "index.adoc").read_text(encoding="utf-8")
+    headings = re.findall(r"^== (.+)$", text, flags=re.MULTILINE)
+    assert headings == ["Requirements Overview", "Stakeholders"]
+    stakeholders = text.split("== Stakeholders")[1]
+    for name in ("Guest", "Operator", "Developer", "Person who assesses the conformity for CE"):
+        assert f"\n| {name}\n" in stakeholders, name
+    assert "| Stakeholder | Expects of the machine | Expects of the docs" in stakeholders
+
+
+PROVISIONAL_30_S_PAGES = (
+    SYSTEM_PAGES / "contracts.adoc",
+    SYSTEM_PAGES / "protocol.adoc",
+    SYSTEM_PAGES / "fault-scenarios.adoc",
+    SYSTEM_PAGES / "quality-requirements.adoc",
+    STATION_PAGES / "runtime-view.adoc",
+)
+
+
+def unmarked_30_s_lines(text: str) -> list[int]:
+    """The line numbers of a 30 s limit that does not say on its own line that it is provisional."""
+    return [
+        number
+        for number, line in enumerate(text.splitlines(), 1)
+        if re.search(r"\b30 s\b", line) and "provisional" not in line.lower()
+    ]
+
+
+def test_the_30_s_limit_reader() -> None:
+    assert unmarked_30_s_lines("A 30 s limit.\nA provisional 30 s limit.\nThe 30 s limit is Provisional.") == [1]
+    assert unmarked_30_s_lines("30 steps and 130 s and 30 seconds") == []
+
+
+def test_the_30_s_limits_are_provisional() -> None:
+    unmarked = [
+        f"{page.name}:{number}"
+        for page in PROVISIONAL_30_S_PAGES
+        for number in unmarked_30_s_lines(page.read_text(encoding="utf-8"))
+    ]
+    assert unmarked == [], f"lines with a 30 s limit that do not say it is provisional: {unmarked}"
 
 
 SYSTEM_MODULES = REPO / "docs" / "system" / "modules"

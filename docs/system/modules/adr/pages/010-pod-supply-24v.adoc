@@ -25,7 +25,7 @@ No page names a part that needs 12 V.
 
 * xref:system::quality-goals.adoc#QG-01[QG-01]: Only one supply voltage runs from the Power Management Unit to a Pod.
 * xref:system::quality-goals.adoc#QG-03[QG-03]: A Pod does not depend on a second rail that can fail on its own.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: The Pod design makes its own low voltages without a change to the Station.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: The Pod design makes its own low voltages without a change to the Station.
 
 == Decision
 
@@ -49,5 +49,5 @@ Rejected: the Pod board already converts 24 V down to 5 V, so a 5 V rail would o
 
 * xref:system::quality-goals.adoc#QG-01[QG-01]: Better, because only one supply voltage runs to a Pod.
 * xref:system::quality-goals.adoc#QG-03[QG-03]: Better, because no second rail can fail.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Better and worse.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Better and worse.
 The Pod design is free in its low voltages, but another Pod board must also make its 5 V from 24 V.

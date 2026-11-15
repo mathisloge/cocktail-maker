@@ -1,0 +1,66 @@
+= SYS-014: The quality goals use the arc42 quality model Q42
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-11-15
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+The quality goals of the machine need a quality model, so that chapter 10 can break each goal down into measurable quality scenarios.
+The Quality Goals page mapped each goal onto ISO/IEC 25010:2023.
+That standard is a product quality model for ICT and software products.
+It does not cover the physical side of a machine, such as food-contact materials, mechanical hazards or the physical access for service.
+The machine is a mechatronic system of a Station, Pods and a Power Management Unit.
+The arc42 quality model Q42 describes the properties of a whole system with nine tags: #efficient, #flexible, #maintainable, #operable, #reliable, #safe, #secure, #suitable and #usable (https://quality.arc42.org/articles/arc42-quality-model[arc42 quality model]).
+A requirement may carry several of these tags.
+The safety of the machine for CE rests on a risk assessment of its hazards and the measures against them, not on a quality model.
+
+=== Decision Drivers
+
+* **A model for the whole system:** the model must name the qualities of the hardware as well as of the software (QG-01, QG-02, QG-04).
+* **Several qualities per requirement:** a scenario such as a safe state that survives a link loss serves more than one quality (QG-01, QG-03).
+* **Safety where CE expects it:** the safety argument for CE comes from the risk assessment, and the quality model must not stand in for it (QG-01, QG-02).
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: #safe covers states that endanger people, and the risk assessment carries the CE argument.
+* xref:system::quality-goals.adoc#QG-02[QG-02]: #safe and #suitable cover a wrong ingredient or amount, and the risk assessment covers the food-contact materials.
+* xref:system::quality-goals.adoc#QG-04[QG-04]: #operable names the operating and servicing of the machine directly.
+
+== Decision
+
+The quality goals and the quality scenarios use the tags of the arc42 quality model Q42.
+Each goal names one or more Q42 tags, and each quality scenario carries at least one tag of its goal.
+The safety and food-safety scenarios also trace to the hazards and safety measures of the risk assessment once it exists.
+
+== Alternatives Considered
+
+=== ISO/IEC 25010:2023
+
+Each goal maps onto a characteristic and subcharacteristics of ISO/IEC 25010:2023.
+
+Rejected: the standard covers ICT and software products, so the physical qualities of the machine fall outside it, and one characteristic per goal does not fit scenarios that serve several qualities.
+
+=== An own quality model
+
+The project extends ISO/IEC 25010:2023 with characteristics for the hardware.
+
+Rejected: it takes the most effort and has no outside reference.
+
+== Consequences
+
+* **Good:** The tags name the qualities of the whole machine, the hardware included.
+* **Good:** A scenario can carry several tags without a forced fit.
+* **Bad:** Q42 is young, it was published in 2023, and it is not an ISO standard.
+* **Bad:** Readers who know ISO/IEC 25010 have to learn the Q42 tags.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-01[QG-01]: Better, because the safety argument rests on the risk assessment and #safe covers the whole machine.
+* xref:system::quality-goals.adoc#QG-02[QG-02]: Better, because #safe and #suitable cover a wrong ingredient or amount, and the materials go to the risk assessment.
+* xref:system::quality-goals.adoc#QG-04[QG-04]: Better, because #operable fits the servicing of the machine.

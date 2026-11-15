@@ -26,7 +26,7 @@ The fluid hub and the outlet to the glass are not designed yet.
 == Quality Goals
 
 * xref:system::quality-goals.adoc#QG-02[QG-02]: The food-safety argument rests only on tubes and stainless steel parts, and no printed part is in the flow path.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Printed parts can change material and shape without a food-safety review, but every wetted part must be a tube or a stainless steel part.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Printed parts can change material and shape without a food-safety review, but every wetted part must be a tube or a stainless steel part.
 
 == Decision
 
@@ -50,5 +50,5 @@ Rejected: the printed parts are not food-safe.
 === Effect on the Quality Goals
 
 * xref:system::quality-goals.adoc#QG-02[QG-02]: Better, because only food-safe tubes and stainless steel parts touch an ingredient or a drink.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Better and worse.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Better and worse.
 Printed parts are free in their material, but every wetted part is limited to tubes and stainless steel parts.

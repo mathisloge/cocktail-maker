@@ -110,8 +110,9 @@ An ADR without a goal reference is incomplete.
 
 - List each goal (`QG-nn`) and scenario (`QS-nn`) that the decision serves or affects, with one line each on how.
 - Use only IDs that exist.
-  The goals are defined on the Quality Goals page of the System docs, the scenarios in its chapter 10.
-- Link each ID, for example `xref:system::quality-goals.adoc#QG-01[QG-01]`.
+  The goals are defined on the Quality Goals page of the System docs and, for the further goals, in its chapter 10, and the scenarios are in chapter 10.
+- Link each ID on the page that defines it, for example `xref:system::quality-goals.adoc#QG-01[QG-01]`.
+  The goal `QG-06` and the further goals are defined on the Quality Requirements page, so link `xref:system::quality-requirements.adoc#QG-06[QG-06]`.
 - Refer to these IDs in the decision drivers.
 - In the consequences, assess each listed goal as better, worse or neutral, with the reason.
   Do it in a subsection `=== Effect on the Quality Goals`.

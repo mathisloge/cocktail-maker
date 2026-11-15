@@ -155,7 +155,7 @@ def test_manifest_versions_agree_and_are_recent():
     plugin = json.loads((REPO / "plugins/cocktail-maker-docs/.claude-plugin/plugin.json").read_text(encoding="utf-8"))
     version = market["plugins"][0]["version"]
     assert plugin["version"] == version
-    assert tuple(int(part) for part in version.split(".")) >= (0, 7, 0)
+    assert tuple(int(part) for part in version.split(".")) >= (0, 8, 0)
 
 
 def test_architecture_skill_has_the_runtime_scenario_template():
@@ -166,3 +166,44 @@ def test_architecture_skill_has_the_runtime_scenario_template():
     assert all(position >= 0 for position in positions)
     assert positions == sorted(positions)
     assert "shape: sequence_diagram" in section
+
+
+QUALITY_SCENARIO_FIELDS = (
+    "Goal",
+    "Q42",
+    "Source",
+    "Stimulus",
+    "Artifact",
+    "Environment",
+    "Response",
+    "Measure",
+    "Verification",
+    "Value",
+    "State",
+    "Checks",
+)
+
+
+def test_architecture_skill_has_the_quality_scenario_template():
+    # A small stand-in for `quality_scenario_problems` in docs/tests, so the plugin tests stay self-contained.
+    text = (SKILLS / "architecture-docs/SKILL.md").read_text(encoding="utf-8")
+    assert "## Quality scenarios\n" in text
+    section = text.split("## Quality scenarios\n", 1)[1].split("\n## ", 1)[0]
+    positions = [section.find(f"\n{field}:: ") for field in QUALITY_SCENARIO_FIELDS]
+    assert all(position >= 0 for position in positions)
+    assert positions == sorted(positions)
+    assert "Source` names a trigger, never an author" in section
+
+
+def test_skills_describe_where_the_quality_goals_live():
+    architecture = (SKILLS / "architecture-docs/SKILL.md").read_text(encoding="utf-8")
+    assert "`== Further Quality Goals`" in architecture
+    assert "| ID | Quality Goal | Scenario | Q42\n" in architecture
+    assert "QS | Goal | Q42 | Artifact | Verification | State | Value" in architecture
+    assert "`QG-06` links `quality-requirements.adoc`" in architecture
+    adrs = (SKILLS / "writing-adrs/SKILL.md").read_text(encoding="utf-8")
+    assert "xref:system::quality-requirements.adoc#QG-06[QG-06]" in adrs
+    diagrams = (SKILLS / "writing-diagrams/SKILL.md").read_text(encoding="utf-8")
+    assert "nested grids" in diagrams
+    assert "sets no `direction`" in diagrams
+    assert "so it may have more boxes and sets `direction: right`" not in diagrams

@@ -17,7 +17,7 @@ The power design must support the *Human Safety* (QG-01) quality goal by providi
 == Quality Goals
 
 * xref:system::quality-goals.adoc#QG-01[QG-01]: The main switch, the residual current and overcurrent protection and the continuous PE conductor protect people from electrical faults.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: A single, linear power chain is simple to document and verify.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: A single, linear power chain is simple to document and verify.
 * xref:system::quality-goals.adoc#QG-03[QG-03]: One SMPS powers the Station and all Pods.
 
 == Decision
@@ -37,5 +37,5 @@ If it fails, both the Station and all Pods lose power simultaneously, working ag
 === Effect on the Quality Goals
 
 * xref:system::quality-goals.adoc#QG-01[QG-01]: Better, because one main switch gives the Operator a single labeled point to disconnect the machine from mains.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because the single power chain keeps the internal wiring simple to document and verify.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Better, because the single power chain keeps the internal wiring simple to document and verify.
 * xref:system::quality-goals.adoc#QG-03[QG-03]: Worse, because the single SMPS is a single point of failure for the Station and all Pods.

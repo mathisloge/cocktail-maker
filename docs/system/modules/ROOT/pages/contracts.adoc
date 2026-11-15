@@ -31,7 +31,7 @@ The details of the frames and messages stay on the xref:protocol.adoc[Protocol p
 * A `TransactionId` is unique among the pending requests only, and the Pod echoes it on every frame of that exchange (xref:protocol.adoc[Protocol page], section Transaction Correlation).
 * A pour ends with `DispenseFinished`, which reports the measured amount and a `DispenseResult`.
   A pour that ends short is no error, and only `Completed` reaches the requested amount (xref:protocol.adoc[Protocol page], section Communication Patterns).
-* A pour stops after 30 s at the latest (xref:protocol.adoc[Protocol page], `DispenseResult` table).
+* A pour stops after 30 s at the latest, a provisional value to be confirmed on the assembled machine (xref:protocol.adoc[Protocol page], `DispenseResult` table).
 * The schema release is 2.1.0, written `0x020100` (schema repo).
   The Station accepts exactly the release it was built against (xref:protocol.adoc[Protocol page], section Versioning).
 * The Station waits for a reply at most as long as the Reply Times table allows.
@@ -343,7 +343,7 @@ This is the whole food-contact path from the Pod outlet to the glass.
 * Only the tubes and some stainless steel parts touch a liquid, and no printed part does (xref:adr:009-wetted-parts.adoc[SYS-009]).
 * The pump has two 5 mm barb spigots below its housing, 8.8 mm long outside the wall, and the tube leaves toward -Y (xref:mechanics::pump.adoc[Mechanics pump page]).
 * A leak in the pump housing leaves through a drain in its bottom wall (xref:mechanics::pump.adoc[Mechanics pump page]).
-* A pour stops after 30 s at the latest (xref:protocol.adoc[Protocol page]).
+* A pour stops after 30 s at the latest, a provisional value to be confirmed on the assembled machine (xref:protocol.adoc[Protocol page]).
 * The Hardware page shows the load cell as weighing "bottle / glass".
   The System docs say only that it weighs the bottle (xref:adr:007-calibration-and-fill-level.adoc[SYS-007]).
 * Not in any source: the hub design, the tube lengths and diameters after the pump, the outlet position, a glass sensor, the material of the hub, how the path is cleaned.

@@ -17,7 +17,7 @@ The device has modest CPU and GPU resources compared to a desktop, so the toolki
 
 == Quality Goals
 
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Screens are declared apart from the application logic, so the visual design and the C++ code can change independently.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Screens are declared apart from the application logic, so the visual design and the C++ code can change independently.
 
 == Decision
 
@@ -55,5 +55,5 @@ It works against keeping the visual design of the UI separate from, and independ
 
 === Effect on the Quality Goals
 
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because design and logic change independently and one custom theme is defined once.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Better, because design and logic change independently and one custom theme is defined once.
 Worse, because Slint has a smaller ecosystem, so unfamiliar problems take more reading in its own documentation and source.

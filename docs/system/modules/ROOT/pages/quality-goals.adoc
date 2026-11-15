@@ -2,44 +2,41 @@
 
 To ensure the machine operates safely and reliably in real-world scenarios, all architectural and design decisions are evaluated against the following strict quality criteria.
 Safety and reliability are the primary drivers for both hardware separation and software state management.
+The order of the table is the priority.
 The IDs are stable.
 Other pages and ADRs refer to a goal by its ID.
-The goals map onto the quality model of ISO/IEC 25010:2023, shown in the last column, and the quality tree of chapter 10 will build on that model.
+The goals carry tags of the arc42 quality model Q42 (xref:adr:014-quality-model-q42.adoc[SYS-014]), shown in the last column.
+The safety argument for CE rests on the risk assessment.
+Chapter 10 breaks the goals down into quality scenarios and lists further goals, see xref:quality-requirements.adoc[].
 
 [cols="1,2,5,3", options="header"]
 |===
-| ID | Quality Goal | Description | ISO 25010:2023
+| ID | Quality Goal | Scenario | Q42
 
 | [[QG-01]]QG-01
 | *Human Safety*
-| No mechanism, electrical fault, or software bug may endanger a Guest or an Operator.
-| Safety (fail safe, hazard warning, operational constraint)
+| No Guest and no Operator is harmed by the machine, in use or in service, not by a mechanism, an electrical fault or a software bug.
+| `#safe`
 
 | [[QG-02]]QG-02
 | *Food Safety*
-| All parts that touch a person or a drink, and all flow paths, use food-safe materials, and no wrong ingredient or quantity reaches a drink.
-| Safety (operational constraint, fail safe)
+| Every drink contains only the ingredients of its recipe in the right amounts, and only food-safe parts touch it.
+| `#safe`, `#suitable`
 
 | [[QG-03]]QG-03
 | *Reliability*
-| The machine must run unattended for long stretches without failure.
-| Reliability (faultlessness, availability, fault tolerance)
+| The machine serves drinks through a whole event without an Operator having to restart it, and a failing Pod stops the drink on every Pod.
+| `#reliable`
 
 | [[QG-04]]QG-04
 | *Serviceability*
-| Operator can service, refill, and calibrate without deep expertise.
-| Interaction capability (operability, learnability)
+| An Operator with a short briefing refills, swaps a bottle, changes a pump tube and calibrates, using only the written steps.
+| `#operable`, `#secure`
 
 | [[QG-05]]QG-05
 | *Usability*
-| Guests with no instructions can order and receive a drink intuitively.
-| Interaction capability (appropriateness recognizability, learnability, operability)
-
-| [[QG-06]]QG-06
-| *Maintainability*
-| Developers can change, test and verify the code, the firmware and the hardware design with little effort.
-| Maintainability (modularity, modifiability, testability)
-
+| A Guest who has never used the machine orders a drink without help.
+| `#usable`, `#efficient`
 |===
 
 Continue with xref:context-and-scope.adoc[].

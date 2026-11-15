@@ -18,7 +18,7 @@ Reusing that language and those libraries on the Pod side is preferable to intro
 
 == Quality Goals
 
-* xref:system::quality-goals.adoc#QG-06[QG-06]: One Pod application runs on different hardware revisions with only devicetree changes, and one language and toolchain covers the Station and the Pods.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: One Pod application runs on different hardware revisions with only devicetree changes, and one language and toolchain covers the Station and the Pods.
 
 == Decision
 
@@ -55,5 +55,5 @@ Some subsystems and third-party modules still assume C, occasionally requiring a
 
 === Effect on the Quality Goals
 
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because board changes need no application rewrite and an upstream maintained project lowers vendor lock in.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Better, because board changes need no application rewrite and an upstream maintained project lowers vendor lock in.
 Worse at the start, because devicetree, Kconfig and west have a steeper learning curve and some C++ integration glue is needed.

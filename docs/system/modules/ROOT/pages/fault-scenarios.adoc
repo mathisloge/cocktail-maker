@@ -24,7 +24,7 @@ station -> pod: "dispenses the ingredient\nand the amount" {class: data}
 pod -> glass: "pumps the ingredient" {class: fluid}
 station -> pod: "USB link breaks, no reply comes back,\nthe Station notices the silent Pod\nwithin a bounded time (open, IF-01-R06)" {class: fault}
 station.drops: "Station stops the mix" {class: boundary}
-pod -> glass: "may pump on, 30 s at the latest,\nor stop, nobody decided that\n(open, IF-01-R11)" {class: fluid}
+pod -> glass: "may pump on, 30 s at the latest (provisional),\nor stop, nobody decided that\n(open, IF-01-R11)" {class: fluid}
 station -> pod: "sends an EmergencyStop to every Pod,\nwhether it reaches this Pod is open\n(open, IF-01-R07)" {class: [data; key]}
 station -> guest: "shows an error screen\nand returns to a known-good screen" {class: interaction}
 ----
@@ -37,7 +37,7 @@ What does the machine do when the link to a Pod breaks during a pour, and what d
 * xref:contracts.adoc#IF-07[IF-07], xref:contracts.adoc#IF-07-R03[IF-07-R03]: A pulled or pinched cable never leaves a Pod pouring, which is open.
 
 === Open
-* Whether a Pod ends a running pour on its own when the USB link breaks, and who guarantees it, because the only known bound is the limit of 30 s for a pour (IF-01-R11, IF-07-R03).
+* Whether a Pod ends a running pour on its own when the USB link breaks, and who guarantees it, because the only known bound is the limit of 30 s for a pour (provisional, to be confirmed on the assembled machine) (IF-01-R11, IF-07-R03).
 * Which bounded time the Station needs to notice a silent Pod, and what it does with a Pod that stays silent and with the requests that are pending for it (IF-01-R06).
 * Whether the `EmergencyStop` reaches the Pod with the broken link, and what that Pod does when it does not (IF-01-R07).
 
@@ -120,7 +120,7 @@ pod -> station: "acknowledges the stop\nwithin 500 ms" {class: data}
 station -> guest: "returns to a known-good screen" {class: interaction}
 no_ack: "opt: A Pod does not acknowledge the stop" {
   class: boundary
-  station -> pod: "gets no acknowledgement,\nthe pour ends after 30 s at the latest\n(open, IF-01-R11)" {class: fault}
+  station -> pod: "gets no acknowledgement,\nthe pour ends after 30 s at the latest (provisional)\n(open, IF-01-R11)" {class: fault}
 }
 ----
 What does a Guest set off by cancelling a drink, and what stops where?
@@ -132,7 +132,7 @@ What does a Guest set off by cancelling a drink, and what stops where?
 * xref:contracts.adoc#IF-08[IF-08]: The `EmergencyStop` stops every pump and valve, and a running tare or load cell calibration carries on.
 
 === Open
-* What the Station does when a Pod does not acknowledge the `EmergencyStop`, and whether the Guest or the Operator is told, because the sources decide nothing more than the limit of 30 s for a pour (IF-01-R11).
+* What the Station does when a Pod does not acknowledge the `EmergencyStop`, and whether the Guest or the Operator is told, because the sources decide nothing more than the limit of 30 s for a pour (provisional, to be confirmed on the assembled machine) (IF-01-R11).
 
 === Details
 * xref:station::runtime-view.adoc#_a_guest_mixes_a_drink[Station runtime view, A Guest Mixes a Drink]: a cancel stops the remaining actions and sends an `EmergencyStop` to every Pod.

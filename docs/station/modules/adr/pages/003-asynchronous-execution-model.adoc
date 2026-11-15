@@ -21,7 +21,7 @@ The architecture must prevent data races and complex mutex synchronization aroun
 * xref:system::quality-goals.adoc#QG-01[QG-01]: One shared execution context means no thread touches the domain and UI state concurrently, so there are no data races in a dispensing system.
 * xref:system::quality-goals.adoc#QG-02[QG-02]: Reasoning about concurrency stays simple where dispensing is food-safety-relevant.
 * xref:system::quality-goals.adoc#QG-03[QG-03]: Every pending Pod exchange has its own timeout, so one unresponsive Pod cannot stall the others.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Multi-step Pod protocols read as straight-line coroutine code instead of callback chains.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Multi-step Pod protocols read as straight-line coroutine code instead of callback chains.
 
 == Decision
 We will run Pod communication and recipe execution as coroutines on a single shared Boost.Asio execution context, using Boost.Cobalt for coroutine-friendly building blocks such as awaitable results and channels.
@@ -49,5 +49,5 @@ Any accidental synchronous blocking call (e.g., `std::this_thread::sleep_for`) o
 * xref:system::quality-goals.adoc#QG-02[QG-02]: Better, for the same reason.
 * xref:system::quality-goals.adoc#QG-03[QG-03]: Better, because a timeout on every exchange keeps an unresponsive Pod from blocking the others.
 Worse, because one blocking call or heavy computation stalls the whole execution context.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because the code is readable as a sequence.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Better, because the code is readable as a sequence.
 Worse, because Boost.Cobalt is young and a suspended coroutine is harder to debug.

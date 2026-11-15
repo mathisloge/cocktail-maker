@@ -230,7 +230,7 @@ A `Nak` can still arrive in place of the event if the action fails after having 
 hose looks the same.
 
 | `TimedOut`
-| The pour hit its time limit of 30 s while the weight was still falling.
+| The pour hit its time limit of 30 s (provisional, to be confirmed on the assembled machine) while the weight was still falling.
 
 | `StillShort`
 | All trims are used up and the amount is still below the target.
@@ -253,7 +253,7 @@ The Station's timeouts must be longer than the Pod's worst case for each of thes
 
 | `Dispense`
 | 35 s
-| The Pod stops a pour after 30 s at the latest and then measures it at rest.
+| The Pod stops a pour after 30 s at the latest (provisional, to be confirmed on the assembled machine) and then measures it at rest.
 
 | `DispenserStartCalibration`
 | Run time plus 3 s
@@ -368,7 +368,7 @@ have had a `LoadCellTare` shortly before. The calibration stays on the load cell
 | Station → Pod
 | Request / Acknowledgement / Event
 | Runs a dispenser for a set time and measures what came out with its load cell. The run time must be
-greater than 0 and at most 30 s. The load cell must already be calibrated, and real liquid comes out.
+greater than 0 and at most 30 s (provisional, to be confirmed on the assembled machine). The load cell must already be calibrated, and real liquid comes out.
 After a `Nak` the previous calibration stays in place.
 
 | `DispenserFinishedCalibrationResponse`

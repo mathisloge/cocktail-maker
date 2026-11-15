@@ -13,4 +13,46 @@ The xref:diagram-conventions.adoc[diagram conventions] explain the shapes, colou
 The following chapters provide a high-level overview of the cocktail-maker.
 They define the system boundaries, illustrate the core functional blocks, and document the fundamental architectural decisions that shaped the design before diving into specific hardware or software implementations.
 
+== Requirements Overview
+
+The machine mixes a cocktail from raw ingredients by a recipe and pours it into a glass.
+These are its main functions.
+
+* Let a Guest order a drink and receive it in a glass: xref:runtime-view.adoc#drink-end-to-end[A Drink End to End].
+* Scale a recipe to the chosen glass and carry it out by commanding the Pods: xref:station::runtime-view.adoc#_a_guest_mixes_a_drink[Station runtime view, A Guest Mixes a Drink].
+* Let a Guest cancel a running drink and stop every pump and valve: xref:fault-scenarios.adoc#guest-cancels[A Guest Cancels].
+* Find the Pods at the start and tell them apart: xref:runtime-view.adoc#switching-on[Switching On].
+* Suspect an empty bottle during a pour and let an Operator refill it: xref:fault-scenarios.adoc#bottle-empty-during-pour[A Bottle Runs Empty During a Pour].
+* Let an Operator refill or replace a bottle and keep the fill level of each bottle: xref:runtime-view.adoc#refilling[Refilling].
+* Let an Operator calibrate a dispenser: xref:station::runtime-view.adoc#_an_operator_calibrates_a_dispenser[Station runtime view, An Operator Calibrates a Dispenser].
+* Let an Operator clean the machine in cleaning cycles.
+The xref:context-and-scope.adoc[context] names them, and they are not designed yet (open, xref:contracts.adoc#IF-06-R04[IF-06-R04]).
+* Start again with its data intact after the power was cut: xref:fault-scenarios.adoc#power-fails-during-pour[The Power Fails During a Pour].
+* Switch off at one labeled main switch: xref:runtime-view.adoc#switching-off[Switching Off].
+
+== Stakeholders
+
+[cols="1,3,3", options="header"]
+|===
+| Stakeholder | Expects of the machine | Expects of the docs
+
+| Guest
+| Orders and receives a drink with no instructions and without any danger (xref:quality-goals.adoc#QG-05[QG-05], xref:quality-goals.adoc#QG-01[QG-01]).
+| Nothing, because a Guest needs no technical knowledge (xref:context-and-scope.adoc[context]).
+
+| Operator
+| Refills, cleans and calibrates the machine without deep expertise, and is not endangered while doing so (xref:quality-goals.adoc#QG-04[QG-04], xref:quality-goals.adoc#QG-01[QG-01], xref:context-and-scope.adoc[context]).
+| The service steps, such as stopping the pump and draining the line before a tube change, which xref:contracts.adoc#IF-08[IF-08] names as a precaution.
+Only the steps for the pump are written so far (xref:mechanics::pump-service.adoc[Mechanics pump service page]).
+
+| Developer
+| A Station that is changed and verified against simulated Pods without the assembled machine, and a protocol change that reaches the Station and the Pods as one release (xref:quality-requirements.adoc#QG-06[QG-06], xref:adr:006-protocol-serialization.adoc[SYS-006], xref:station::solution-strategy.adoc[Station solution strategy]).
+| A central reference for the hardware design, the software development, the protocol and the maintenance.
+
+| Person who assesses the conformity for CE
+| A machine that is safe for people and food (xref:quality-goals.adoc#QG-01[QG-01], xref:quality-goals.adoc#QG-02[QG-02]).
+| The hazards and the safety measures in a risk assessment, which carries the safety argument for CE (xref:adr:014-quality-model-q42.adoc[SYS-014]).
+The risk assessment does not exist yet.
+|===
+
 Continue with xref:quality-goals.adoc[].

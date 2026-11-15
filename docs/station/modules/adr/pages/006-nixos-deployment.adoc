@@ -22,7 +22,7 @@ The Station is not deployed with NixOS yet.
 
 == Quality Goals
 
-* xref:system::quality-goals.adoc#QG-06[QG-06]: The operating system, its installed libraries and the start of the Station program are defined as code.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: The operating system, its installed libraries and the start of the Station program are defined as code.
 * xref:system::quality-goals.adoc#QG-03[QG-03]: The Station program starts by itself after the boot.
 
 == Decision
@@ -47,5 +47,5 @@ Rejected: the configuration of the operating system and its installed libraries 
 
 === Effect on the Quality Goals
 
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because the operating system and its libraries are defined as code.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Better, because the operating system and its libraries are defined as code.
 * xref:system::quality-goals.adoc#QG-03[QG-03]: Neutral, because the systemd service already starts the Station program by itself.

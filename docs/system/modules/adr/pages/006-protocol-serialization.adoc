@@ -19,7 +19,7 @@ Hand-writing and manually keeping the Station and Pod (de)serialization code in 
 == Quality Goals
 
 * xref:system::quality-goals.adoc#QG-03[QG-03]: One schema generates both sides of the protocol, so the Station and the Pods cannot drift apart, and the frames carry a CRC.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: One schema replaces hand written (de)serialization code in two codebases.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: One schema replaces hand written (de)serialization code in two codebases.
 
 == Decision
 
@@ -54,5 +54,5 @@ Rejected: this offers full control with no external codegen dependency, but requ
 === Effect on the Quality Goals
 
 * xref:system::quality-goals.adoc#QG-03[QG-03]: Better, because the Station and every Pod stay in sync by construction and a CRC layer is built in.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because the message set grows in one schema.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Better, because the message set grows in one schema.
 Worse, because commsdsl is a niche tool with fewer examples and the code generator must be installed and pinned in both toolchains.

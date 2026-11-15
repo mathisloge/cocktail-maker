@@ -21,7 +21,7 @@ Cancellation in Boost.Cobalt is also reported as an exception (`operation_aborte
 
 * xref:system::quality-goals.adoc#QG-01[QG-01]: A stop request is its own completion, so aborting a recipe reliably runs the safe state handling.
 * xref:system::quality-goals.adoc#QG-03[QG-03]: Every background operation belongs to a scope that is stopped and joined on shutdown, and the timeout on every Pod exchange stays.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: The code follows the C++26 standard model, so moving to `std::execution` is mostly mechanical.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: The code follows the C++26 standard model, so moving to `std::execution` is mostly mechanical.
 
 == Decision
 We use the reference implementation of `std::execution`, https://github.com/NVIDIA/stdexec[stdexec] (pinned to a `main` commit), on top of the existing Boost.Asio execution context:
@@ -68,5 +68,5 @@ Anything that must happen at call time, like registering for a Pod response befo
 
 * xref:system::quality-goals.adoc#QG-01[QG-01]: Better, because abortion triggers the safe state handling through `upon_stopped` and not through exception matching.
 * xref:system::quality-goals.adoc#QG-03[QG-03]: Better, because no work outlives the objects it references.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because the move to the standard is mostly mechanical.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Better, because the move to the standard is mostly mechanical.
 Worse, because the stdexec `main` branch is a moving target, module units have strict rules for coroutine bodies and includes, and the function type check of UBSan is disabled.

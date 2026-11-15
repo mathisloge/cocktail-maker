@@ -20,6 +20,7 @@ Each arc42 chapter has one diagram type.
 | 5 Building Block View | building block diagram | the blocks of one zoom level |
 | 6 Runtime View | sequence diagram | one scenario as messages in time order |
 | 7 Deployment View | deployment diagram | the hardware and what runs on it |
+| 10 Quality Requirements | quality tree | the path from each quality goal over its Q42 tags to its quality scenarios |
 
 A building block diagram shows one zoom level.
 Never mix zoom levels in one picture.
@@ -136,6 +137,8 @@ Flows go left to right, so set `direction: right`.
 Hierarchies go top to bottom, so set `direction: down`.
 A diagram with more than about 10 boxes is too large.
 Split it into two diagrams, or zoom out one level.
+The one exception is the quality tree of chapter 10, which has a box for every goal, tag and scenario, so it may have more boxes.
+It is laid out as nested grids (a `grid-columns` key on the frame and on each goal and tag block, and `boundary` groups for the tags) and sets no `direction`.
 The page shows a diagram at most about 800 px wide, so a wider diagram shrinks its labels.
 Keep the rendered SVG at most 1400 px wide.
 To make it narrower, break long labels with `\n`, set `direction: down`, or put related shapes in a `boundary` group.

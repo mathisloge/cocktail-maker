@@ -1,9 +1,964 @@
 = 10 Quality Requirements
 
-[NOTE]
-====
-Not written yet.
-====
+This chapter makes the quality goals measurable.
+They are the goals of xref:quality-goals.adoc[] in chapter 1 and the further goal of this chapter.
+Each goal has scenarios.
+A scenario has a source, a stimulus, a response and a measure, and it has exactly one goal as its parent.
+The tags of the arc42 quality model Q42 (xref:adr:014-quality-model-q42.adoc[SYS-014]) are lenses on a goal.
+A scenario may also carry tags of other goals, and the table lists all of its tags.
 
-This chapter will hold the quality scenarios that make the quality goals measurable.
-The quality goals themselves stay in xref:quality-goals.adoc[] in chapter 1.
+A scenario has one of four states:
+
+* Target: a binding value set for this scenario.
+* Provisional: a linked docs page or ADR states the value, and it is still to be confirmed on the assembled machine.
+* Open: no value is set yet.
+* Withdrawn: the scenario is dropped and keeps its ID.
+
+A scenario is not a safety proof.
+The safety argument for CE rests on the risk assessment.
+The scenarios of xref:quality-goals.adoc#QG-01[QG-01] and xref:quality-goals.adoc#QG-02[QG-02] are the measurable claims that the risk assessment will refer to.
+
+== Further Quality Goals
+
+Chapter 1 holds the top goals.
+This goal has a lower priority and is listed here so that its scenarios have a parent.
+
+[cols="1,2,5,3", options="header"]
+|===
+| ID | Quality Goal | Scenario | Q42
+
+| [[QG-06]]QG-06
+| *Maintainability*
+| A developer changes the Station and verifies the change against simulated Pods, without the assembled machine, and a protocol change reaches the Station and the Pods as one release.
+| `#maintainable`
+|===
+
+== Quality Tree
+
+.Quality tree
+[d2, target="system-10-quality-tree", format="svg", link=self]
+----
+include::system:ROOT:partial$d2-style.d2[]
+tree: "Quality goals" {
+  class: boundary
+  grid-columns: 3
+  grid-rows: 2
+  grid-gap: 12
+  g1: "QG-01 Human Safety" {
+    class: block
+    grid-columns: 1
+    grid-gap: 8
+    t_safe: "#safe" {
+      class: boundary
+      grid-columns: 1
+      grid-gap: 8
+      q01: "QS-01 Pod acknowledges stop" {class: block}
+      q02: "QS-02 Actuators at rest after stop" {class: block}
+      q03: "QS-03 Pod ends pour on link loss\nalso #reliable" {class: block}
+      q04: "QS-04 No move after 24 V returns" {class: block}
+      q05: "QS-05 Pump lid guards moving parts" {class: block}
+      q06: "QS-06 Operator stops actuators first\nalso #operable" {class: block}
+      q07: "QS-07 Fault cut off before a person" {class: block}
+      q08: "QS-08 Guest cannot reach moving part" {class: block}
+    }
+  }
+  g4: "QG-04 Serviceability" {
+    class: block
+    grid-columns: 1
+    grid-gap: 8
+    t_operable: "#operable" {
+      class: boundary
+      grid-columns: 1
+      grid-gap: 8
+      q22: "QS-22 Refill from the top" {class: block}
+      q23: "QS-23 Bottle change without tools" {class: block}
+      q24: "QS-24 Pump tube change in place" {class: block}
+      q25: "QS-25 Operator follows calibration" {class: block}
+      q26: "QS-26 Accuracy after calibration\nalso #suitable" {class: block}
+    }
+    t_secure: "#secure" {
+      class: boundary
+      grid-columns: 1
+      grid-gap: 8
+      q27: "QS-27 Operator PIN gates calibration" {class: block}
+    }
+  }
+  g2: "QG-02 Food Safety" {
+    class: block
+    grid-columns: 1
+    grid-gap: 8
+    t_safe: "#safe" {
+      class: boundary
+      grid-columns: 1
+      grid-gap: 8
+      q09: "QS-09 Only food-safe wetted parts" {class: block}
+      q11: "QS-11 Command goes to named Pod\nalso #suitable" {class: block}
+      q12: "QS-12 Reply matches its request\nalso #suitable" {class: block}
+      q13: "QS-13 Ingredient from expected bottle\nalso #suitable" {class: block}
+      q14: "QS-14 No residue in later drink" {class: block}
+      q15: "QS-15 Pour only with a glass\nalso #suitable" {class: block}
+    }
+    t_suitable: "#suitable" {
+      class: boundary
+      grid-columns: 1
+      grid-gap: 8
+      q10: "QS-10 Short pour is not Completed\nalso #safe" {class: block}
+      q34: "QS-34 Poured amount matches recipe\nalso #safe" {class: block}
+    }
+  }
+  g5: "QG-05 Usability" {
+    class: block
+    grid-columns: 1
+    grid-gap: 8
+    t_usable: "#usable" {
+      class: boundary
+      grid-columns: 1
+      grid-gap: 8
+      q28: "QS-28 First-time Guest orders alone" {class: block}
+      q29: "QS-29 Guest sees a failed pour" {class: block}
+    }
+    t_efficient: "#efficient" {
+      class: boundary
+      grid-columns: 1
+      grid-gap: 8
+      q30: "QS-30 Guest UI stays responsive\nalso #usable" {class: block}
+    }
+  }
+  g3: "QG-03 Reliability" {
+    class: block
+    grid-columns: 1
+    grid-gap: 8
+    t_reliable: "#reliable" {
+      class: boundary
+      grid-columns: 1
+      grid-gap: 8
+      q16: "QS-16 Silent Pod is noticed" {class: block}
+      q17: "QS-17 Other Pods served meanwhile" {class: block}
+      q18: "QS-18 Station restarts with data" {class: block}
+      q19: "QS-19 Bad message not acted on\nalso #safe" {class: block}
+      q20: "QS-20 Other release not used\nalso #safe" {class: block}
+      q21: "QS-21 Supply inside its rating" {class: block}
+      q33: "QS-33 Drinks through a whole event" {class: block}
+    }
+  }
+  g6: "QG-06 Maintainability" {
+    class: block
+    grid-columns: 1
+    grid-gap: 8
+    t_maintainable: "#maintainable" {
+      class: boundary
+      grid-columns: 1
+      grid-gap: 8
+      q31: "QS-31 One release for the schema" {class: block}
+      q32: "QS-32 Station change without machine" {class: block}
+    }
+  }
+}
+----
+The tree shows each scenario under the tags of its own goal, and the table lists all of its tags.
+
+== Traceability
+
+[cols="1,1,2,2,2,1,1", options="header"]
+|===
+| QS | Goal | Q42 | Artifact | Verification | State | Value
+
+| <<QS-01,QS-01>> | QG-01 | #safe | Station and Pod | Test | Open | none
+
+| <<QS-02,QS-02>> | QG-01 | #safe | Pod | Test | Open | none
+
+| <<QS-03,QS-03>> | QG-01 | #safe, #reliable | Pod | Test | Open | none
+
+| <<QS-04,QS-04>> | QG-01 | #safe | Pod, with the Power Management Unit in the stimulus | Test | Open | none
+
+| <<QS-05,QS-05>> | QG-01 | #safe | Pod | Test | Open | none
+
+| <<QS-06,QS-06>> | QG-01 | #safe, #operable | Pod | Demonstration | Open | none
+
+| <<QS-07,QS-07>> | QG-01 | #safe | Power Management Unit | Test | Open | none
+
+| <<QS-08,QS-08>> | QG-01 | #safe | The machine, at the glass placement area | Test | Open | none
+
+| <<QS-09,QS-09>> | QG-02 | #safe | The machine, along the flow path from the bottle to the glass | Inspection | Open | none
+
+| <<QS-10,QS-10>> | QG-02 | #suitable, #safe | Pod and Station | Test | Open | none
+
+| <<QS-11,QS-11>> | QG-02 | #safe, #suitable | Station | Test | Open | none
+
+| <<QS-12,QS-12>> | QG-02 | #safe, #suitable | Station | Test | Open | none
+
+| <<QS-13,QS-13>> | QG-02 | #safe, #suitable | Station and Pod | Test | Open | none
+
+| <<QS-14,QS-14>> | QG-02 | #safe | The machine, along the flow path from the bottle to the glass | Test | Open | none
+
+| <<QS-15,QS-15>> | QG-02 | #safe, #suitable | Station and Pod | Test | Open | none
+
+| <<QS-16,QS-16>> | QG-03 | #reliable | Station | Test | Provisional | 100 ms for `HighlightDispenser` and for the first attempt of `Ping` and `DeviceInfoRequest`, 500 ms for the `Ack` of `Dispense`, `DispenserStartCalibration` and `EmergencyStop` and for `LoadCellWeightRequest`, 2 s for `LoadCellTare` and `LoadCellCalibrateWithRefWeight`, 35 s for the result of `Dispense` (it rests on the provisional pour limit of 30 s), and the run time plus 3 s for the result of `DispenserStartCalibration`
+
+| <<QS-17,QS-17>> | QG-03 | #reliable | Station | Test | Open | none
+
+| <<QS-18,QS-18>> | QG-03 | #reliable | Station | Test | Open | none
+
+| <<QS-19,QS-19>> | QG-03 | #reliable, #safe | Station and Pod | Test | Open | none
+
+| <<QS-20,QS-20>> | QG-03 | #reliable, #safe | Station | Test | Open | none
+
+| <<QS-21,QS-21>> | QG-03 | #reliable | Power Management Unit | Test | Target | 96 W
+
+| <<QS-22,QS-22>> | QG-04 | #operable | Pod | Demonstration | Open | none
+
+| <<QS-23,QS-23>> | QG-04 | #operable | Pod | Demonstration | Open | none
+
+| <<QS-24,QS-24>> | QG-04 | #operable | Pod | Demonstration | Open | none
+
+| <<QS-25,QS-25>> | QG-04 | #operable | Station and Pod | Demonstration | Open | none
+
+| <<QS-26,QS-26>> | QG-04 | #operable, #suitable | Station and Pod | Test | Open | none
+
+| <<QS-27,QS-27>> | QG-04 | #secure | Station, Operator UI | Test | Open | none
+
+| <<QS-28,QS-28>> | QG-05 | #usable | Station, Guest UI | Demonstration | Open | none
+
+| <<QS-29,QS-29>> | QG-05 | #usable | Station, Guest UI | Test | Open | none
+
+| <<QS-30,QS-30>> | QG-05 | #efficient, #usable | Station, Guest UI | Test | Open | none
+
+| <<QS-31,QS-31>> | QG-06 | #maintainable | Station and Pod | Inspection | Open | none
+
+| <<QS-32,QS-32>> | QG-06 | #maintainable | Station | Test | Open | none
+
+| <<QS-33,QS-33>> | QG-03 | #reliable | Station and Pod | Test | Open | none
+
+| <<QS-34,QS-34>> | QG-02 | #suitable, #safe | Station and Pod | Test | Open | none
+
+|===
+
+== Test Setup
+
+The scenarios run on a test setup of the Station and at least 3 Pods on USB.
+A scenario that only checks how the Station handles Pods may run against simulated Pods, and its Environment says so.
+A scenario about actuators, current, weight or reach runs on real hardware.
+A reference instrument is independent of the machine, and its resolution relative to the limit is open.
+A count of 0 of N gives only a bound on the rate of a failure and no proof that it cannot happen.
+
+== Scenarios
+
+[[QS-01]]
+=== QS-01: A Pod acknowledges an `EmergencyStop` in time
+
+Goal:: xref:quality-goals.adoc#QG-01[QG-01]
+Q42:: #safe
+Source:: A Guest cancels a running drink, or the Station fails a mix.
+Stimulus:: The Station sends an `EmergencyStop` to every Pod.
+Artifact:: Station and Pod
+Environment:: Normal operation, on real hardware.
+Each Pod pours and reads its load cell when the `EmergencyStop` arrives.
+Response:: Every Pod acknowledges the `EmergencyStop` to the Station.
+Measure:: The time in ms from the write of the `EmergencyStop` at the Station to the read of its `Ack` at the Station, taken from the frames on the link.
+The result is the largest time over N stops per Pod, and N is open.
+The scenario holds when this value is at most the Value.
+The 500 ms allowance of the Reply Times is a timeout of the Station and not a stop time.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-01-R07[IF-01-R07], xref:fault-scenarios.adoc#guest-cancels[A Guest Cancels], xref:protocol.adoc#_reply_times[Protocol page, Reply Times]
+
+[[QS-02]]
+=== QS-02: All pumps and valves of a Pod come to rest after an `EmergencyStop`
+
+Goal:: xref:quality-goals.adoc#QG-01[QG-01]
+Q42:: #safe
+Source:: A Guest cancels a running drink, or the Station fails a mix.
+Stimulus:: A Pod receives an `EmergencyStop`.
+Artifact:: Pod
+Environment:: Normal operation, on real hardware, with a pour running in the Pod.
+The test covers each Pod of the test setup.
+Response:: Every pump of the Pod stands still, no valve moves, and the running pour ends.
+Measure:: The time in ms from the arrival of the `EmergencyStop` at the Pod to the last step of a pump or the last movement of a valve.
+A step or a movement counts only if none follows for a time T, and T is open.
+Both are observed on the Pod, and how a valve movement is observed is open.
+The result is the largest time over N stops per Pod, and N is open.
+The scenario holds when this value is at most the Value.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-01-R07[IF-01-R07], xref:fault-scenarios.adoc#guest-cancels[A Guest Cancels]
+
+[[QS-03]]
+=== QS-03: A Pod ends a running pour when the link to the Station breaks
+
+Goal:: xref:quality-goals.adoc#QG-01[QG-01]
+Q42:: #safe, #reliable
+Source:: The USB link between the Station and a Pod breaks.
+Stimulus:: The link breaks while the Pod pours.
+Artifact:: Pod
+Environment:: Normal operation, on real hardware.
+The test pour is longer than the pour limit, so only a reaction of the Pod to the lost link can end it earlier.
+The link breaks by a pulled cable.
+The pour is in one of three phases at the break: at its start, in its middle and shortly before the pour limit.
+A running pour ends at the latest at the pour limit of 30 s (provisional, to be confirmed on the assembled machine).
+Whether that limit bounds the stop after a link break is open (IF-01-R11).
+Response:: The Pod ends the running pour on its own.
+Measure:: The time in s from the last frame that the Pod receives from the Station until every pump of the Pod stands still and no valve moves, with the stop as defined in QS-02.
+For a pulled cable the last frame is the cut, seen by an instrument on the link.
+The result is the largest time over N breaks per phase, and N is open.
+The scenario holds when this value is at most the Value.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-01-R11[IF-01-R11], xref:contracts.adoc#IF-07-R03[IF-07-R03], xref:fault-scenarios.adoc#link-breaks-during-pour[The Link to a Pod Breaks During a Pour], xref:protocol.adoc#_reply_times[Protocol page, Reply Times]
+
+[[QS-04]]
+=== QS-04: No pump or valve of a Pod moves after the 24 V returns
+
+Goal:: xref:quality-goals.adoc#QG-01[QG-01]
+Q42:: #safe
+Source:: The 24 V supply of the Pods is lost and returns.
+Stimulus:: The Power Management Unit cuts the 24 V and then supplies it again.
+Artifact:: Pod, with the Power Management Unit in the stimulus
+Environment:: After a fault, on real hardware.
+The cases are a short dip and a long loss of the 24 V, and the durations of both are open.
+Each case runs with an idle Pod, a Pod in a pour, a Pod in a calibration run and a Pod with a valve open.
+The window starts when the 24 V returns and lasts a time T, and T is open.
+The Station sends nothing to the Pod in the window.
+What it means that the Station has started a Pod is open (IF-03-R04).
+Response:: No pump or valve of the Pod moves until the Station has started that Pod.
+Measure:: The number of steps of a pump and of movements of a valve in the window.
+They are observed on the Pod.
+The result is the count over N repetitions of each case, and N is open.
+The scenario holds when the count is 0 in every case.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-03-R04[IF-03-R04], xref:fault-scenarios.adoc#power-fails-during-pour[The Power Fails During a Pour], xref:runtime-view.adoc#switching-on[Switching On]
+
+[[QS-05]]
+=== QS-05: The closed pump lid guards the moving parts of the pump
+
+Goal:: xref:quality-goals.adoc#QG-01[QG-01]
+Q42:: #safe
+Source:: An Operator works at a Pod.
+Stimulus:: A probe, as the risk assessment gives it, is applied to the pump of an installed Pod.
+Artifact:: Pod
+Environment:: Normal operation and service, with the lid closed.
+A lid that is open is part of QS-06 and not of this scenario.
+Response:: The Operator cannot touch a moving part or a pinch point of the pump.
+Measure:: The number of moving parts and pinch points of the pump that the probe reaches with the lid closed.
+Each Pod type is tested.
+The scenario holds when the count is 0 for every Pod type.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-08-R01[IF-08-R01], xref:mechanics:adr:004-pump-closed-housing-bearing-lid.adoc[CM3D-004], xref:fault-scenarios.adoc#pump-lid-opened[The Pump Lid Is Opened While the Pump Can Move]
+
+[[QS-06]]
+=== QS-06: An Operator brings every actuator of a Pod to rest before opening it
+
+Goal:: xref:quality-goals.adoc#QG-01[QG-01]
+Q42:: #safe, #operable
+Source:: An Operator opens a Pod for service.
+Stimulus:: An Operator wants to open the pump lid.
+Artifact:: Pod
+Environment:: Service, with the pump able to move.
+The participants have the Operator profile of a person with a short briefing and no technical training.
+This scenario does not replace an interlock.
+The means to bring the actuators to rest is open (IF-08-R04).
+Response:: The Operator brings every actuator of the Pod to rest before the lid is opened.
+Measure:: The number of participants who open the lid while a pump or a valve can still move, counted in a demonstration.
+The scenario holds when the count is 0 of N participants, and N is open.
+A demonstration is a trial and no statistical proof.
+Verification:: Demonstration
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-08-R04[IF-08-R04], xref:fault-scenarios.adoc#pump-lid-opened[The Pump Lid Is Opened While the Pump Can Move]
+
+[[QS-07]]
+=== QS-07: A residual current fault or an overcurrent is cut off
+
+Goal:: xref:quality-goals.adoc#QG-01[QG-01]
+Q42:: #safe
+Source:: A fault on the mains side of the machine.
+Stimulus:: A residual current fault or an overcurrent occurs.
+Artifact:: Power Management Unit
+Environment:: Normal operation, in an electrical safety test.
+The fault cases and their levels are open and come from the risk assessment.
+Response:: A residual current fault or an overcurrent is cut off before it reaches any converter or person.
+The protective earth conductor stays unbroken from the mains inlet through every stage.
+Measure:: First, the time in ms from the start of a fault to the interruption downstream of the Power Management Unit, for each fault case.
+The result is the largest time over N faults per case, and N is open.
+The scenario holds when this time is at most the Value.
+Second, the resistance in ohm of the protective earth conductor from the mains inlet to each stage, at a test current that is stated in the test record and is open.
+The scenario holds when this resistance is at most the Value.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-04-R02[IF-04-R02], xref:contracts.adoc#IF-04-R03[IF-04-R03], xref:adr:004-power-architecture.adoc[SYS-004]
+
+[[QS-08]]
+=== QS-08: A Guest at the glass placement area cannot reach a hazard
+
+Goal:: xref:quality-goals.adoc#QG-01[QG-01]
+Q42:: #safe
+Source:: A Guest stands at the machine.
+Stimulus:: A Guest places a glass in the glass placement area, or reaches into it.
+Artifact:: The machine, at the glass placement area
+Environment:: Normal operation, with a pour running.
+A surface counts as hot above a temperature T, and T is open.
+The temperature is measured on the surface with a contact thermometer.
+The reach point is the opening of the glass placement area.
+Response:: The Guest cannot reach a moving part, a pinch point or a hot surface.
+Measure:: The number of moving parts, pinch points and hot surfaces that a probe, as the risk assessment gives it, reaches when it is applied from the reach point with the pour running.
+The scenario holds when the count is 0.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-06-R06[IF-06-R06], xref:runtime-view.adoc#drink-end-to-end[A Drink End to End]
+
+[[QS-09]]
+=== QS-09: Only food-safe tubes and stainless steel parts touch a drink
+
+Goal:: xref:quality-goals.adoc#QG-02[QG-02]
+Q42:: #safe
+Source:: An ingredient flows from a bottle to a glass.
+Stimulus:: An ingredient or a drink passes each part of the flow path.
+Artifact:: The machine, along the flow path from the bottle to the glass
+Environment:: Normal operation.
+The path inside the fluid hub is not designed yet.
+Response:: Each part that touches the ingredient or the drink is a food-safe tube or a stainless steel part, and none is a printed part.
+Measure:: The number of parts along the flow path that are neither a food-safe tube nor a stainless steel part, or that are printed.
+The parts are counted by following the path on the built machine.
+The count is repeated when the design of the fluid hub exists.
+The scenario holds when the count is 0.
+Verification:: Inspection
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-05-R01[IF-05-R01], xref:contracts.adoc#IF-06-R01[IF-06-R01], xref:adr:009-wetted-parts.adoc[SYS-009]
+
+[[QS-10]]
+=== QS-10: A short pour does not end as `Completed` and is not counted
+
+Goal:: xref:quality-goals.adoc#QG-02[QG-02]
+Q42:: #suitable, #safe
+Source:: A dispenser delivers less than the requested amount.
+Stimulus:: A pour comes up short.
+Artifact:: Pod and Station
+Environment:: Normal operation.
+The cases are an empty bottle and a blocked hose, each from the start of the pour, in its middle and shortly before its end.
+The reference scale resolves the tolerance, and its resolution relative to the tolerance is open.
+The tolerance is in mL and is open.
+Response:: A pour that delivers less than the requested amount ends with a `DispenseResult` other than `Completed`, and the Station does not count the missing amount as poured.
+Measure:: First, the number of pours reported as `Completed` whose weighed amount is below the requested amount minus the tolerance.
+The scenario holds when this count is 0 of N pours, and N is open.
+Second, the largest difference in mL between the amount counted by the Station and the amount weighed on the reference scale, over the same N pours and the same cases.
+The scenario holds when this difference is at most the Value.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-01-R08[IF-01-R08], xref:contracts.adoc#IF-05-R05[IF-05-R05], xref:protocol.adoc[Protocol page], xref:fault-scenarios.adoc#bottle-empty-during-pour[A Bottle Runs Empty During a Pour]
+
+[[QS-11]]
+=== QS-11: A command goes to the Pod it names
+
+Goal:: xref:quality-goals.adoc#QG-02[QG-02]
+Q42:: #safe, #suitable
+Source:: The Station sends a command.
+Stimulus:: The Station sends a command that names one of several connected Pods.
+Artifact:: Station
+Environment:: Normal operation, on real hardware with at least 3 Pods.
+Between runs the Pods are plugged into other ports and the Station restarts.
+The commands are `HighlightDispenser`, `LoadCellTare` and `Dispense` of water.
+The effect of a command is the highlight of the dispenser, the tare of the load cell and the pour of water, and the test records on which Pods the effect appears.
+Response:: Only the named Pod acts on the command.
+Measure:: The number of commands whose effect appears on a Pod other than the named one.
+The scenario holds when the count is 0 of N commands per Pod, and N is open.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-01-R09[IF-01-R09], xref:adr:002-pysical-pod-connection.adoc[SYS-002]
+
+[[QS-12]]
+=== QS-12: A reply is attributed to the request it answers
+
+Goal:: xref:quality-goals.adoc#QG-02[QG-02]
+Q42:: #safe, #suitable
+Source:: A Pod answers a request.
+Stimulus:: Several exchanges are pending at once.
+Artifact:: Station
+Environment:: Normal operation, with at least 3 Pods.
+The Pods are simulated Pods that delay each reply by a random time within the Reply Time of its request.
+Each request carries a value that its reply repeats.
+Response:: The Station attributes each reply and each event to the request it answers.
+Measure:: The number of replies and events that the Station attributes to a request with another value than the one the reply repeats.
+The test compares the attribution of the Station with that value.
+The scenario holds when the count is 0 of N overlapping exchanges, and N is open.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-01-R05[IF-01-R05], xref:protocol.adoc#_reply_times[Protocol page, Reply Times]
+
+[[QS-13]]
+=== QS-13: An ingredient comes only from the expected bottle
+
+Goal:: xref:quality-goals.adoc#QG-02[QG-02]
+Q42:: #safe, #suitable
+Source:: An Operator connects or swaps a bottle.
+Stimulus:: A bottle sits at another dispenser than the Station believes.
+Artifact:: Station and Pod
+Environment:: Normal operation.
+Each bottle stands on a reference scale that is independent of the Pod.
+The cases are two bottles swapped between two dispensers and one bottle moved to another dispenser.
+Whether and how a wrong bottle is found is open (IF-05-R02).
+Response:: The machine does not pour an ingredient from a bottle that the Station does not expect at that dispenser.
+An Operator cannot connect a bottle to the wrong dispenser without noticing.
+Measure:: The first part is a test.
+It counts the pours that draw an ingredient from another bottle than the expected one, found by the weight loss of each bottle on its reference scale.
+The scenario holds when the count is 0 of N pours per case, and N is open.
+The second part is a demonstration of the second half of IF-05-R02.
+It counts the attempts to connect a bottle to the wrong dispenser that pass without a notice to the Operator.
+The scenario holds when this count is 0 of N attempts, and N is open.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-05-R02[IF-05-R02], xref:fault-scenarios.adoc#bottle-empty-during-pour[A Bottle Runs Empty During a Pour]
+
+[[QS-14]]
+=== QS-14: No residue of an ingredient reaches a later drink
+
+Goal:: xref:quality-goals.adoc#QG-02[QG-02]
+Q42:: #safe
+Source:: Two drinks with different ingredients follow each other.
+Stimulus:: A drink is poured after a drink with another ingredient.
+Artifact:: The machine, along the flow path from the bottle to the glass
+Environment:: Normal operation, after a sequence of drinks.
+The parameters of the sequence are the marker ingredient, the amount of the earlier drink, the pause between the drinks and the number of drinks before the sample, and all are open.
+Cleaning cycles are not designed yet.
+Response:: No residue of the earlier ingredient reaches the later drink.
+Measure:: A marker ingredient is in the earlier drink and not in the later one.
+The largest concentration of the marker in the later drink over N samples, in mg/L, found by analysis of each sample, and N is open.
+The detection limit of the analysis relative to the Value is open.
+The scenario holds when this value is at most the Value.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-06-R03[IF-06-R03], xref:contracts.adoc#IF-06-R04[IF-06-R04]
+
+[[QS-15]]
+=== QS-15: No pour starts or goes on without a glass
+
+Goal:: xref:quality-goals.adoc#QG-02[QG-02]
+Q42:: #safe, #suitable
+Source:: A Guest starts a drink.
+Stimulus:: A drink starts with no glass in the glass placement area, or the glass is removed during a pour.
+Artifact:: Station and Pod
+Environment:: Normal operation.
+The cases are an empty area, a glass in the wrong place and a glass removed during a pour.
+Whether the machine detects a glass is open (IF-06-R05).
+How the machine ends a pour after the glass is removed is open.
+Response:: No pour starts, and a running pour ends after the glass is removed.
+Measure:: First, the number of pours started without a glass.
+The scenario holds when this count is 0 of N runs per case, and N is open.
+Second, the volume in mL that is poured after the removal of the glass.
+The scenario holds when this volume is at most the Value.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-06-R05[IF-06-R05], xref:runtime-view.adoc#drink-end-to-end[A Drink End to End]
+
+[[QS-16]]
+=== QS-16: The Station notices a Pod that does not answer
+
+Goal:: xref:quality-goals.adoc#QG-03[QG-03]
+Q42:: #reliable
+Source:: A Pod stops answering.
+Stimulus:: A Pod gets no reply to a request.
+Artifact:: Station
+Environment:: Normal operation, with simulated Pods that do not answer.
+The requests are `LoadCellTare`, `LoadCellCalibrateWithRefWeight`, `Dispense`, `DispenserStartCalibration`, `LoadCellWeightRequest`, `EmergencyStop`, `HighlightDispenser`, `Ping` and `DeviceInfoRequest`.
+The Reply Times are the timeouts of the Station, and the xref:protocol.adoc[Protocol page] requires them to be longer than the worst case of the Pod.
+The Station repeats `Ping` and `DeviceInfoRequest` with a longer timeout, and the number of repeats is open.
+How the request fails is open (IF-01-R06).
+Response:: The request fails for its caller, and the Station notices that the Pod does not answer.
+Measure:: The time in ms from the write of the request at the Station to the failure of the request as its caller sees it, for each request.
+For `Dispense` and `DispenserStartCalibration` the time is taken for the `Ack` and for the result event.
+For `Ping` and `DeviceInfoRequest` the 100 ms applies to the first attempt.
+The result is the largest time over N requests of each type, and N is open.
+The scenario holds when this time is at most the Value for that request.
+The value for the result of `Dispense` rests on the provisional pour limit of 30 s.
+Verification:: Test
+Value:: 100 ms for `HighlightDispenser` and for the first attempt of `Ping` and `DeviceInfoRequest`, 500 ms for the `Ack` of `Dispense`, `DispenserStartCalibration` and `EmergencyStop` and for `LoadCellWeightRequest`, 2 s for `LoadCellTare` and `LoadCellCalibrateWithRefWeight`, 35 s for the result of `Dispense` (it rests on the provisional pour limit of 30 s), and the run time plus 3 s for the result of `DispenserStartCalibration`
+State:: Provisional
+Checks:: xref:contracts.adoc#IF-01-R06[IF-01-R06], xref:protocol.adoc#_reply_times[Protocol page, Reply Times], xref:fault-scenarios.adoc#link-breaks-during-pour[The Link to a Pod Breaks During a Pour], xref:station:adr:005-sender-receiver-execution-model.adoc[STA-005]
+
+[[QS-17]]
+=== QS-17: While one Pod is silent, the other Pods keep working
+
+Goal:: xref:quality-goals.adoc#QG-03[QG-03]
+Q42:: #reliable
+Source:: A Pod stops answering.
+Stimulus:: One Pod is silent while the other Pods work.
+Artifact:: Station
+Environment:: Normal operation, with at least 3 Pods, one of them silent.
+The Pods may be simulated Pods.
+The pending request of the silent Pod is a `Ping`.
+The silent Pod gives no answer in one case, and in the other case it answers slowly, after the longest Reply Time of a `Ping`.
+The UI is part of QS-30.
+Response:: The exchanges with the other Pods continue.
+Measure:: The added time is the largest round trip of a `Ping` to a Pod that works over N pings while another Pod is silent, minus the largest round trip over N pings without a silent Pod, in ms.
+N is open.
+The scenario holds when the added time is at most the Value.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-01-R06[IF-01-R06], xref:station:adr:005-sender-receiver-execution-model.adoc[STA-005]
+
+[[QS-18]]
+=== QS-18: The Station starts again with its data intact after a power cut
+
+Goal:: xref:quality-goals.adoc#QG-03[QG-03]
+Q42:: #reliable
+Source:: The Power Grid fails or the machine loses its supply.
+Stimulus:: The supply of the Station is cut and returns.
+Artifact:: Station
+Environment:: After a fault, on real hardware.
+The cuts come at the start, in the middle and at the end of a write of a state file, and at further random times, N cuts in all, and N is open.
+The times include idle and during a pour.
+Data is intact when each state file is the version before or after the interrupted write, and the Station reaches its known-good screen within a time that is open.
+Response:: The Station starts again and its data is intact.
+Measure:: The number of cuts after which a state file is neither the version before nor the version after the interrupted write, or the Station does not reach its known-good screen in time.
+The scenario holds when the count is 0 of N cuts.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-02-R03[IF-02-R03], xref:fault-scenarios.adoc#power-fails-during-pour[The Power Fails During a Pour], xref:runtime-view.adoc#switching-off[Switching Off], xref:station::cross-cutting-concepts.adoc#_configuration_and_data_as_files[Station concepts, Configuration and Data as Files]
+
+[[QS-19]]
+=== QS-19: A corrupted or cut-off message is not acted on
+
+Goal:: xref:quality-goals.adoc#QG-03[QG-03]
+Q42:: #reliable, #safe
+Source:: The link corrupts or cuts off a message.
+Stimulus:: A receiver gets a corrupted or cut-off message.
+Artifact:: Station and Pod
+Environment:: Normal operation.
+The Station side runs against simulated Pods, and the Pod side runs on a real Pod.
+The cases are a change of 1 bit, a change of 2 bits, a burst of 8 bits, a truncated frame and a wrong checksum.
+Each case runs over N frames of every message type of the release under test, and N is open.
+What the Station does next is open.
+Response:: The receiver does not act on the message.
+Measure:: The number of frames that move an actuator or change a state of a Pod or of the Station.
+The scenario holds when the count is 0 of N frames for each case and message type.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-01-R02[IF-01-R02], xref:adr:006-protocol-serialization.adoc[SYS-006]
+
+[[QS-20]]
+=== QS-20: A Pod on another protocol release is not used to dispense
+
+Goal:: xref:quality-goals.adoc#QG-03[QG-03]
+Q42:: #reliable, #safe
+Source:: A Pod runs on another protocol release than the Station.
+Stimulus:: The Pod connects.
+Artifact:: Station
+Environment:: Normal operation.
+The cases are a Pod on the previous release and a Pod on the next release.
+Response:: The Station leaves the Pod unused and shows both releases.
+Measure:: The number of commands other than the version query that the Station sends to a Pod of another release.
+The number of cases in which the Operator UI does not show both releases.
+The scenario holds when both counts are 0 of N connections per case, and N is open.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-01-R04[IF-01-R04], xref:adr:006-protocol-serialization.adoc[SYS-006], xref:protocol.adoc#_versioning[Protocol page, Versioning]
+
+[[QS-21]]
+=== QS-21: The supply stays inside its rating at full load
+
+Goal:: xref:quality-goals.adoc#QG-03[QG-03]
+Q42:: #reliable
+Source:: The Station and all Pods run at the same time.
+Stimulus:: All pumps of all Pods start at the same instant and pump water against the outlet.
+Artifact:: Power Management Unit
+Environment:: Normal operation, with the Station running and the largest configuration of Pods.
+The mains voltage is the nominal voltage.
+The load runs for a time T, and T is open.
+The start-up of all pumps is part of the test.
+Response:: The load stays inside the rating of the power supply.
+Measure:: The largest average power in W over a window that is open, the average power over T in W and the current in A, all measured at the output of the supply.
+The result is the largest value over N runs, and N is open.
+The scenario holds when the largest average over the window is at most 80 % of the 120 W rating of the supply on the xref:hardware.adoc[Hardware page], so at most 96 W.
+The average power over T is at most 120 W and the current is at most 5 A, as the xref:hardware.adoc[Hardware page] gives them.
+Verification:: Test
+Value:: 96 W
+State:: Target
+Checks:: xref:contracts.adoc#IF-03-R01[IF-03-R01], xref:hardware.adoc[Hardware page]
+
+[[QS-22]]
+=== QS-22: An Operator refills a bottle from the top
+
+Goal:: xref:quality-goals.adoc#QG-04[QG-04]
+Q42:: #operable
+Source:: An Operator refills a bottle.
+Stimulus:: An Operator tops up a bottle that stands at its dispenser.
+Artifact:: Pod
+Environment:: Service.
+The participants have the Operator profile of a person with a short briefing and no technical training.
+Each participant gets the short briefing and the written steps.
+Without help means that the test leader does not intervene.
+Response:: The Operator refills the bottle from the top without taking it out, and the Pod keeps weighing it.
+Measure:: The number of participants who complete the refill in this way, the time of the refill in s, and the difference between the fill level of the Station and the added weight in g.
+The scenario holds when at least k of N participants complete the refill and the difference is at most the Value, and k, N and the largest time are open.
+A demonstration is a trial and no statistical proof.
+Verification:: Demonstration
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-05-R03[IF-05-R03], xref:runtime-view.adoc#refilling[Refilling], xref:adr:007-calibration-and-fill-level.adoc[SYS-007]
+
+[[QS-23]]
+=== QS-23: An Operator replaces a bottle without tools
+
+Goal:: xref:quality-goals.adoc#QG-04[QG-04]
+Q42:: #operable
+Source:: An Operator replaces an empty or wrong bottle.
+Stimulus:: An Operator takes out a bottle and puts in another.
+Artifact:: Pod
+Environment:: Service.
+The cases are an empty bottle and a wrong bottle.
+The participants have the Operator profile of a person with a short briefing and no technical training.
+Without help means that the test leader does not intervene.
+Response:: The Operator replaces the bottle without tools.
+Measure:: The number of participants who end with the bottle at the right dispenser and weighed by the Pod and who use no tool, and the time of the change in s.
+The scenario holds when at least k of N participants do so in each case, and k, N and the largest time are open.
+A demonstration is a trial and no statistical proof.
+Verification:: Demonstration
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-05-R04[IF-05-R04], xref:runtime-view.adoc#refilling[Refilling]
+
+[[QS-24]]
+=== QS-24: An Operator changes a worn pump tube without disconnecting lines
+
+Goal:: xref:quality-goals.adoc#QG-04[QG-04]
+Q42:: #operable
+Source:: A pump tube is worn.
+Stimulus:: An Operator changes the pump tube of a Pod that stays installed.
+Artifact:: Pod
+Environment:: Service.
+The Operator stops the pump first (IF-08 precaution).
+The participants have the Operator profile of a person with a short briefing and no technical training.
+Without help means that the test leader does not intervene.
+Response:: The Operator changes the tube and leaves the supply and outlet lines connected.
+Measure:: The number of participants who disconnect no supply or outlet line, after whom the pump delivers again and nothing leaks, and the time of the change in s.
+The pump delivers again when a pour lies within the tolerance of QS-26.
+The leak check runs over a number of pours that is open.
+The scenario holds when at least k of N participants do so, and k, N and the largest time are open.
+A demonstration is a trial and no statistical proof.
+Verification:: Demonstration
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-08-R02[IF-08-R02], xref:contracts.adoc#IF-08-R04[IF-08-R04], xref:mechanics::pump-service.adoc[Mechanics pump service page], xref:fault-scenarios.adoc#pump-lid-opened[The Pump Lid Is Opened While the Pump Can Move]
+
+[[QS-25]]
+=== QS-25: An Operator calibrates a dispenser by following the steps
+
+Goal:: xref:quality-goals.adoc#QG-04[QG-04]
+Q42:: #operable
+Source:: An Operator calibrates a dispenser.
+Stimulus:: An Operator starts the calibration of a dispenser in the Operator UI.
+Artifact:: Station and Pod
+Environment:: Service.
+The participants have the Operator profile of a person with a short briefing and no technical training.
+Without help means that the test leader does not intervene.
+Response:: The Operator completes the calibration by following the steps shown.
+Measure:: The number of participants who complete the calibration, and whose dispenser passes QS-26 after that calibration, and the time of the calibration in s.
+The scenario holds when at least k of N participants do so, and k, N and the largest time are open.
+A demonstration is a trial and no statistical proof.
+Verification:: Demonstration
+Value:: none
+State:: Open
+Checks:: xref:adr:007-calibration-and-fill-level.adoc[SYS-007], xref:station::runtime-view.adoc#_an_operator_calibrates_a_dispenser[Station runtime view, An Operator Calibrates a Dispenser]
+
+[[QS-26]]
+=== QS-26: The dispensed amount after calibration lies within a tolerance
+
+Goal:: xref:quality-goals.adoc#QG-04[QG-04]
+Q42:: #operable, #suitable
+Source:: An Operator has calibrated a dispenser.
+Stimulus:: The Station dispenses a requested amount through the calibrated dispenser.
+Artifact:: Station and Pod
+Environment:: Normal operation, after a calibration.
+The test covers each dispenser of the test setup and a set of requested amounts.
+The set of amounts is open.
+The liquid is water at a stated temperature, and the temperature is open.
+The reference scale has a resolution that is stated in the test record, and it is open.
+The amount is weighed in g and converted to mL with a stated density.
+Response:: The dispensed amount lies within the tolerance of the requested amount.
+Measure:: The difference between the dispensed amount and the amount weighed on the reference scale, in percent of the requested amount and in mL.
+The tolerance is a percentage of the requested amount or an absolute limit in mL, whichever is larger, and both are open.
+The scenario holds when each of N pours per requested amount and dispenser has a difference within the tolerance, and N is open.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:adr:007-calibration-and-fill-level.adoc[SYS-007], xref:station::runtime-view.adoc#_an_operator_calibrates_a_dispenser[Station runtime view, An Operator Calibrates a Dispenser]
+
+[[QS-27]]
+=== QS-27: A Guest cannot reach calibration or dispenser control without the PIN
+
+Goal:: xref:quality-goals.adoc#QG-04[QG-04]
+Q42:: #secure
+Source:: A Guest stands at the machine.
+Stimulus:: A person tries to open calibration or dispenser control in the Operator UI without the Operator PIN.
+Artifact:: Station, Operator UI
+Environment:: Normal operation.
+The refill dialog during a drink needs no PIN, because a Guest may stand at the machine (xref:station::runtime-view.adoc#_a_bottle_runs_empty_and_gets_refilled[Station runtime view, A Bottle Runs Empty and Gets Refilled]).
+Whether the refill dialog is excluded from this scenario is open.
+The number of wrong entries that starts the lockout and the duration of the lockout are open.
+Response:: The Operator UI stays closed, also after repeated wrong entries.
+Measure:: The number of functions of the Operator UI that a person reaches without a correct PIN.
+Every function is counted that the xref:station::building-blocks.adoc[Station building block view] lists for the Operator UI.
+The count runs after a series of wrong entries, and the number of entries is open.
+The scenario holds when the count is 0.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:station::cross-cutting-concepts.adoc#_operator_authentication[Station concepts, Operator Authentication], xref:station::building-blocks.adoc[Station building block view], xref:runtime-view.adoc#refilling[Refilling]
+
+[[QS-28]]
+=== QS-28: A first-time Guest places an order without help
+
+Goal:: xref:quality-goals.adoc#QG-05[QG-05]
+Q42:: #usable
+Source:: A Guest uses the machine for the first time.
+Stimulus:: The Guest wants a drink and has no instructions.
+Artifact:: Station, Guest UI
+Environment:: Normal operation.
+The participants have no prior use of the machine and get no briefing.
+Without help means that the test leader does not intervene.
+Response:: The Guest selects a recipe and a glass and starts the drink.
+Measure:: The number of participants who place an order without help, and the time from the first touch to the first `Dispense` that the Station sends, in s.
+The scenario holds when at least k of N participants do so, and k, N and the largest time are open.
+A demonstration is a trial and no statistical proof.
+Verification:: Demonstration
+Value:: none
+State:: Open
+Checks:: xref:runtime-view.adoc#drink-end-to-end[A Drink End to End]
+
+[[QS-29]]
+=== QS-29: A failed pour shows on the Guest UI with its ingredient
+
+Goal:: xref:quality-goals.adoc#QG-05[QG-05]
+Q42:: #usable
+Source:: A pour fails.
+Stimulus:: A pour fails during a drink.
+Artifact:: Station, Guest UI
+Environment:: After a fault, which is injected into the test setup.
+The cases are a bottle that runs empty, a link that breaks, a failed acknowledgement of an `EmergencyStop` and a refused command.
+Response:: The Guest UI shows that the pour failed, and the message names the ingredient.
+Measure:: The number of cases in which the Guest UI does not show the failure or does not name the ingredient, and the time from the failure to the message in s.
+The scenario holds when the count is 0 of N runs per case, and N and the largest time are open.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:fault-scenarios.adoc#bottle-empty-during-pour[A Bottle Runs Empty During a Pour], xref:fault-scenarios.adoc#link-breaks-during-pour[The Link to a Pod Breaks During a Pour], xref:contracts.adoc#IF-01-R10[IF-01-R10], xref:station::cross-cutting-concepts.adoc#_error_handling_toward_the_guest[Station concepts, Error Handling Toward the Guest]
+
+[[QS-30]]
+=== QS-30: The Guest UI reacts to a touch within a short time
+
+Goal:: xref:quality-goals.adoc#QG-05[QG-05]
+Q42:: #efficient, #usable
+Source:: A Guest touches the screen.
+Stimulus:: A Guest taps the screen while a Pod pours or does not answer.
+Artifact:: Station, Guest UI
+Environment:: Normal operation and after a fault, on the Station hardware with its display.
+The conditions are a tap during a pour and a tap while a Pod is silent.
+Response:: The Guest UI reacts to each tap.
+Measure:: The time in ms from the tap to the first frame in which the pressed control changes its look, observed with an instrument that is independent of the Station.
+The result is a statistic over N taps per condition, and the statistic and N are open.
+The scenario holds when each result is at most its threshold, and the Value names a threshold for each statistic.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:station:adr:005-sender-receiver-execution-model.adoc[STA-005], xref:contracts.adoc#IF-01-R06[IF-01-R06]
+
+[[QS-31]]
+=== QS-31: The Station and the Pods are built against one protocol release
+
+Goal:: xref:quality-requirements.adoc#QG-06[QG-06]
+Q42:: #maintainable
+Source:: A developer changes the protocol schema.
+Stimulus:: A new protocol release is built for the Station and for the Pods.
+Artifact:: Station and Pod
+Environment:: Development, for each release.
+Response:: A change to the protocol schema reaches the Station and the Pods as one release, so they cannot disagree about the messages.
+Measure:: The number of built parts in a release that report another protocol release than the others.
+Each built part reports the release it was built against.
+The evidence that the parts belong to the same release is open.
+The scenario holds when the count is 0 for each release.
+Verification:: Inspection
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-01-R03[IF-01-R03], xref:adr:006-protocol-serialization.adoc[SYS-006]
+
+[[QS-32]]
+=== QS-32: A change to the Station is verified without the assembled machine
+
+Goal:: xref:quality-requirements.adoc#QG-06[QG-06]
+Q42:: #maintainable
+Source:: A developer changes the Station.
+Stimulus:: The developer runs the checks of the Station against simulated Pods.
+Artifact:: Station
+Environment:: Development, without the assembled machine and without a Pod attached.
+A simulated Pod stands in for a real Pod and answers over the same contract.
+The flows are a drink end to end, a refill, a calibration, the entry of the PIN and the failure cases of QS-29.
+Response:: The Station is verified against the simulated Pods, so a change needs no assembled machine.
+Measure:: First, the number of the listed flows that cannot run against simulated Pods.
+The scenario holds when this count is 0 of the listed flows.
+Second, the number of contract checks whose result differs between a simulated Pod and a real Pod.
+The scenario holds when this count is 0 of N checks, and N is open.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-01[IF-01], xref:station::solution-strategy.adoc[Station solution strategy]
+
+[[QS-33]]
+=== QS-33: The machine serves drinks through a whole event without an Operator restart
+
+Goal:: xref:quality-goals.adoc#QG-03[QG-03]
+Q42:: #reliable
+Source:: Guests order drinks over the length of an event.
+Stimulus:: The Station serves drinks at a stated rate for the length of the event.
+Artifact:: Station and Pod
+Environment:: Normal operation, on real hardware, with at least 3 Pods.
+The event length, the drink rate and the mix of recipes are stated in the test record, and they are open.
+Bottles are refilled when the Station asks for it, and a refill is not a restart.
+Response:: The machine serves the drinks for the whole event, and no Operator has to restart it or step in to keep it running.
+Measure:: The number of Operator restarts and other interventions of an Operator that the event needs to go on, counted over the whole event.
+A refill that the Station asks for is not an intervention.
+The scenario holds when the count is 0 in each of N events, and N is open.
+A count of 0 gives only a bound and no proof that the machine never needs a restart.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:runtime-view.adoc#drink-end-to-end[A Drink End to End], xref:contracts.adoc#IF-01-R06[IF-01-R06]
+
+[[QS-34]]
+=== QS-34: A poured amount matches the recipe amount within a tolerance
+
+Goal:: xref:quality-goals.adoc#QG-02[QG-02]
+Q42:: #suitable, #safe
+Source:: A Guest orders a drink.
+Stimulus:: The Station pours the recipe of the drink.
+Artifact:: Station and Pod
+Environment:: Normal operation, on real hardware.
+The cases are a single ingredient and the whole drink, each for a set of recipes.
+The set of recipes is open.
+The reference scale resolves the tolerance, and its resolution relative to the tolerance is open.
+The tolerance is in mL and is open.
+Response:: The amount in the glass matches the recipe amount, for each ingredient and for the whole drink.
+Measure:: The difference in mL between the amount weighed on the reference scale and the recipe amount, once for each ingredient and once for the whole drink.
+A difference above zero is too much, and a difference below zero is too little.
+The scenario holds when the difference lies within the tolerance in both directions, in each of N pours per case, and N is open.
+Verification:: Test
+Value:: none
+State:: Open
+Checks:: xref:contracts.adoc#IF-01-R08[IF-01-R08], xref:contracts.adoc#IF-05-R05[IF-05-R05], xref:runtime-view.adoc#drink-end-to-end[A Drink End to End]

@@ -16,7 +16,7 @@ Those boundaries need to be enforced by the compiler rather than by convention a
 
 == Quality Goals
 
-* xref:system::quality-goals.adoc#QG-06[QG-06]: The compiler enforces the boundaries between the internal libraries, so implementation details cannot leak.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: The compiler enforces the boundaries between the internal libraries, so implementation details cannot leak.
 
 == Decision
 We will organize all first-party Station code as {cpp} modules rather than the traditional header-and-source-file split, with each internal library exposed as a single named module assembled from module interface partitions and plain module implementation units (`module cm;`).
@@ -37,5 +37,5 @@ The same header content is also reparsed by the compiler once per translation un
 
 === Effect on the Quality Goals
 
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because each library's public interface is explicit and enforced by module exports.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Better, because each library's public interface is explicit and enforced by module exports.
 Worse, because modules are still young, so the compiler and CMake versions are pinned tightly and tooling support is less mature.

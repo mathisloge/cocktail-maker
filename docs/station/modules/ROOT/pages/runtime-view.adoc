@@ -91,7 +91,7 @@ A Pod reports a pour that came up short as a pour with less than the requested a
 pours the rest. See <<A Bottle Runs Empty and Gets Refilled>>.
 
 | `TimedOut`
-| The Pod's time limit of 30 s ended it. The Station pours the rest without asking, unless the pour
+| The Pod's time limit of 30 s (provisional, to be confirmed on the assembled machine) ended it. The Station pours the rest without asking, unless the pour
 moved less than 20 mL. That points at a problem, so the pour then counts as an empty bottle.
 
 | `StillShort`
@@ -215,7 +215,7 @@ A new run replaces the calibration.
 The run pours real liquid, so a glass has to stand under the dispenser, and the Operator can stop it.
 A longer run gives a more accurate calibration, because the load cell reads to about 1 g.
 That is about 5 % at 20 mL and about 2 % at 50 mL.
-The run time is 1 s to 30 s and starts at 15 s, and the Station hints at a longer run below 50 mL.
+The run time is 1 s to 30 s (provisional, to be confirmed on the assembled machine) and starts at 15 s, and the Station hints at a longer run below 50 mL.
 A run where next to nothing came out ends with a `DispenserEmpty` error and leaves the previous calibration in place.
 That can also be a run that was simply too short for this dispenser.
 

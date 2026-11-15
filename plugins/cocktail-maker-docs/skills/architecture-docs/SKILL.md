@@ -90,8 +90,8 @@ The ID is an AsciiDoc anchor such as `[[QG-01]]`, and it is also shown as text n
 
 | Prefix | Item | Defined on |
 |---|---|---|
-| `QG-nn` | quality goal | System chapter 1, Quality Goals page |
-| `QS-nn` | quality scenario | System chapter 10 |
+| `QG-nn` | quality goal | System chapter 1, Quality Goals page (`QG-01` to `QG-05`), and System chapter 10, Quality Requirements page (further goals, such as `QG-06`) |
+| `QS-nn` | quality scenario | System chapter 10, Quality Requirements page |
 | `SM-nn` | safety measure | System chapter 8, Safety page |
 | `IF-nn` | contract | System chapter 5, Contracts page |
 | `IF-nn-Rnn` | requirement of a contract | System chapter 5, Contracts page, in the requirements table of contract `IF-nn` |
@@ -100,6 +100,7 @@ The ID is an AsciiDoc anchor such as `[[QG-01]]`, and it is also shown as text n
 - An ID is never changed and never reused, even when its item is removed.
 - IDs are defined only in System.
   Subprojects refer to them with `xref:system::quality-goals.adoc#QG-01[QG-01]`.
+- A link to a goal names the page that defines it, so `QG-01` to `QG-05` link `quality-goals.adoc` and `QG-06` links `quality-requirements.adoc`.
 
 ## No code, no owner as a source
 
@@ -260,6 +261,65 @@ shape: sequence_diagram
 - Write only what the owner confirmed, and mark every step as taken from a source or as an assumption in the draft.
 - A subproject keeps the software details in its own runtime view and links the System scenario.
 
+## Quality scenarios
+
+A quality scenario makes a quality goal measurable.
+The Quality Requirements page of System chapter 10 holds one section per scenario, with an explicit anchor.
+The page also lists the further goals (goals below the top goals of chapter 1, such as `QG-06`) in the section `== Further Quality Goals`.
+The top goals are the table of the Quality Goals page, and the further goals use the same table form.
+
+```adoc
+[cols="1,2,5,3", options="header"]
+|===
+| ID | Quality Goal | Scenario | Q42
+
+| [[QG-06]]QG-06
+| *Maintainability*
+| <the goal as one sentence>
+| `#maintainable`
+|===
+```
+
+In both tables the order of the rows is the priority.
+
+The heading is level 2, or level 3 under a `== Scenarios` section.
+The tags are the nine tags of the arc42 quality model Q42, see SYS-014: `#efficient`, `#flexible`, `#maintainable`, `#operable`, `#reliable`, `#safe`, `#secure`, `#suitable` and `#usable`.
+
+```adoc
+[[QS-01]]
+== QS-01: <short title>
+
+Goal:: xref:quality-goals.adoc#QG-01[QG-01]
+Q42:: #safe
+Source:: <what triggers it>
+Stimulus:: <what happens>
+Artifact:: <the part of the machine: the machine, the Station, a Pod, the Power Management Unit>
+Environment:: <normal operation, service or after a fault, and any other condition>
+Response:: <what the machine does>
+Measure:: <what is measured, with unit and method>
+Verification:: <Test, Inspection, Analysis or Demonstration>
+Value:: <number and unit, or "none">
+State:: <Target, Provisional, Open or Withdrawn>
+Checks:: <xrefs>
+```
+
+- Keep the twelve fields and their order.
+  A value may run over several lines, with one sentence per line, until the next field.
+- A scenario has exactly one goal, and `Q42` names one or more tags, at least one of them a tag of that goal.
+  `Goal` links the page that defines the goal: `quality-requirements.adoc` for `QG-06` and `quality-goals.adoc` for `QG-01` to `QG-05`.
+- A scenario states what the machine must reach, never a mechanism.
+- `Source` names a trigger, never an author.
+- `State` is `Target` (only the owner sets it), `Provisional` (a docs page or an ADR states the value, and it is still to be confirmed on the assembled machine), `Open` or `Withdrawn`.
+- `Value` is `none` exactly when `State` is `Open` or `Withdrawn`.
+  Otherwise it is a number and a unit, or a count with a noun, such as `0 drinks`.
+- `Checks` holds only xrefs: to a defined `IF-nn` or `IF-nn-Rnn`, to a scenario anchor on the runtime view or the fault scenarios page, and to any other existing page of System or Station, with or without an anchor.
+  An ADR is such a page.
+  Mechanics pages are accepted without a check.
+- A withdrawn scenario keeps its section and its ID.
+- The chapter also holds the quality tree and a traceability table, and both agree with the sections.
+  The table columns are `QS | Goal | Q42 | Artifact | Verification | State | Value`.
+  The tree has one block per goal, and each scenario node sits inside the block of its goal.
+
 ## Diagrams
 
 All diagrams are D2, rendered through Kroki.
@@ -279,5 +339,6 @@ It covers the diagram type per chapter, boxes, arrows, layout, names and the sha
 - How-to content is in a guide and not in a chapter.
 - No subproject repeats the quality goals, the naming conventions or a System glossary term.
 - Every diagram is a D2 block.
+- Every quality scenario has the twelve fields in order, and a value that fits its state.
 - No page names code, and no source is an owner decision: each source is a docs page or an ADR.
 - The prose follows `writing-style`, and the checker reports no errors.

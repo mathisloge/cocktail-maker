@@ -23,7 +23,7 @@ Therefore, the domain model must enforce strict distinctions between different k
 
 * xref:system::quality-goals.adoc#QG-01[QG-01]: The compiler rejects identifier mix-ups, such as a Pod ID where a dispenser ID is expected, which could lead to a wrong hardware command.
 * xref:system::quality-goals.adoc#QG-02[QG-02]: Units checked at compile time keep a wrong quantity, such as an overdose, from reaching a pour.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Function signatures state the domain concepts they need.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Function signatures state the domain concepts they need.
 
 == Decision
 We will enforce strict domain type safety throughout the system by implementing the following changes.
@@ -66,5 +66,5 @@ Function signatures clearly express the exact physical dimensions and identifier
 
 * xref:system::quality-goals.adoc#QG-01[QG-01]: Better, because identity confusion is eliminated by design.
 * xref:system::quality-goals.adoc#QG-02[QG-02]: Better, because unit conversions are handled or validated at compile time.
-* xref:system::quality-goals.adoc#QG-06[QG-06]: Better, because the domain model documents itself.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Better, because the domain model documents itself.
 Worse, because the boundaries need wrapping and unwrapping boilerplate, heavy templates slow the build and give complex error messages, and new developers face a steeper learning curve.

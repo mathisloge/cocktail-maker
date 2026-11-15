@@ -12,21 +12,24 @@ guest: "Guest" {class: actor}
 operator: "Operator" {class: actor}
 power_grid: "Power Grid · mains socket" {class: external}
 ingredients: "Raw Ingredients · bottles" {class: external}
+glass: "Glass · in the glass placement area" {class: external}
 machine: "Sir-Mix-A-Lot · cocktail-maker" {
   class: boundary
   station: "Station · Raspberry Pi, touchscreen · C++/Slint\norchestrates the entire system,\nruns the UI, manages recipes\nand handles Pod state" {class: block}
   pod: "Pod · Pod controller, steppers, load cells, valves\nautonomous unit,\none or more per machine,\ndispenses exact ingredient amounts\nand reports back" {class: block}
-  power_management_unit: "Power Management Unit · power supply\ninternally transforms\nexternal 230 V AC to safe\n5 V/12 V/24 V DC levels" {class: power-part}
+  power_management_unit: "Power Management Unit · power supply\ninternally transforms\nexternal 230 V AC to safe\n5 V and 24 V DC levels" {class: power-part}
 }
 guest -> machine.station: "interacts with UI\nto order drinks" {class: interaction}
 operator -> machine.station: "uses Operator UI\n(calibration, cleaning cycles)" {class: interaction}
-operator -> machine.pod: "performs physical maintenance\n(tube swaps, refilling)" {class: interaction}
+operator -> machine.pod: "IF-08 · performs physical maintenance\n(tube swaps, refilling)" {class: interaction}
 operator -> ingredients: replaces empty bottles {class: interaction}
-power_grid -> machine.power_management_unit: supplies 230 V AC {class: power}
-machine.power_management_unit -> machine.station: distributes 5 V DC {class: power}
-machine.power_management_unit -> machine.pod: distributes 12 V/24 V DC {class: power}
-machine.station -> machine.pod: "sends dispense commands\nand reads status over USB CDC" {class: [data; key]}
-ingredients -> machine.pod: "are drawn into tubing\nvia pumps" {class: fluid}
+power_grid -> machine.power_management_unit: "IF-04 · supplies 230 V AC" {class: power}
+machine.power_management_unit -> machine.station: "IF-02 · distributes 5 V DC" {class: power}
+machine.power_management_unit -> machine.pod: "IF-03 · distributes 24 V DC" {class: power}
+machine.station -> machine.pod: "IF-01 · sends dispense commands\nand reads status over USB CDC" {class: [data; key]}
+ingredients -> machine.pod: "IF-05 · are drawn into tubing\nvia pumps" {class: fluid}
+machine.pod -> glass: "IF-06 · pours through the\nStation fluid hub" {class: fluid}
+machine.pod -> machine.station: "IF-07 · is mounted on,\ncabled to" {class: mechanical}
 ----
 Which blocks make up the machine, and how do they work with the people and inputs around it?
 
@@ -40,3 +43,5 @@ The xref:mechanics::building-blocks.adoc[Mechanics building block view] describe
 * **Power Management Unit:** The internal bridge between the external power grid and the low-voltage electronics.
 
 The split of the Station and Pod's is decided in xref:adr:001-system-split.adoc[]
+
+The xref:contracts.adoc[Contracts page] states what crosses each boundary between these blocks.

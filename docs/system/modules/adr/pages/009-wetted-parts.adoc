@@ -1,0 +1,54 @@
+= SYS-009: Only tubes and stainless steel parts touch liquids
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-11-15
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+Ingredients flow from the bottles through the Pods and the fluid hub of the Station into the glass.
+Every part on this path touches food, so it must be food-safe.
+Most parts of the Station and the Pods are 3D printed.
+The printed parts are not food-safe.
+PETG was chosen for the pump parts because of its heat resistance, not for food contact (xref:mechanics:adr:003-petg-pump-material.adoc[CM3D-003]).
+The fluid hub and the outlet to the glass are not designed yet.
+
+=== Decision Drivers
+
+* **Food-safe flow path:** no part that touches an ingredient or a drink may be made of a material that is not food-safe (QG-02).
+* **Free choice for printed parts:** the material of a printed part should follow its mechanical needs, such as heat and load (QG-06).
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-02[QG-02]: The food-safety argument rests only on tubes and stainless steel parts, and no printed part is in the flow path.
+* xref:system::quality-goals.adoc#QG-06[QG-06]: Printed parts can change material and shape without a food-safety review, but every wetted part must be a tube or a stainless steel part.
+
+== Decision
+
+Only food-safe tubes and stainless steel parts touch an ingredient or a drink.
+No 3D printed part touches a liquid.
+
+== Alternatives Considered
+
+=== Printed parts in the flow path
+
+Printed parts such as a fluid hub or an outlet are in direct contact with the liquid.
+
+Rejected: the printed parts are not food-safe.
+
+== Consequences
+
+* **Good:** The food-safety argument covers only a short list of parts, the tubes and the stainless steel parts.
+* **Good:** A printed part can change its material or shape without touching the food-safety argument.
+* **Bad:** Every part in the flow path, such as the fluid hub, the joints and the outlet, must be a tube or a stainless steel part, which limits its design.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-02[QG-02]: Better, because only food-safe tubes and stainless steel parts touch an ingredient or a drink.
+* xref:system::quality-goals.adoc#QG-06[QG-06]: Better and worse.
+Printed parts are free in their material, but every wetted part is limited to tubes and stainless steel parts.

@@ -15,7 +15,7 @@ direction: down
 
 station: "Station · main control and power" {
   class: boundary
-  ac_in: "AC Mains Input · mains inlet\n110 V/230 V AC" {class: power-part}
+  ac_in: "AC Mains Input · mains inlet\n230 V AC" {class: power-part}
   switch: "Main Switch · mains switch" {class: power-part}
   psu: "MeanWell NDR-120-24 · power supply\n120 W | 24 V | 5 A" {class: power-part}
   step_down: "5 V Step-Down · DC/DC converter" {class: power-part}

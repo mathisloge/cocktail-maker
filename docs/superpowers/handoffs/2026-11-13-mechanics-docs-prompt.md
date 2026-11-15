@@ -34,8 +34,8 @@ If `.gitignore` ignores `.claude/`, change that entry to these two lines so `set
 !.claude/settings.json
 ```
 
-The plugin must be at version 0.5.0 or newer.
-That version holds the diagram rules, the shared diagram style, the rules for the layout engine, the System glossary and the rules for the quality goals of an ADR.
+The plugin must be at version 0.6.0 or newer.
+That version holds the contract rules, the diagram rules, the shared diagram style, the rules for the layout engine, the System glossary and the rules for the quality goals of an ADR.
 Then restart the session or reload the plugins.
 Use these four skills from the plugin for all the work below: `writing-style`, `architecture-docs`, `writing-adrs` and `writing-diagrams`.
 Read them before you change any page.
@@ -98,6 +98,7 @@ Chapter 2 is optional and you may skip it.
 Use the `architecture-docs` skill for what each chapter holds.
 Where no page exists yet, use the not-written-yet admonition page from that skill.
 Add every new page to `nav.adoc`.
+The Mechanics chapter 5 links the contracts that touch its parts, for example `xref:system::contracts.adoc#IF-05[IF-05]`.
 Do not invent content.
 
 Guides holds printing, pump assembly and service, and purchasing.

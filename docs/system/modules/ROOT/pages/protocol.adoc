@@ -28,7 +28,8 @@ The exact wire format, framing, and versioning strategy are defined in <<Framing
 == Physical Transport
 
 The Station and Pods are physically connected via USB, using the USB CDC class to carry the protocol described above.
-This choice keeps each Pod a self-contained, hot-pluggable unit that can be connected, removed, or replaced without rewiring the Station.
+The USB data link is hot-pluggable, so a Pod can be connected, removed, or replaced without rewiring the Station.
+The Pod supply is not, and an Operator switches the machine off before adding or removing a Pod (xref:contracts.adoc#IF-03[IF-03]).
 
 The detailed rationale, trade-offs, and alternatives considered (CAN, Ethernet) behind this interface choice are out of scope for this page and are captured separately in xref:adr:002-pysical-pod-connection.adoc[SYS-002], since the Station/Pod split (xref:adr:001-system-split.adoc[SYS-001]) was decided independently of the transport used to realize it.
 

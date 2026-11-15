@@ -11,3 +11,4 @@ This list shows all System ADRs:
 * xref:adr:006-protocol-serialization.adoc[]
 * xref:adr:007-calibration-and-fill-level.adoc[]
 * xref:adr:008-enclosure-colours.adoc[]
+* xref:adr:009-wetted-parts.adoc[]

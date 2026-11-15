@@ -1,0 +1,515 @@
+= Contracts
+
+A contract states what crosses one boundary between two blocks or parties of the machine, and what each side guarantees to the other.
+Each contract has an ID of the form `IF-nn`, and each of its requirements has an ID of the form `IF-nn-Rnn`.
+The IDs are stable and never reused.
+Other pages and the subprojects refer to a contract or a requirement by its ID.
+The boundaries come from the blocks of xref:building-blocks.adoc[chapter 5].
+
+[[IF-01]]
+== IF-01: Station to Pod
+
+Sides:: The Station (Station docs, owner of the host side) and a Pod (Pod firmware, owner of the Pod side).
+Both sides are built from one protocol schema.
+Kind:: data
+Status:: Partly decided
+
+=== What crosses
+
+Frames of the request-response protocol cross a USB CDC serial link.
+The Station starts every exchange with a command or a status query.
+The Pod answers with a response, an acknowledgement or later an event, always under the `TransactionId` of the request.
+The details of the frames and messages stay on the xref:protocol.adoc[Protocol page] and in the schema repo.
+
+=== Guarantees and limits
+
+* Transport: USB CDC, and each Pod enumerates as its own USB CDC device (xref:adr:002-pysical-pod-connection.adoc[SYS-002]).
+* Cable length is limited to typically a few meters without hubs, and the bandwidth is shared by all Pods (xref:adr:002-pysical-pod-connection.adoc[SYS-002]).
+* The Station is the sole initiator, and a Pod never sends an unsolicited command (xref:adr:003-protocol-communication.adoc[SYS-003]).
+* Every frame carries a Sync marker, a size, a message ID, a `TransactionId` and a CRC-16 over size through payload.
+  There is no byte stuffing (xref:protocol.adoc[Protocol page], section Framing).
+* A `TransactionId` is unique among the pending requests only, and the Pod echoes it on every frame of that exchange (xref:protocol.adoc[Protocol page], section Transaction Correlation).
+* A pour ends with `DispenseFinished`, which reports the measured amount and a `DispenseResult`.
+  A pour that ends short is no error, and only `Completed` reaches the requested amount (xref:protocol.adoc[Protocol page], section Communication Patterns).
+* A pour stops after 30 s at the latest (xref:protocol.adoc[Protocol page], `DispenseResult` table).
+* The schema release is 2.1.0, written `0x020100` (schema repo, `schema.xml`).
+  The Station accepts exactly the release it was built against (xref:protocol.adoc[Protocol page], section Versioning).
+* The Station waits for a reply at most as long as the Reply Times table allows.
+  The values are 100 ms, 500 ms, 2 s, 35 s, and run time plus 3 s for a calibration run (xref:protocol.adoc[Protocol page], section Reply Times).
+* Code only, not yet in a doc: the Station sends a `Ping` every 2 s and repeats an unanswered one up to 3 times, and each attempt waits for the reply twice as long as the one before, from 100 ms up to 1 s (`cocktail-maker/pod.cpp`, `Pod::keep_alive`, and `ExponentialBackoffPolicy` in `core/retry.cppm`).
+* Code only, not yet in a doc: the Station repeats an unanswered `DeviceInfoRequest` up to 5 times, and each attempt waits for the reply twice as long as the one before, from 100 ms up to 10 s (`cocktail-maker/pod.cpp`, `Pod::monitor_device`, and `ExponentialBackoffPolicy` in `core/retry.cppm`).
+* Code only, not yet in a doc: the Station drops the connection when more than 64 KiB of received bytes hold no valid frame (`cocktail-maker/pod_protocol_session.cpp`, `kMaxBufferSize`).
+
+=== Fault behaviour
+
+* A frame with a wrong CRC or an unknown layout is not delivered.
+  The Station skips the bytes and looks for the next frame (`cocktail-maker/pod_protocol_session.cpp`, `read_loop`, code only).
+* A Pod that does not reply in time makes the request fail with a timeout error that names the Pod.
+  The Station detects it, and every exchange has its own timeout (xref:station:adr:005-sender-receiver-execution-model.adoc[STA-005]).
+* A Pod that stays silent to the `Ping` after all repeats ends its run, and the Station removes it from the Pod registry (`cocktail-maker/pod.cpp` and `cocktail-maker/pod_discovery.cpp`, code only and read, not run).
+* A Pod that went away makes the pending requests fail with a "Pod disconnected" error (`cocktail-maker/pod.cpp`, `rethrow_as_pod_error`, code only).
+* A command that a Pod refuses or cannot finish is answered with `Nak` and an `ErrorCode`, and the Station reports it as an error for that Pod (xref:protocol.adoc[Protocol page], section Request / Acknowledgement).
+* A Pod on another protocol release stays unused, the Station names both releases, and it hands out no dispenser of that Pod (xref:protocol.adoc[Protocol page], section Versioning, and `cocktail-maker/pod.cpp`, `create_dispenser`, code only).
+* When a dispense fails or the Guest cancels, the Station stops the remaining actions and sends an `EmergencyStop` to every Pod (xref:station::runtime-view.adoc[Station runtime view]).
+* What a Pod does when the link breaks during a pour is not in any source.
+
+=== Requirements
+
+[cols="2,6,2,3", options="header"]
+|===
+| ID | Requirement | Goals | Met by
+| [[IF-01-R01]]IF-01-R01 | A Pod never acts without a request from the Station. | QG-01, QG-02 | xref:adr:003-protocol-communication.adoc[SYS-003]
+| [[IF-01-R02]]IF-01-R02 | A corrupted or cut-off message is never acted on. | QG-02, QG-03 | xref:adr:006-protocol-serialization.adoc[SYS-006]
+| [[IF-01-R03]]IF-01-R03 | The Station and every Pod cannot disagree about the messages of one protocol release. | QG-03, QG-06 | xref:adr:006-protocol-serialization.adoc[SYS-006]
+| [[IF-01-R04]]IF-01-R04 | A Pod on another protocol release is never used to dispense. | QG-02, QG-03 | xref:protocol.adoc[Protocol page]
+| [[IF-01-R05]]IF-01-R05 | Every reply and event is attributed to the request it belongs to, also while several exchanges are pending. | QG-02, QG-03 | xref:protocol.adoc[Protocol page]
+| [[IF-01-R06]]IF-01-R06 | A Pod that does not answer is noticed within a bounded time and stalls neither another Pod nor the UI. | QG-03 | xref:station:adr:005-sender-receiver-execution-model.adoc[STA-005]
+| [[IF-01-R07]]IF-01-R07 | The Station can stop every pump and valve of a Pod at once. | QG-01 | xref:protocol.adoc[Protocol page]
+| [[IF-01-R08]]IF-01-R08 | Every pour reports the amount that really came out, and a pour that came up short is never reported as complete. | QG-02 | xref:protocol.adoc[Protocol page]
+| [[IF-01-R09]]IF-01-R09 | Every connected Pod is told apart from the others, so a command reaches the intended Pod and a status is attributed to its origin. | QG-02, QG-03 | xref:adr:002-pysical-pod-connection.adoc[SYS-002]
+| [[IF-01-R10]]IF-01-R10 | A refused or failed command always tells the Station why, so that no failure stays silent. | QG-02, QG-03 | xref:protocol.adoc[Protocol page]
+| [[IF-01-R11]]IF-01-R11 | A Pod ends a running pour on its own when the link to the Station breaks. | QG-01, QG-02 | open
+|===
+
+=== Open questions
+
+* Does a Pod stop a running pour when the USB link breaks, and who guarantees it (IF-01-R11)?
+* Which bounded time must the Station need to notice a silent Pod (IF-01-R06)?
+* Do the code-only values (Ping interval and repeats, device info repeats, buffer limit) become part of the contract?
+* Which USB vendor ID and product ID will the Pods use, since the Station code holds placeholders?
+* Which maximum cable length does the contract promise, since SYS-002 says only "typically a few meters"?
+* How many Pods does the Station support on its USB ports, and does a hub belong to the design?
+
+=== Sources
+
+* xref:protocol.adoc[Protocol page] and xref:hardware.adoc[Hardware page]
+* xref:adr:002-pysical-pod-connection.adoc[SYS-002], xref:adr:003-protocol-communication.adoc[SYS-003] and xref:adr:006-protocol-serialization.adoc[SYS-006]
+* xref:station:adr:003-asynchronous-execution-model.adoc[STA-003] (superseded) and xref:station:adr:005-sender-receiver-execution-model.adoc[STA-005]
+* xref:station::runtime-view.adoc[Station runtime view]
+* {gh}mathisloge/cocktail-maker-protocol[cocktail-maker-protocol], file `schema.xml`
+* Station code in `cocktail-maker/pod.cpp`, `cocktail-maker/pod_protocol_session.cpp`, `cocktail-maker/pod_discovery.cpp` and `cocktail-maker/serial.cppm`
+
+[[IF-02]]
+== IF-02: Power Management Unit to Station
+
+Sides:: The Power Management Unit (System docs, owner of the supply side) and the Station (Station docs, owner of the Station computer and its display).
+Kind:: power
+Status:: Partly decided
+
+=== What crosses
+
+A 5 V DC supply crosses from the Power Management Unit to the Station.
+The 5 V come from a DC/DC converter that steps down the 24 V DC of the power supply.
+The Station computer is the consumer.
+Whether the touch display draws from the same 5 V is not in any source.
+
+=== Guarantees and limits
+
+* The Station computer is the only 5 V consumer in the power chain (xref:power.adoc[Power page], and xref:adr:004-power-architecture.adoc[SYS-004]).
+* The 5 V are made from the 24 V DC rail by a DC/DC converter, behind the power supply, the main switch and the RCD or circuit breaker (xref:power.adoc[Power page]).
+* The power supply is a MeanWell NDR-120-24 with 120 W, 24 V and 5 A, and it also feeds the Pods (xref:hardware.adoc[Hardware page]).
+  The Hardware page shows a "5 V Step-Down" and names no part for it.
+* A protective earth conductor runs through every stage up to the Station (xref:adr:004-power-architecture.adoc[SYS-004]).
+* The 5 V for the load cells and servos of a Pod do not come from this supply, because a Pod makes its own 5 V from its 24 V (IF-03).
+* Not in any source: the 5 V current limit, the voltage tolerance, the connector, a fuse on the 5 V side.
+
+=== Fault behaviour
+
+* If the single power supply fails, the Station and all Pods lose power at once.
+  SYS-004 names this as an accepted weakness (xref:adr:004-power-architecture.adoc[SYS-004]).
+* A power loss leaves a whole state file on the Station, because it writes each file in one step.
+  The Station corrects the fill levels when the Pods come back (xref:station::runtime-view.adoc[Station runtime view]).
+* What the Station does on a brown-out of the 5 V is not in any source.
+
+=== Requirements
+
+[cols="2,6,2,3", options="header"]
+|===
+| ID | Requirement | Goals | Met by
+| [[IF-02-R01]]IF-02-R01 | The 5 V supply stays inside what the Station computer and its display accept, at every load of the Station. | QG-03 | open
+| [[IF-02-R02]]IF-02-R02 | A fault on the 5 V side cannot start a fire or leave a conductor live and reachable. | QG-01 | open
+| [[IF-02-R03]]IF-02-R03 | A power cut at any moment leaves the Station able to start again with its data intact. | QG-03 | xref:station::runtime-view.adoc[Station runtime view]
+|===
+
+=== Open questions
+
+* Which loads does the 5 V rail carry (Raspberry Pi 5, the touch display, anything else), and which current must it deliver?
+  The current stays open until it is measured.
+* Which part makes the 5 V, and which fuse or protection sits on it?
+* Does the Station stay up for a short time after the mains drops, or does it just stop?
+* How are the limits of the Station supply written down, so that a person can check and replace it?
+
+=== Sources
+
+* xref:power.adoc[Power page] and xref:hardware.adoc[Hardware page]
+* xref:adr:004-power-architecture.adoc[SYS-004]
+* xref:station::runtime-view.adoc[Station runtime view]
+* Owner decision, 2026-11-15, on the 5 V of a Pod
+
+[[IF-03]]
+== IF-03: Power Management Unit to Pod
+
+Sides:: The Power Management Unit (System docs, owner of the supply side) and a Pod (Pod firmware and Mechanics docs, owner of the Pod side).
+Kind:: power
+Status:: Partly decided
+
+=== What crosses
+
+A 24 V DC supply crosses from the Power Management Unit to each Pod.
+This is the only supply a Pod takes.
+In the Pod it feeds the pumps, valves and stepper motors, and the Pod controller, and the Pod makes its own 5 V from it.
+All Pods share this one 24 V rail.
+
+=== Guarantees and limits
+
+* The rail is 24 V DC from one SMPS, and it directly powers pumps, valves and stepper motors (xref:adr:004-power-architecture.adoc[SYS-004]).
+* A Pod takes only 24 V DC as input, and it lowers the voltage itself to the 5 V that it needs for the load cells and servos (owner decision, 2026-11-15).
+* All Pods share the same 24 V rail, and this needs careful current budgeting and fusing as Pods are added (xref:adr:004-power-architecture.adoc[SYS-004]).
+* The power supply is a MeanWell NDR-120-24 with 120 W, 24 V and 5 A, for the Station and all Pods together (xref:hardware.adoc[Hardware page]).
+* The Hardware page shows the 24 V going to the Pod controller.
+* The Pod controller is a BIGTREETECH Octopus V1.1, and its POWER terminal block takes GND and 24 V (positions 3 and 4 from +Y).
+  The plug depth is assumed and needs a re-measure on the real part (xref:mechanics::pod-electronics.adoc[Mechanics Pod electronics page]).
+* The MOTOR_POWER and POWER terminals are screw terminals, and a screwdriver needs access from +Z.
+  The Pod design has to leave that room, and the model has no keep-out for it yet (xref:mechanics::pod-electronics.adoc[Mechanics Pod electronics page]).
+* A Pod holds 8 stepper motors 17HE19-2004S, 8 driver modules and 10 load cell units in the bill of materials (xref:mechanics::structure.adoc[Mechanics product structure page]).
+* A protective earth conductor runs through every stage to every Pod (xref:power.adoc[Power page]).
+* An Operator does not unplug a Pod while the machine is on, and the main switch comes first (owner decision, 2026-11-15).
+* Not in any source: the current of a Pod, the number of Pods the supply can carry, the fuse values, the power connector of a Pod.
+
+=== Fault behaviour
+
+* If the single SMPS fails, all Pods and the Station lose power at once (xref:adr:004-power-architecture.adoc[SYS-004]).
+* What a Pod does when the 24 V drops or returns during a pour is not in any source.
+* Which part detects an overload of the shared rail is not in any source.
+
+=== Requirements
+
+[cols="2,6,2,3", options="header"]
+|===
+| ID | Requirement | Goals | Met by
+| [[IF-03-R01]]IF-03-R01 | The total load of the Station and all Pods stays inside the rating of the power supply. | QG-03 | open
+| [[IF-03-R02]]IF-03-R02 | A short circuit or overload in one Pod is cut off before it harms a person, damages another Pod or stops the other Pods. | QG-01, QG-03 | open
+| [[IF-03-R03]]IF-03-R03 | With the machine off, an Operator can remove or add a Pod on the power rail without touching a live conductor. | QG-01, QG-04 | open
+| [[IF-03-R04]]IF-03-R04 | When the 24 V returns after a loss, no actuator moves before the Station has started that Pod again. | QG-01, QG-02 | open
+|===
+
+=== Open questions
+
+* How many Pods must the power supply carry, and which current does one Pod draw at most?
+* Which fuse or protection sits in front of each Pod?
+* Which power connector does a Pod use?
+* How is the power need of a Pod written down, so that a developer can check the rail budget before a Pod is added?
+* The power budget stays open and is a risk for chapter 11 later (xref:adr:004-power-architecture.adoc[SYS-004] names it).
+
+=== Sources
+
+* xref:power.adoc[Power page] and xref:hardware.adoc[Hardware page]
+* xref:adr:004-power-architecture.adoc[SYS-004]
+* xref:mechanics::pod-electronics.adoc[Mechanics Pod electronics page] and xref:mechanics::structure.adoc[Mechanics product structure page]
+* Owner decision, 2026-11-15, on the Pod supply and on unplugging a Pod
+
+[[IF-04]]
+== IF-04: Power Grid to Power Management Unit
+
+Sides:: The Power Grid (external) and the Power Management Unit (System docs).
+Kind:: power
+Status:: Partly decided
+
+=== What crosses
+
+Mains AC power of 230 V and 50 Hz crosses from the Power Grid into the machine through the mains inlet.
+The Power Management Unit takes it through the main switch and the protective device to the power supply.
+
+=== Guarantees and limits
+
+* The machine has one single external 230 V AC mains connection, and it takes no other mains voltage (xref:power.adoc[Power page], xref:adr:004-power-architecture.adoc[SYS-004] and owner decision, 2026-11-15).
+* The mains is 230 V AC at 50 Hz, the standard voltage in Germany (owner decision, 2026-11-15).
+* The chain is an IEC C14 inlet, a main switch, a residual current and overcurrent protection device, and then the SMPS (xref:adr:004-power-architecture.adoc[SYS-004]).
+* The main switch is one clearly labeled point where an Operator fully disconnects the machine from mains (xref:power.adoc[Power page]).
+* The protective device acts before any DC conversion (xref:power.adoc[Power page]).
+* A continuous protective earth conductor runs from the inlet through every stage (xref:adr:004-power-architecture.adoc[SYS-004]).
+* Not in any source: the power rating of the machine, the mains plug and cord, the standards that apply, the inrush current, the behaviour on a mains brown-out.
+
+=== Fault behaviour
+
+* A residual current fault or an overcurrent is cut off by the protective device before the power supply (xref:power.adoc[Power page]).
+* The Operator can cut all power with the main switch (xref:adr:004-power-architecture.adoc[SYS-004]).
+* The Hardware page shows no protective device between the main switch and the power supply, and the Power page does.
+
+=== Requirements
+
+[cols="2,6,2,3", options="header"]
+|===
+| ID | Requirement | Goals | Met by
+| [[IF-04-R01]]IF-04-R01 | An Operator can fully disconnect the machine from mains with one clearly labeled action. | QG-01 | xref:adr:004-power-architecture.adoc[SYS-004]
+| [[IF-04-R02]]IF-04-R02 | A residual current fault or an overcurrent is cut off before it reaches any converter or person. | QG-01 | xref:adr:004-power-architecture.adoc[SYS-004]
+| [[IF-04-R03]]IF-04-R03 | A protective earth conductor stays unbroken from the mains inlet through every stage. | QG-01 | xref:adr:004-power-architecture.adoc[SYS-004]
+| [[IF-04-R04]]IF-04-R04 | No part at mains voltage can be reached by a Guest or an Operator in normal use or in service. | QG-01 | open
+| [[IF-04-R05]]IF-04-R05 | The machine is built for 230 V AC at 50 Hz only, and a mains of another voltage cannot damage it or endanger a person. | QG-01, QG-03 | open
+|===
+
+=== Open questions
+
+* Which part is the protective device, and where does it sit in the Hardware page diagram?
+* Which standards or approvals must the machine meet?
+* Is the machine used with a mains plug that an Operator pulls, or fixed?
+
+=== Sources
+
+* xref:power.adoc[Power page], xref:hardware.adoc[Hardware page] and xref:safety.adoc[Safety page]
+* xref:adr:004-power-architecture.adoc[SYS-004]
+* Owner decision, 2026-11-15, on the mains voltage
+
+[[IF-05]]
+== IF-05: Bottle to Pod
+
+Sides:: The Raw ingredients in their bottles (supplied by the Operator) and a Pod (Pod firmware and Mechanics docs, owner of the Pod side).
+Kind:: fluid
+Status:: Partly decided
+
+=== What crosses
+
+An ingredient flows from a bottle through a supply line into the pump or valve of one dispenser.
+The weight of the bottle also crosses into the load cell of that dispenser, which weighs it.
+The pump side of the line is designed, and the bottle side (bottle holder, supply line, how a bottle is changed) is not.
+
+=== Guarantees and limits
+
+* Bottles stay in place and are refilled from the top (xref:adr:007-calibration-and-fill-level.adoc[SYS-007]).
+* One load cell unit (M5Stack Unit Mini Scales) weighs one bottle, and a Pod holds 10 bottles (xref:mechanics::index.adoc[Mechanics index page] and xref:mechanics::structure.adoc[Mechanics product structure page]).
+* A Pod has 8 pumps and 2 valves, and the valves are for carbonated drinks (owner decision, 2026-11-15, and xref:mechanics::structure.adoc[Mechanics product structure page]).
+* Only the tubes and some stainless steel parts touch a liquid, and no printed part does (xref:adr:009-wetted-parts.adoc[SYS-009]).
+* The pump piece is a silicone tube 7/5 mm of Shore A 60 and 215 mm long, with a food-safe 5 mm barb at each end (xref:mechanics::pump.adoc[Mechanics pump page] and xref:mechanics:adr:002-pump-fixed-occlusion-bed.adoc[CM3D-002]).
+* The tube pieces and fittings are bought as a silicone tube 7/5 mm, Shore A 60, and a 5 mm barbed fitting that is food-grade (xref:mechanics::purchasing.adoc[Mechanics purchasing page]).
+* A tube change on the installed pump leaves the supply and outlet lines untouched (xref:mechanics:adr:002-pump-fixed-occlusion-bed.adoc[CM3D-002]).
+* A pump delivers 3.64 ml per revolution (80 % efficiency assumed) and 9.1 ml/s at 150 rpm, and its maximum is 12.1 ml/s at 200 rpm.
+  Calibration with the load cell evens out the real flow (xref:mechanics::pump.adoc[Mechanics pump page]).
+* The load cell reads to about 1 g and drifts by up to about 20 g in an hour as measured (xref:adr:007-calibration-and-fill-level.adoc[SYS-007]).
+* The beam of the load cell is to be checked under a full load of 5 kg, and the 1 mm gap around its top half is an assumption (xref:mechanics::risks-and-technical-debt.adoc[Mechanics risks page]).
+* Not in any source: the bottle size and type, the bottle holder, the supply line length and diameter, the connection of a bottle to its line.
+
+=== Fault behaviour
+
+* A pour that moves next to nothing ends with a `BottleEmpty` result, because the bottle is empty or the line is blocked (xref:protocol.adoc[Protocol page]).
+  The Station asks the Operator to refill (xref:station::runtime-view.adoc[Station runtime view]).
+* A bottle refilled while the Station is off stays unnoticed until someone corrects its fill level (xref:adr:007-calibration-and-fill-level.adoc[SYS-007]).
+* What happens to the liquid when a line or barb comes loose is not in any source.
+  The pump housing has a drain in its bottom wall, through which a leak leaves (xref:mechanics::pump.adoc[Mechanics pump page]).
+
+=== Requirements
+
+[cols="2,6,2,3", options="header"]
+|===
+| ID | Requirement | Goals | Met by
+| [[IF-05-R01]]IF-05-R01 | Only food-safe tubes and stainless steel parts touch an ingredient between the bottle and the pump, and no printed part does. | QG-02 | xref:adr:009-wetted-parts.adoc[SYS-009]
+| [[IF-05-R02]]IF-05-R02 | An ingredient is drawn only from the bottle that the Station believes sits at that dispenser, and an Operator cannot connect a bottle to the wrong dispenser without noticing. | QG-02 | open
+| [[IF-05-R03]]IF-05-R03 | An Operator refills a bottle from the top while the Pod keeps weighing it. | QG-04 | xref:adr:007-calibration-and-fill-level.adoc[SYS-007]
+| [[IF-05-R04]]IF-05-R04 | An Operator replaces a bottle without tools. | QG-04 | open
+| [[IF-05-R05]]IF-05-R05 | An empty bottle is noticed, and its missing amount is never counted as poured. | QG-02 | xref:protocol.adoc[Protocol page]
+| [[IF-05-R06]]IF-05-R06 | The supply line does not load the bottle, so the weight reading follows what leaves the bottle. | QG-02, QG-03 | open
+|===
+
+=== Open questions
+
+* Which material do the food-grade 5 mm barbed fittings have, since the Mechanics bill of materials names none and SYS-009 allows only tubes and stainless steel parts to touch a liquid?
+* Which bottles must a Pod take (size, shape, glass or plastic), and how does a bottle sit on its load cell?
+* Must a bottle be found wrong when the Operator puts the wrong one in (IF-05-R02), and how?
+
+=== Sources
+
+* xref:hardware.adoc[Hardware page] and xref:safety.adoc[Safety page]
+* xref:adr:007-calibration-and-fill-level.adoc[SYS-007] and xref:protocol.adoc[Protocol page]
+* xref:adr:009-wetted-parts.adoc[SYS-009]
+* xref:station::runtime-view.adoc[Station runtime view]
+* xref:mechanics::pump.adoc[Mechanics pump page], xref:mechanics::structure.adoc[Mechanics product structure page] and xref:mechanics::purchasing.adoc[Mechanics purchasing page]
+* xref:mechanics:adr:002-pump-fixed-occlusion-bed.adoc[CM3D-002]
+* xref:mechanics::risks-and-technical-debt.adoc[Mechanics risks page]
+* Owner decision, 2026-11-15, on the wetted parts and on the valves
+
+[[IF-06]]
+== IF-06: Pod to glass through the Station fluid hub
+
+Sides:: A Pod (Pod firmware and Mechanics docs, owner of the dispenser outlet and its tubing) and the Station (Station docs, owner of the fluid hub and the glass placement area).
+Kind:: fluid
+Status:: Not designed yet
+
+=== What crosses
+
+The ingredient flows from the outlet of a dispenser through fluid tubing to the Station fluid hub.
+The hub collects the flow of all Pods and leads it into the glass in the glass placement area.
+This is the whole food-contact path from the Pod outlet to the glass.
+
+=== Guarantees and limits
+
+* The Hardware page shows an edge "delivers cocktail through fluid tubing" from the dispenser unit to the Station fluid hub, and it names the hub "manifold / collection" (xref:hardware.adoc[Hardware page]).
+* The Station houses the glass placement area (xref:naming-conventions.adoc[Naming conventions page]).
+* All food-contact parts and all flow paths use food-safe materials (xref:quality-goals.adoc[Quality goals page] and xref:safety.adoc[Safety page]).
+* Only the tubes and some stainless steel parts touch a liquid, and no printed part does (xref:adr:009-wetted-parts.adoc[SYS-009]).
+* The pump has two 5 mm barb spigots below its housing, 8.8 mm long outside the wall, and the tube leaves toward -Y (xref:mechanics::pump.adoc[Mechanics pump page]).
+* A leak in the pump housing leaves through a drain in its bottom wall (xref:mechanics::pump.adoc[Mechanics pump page]).
+* A pour stops after 30 s at the latest (xref:protocol.adoc[Protocol page]).
+* The Hardware page shows the load cell as weighing "bottle / glass".
+  The System docs say only that it weighs the bottle (xref:adr:007-calibration-and-fill-level.adoc[SYS-007]).
+* Not in any source: the hub design, the tube lengths and diameters after the pump, the outlet position, a glass sensor, the material of the hub, how the path is cleaned.
+
+=== Fault behaviour
+
+* Not designed yet.
+* Cleaning with hot water needs a pump that runs until someone stops it, and emptying the tubes needs a pump that runs backwards.
+  The protocol and the Pod firmware support neither today (xref:station::risks-and-technical-debt.adoc[Station risks page]).
+
+=== Requirements
+
+[cols="2,6,2,3", options="header"]
+|===
+| ID | Requirement | Goals | Met by
+| [[IF-06-R01]]IF-06-R01 | Only food-safe tubes and stainless steel parts touch the drink between the dispenser outlet and the glass, and no printed part does. | QG-02 | xref:adr:009-wetted-parts.adoc[SYS-009]
+| [[IF-06-R02]]IF-06-R02 | The amount that leaves the bottle reaches the glass, and nothing of it stays behind in the path. | QG-02 | open
+| [[IF-06-R03]]IF-06-R03 | Residue of one ingredient never ends up in a later drink. | QG-02 | open
+| [[IF-06-R04]]IF-06-R04 | An Operator can empty and clean the whole path, including the hub. | QG-02, QG-04 | open
+| [[IF-06-R05]]IF-06-R05 | A pour starts only when a glass stands in the glass placement area. | QG-02, QG-05 | open
+| [[IF-06-R06]]IF-06-R06 | A Guest at the glass placement area cannot reach a moving part, a pinch point or a hot surface. | QG-01 | open
+|===
+
+=== Open questions
+
+* Does the hub merge all ingredients into one outlet (IF-06-R03)?
+  This is not decided yet, and no rinse cycle is assumed.
+* Which stainless steel parts belong to the path, and which material does the hub use?
+* How does the machine detect that a glass stands in place (IF-06-R05)?
+  The sensor is decided in the Pod design.
+* The Hardware page shows the load cell weighing "bottle / glass", and SYS-007 names only the bottle.
+  Does the Pod or the Station weigh the glass?
+* Which cleaning cycles does the Operator run, and what do they need from the path (hot water, a pump running until stopped or backwards)?
+* How is the Station fluid hub fed from several Pods, since a Pod may stand apart from the Station?
+
+=== Sources
+
+* xref:hardware.adoc[Hardware page], xref:safety.adoc[Safety page] and xref:quality-goals.adoc[Quality goals page]
+* xref:naming-conventions.adoc[Naming conventions page] and xref:protocol.adoc[Protocol page]
+* xref:adr:007-calibration-and-fill-level.adoc[SYS-007]
+* xref:adr:009-wetted-parts.adoc[SYS-009]
+* xref:station::risks-and-technical-debt.adoc[Station risks page]
+* xref:mechanics::pump.adoc[Mechanics pump page]
+* Owner decision, 2026-11-15, on the wetted parts
+
+[[IF-07]]
+== IF-07: Pod to Station, mechanical
+
+Sides:: A Pod (Mechanics docs and Pod firmware, owner of the Pod housing) and the Station (Mechanics docs and Station docs, owner of the Station housing).
+Kind:: mechanical
+Status:: Not designed yet
+
+=== What crosses
+
+The Pod is mounted on the Station or next to it, and cables join the two.
+The cables are the USB cable (IF-01), the 24 V supply (IF-03) and the protective earth conductor, and the fluid tubing leads to the hub (IF-06).
+Chapter 5 draws this arrow as "is mounted on, cabled to".
+Neither housing exists yet.
+
+=== Guarantees and limits
+
+* A Pod is a self-contained and physically independent module, so it can be inspected, recalibrated or swapped out as a single unit (xref:adr:001-system-split.adoc[SYS-001]).
+* A machine has one Station and one or more Pods (xref:naming-conventions.adoc[Naming conventions page]).
+* Pods are connectable and removable by an Operator without special tools (xref:adr:002-pysical-pod-connection.adoc[SYS-002]).
+* The USB cable is limited to typically a few meters without hubs (xref:adr:002-pysical-pod-connection.adoc[SYS-002]).
+* The Mechanics docs plan the Pod housing and the Station for later, and the Pod code imports only the published interface of each part, such as `cm3d.pod.pump.interface` (xref:mechanics::index.adoc[Mechanics index page] and xref:mechanics::pump.adoc[Mechanics pump page]).
+* The visible enclosures of the Pod and the Station will be printed in several PETG colours (xref:mechanics:adr:014-materials-and-filaments.adoc[CM3D-014]).
+* Not in any source: how a Pod is mounted, the weight of a Pod with its bottles, the cable set and its connectors, the cable routing, the position of the Station fluid hub.
+
+=== Fault behaviour
+
+* Not designed yet.
+* The pump housing leads a leak out through a drain in its bottom wall (xref:mechanics::pump.adoc[Mechanics pump page]).
+  Where that liquid goes next is not in any source.
+
+=== Requirements
+
+[cols="2,6,2,3", options="header"]
+|===
+| ID | Requirement | Goals | Met by
+| [[IF-07-R01]]IF-07-R01 | An Operator removes or replaces a Pod as a single unit without special tools. | QG-04 | xref:adr:002-pysical-pod-connection.adoc[SYS-002]
+| [[IF-07-R02]]IF-07-R02 | A Pod stays where it is while bottles are changed, while the Operator works on it and when the machine is bumped. | QG-01, QG-03 | open
+| [[IF-07-R03]]IF-07-R03 | A pulled or pinched cable of a Pod never leaves a live conductor exposed or a Pod pouring. | QG-01 | open
+| [[IF-07-R04]]IF-07-R04 | Liquid from a Pod or from the fluid path never reaches the electronics of the Pod or the Station. | QG-01, QG-03 | open
+| [[IF-07-R05]]IF-07-R05 | Station and Pod housings fit together. | QG-06 | open
+| [[IF-07-R06]]IF-07-R06 | The protective earth conductor stays joined when a Pod is mounted, and a Pod cannot be mounted without it. | QG-01 | open
+|===
+
+=== Open questions
+
+* How is a Pod mounted (on the Station, in a rack, free standing), and how many Pods must fit?
+  This is not decided yet.
+* Which weight must the mount carry, with 10 full bottles in a Pod?
+* Does a cable between Pod and Station carry USB, 24 V and earth in one connector or in separate ones?
+* Where does a leak go after the drain of a pump housing (IF-07-R04)?
+
+=== Sources
+
+* xref:hardware.adoc[Hardware page] and xref:building-blocks.adoc[System building block view]
+* xref:adr:001-system-split.adoc[SYS-001] and xref:adr:002-pysical-pod-connection.adoc[SYS-002]
+* xref:naming-conventions.adoc[Naming conventions page]
+* xref:mechanics::index.adoc[Mechanics index page] and xref:mechanics::pump.adoc[Mechanics pump page]
+* xref:mechanics:adr:014-materials-and-filaments.adoc[CM3D-014]
+
+[[IF-08]]
+== IF-08: Operator to Pod
+
+Sides:: The Operator (a person, who follows the service steps) and a Pod (Mechanics docs, owner of the housing, the guards and the service access).
+Kind:: mechanical
+Status:: Partly decided
+
+=== What crosses
+
+The Operator's hands and tools reach into the Pod to refill bottles, to change a pump tube, to change an occlusion gap and to connect or remove the Pod.
+Safety information runs the other way, as guards and warnings.
+The pump side is designed, and the Pod housing is not.
+
+=== Guarantees and limits
+
+* The pump is a closed box, and its lid is the guard (xref:mechanics:adr:004-pump-closed-housing-bearing-lid.adoc[CM3D-004]).
+* A tube change needs a 2.5 mm hex driver with a straight shaft of at least 100 mm, and it starts with stopping the pump and draining the line (xref:mechanics::pump-service.adoc[Mechanics pump service page]).
+  The Operator removes three lid screws, and the bed screws are reached through the top wall.
+* The service access of a pump needs 35 mm free in front of the lid face over the lid outline, and 130 mm free above the top face for the hex driver (xref:mechanics::pump.adoc[Mechanics pump page]).
+* One 2.5 mm hex key fits every M3 screw of the pump (xref:mechanics::pump.adoc[Mechanics pump page]).
+* The pump must never run without its lid, because the nip between roller and tube can trap a finger (xref:mechanics::pump.adoc[Mechanics pump page]).
+* The pump has no interlock, which was a user decision, so every tube or gap change starts with opening the lid (xref:mechanics:adr:002-pump-fixed-occlusion-bed.adoc[CM3D-002]).
+* The lid is the precaution against the risk of the moving pump parts (owner decision, 2026-11-15).
+* The Pod gets only 24 V DC, and mains power stops in the Station (xref:adr:004-power-architecture.adoc[SYS-004] and xref:hardware.adoc[Hardware page]).
+* The screw terminals of the Pod controller need screwdriver access from +Z, and the model has no keep-out for it yet (xref:mechanics::pod-electronics.adoc[Mechanics Pod electronics page]).
+* Not in any source: the housing, the access door of the Pod, a guard for the other moving parts, a bottle change procedure.
+
+=== Fault behaviour
+
+* Residual risk: no interlock exists (xref:mechanics:adr:002-pump-fixed-occlusion-bed.adoc[CM3D-002]), so a finger can be trapped when the lid is opened while the pump can still move.
+  The lid, the rule "never run the pump without the lid" and the service steps are the precaution that mitigates it (owner decision, 2026-11-15, and xref:mechanics::pump.adoc[Mechanics pump page]).
+* The Station can stop every pump and valve of a Pod with an `EmergencyStop`, and a running tare or load cell calibration carries on (xref:protocol.adoc[Protocol page]).
+* Not designed yet: what stops a Pod when an Operator opens it.
+
+=== Requirements
+
+[cols="2,6,2,3", options="header"]
+|===
+| ID | Requirement | Goals | Met by
+| [[IF-08-R01]]IF-08-R01 | An Operator cannot reach a moving part or a pinch point while a Pod can still move. | QG-01 | xref:mechanics:adr:004-pump-closed-housing-bearing-lid.adoc[CM3D-004]
+| [[IF-08-R02]]IF-08-R02 | An Operator changes a worn pump piece in place without disturbing the supply and outlet lines. | QG-04 | xref:mechanics::pump-service.adoc[Mechanics pump service page]
+| [[IF-08-R03]]IF-08-R03 | Every point that an Operator must reach for service is reachable with the Pod installed. | QG-04 | open
+| [[IF-08-R04]]IF-08-R04 | An Operator can bring every actuator of a Pod to rest before opening it. | QG-01 | open
+|===
+
+=== Open questions
+
+* What brings every actuator of a Pod to rest when an Operator opens it (IF-08-R04), since a pump has no interlock?
+* Which guard covers the moving parts of a Pod beyond the pump lid (IF-08-R01)?
+* Does an Operator open the Pod to change a bottle, or does the bottle sit outside the housing?
+* Which tools may an Operator need beyond the 2.5 mm hex driver?
+* Where does the Operator reach the screw terminals of the Pod controller, and may they be reached without service training?
+
+=== Sources
+
+* xref:hardware.adoc[Hardware page], xref:safety.adoc[Safety page] and xref:protocol.adoc[Protocol page]
+* xref:adr:004-power-architecture.adoc[SYS-004]
+* xref:mechanics::pump.adoc[Mechanics pump page] and xref:mechanics::pump-service.adoc[Mechanics pump service page]
+* xref:mechanics::pod-electronics.adoc[Mechanics Pod electronics page]
+* xref:mechanics:adr:002-pump-fixed-occlusion-bed.adoc[CM3D-002] and xref:mechanics:adr:004-pump-closed-housing-bearing-lid.adoc[CM3D-004]
+* Owner decision, 2026-11-15, on the pump lid

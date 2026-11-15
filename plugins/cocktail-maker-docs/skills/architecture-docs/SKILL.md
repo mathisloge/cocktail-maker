@@ -93,7 +93,8 @@ The ID is an AsciiDoc anchor such as `[[QG-01]]`, and it is also shown as text n
 | `QG-nn` | quality goal | System chapter 1, Quality Goals page |
 | `QS-nn` | quality scenario | System chapter 10 |
 | `SM-nn` | safety measure | System chapter 8, Safety page |
-| `IF-nn` | contract | System chapter 5 |
+| `IF-nn` | contract | System chapter 5, Contracts page |
+| `IF-nn-Rnn` | requirement of a contract | System chapter 5, Contracts page, in the requirements table of contract `IF-nn` |
 
 - Two digits, zero-padded, for example `QG-01`.
 - An ID is never changed and never reused, even when its item is removed.
@@ -142,6 +143,59 @@ Not written yet.
 ```
 
 After the admonition, write one or two lines on what belongs in the chapter.
+
+## Contracts
+
+A contract states what crosses the border between two blocks or parties, what each side guarantees and what the design must reach there.
+All contracts live on the Contracts page of System chapter 5.
+Each one is a level-2 section in this form.
+
+```adoc
+[[IF-05]]
+== IF-05: Bottle to Pod
+
+Sides:: <the two blocks or parties, and which docs own each side>
+Kind:: <data, power, fluid or mechanical>
+Status:: <Decided, Partly decided or Not designed yet>
+
+=== What crosses
+<one short paragraph>
+
+=== Guarantees and limits
+<what each side guarantees, with limits and units, each with its source>
+
+=== Fault behaviour
+<what happens when one side breaks the contract, and who detects it>
+
+=== Requirements
+[cols="2,6,2,3", options="header"]
+|===
+| ID | Requirement | Goals | Met by
+| [[IF-05-R01]]IF-05-R01 | <outcome the design must reach> | QG-02 | open
+|===
+
+=== Open questions
+* <one question per line, for the owner>
+
+=== Sources
+* <links to ADRs, pages, the schema repo, Mechanics pages>
+```
+
+- Keep the six level-3 sections and their order, and give `Kind` and `Status` one of the listed values.
+- A section that has nothing yet says so in one line, for example "Not designed yet." under Guarantees and limits.
+- Values carry units, and a value from a source that is marked "re-measure" or "assumption" keeps that mark.
+- A requirement states an outcome, never a mechanism, and it names at least one defined `QG-nn` goal, also a technical one.
+  A requirement without a goal has no reason to exist.
+- A requirement is one table row on one line, with no `|` inside a cell.
+  Its ID starts with the ID of its contract, such as `IF-06-R01` inside `IF-06`.
+- "Met by" is `open` or a link to what fulfils the requirement, such as an ADR, the protocol page or a Mechanics page.
+  A link to a System or Station page must name a page that exists.
+- Write only what the owner confirmed, and let the owner confirm the goals of each requirement.
+- A decision changes a contract in this order.
+  First write the ADR.
+  Then update "Met by" and the guarantees of the contract.
+  Never change an ID and never reuse one, also when a requirement is dropped.
+- Subprojects only link contracts, with `xref:system::contracts.adoc#IF-05[IF-05]`, and never define them.
 
 ## Diagrams
 

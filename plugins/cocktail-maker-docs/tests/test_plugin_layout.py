@@ -127,3 +127,32 @@ def test_installed_checker_finds_its_data_next_to_it(tmp_path):
     )
     assert "avoid-word" in result.stdout
     assert "glossary-term" in result.stdout
+
+
+CONTRACT_SECTION_TITLES = (
+    "What crosses",
+    "Guarantees and limits",
+    "Fault behaviour",
+    "Requirements",
+    "Open questions",
+    "Sources",
+)
+CONTRACT_STATUS_VALUES = ("Decided", "Partly decided", "Not designed yet")
+
+
+def test_architecture_skill_has_the_contract_template():
+    # A small stand-in for `contract_problems` in docs/tests, so the plugin tests stay self-contained.
+    text = (SKILLS / "architecture-docs/SKILL.md").read_text(encoding="utf-8")
+    positions = [text.find(f"=== {title}\n") for title in CONTRACT_SECTION_TITLES]
+    assert all(position >= 0 for position in positions)
+    assert positions == sorted(positions)
+    for status in CONTRACT_STATUS_VALUES:
+        assert status in text
+
+
+def test_manifest_versions_agree_and_are_recent():
+    market = json.loads((REPO / ".claude-plugin/marketplace.json").read_text(encoding="utf-8"))
+    plugin = json.loads((REPO / "plugins/cocktail-maker-docs/.claude-plugin/plugin.json").read_text(encoding="utf-8"))
+    version = market["plugins"][0]["version"]
+    assert plugin["version"] == version
+    assert tuple(int(part) for part in version.split(".")) >= (0, 6, 0)

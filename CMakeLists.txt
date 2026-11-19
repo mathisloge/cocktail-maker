@@ -112,7 +112,7 @@ cpmaddpackage(URI "gh:mpusz/mp-units#566b8615a74e84fba824952a5c1dddc1935d9a2e" S
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
 cpmaddpackage(URI "gh:simdjson/simdjson@5.2.0" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF")
 cpmaddpackage(
-  URI "gh:slint-ui/slint#8d51770e77db4a9e801427a47ee3f79487504975"
+  URI "gh:slint-ui/slint@1.19.0"
   NAME Slint
   SOURCE_SUBDIR api/cpp
   # The C++ testing API (ElementHandle) is only declared with the experimental feature.

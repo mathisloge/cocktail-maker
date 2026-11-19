@@ -91,7 +91,7 @@ cpmaddpackage(
 cpmaddpackage(
   NAME stdexec
   GITHUB_REPOSITORY NVIDIA/stdexec
-  GIT_TAG 15ef61ea39433abba50acaeb92b0eeeb885798aa
+  GIT_TAG 42a3d4bc339d42de980fa78f268f41e266e5bfd6
   SYSTEM ON
   OPTIONS
     "STDEXEC_BUILD_TESTS OFF"
@@ -107,7 +107,7 @@ cpmaddpackage(
 cpmaddpackage(NAME gsl-lite VERSION 1.1.0 GITHUB_REPOSITORY gsl-lite/gsl-lite)
 cpmaddpackage(URI "gh:gabime/spdlog@1.17.0" OPTIONS "SPDLOG_USE_STD_FORMAT ON")
 cpmaddpackage(URI "gh:CLIUtils/CLI11@2.7.2" OPTIONS "CLI11_PRECOMPILED ON")
-cpmaddpackage(URI "gh:mpusz/mp-units#18d759722417168dc103ac951154bf0ad34f3c88" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
+cpmaddpackage(URI "gh:mpusz/mp-units#566b8615a74e84fba824952a5c1dddc1935d9a2e" SOURCE_SUBDIR src OPTIONS "MP_UNITS_BUILD_CXX_MODULES ON"
 )
 # enable reflection as soon as gcc is available SIMDJSON_STATIC_REFLECTION ON
 cpmaddpackage(URI "gh:simdjson/simdjson@5.1.1" OPTIONS "SIMDJSON_DISABLE_DEPRECATED_API OFF" "BUILD_SHARED_LIBS OFF")

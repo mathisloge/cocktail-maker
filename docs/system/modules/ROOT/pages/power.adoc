@@ -14,7 +14,7 @@ machine: "Sir-Mix-A-Lot · cocktail-maker\na continuous protective earth (PE) co
   fi_ls: "RCD/Circuit Breaker · protective device\nresidual current + overcurrent protection" {class: power-part}
   smps: "SMPS · power supply\n230 V AC -> 24 V DC" {class: power-part}
   dcdc: "DC/DC Converter · converter\n24 V DC -> 5 V DC" {class: power-part}
-  actuators: "Pumps, Valves, Steppers · actuators\n24 V DC consumers" {class: mechanical-part}
+  actuators: "Pods · steppers, servo valves via\ntheir own 5 V, show front · 24 V DC consumers" {class: mechanical-part}
   rpi: "Raspberry Pi · Station computer\n5 V DC consumer" {class: data-part}
   inlet -> main_switch: supplies 230 V AC {class: power}
   main_switch -> fi_ls: supplies 230 V AC {class: power}

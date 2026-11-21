@@ -1,0 +1,62 @@
+= SYS-017: Only the Station follows the UI palette
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-11-21
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+xref:008-enclosure-colours.adoc[SYS-008] made the outside of the Station and the Pods follow the colours of the UI palette, because a Guest saw both next to the touch display.
+Since xref:016-station-show-front.adoc[SYS-016] the Pods stand hidden wherever there is room, and the Guest sees only the Station with its show front.
+The parts are printed on a Prusa Core One with INDX, and each colour change in a print costs time and purge material.
+This ADR supersedes SYS-008.
+
+=== Decision Drivers
+
+* **A good look:** the screen, the Station and the show front should look like one product (QG-05).
+* **Food-safe flow path:** a colour must never bring a material into the flow path that is not food-safe (QG-02).
+* **Cheap Pods:** a hidden part should not pay for a look that nobody sees (QG-04).
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-05[QG-05]: The Station and the show front repeat the colours of the UI, so the machine looks like one product to the Guest.
+* xref:system::quality-goals.adoc#QG-02[QG-02]: The rule covers only the outside, so the parts in the flow path keep their food-safe material.
+* xref:system::quality-goals.adoc#QG-04[QG-04]: A Pod is printed in any colour, so a spare part is quick to print.
+
+== Decision
+
+The outside of the Station and its show front follows the colours of the UI palette where possible.
+The Pods are free in colour.
+
+== Alternatives Considered
+
+=== Pods keep the palette
+
+The rule of SYS-008 stays for the Pods, although they are hidden.
+
+Rejected: it costs print time and purge material for a look that no Guest sees.
+
+=== A neutral outside
+
+All outside parts are black or grey, independent of the UI.
+
+Rejected: it is simple, but the Station would not match the warm colours of the screen.
+
+== Consequences
+
+* **Good:** The screen, the Station and the show front look like one product.
+* **Good:** A Pod is printed in one colour, which saves time and purge material.
+* **Bad:** A filament never matches a palette colour exactly, so the Station only comes close to the screen.
+* **Bad:** A change of a UI colour can make printed parts of the Station outdated.
+* **Bad:** A Pod that stands in view of the Guests after all does not match the Station.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-05[QG-05]: Neutral, because the Guest sees only the Station, and it keeps the palette.
+* xref:system::quality-goals.adoc#QG-02[QG-02]: Neutral, because the parts in the flow path are outside the rule.
+* xref:system::quality-goals.adoc#QG-04[QG-04]: Better, because a spare part of a Pod needs no colour.

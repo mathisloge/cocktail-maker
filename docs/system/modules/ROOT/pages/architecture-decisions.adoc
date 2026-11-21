@@ -19,3 +19,4 @@ This list shows all System ADRs:
 * xref:adr:014-quality-model-q42.adoc[]
 * xref:adr:015-food-contact-plastic-bottles.adoc[]
 * xref:adr:016-station-show-front.adoc[]
+* xref:adr:017-station-colours.adoc[]

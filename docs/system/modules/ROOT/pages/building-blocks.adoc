@@ -26,12 +26,12 @@ operator -> machine.station: "uses Operator UI\n(calibration, cleaning cycles)" 
 operator -> machine.pod: "IF-08 · performs physical maintenance\n(tube swaps, refilling)" {class: interaction}
 operator -> ingredients: replaces empty bottles {class: interaction}
 power_grid -> machine.power_management_unit: "IF-04 · supplies 230 V AC" {class: power}
-machine.power_management_unit -> machine.station: "IF-02 · distributes 5 V DC" {class: power}
+machine.power_management_unit -> machine.station: "IF-02 · distributes\n5 V and 24 V DC" {class: power}
 machine.power_management_unit -> machine.pod: "IF-03 · distributes 24 V DC" {class: power}
 machine.station -> machine.pod: "IF-01 · sends dispense commands\nand reads status over USB CDC" {class: [data; key]}
 ingredients -> machine.pod: "IF-05 · are drawn into tubing\nvia pumps" {class: fluid}
 machine.pod -> glass: "IF-06 · pours through the\nStation fluid hub" {class: fluid}
-machine.pod -> machine.station: "IF-07 · is mounted on,\ncabled to" {class: mechanical}
+machine.pod -> machine.station: "IF-07 · is cabled to,\nstands hidden" {class: mechanical}
 machine.station -> machine.show_front: "drives the\neffects" {class: data}
 machine.show_front -> guest: "shows the pours" {class: interaction}
 ----
@@ -45,7 +45,7 @@ A Pod receives a command, executes it autonomously by driving its actuators, and
 Operators interact physically with Pods for maintenance.
 The xref:mechanics::building-blocks.adoc[Mechanics building block view] describes the mechanical parts of a Pod.
 * **Power Management Unit:** The internal bridge between the external power grid and the low-voltage electronics.
-* **Show front:** The visible front of the Station with 8 show columns that bubble and light up while the Station pours.
+* **Show front:** The visible front of the Station with 8 show columns, which show effects that the Station drives.
 Only the Station drives it, and no Pod knows about it (xref:adr:016-station-show-front.adoc[SYS-016]).
 The show front is part of the Station, so its link to the Station is internal and has no contract.
 

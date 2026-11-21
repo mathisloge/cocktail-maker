@@ -6,7 +6,7 @@ Each entity has a canonical name.
 == Station
 
 The *Station* is the central unit of the system.
-It houses the Raspberry Pi, the touch display, and the glass placement area.
+It houses the Raspberry Pi, the touch display, the show front and the glass placement area.
 It acts as the orchestrator of the entire machine by running the main application, hosting the UI, managing connected Pods, and coordinating dispensing sequences.
 
 There is exactly *one Station* per machine.
@@ -28,7 +28,7 @@ StationStatus                   // runtime state
 == Pod
 
 A *Pod* is a self-contained unit that dispenses ingredients.
-Each Pod holds one or more bottles and contains the embedded controller, stepper motors, servos, valves, and load cells required to autonomously measure and dispense its ingredients.
+Each Pod holds up to 10 bottles (xref:adr:013-pod-pumps-and-valves.adoc[SYS-013]) and contains the embedded controller, stepper motors, servos, valves, and load cells required to autonomously measure and dispense its ingredients.
 
 A Pod exposes a USB CDC interface and communicates with the Station using the defined serial protocol.
 

@@ -16,7 +16,7 @@ The Pods now stand hidden from the Guests, so the look of a bottle does not matt
 The bottle set of the Mechanics design (xref:mechanics::index.adoc[Mechanics overview page]) is a 1 l glass milk bottle.
 A design round with eight such bottles for the still ingredients, apart from the carbonated bottles of xref:013-pod-pumps-and-valves.adoc[SYS-013], gives a Pod of about 880 × 670 × 570 mm with 8 l of ingredients.
 Eight square 2 l HDPE wide-neck bottles give a Pod of about 880 × 340 × 520 mm with 16 l.
-An Operator lifts a bottle out to refill or clean it, and a glass bottle breaks when it hits an edge.
+An Operator refills a bottle from the top or lifts it out to refill, empty or rinse it, and a glass bottle breaks when it hits an edge.
 
 xref:009-wetted-parts.adoc[SYS-009] allowed only tubes and stainless steel parts to touch a liquid.
 It did not name the bottle at all, so it did not even cover the glass bottle.

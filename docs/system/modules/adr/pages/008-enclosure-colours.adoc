@@ -1,11 +1,11 @@
 = SYS-008: Enclosure colours follow the UI palette
 // Fill in the variables
 // one-of: Proposed, Accepted, Deprecated, Superseded
-:adr-status: Accepted
+:adr-status: Superseded
 :adr-date: 2026-11-14
 :adr-authors: {gh}mathisloge[@mathisloge]
 // when adr-status == Superseded provide the new ADR.
-// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
+:adr-superseded-by: xref:017-station-colours.adoc[SYS-017]
 
 include::partial$adr-header.adoc[]
 

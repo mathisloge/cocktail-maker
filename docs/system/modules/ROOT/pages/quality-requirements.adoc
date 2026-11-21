@@ -91,7 +91,7 @@ tree: "Quality goals" {
       class: boundary
       grid-columns: 1
       grid-gap: 8
-      q09: "QS-09 Only food-safe wetted parts" {class: block}
+      q09: "QS-09 Only food-safe parts\ntouch a drink" {class: block}
       q11: "QS-11 Command goes to named Pod\nalso #suitable" {class: block}
       q12: "QS-12 Reply matches its request\nalso #suitable" {class: block}
       q13: "QS-13 Ingredient from expected bottle\nalso #suitable" {class: block}
@@ -676,8 +676,8 @@ Checks:: xref:contracts.adoc#IF-01-R04[IF-01-R04], xref:adr:006-protocol-seriali
 
 Goal:: xref:quality-goals.adoc#QG-03[QG-03]
 Q42:: #reliable
-Source:: The Station and all Pods run at the same time.
-Stimulus:: All pumps of all Pods start at the same instant and pump water against the outlet.
+Source:: The Station, its show front and all Pods run at the same time.
+Stimulus:: All pumps of all Pods start at the same instant and pump water against the outlet, while the show front runs all air pumps and LED lines at full effect.
 Artifact:: Power Management Unit
 Environment:: Normal operation, with the Station running and the largest configuration of Pods.
 The mains voltage is the nominal voltage.

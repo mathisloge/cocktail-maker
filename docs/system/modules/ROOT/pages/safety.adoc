@@ -17,4 +17,10 @@ The power and protocol design directly support the *Human Safety* and *Food Safe
 
 | Food-safe materials on all parts that touch a person or a drink, and on all flow paths
 | Food Safety
+
+| Declared HDPE or PP bottles, emptied and rinsed after at most 48 h (xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015])
+| Food Safety
+
+| The liquid of a show column kept away from the Station electronics (open, xref:adr:016-station-show-front.adoc[SYS-016])
+| Human Safety
 |===

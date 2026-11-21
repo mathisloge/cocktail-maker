@@ -21,11 +21,11 @@ Glass	A glass type with common and active volumes that a Guest can choose for a 
 Dispenser	The part of a Pod that delivers one ingredient, either a pump or a valve.	Pod	Dispenser, DispenserId	
 Pump	A dispenser that moves liquid with a stepper motor.	Pod	Pump	
 Valve	A dispenser with a servo-driven pinch valve that opens and closes a flow.	Pod	Valve	
-Load cell	The sensor of a Pod that weighs a bottle or a glass.	Pod		
+Load cell	The sensor of a Pod that weighs a bottle.	Pod		
 Calibration	The measurement that ties a load cell reading or a dispenser run to a real amount, which the Pod keeps across power cycles.	Pod		
 Tare	Taking the current load on a load cell as its zero point.	Pod		
 Fill level	The amount of liquid left in the bottle of a dispenser.	System	FillLevelRecord	fill state;filling level
 Dispense	To pour a given volume of one ingredient through one dispenser.	System	DispenseCommand	
 Transaction	One request from the Station and the Pod's answer to it, linked by an ID in the protocol and never shown to a Guest.	System	TransactionId	
 Show front	The visible front of the Station with the show columns, which shows the pours to the Guests and never touches a drink.	System		
-Show column	An acrylic column of the show front, filled with water and propylene glycol, that bubbles and lights up while the Station pours.	System		show bottle;bubble column
+Show column	An acrylic column of the show front, filled with water and propylene glycol, that shows effects that the Station drives.	System		show bottle;bubble column

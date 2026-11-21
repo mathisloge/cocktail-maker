@@ -93,14 +93,15 @@ Status:: Partly decided
 
 === What crosses
 
-A 5 V DC supply crosses from the Power Management Unit to the Station.
+A 5 V DC supply and a 24 V DC supply cross from the Power Management Unit to the Station.
 The 5 V come from a DC/DC converter that steps down the 24 V DC of the power supply.
-The Station computer is the consumer.
+The Station computer is the consumer of the 5 V, and the show front is the consumer of the 24 V (xref:adr:016-station-show-front.adoc[SYS-016]).
 Whether the touch display draws from the same 5 V is not in any source.
 
 === Guarantees and limits
 
 * The Station computer is the only 5 V consumer in the power chain (xref:power.adoc[Power page], and xref:adr:004-power-architecture.adoc[SYS-004]).
+* The show front takes 24 V DC for its air pumps and LED lines from the same power supply as the Pods (xref:adr:016-station-show-front.adoc[SYS-016]).
 * The 5 V are made from the 24 V DC rail by a DC/DC converter, behind the power supply, the main switch and the RCD or circuit breaker (xref:power.adoc[Power page]).
 * The power supply is a MeanWell NDR-120-24 with 120 W, 24 V and 5 A, and it also feeds the Pods (xref:hardware.adoc[Hardware page]).
   The Hardware page shows a "5 V Step-Down" and names no part for it.
@@ -183,7 +184,7 @@ All Pods share this one 24 V rail.
 [cols="2,6,2,3", options="header"]
 |===
 | ID | Requirement | Goals | Met by
-| [[IF-03-R01]]IF-03-R01 | The total load of the Station and all Pods stays inside the rating of the power supply. | QG-03 | open
+| [[IF-03-R01]]IF-03-R01 | The total load of the Station, its show front and all Pods stays inside the rating of the power supply. | QG-03 | open
 | [[IF-03-R02]]IF-03-R02 | A short circuit or overload in one Pod is cut off before it harms a person, damages another Pod or stops the other Pods. | QG-01, QG-03 | open
 | [[IF-03-R03]]IF-03-R03 | With the machine off, an Operator can connect or disconnect the supply of a Pod on the power rail without touching a live conductor. | QG-01, QG-04 | open
 | [[IF-03-R04]]IF-03-R04 | When the 24 V returns after a loss, no actuator moves before the Station has started that Pod again. | QG-01, QG-02 | open
@@ -271,18 +272,19 @@ The pump side of the line is designed, and the bottle side (bottle holder, suppl
 
 === Guarantees and limits
 
-* Bottles stay in place and are refilled from the top (xref:adr:007-calibration-and-fill-level.adoc[SYS-007]).
+* An Operator refills a bottle from the top (xref:adr:007-calibration-and-fill-level.adoc[SYS-007]) or lifts it out to refill, empty or rinse it (xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]).
 * One load cell unit (M5Stack Unit Mini Scales) weighs one bottle, and a Pod holds 10 bottles (xref:mechanics::index.adoc[Mechanics index page] and xref:mechanics::structure.adoc[Mechanics product structure page]).
 * A Pod has 8 pumps and 2 valves, and the valves are for carbonated drinks (xref:adr:013-pod-pumps-and-valves.adoc[SYS-013]).
 * Only food-grade tubes, stainless steel parts, glass and declared HDPE or PP bottles, caps and fittings touch a liquid, and no printed part does (xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]).
 * The pump piece is a silicone tube 7/5 mm of Shore A 60 and 215 mm long, with a food-safe 5 mm barb at each end (xref:mechanics::pump.adoc[Mechanics pump page] and xref:mechanics:adr:002-pump-fixed-occlusion-bed.adoc[CM3D-002]).
 * The tube pieces and fittings are bought as a silicone tube 7/5 mm, Shore A 60, and a 5 mm barbed fitting that is food-grade (xref:mechanics::purchasing.adoc[Mechanics purchasing page]).
 * A tube change on the installed pump leaves the supply and outlet lines untouched (xref:mechanics:adr:002-pump-fixed-occlusion-bed.adoc[CM3D-002]).
-* A pump delivers 3.64 ml per revolution (80 % efficiency assumed) and 9.1 ml/s at 150 rpm, and its maximum is 12.1 ml/s at 200 rpm.
+* A pump delivers 3.64 mL per revolution (80 % efficiency assumed) and 9.1 mL/s at 150 rpm, and its maximum is 12.1 mL/s at 200 rpm.
   Calibration with the load cell evens out the real flow (xref:mechanics::pump.adoc[Mechanics pump page]).
 * The load cell reads to about 1 g and drifts by up to about 20 g in an hour as measured (xref:adr:007-calibration-and-fill-level.adoc[SYS-007]).
 * The beam of the load cell is to be checked under a full load of 5 kg, and the 1 mm gap around its top half is an assumption (xref:mechanics::risks-and-technical-debt.adoc[Mechanics risks page]).
-* Not in any source: the bottle size and type, the bottle holder, the supply line length and diameter, the connection of a bottle to its line.
+* The bottles are HDPE or PP with a declaration, and the Mechanics round plans square 2 l wide-neck bottles (xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]).
+* Not in any source: the bottle product, the bottle holder, the supply line length and diameter, the connection of a bottle to its line.
 
 === Fault behaviour
 
@@ -305,6 +307,7 @@ The pump side of the line is designed, and the bottle side (bottle holder, suppl
 | [[IF-05-R06]]IF-05-R06 | The supply line does not load the bottle, so the weight reading follows what leaves the bottle. | QG-02, QG-03 | open
 | [[IF-05-R07]]IF-05-R07 | An ingredient stays in a bottle for at most 48 h, and then the Operator empties and rinses the bottle. | QG-02, QG-04 | xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]
 | [[IF-05-R08]]IF-05-R08 | Each bottle holds only one ingredient, and an Operator replaces a bottle that smells or is worn. | QG-02 | xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]
+| [[IF-05-R09]]IF-05-R09 | An Operator may lift a bottle out and put it back, and the weight it takes away is never counted as poured. | QG-02, QG-04 | open
 |===
 
 === Open questions
@@ -313,6 +316,7 @@ The pump side of the line is designed, and the bottle side (bottle holder, suppl
 * Is the bought 5 mm barbed fitting PP with a declaration as SYS-015 requires, since the Mechanics bill of materials names no material?
 * Which release covers spirits above 50 % vol, since simulant D1 of the tube and the bottle is 50 % ethanol?
 * Must a bottle be found wrong when the Operator puts the wrong one in (IF-05-R02), and how?
+* How does the Station take the fill level of a bottle that an Operator lifted out and put back refilled or rinsed (IF-05-R09)?
 
 === Sources
 
@@ -400,9 +404,9 @@ Status:: Not designed yet
 
 === What crosses
 
-The Pod is mounted on the Station or next to it, and cables join the two.
+A Pod stands hidden from the Guests, free from the Station, and cables and tubes join the two (xref:adr:016-station-show-front.adoc[SYS-016]).
 The cables are the USB cable (IF-01), the 24 V supply (IF-03) and the protective earth conductor, and the fluid tubing leads to the hub (IF-06).
-Chapter 5 draws this arrow as "is mounted on, cabled to".
+Chapter 5 draws this arrow as "is cabled to, stands hidden".
 Neither housing exists yet.
 
 === Guarantees and limits
@@ -412,7 +416,8 @@ Neither housing exists yet.
 * Pods are connectable and removable by an Operator without special tools (xref:adr:002-pysical-pod-connection.adoc[SYS-002]).
 * The USB cable is limited to typically a few meters without hubs (xref:adr:002-pysical-pod-connection.adoc[SYS-002]).
 * The Mechanics docs plan the Pod housing and the Station for later (xref:mechanics::index.adoc[Mechanics index page] and xref:mechanics::pump.adoc[Mechanics pump page]).
-* The visible enclosures of the Pod and the Station will be printed in several PETG colours (xref:mechanics:adr:014-materials-and-filaments.adoc[CM3D-014]).
+* The enclosures will be printed in several PETG colours (xref:mechanics:adr:014-materials-and-filaments.adoc[CM3D-014]).
+  Only the Station follows the UI palette (xref:adr:017-station-colours.adoc[SYS-017]).
 * Not in any source: how a Pod is mounted, the weight of a Pod with its bottles, the cable set and its connectors, the cable routing, the position of the Station fluid hub.
 
 === Fault behaviour
@@ -436,8 +441,8 @@ Neither housing exists yet.
 
 === Open questions
 
-* How is a Pod mounted (on the Station, in a rack, free standing), and how many Pods must fit?
-  This is not decided yet.
+* How does a Pod stand (free standing or in a rack), and how many Pods must fit?
+  Its distance to the Station is limited by the USB cable (xref:adr:002-pysical-pod-connection.adoc[SYS-002]) and by the tubes to the fluid hub.
 * Which weight must the mount carry, with 10 full bottles in a Pod?
 * Does a cable between Pod and Station carry USB, 24 V and earth in one connector or in separate ones?
 * Where does a leak go after the drain of a pump housing (IF-07-R04)?

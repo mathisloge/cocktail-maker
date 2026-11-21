@@ -415,7 +415,7 @@ State:: Open
 Checks:: xref:contracts.adoc#IF-06-R06[IF-06-R06], xref:runtime-view.adoc#drink-end-to-end[A Drink End to End]
 
 [[QS-09]]
-=== QS-09: Only food-safe tubes and stainless steel parts touch a drink
+=== QS-09: Only food-safe parts touch a drink
 
 Goal:: xref:quality-goals.adoc#QG-02[QG-02]
 Q42:: #safe
@@ -424,15 +424,15 @@ Stimulus:: An ingredient or a drink passes each part of the flow path.
 Artifact:: The machine, along the flow path from the bottle to the glass
 Environment:: Normal operation.
 The path inside the fluid hub is not designed yet.
-Response:: Each part that touches the ingredient or the drink is a food-safe tube or a stainless steel part, and none is a printed part.
-Measure:: The number of parts along the flow path that are neither a food-safe tube nor a stainless steel part, or that are printed.
+Response:: Each part that touches the ingredient or the drink is a food-grade tube, a stainless steel part, glass, or an HDPE or PP bottle, cap or fitting with a declaration of compliance as SYS-015 requires, and none is a printed part.
+Measure:: The number of parts along the flow path that are none of these parts, or that are printed.
 The parts are counted by following the path on the built machine.
 The count is repeated when the design of the fluid hub exists.
 The scenario holds when the count is 0.
 Verification:: Inspection
 Value:: none
 State:: Open
-Checks:: xref:contracts.adoc#IF-05-R01[IF-05-R01], xref:contracts.adoc#IF-06-R01[IF-06-R01], xref:adr:009-wetted-parts.adoc[SYS-009]
+Checks:: xref:contracts.adoc#IF-05-R01[IF-05-R01], xref:contracts.adoc#IF-06-R01[IF-06-R01], xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]
 
 [[QS-10]]
 === QS-10: A short pour does not end as `Completed` and is not counted

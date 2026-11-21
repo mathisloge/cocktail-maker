@@ -274,7 +274,7 @@ The pump side of the line is designed, and the bottle side (bottle holder, suppl
 * Bottles stay in place and are refilled from the top (xref:adr:007-calibration-and-fill-level.adoc[SYS-007]).
 * One load cell unit (M5Stack Unit Mini Scales) weighs one bottle, and a Pod holds 10 bottles (xref:mechanics::index.adoc[Mechanics index page] and xref:mechanics::structure.adoc[Mechanics product structure page]).
 * A Pod has 8 pumps and 2 valves, and the valves are for carbonated drinks (xref:adr:013-pod-pumps-and-valves.adoc[SYS-013]).
-* Only the tubes and some stainless steel parts touch a liquid, and no printed part does (xref:adr:009-wetted-parts.adoc[SYS-009]).
+* Only food-grade tubes, stainless steel parts, glass and declared HDPE or PP bottles, caps and fittings touch a liquid, and no printed part does (xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]).
 * The pump piece is a silicone tube 7/5 mm of Shore A 60 and 215 mm long, with a food-safe 5 mm barb at each end (xref:mechanics::pump.adoc[Mechanics pump page] and xref:mechanics:adr:002-pump-fixed-occlusion-bed.adoc[CM3D-002]).
 * The tube pieces and fittings are bought as a silicone tube 7/5 mm, Shore A 60, and a 5 mm barbed fitting that is food-grade (xref:mechanics::purchasing.adoc[Mechanics purchasing page]).
 * A tube change on the installed pump leaves the supply and outlet lines untouched (xref:mechanics:adr:002-pump-fixed-occlusion-bed.adoc[CM3D-002]).
@@ -297,25 +297,27 @@ The pump side of the line is designed, and the bottle side (bottle holder, suppl
 [cols="2,6,2,3", options="header"]
 |===
 | ID | Requirement | Goals | Met by
-| [[IF-05-R01]]IF-05-R01 | Only food-safe tubes and stainless steel parts touch an ingredient between the bottle and the pump, and no printed part does. | QG-02 | xref:adr:009-wetted-parts.adoc[SYS-009]
+| [[IF-05-R01]]IF-05-R01 | Only the parts that SYS-015 allows touch an ingredient between the bottle and the pump, and no printed part does. | QG-02 | xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]
 | [[IF-05-R02]]IF-05-R02 | An ingredient is drawn only from the bottle that the Station believes sits at that dispenser, and an Operator cannot connect a bottle to the wrong dispenser without noticing. | QG-02 | open
 | [[IF-05-R03]]IF-05-R03 | An Operator refills a bottle from the top while the Pod keeps weighing it. | QG-04 | xref:adr:007-calibration-and-fill-level.adoc[SYS-007]
 | [[IF-05-R04]]IF-05-R04 | An Operator replaces a bottle without tools. | QG-04 | open
 | [[IF-05-R05]]IF-05-R05 | An empty bottle is noticed, and its missing amount is never counted as poured. | QG-02 | xref:protocol.adoc[Protocol page]
 | [[IF-05-R06]]IF-05-R06 | The supply line does not load the bottle, so the weight reading follows what leaves the bottle. | QG-02, QG-03 | open
+| [[IF-05-R07]]IF-05-R07 | An ingredient stays in a bottle for at most 48 h, and then the Operator empties and rinses the bottle. | QG-02, QG-04 | xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]
+| [[IF-05-R08]]IF-05-R08 | Each bottle holds only one ingredient, and an Operator replaces a bottle that smells or is worn. | QG-02 | xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]
 |===
 
 === Open questions
 
-* Which material do the food-grade 5 mm barbed fittings have, since the Mechanics bill of materials names none and SYS-009 allows only tubes and stainless steel parts to touch a liquid?
-* Which bottles must a Pod take (size, shape, glass or plastic), and how does a bottle sit on its load cell?
+* Which HDPE or PP bottle has a declaration of compliance as SYS-015 requires, and how does it sit on its load cell?
+* Which release covers spirits above 50 % vol, since simulant D1 of the tube and the bottle is 50 % ethanol?
 * Must a bottle be found wrong when the Operator puts the wrong one in (IF-05-R02), and how?
 
 === Sources
 
 * xref:hardware.adoc[Hardware page] and xref:safety.adoc[Safety page]
 * xref:adr:007-calibration-and-fill-level.adoc[SYS-007] and xref:protocol.adoc[Protocol page]
-* xref:adr:009-wetted-parts.adoc[SYS-009]
+* xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]
 * xref:station::runtime-view.adoc[Station runtime view]
 * xref:mechanics::pump.adoc[Mechanics pump page], xref:mechanics::structure.adoc[Mechanics product structure page] and xref:mechanics::purchasing.adoc[Mechanics purchasing page]
 * xref:mechanics:adr:002-pump-fixed-occlusion-bed.adoc[CM3D-002]
@@ -340,7 +342,7 @@ This is the whole food-contact path from the Pod outlet to the glass.
 * The Hardware page shows an edge "delivers cocktail through fluid tubing" from the dispenser unit to the Station fluid hub, and it names the hub "manifold / collection" (xref:hardware.adoc[Hardware page]).
 * The Station houses the glass placement area (xref:naming-conventions.adoc[Naming conventions page]).
 * All food-contact parts and all flow paths use food-safe materials (xref:quality-goals.adoc[Quality goals page] and xref:safety.adoc[Safety page]).
-* Only the tubes and some stainless steel parts touch a liquid, and no printed part does (xref:adr:009-wetted-parts.adoc[SYS-009]).
+* Only food-grade tubes, stainless steel parts, glass and declared HDPE or PP bottles, caps and fittings touch a liquid, and no printed part does (xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]).
 * The pump has two 5 mm barb spigots below its housing, 8.8 mm long outside the wall, and the tube leaves toward -Y (xref:mechanics::pump.adoc[Mechanics pump page]).
 * A leak in the pump housing leaves through a drain in its bottom wall (xref:mechanics::pump.adoc[Mechanics pump page]).
 * A pour stops after 30 s at the latest, a provisional value to be confirmed on the assembled machine (xref:protocol.adoc[Protocol page]).
@@ -359,7 +361,7 @@ This is the whole food-contact path from the Pod outlet to the glass.
 [cols="2,6,2,3", options="header"]
 |===
 | ID | Requirement | Goals | Met by
-| [[IF-06-R01]]IF-06-R01 | Only food-safe tubes and stainless steel parts touch the drink between the dispenser outlet and the glass, and no printed part does. | QG-02 | xref:adr:009-wetted-parts.adoc[SYS-009]
+| [[IF-06-R01]]IF-06-R01 | Only the parts that SYS-015 allows touch the drink between the dispenser outlet and the glass, and no printed part does. | QG-02 | xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]
 | [[IF-06-R02]]IF-06-R02 | The amount that leaves the bottle reaches the glass, and nothing of it stays behind in the path. | QG-02 | open
 | [[IF-06-R03]]IF-06-R03 | Residue of one ingredient never ends up in a later drink. | QG-02 | open
 | [[IF-06-R04]]IF-06-R04 | An Operator can empty and clean the whole path, including the hub. | QG-02, QG-04 | open
@@ -384,7 +386,7 @@ This is the whole food-contact path from the Pod outlet to the glass.
 * xref:hardware.adoc[Hardware page], xref:safety.adoc[Safety page] and xref:quality-goals.adoc[Quality goals page]
 * xref:naming-conventions.adoc[Naming conventions page] and xref:protocol.adoc[Protocol page]
 * xref:adr:007-calibration-and-fill-level.adoc[SYS-007]
-* xref:adr:009-wetted-parts.adoc[SYS-009]
+* xref:adr:015-food-contact-plastic-bottles.adoc[SYS-015]
 * xref:station::risks-and-technical-debt.adoc[Station risks page]
 * xref:mechanics::pump.adoc[Mechanics pump page]
 

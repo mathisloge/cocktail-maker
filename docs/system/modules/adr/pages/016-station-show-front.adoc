@@ -20,13 +20,13 @@ The Station already knows every pour: it starts each pour and gets the event whe
 
 === Decision Drivers
 
-* **A visible pour:** a Guest sees that the machine works on the drink (QG-05).
+* **Attraction:** the machine should be a show for the Guests.
+This is a product wish, and no quality goal covers it, so the goals below are limits that the show front must keep.
 * **No effect on the drinks:** a fault of the effects never stops or delays a drink (QG-03).
 * **No protocol change:** the effects need no change to the protocol between the Station and the Pods (QG-06).
 
 == Quality Goals
 
-* xref:system::quality-goals.adoc#QG-05[QG-05]: The show front shows a Guest which ingredient pours and that the drink is on its way.
 * xref:system::quality-goals.adoc#QG-03[QG-03]: A failed show front never stops or delays a drink, and its effects never block the Station.
 * xref:system::quality-goals.adoc#QG-01[QG-01]: The liquid of a show column is a second liquid next to the electronics of the Station.
 * xref:system::quality-requirements.adoc#QG-06[QG-06]: No Pod knows about the show front, so the protocol and the Pod firmware stay as they are.
@@ -65,7 +65,6 @@ Which controller is still open: a WLED controller on a wired link is the favouri
 
 === Effect on the Quality Goals
 
-* xref:system::quality-goals.adoc#QG-05[QG-05]: Better, because a Guest sees the pour.
 * xref:system::quality-goals.adoc#QG-03[QG-03]: Neutral, because a failed show front never stops a drink.
 * xref:system::quality-goals.adoc#QG-01[QG-01]: Worse, because a leak of a show column can reach the electronics of the Station until the leak protection is designed.
 * xref:system::quality-requirements.adoc#QG-06[QG-06]: Neutral, because the protocol and the Pod firmware stay as they are.

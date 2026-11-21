@@ -40,7 +40,7 @@ The Station alone drives the show front, from events it already has: pour starte
 The animations and the meaning of a show column stay open.
 * No Pod knows about the show front, and the protocol does not change.
 * A failed show front never stops or delays a drink.
-* The effects never block the Station execution context (xref:station:adr:003-asynchronous-execution-model.adoc[STA-003]).
+* The effects never block the Station execution context (xref:station:adr:005-sender-receiver-execution-model.adoc[STA-005]).
 * The liquid of a show column never reaches the Raspberry Pi, the display or the power supply, and it never touches the flow path of a drink.
 
 == Alternatives Considered

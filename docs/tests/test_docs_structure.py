@@ -2587,3 +2587,15 @@ def test_system_architecture_names_no_code() -> None:
         if (found := architecture_code_problems(page.read_text(encoding="utf-8")))
     }
     assert problems == {}
+
+
+def test_adr_header_partials_match() -> None:
+    partials = [
+        REPO / "docs" / part / "modules" / "adr" / "partials" / "adr-header.adoc" for part in ("system", "station")
+    ]
+    texts = [path.read_text(encoding="utf-8") for path in partials]
+    assert texts[0] == texts[1], "the ADR header partials of System and Station differ"
+    assert "[.adr-meta]" in texts[0]
+    for status in ("Proposed", "Accepted", "Deprecated", "Superseded"):
+        assert f"[.adr-status.adr-status-{status}]#{status}#" in texts[0], status
+    assert "|===" not in texts[0], "the ADR header is still a table"

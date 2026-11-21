@@ -1,21 +1,17 @@
-// This partial reads page attributes from the ADR and formats them perfectly.
-[cols="1h,3"]
-|===
-| Status | {adr-status}
-| Date | {adr-date}
-| Author(s) | {adr-authors}
-|===
-
+// This partial reads page attributes from the ADR and shows them in one line.
+// The status is a chip, and a superseded ADR names its successor next to it.
+// Each status has its own block, because the preprocessor resolves ifeval reliably.
+[.adr-meta]
+ifeval::["{adr-status}" == "Proposed"]
+[.adr-status.adr-status-Proposed]#Proposed#
+endif::[]
+ifeval::["{adr-status}" == "Accepted"]
+[.adr-status.adr-status-Accepted]#Accepted#
+endif::[]
 ifeval::["{adr-status}" == "Deprecated"]
-[WARNING]
-====
-This decision has been deprecated and is no longer active.
-====
+[.adr-status.adr-status-Deprecated]#Deprecated#
 endif::[]
-
 ifeval::["{adr-status}" == "Superseded"]
-[WARNING]
-====
-This decision has been superseded by {adr-superseded-by}.
-====
+[.adr-status.adr-status-Superseded]#Superseded# by {adr-superseded-by}
 endif::[]
+· {adr-date} · {adr-authors}

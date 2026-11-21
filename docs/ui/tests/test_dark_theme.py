@@ -572,11 +572,10 @@ def test_reference_page_has_every_element():
         if element.tag == "img" and element.attrs.get("src", "").endswith(".svg")
     ]
     assert diagrams, "no D2 diagram image"
-    cells = [(element.tag, element.text) for element in page.elements("tableblock") if element.tag in ("th", "td")]
-    rows = set(zip(cells, cells[1:], strict=False))
-    assert (("th", "Status"), ("td", "Superseded")) in rows, "no ADR header with the status Superseded"
-    warnings = [element for element in page.elements("admonitionblock") if "warning" in element.classes]
-    assert any("superseded by SYS-003" in element.text for element in warnings), "no Superseded warning"
+    chips = page.elements("adr-status-Superseded")
+    assert any(element.text == "Superseded" for element in chips), "no ADR header with the status Superseded"
+    metas = [element for element in page.elements("adr-meta") if element.tag == "div"]
+    assert any("by SYS-003" in element.text for element in metas), "no link to the successor in the ADR header"
     xrefs = {link.href for link in page.links("xref")}
     assert {"protocol.html", "adr/003-protocol-communication.html"} <= xrefs, f"missing xrefs: {xrefs}"
 
@@ -629,3 +628,23 @@ def test_quality_scenarios_are_cards():
     phone_declarations = {(prop, value) for rule in phone for prop, value in rule.declarations}
     assert ("grid-template-columns", "max-content 1fr") in phone_declarations
     assert ("grid-column", "auto") in phone_declarations
+
+
+def test_wide_screen_layout():
+    """The page is centred, the type grows on wide screens, and each ADR status has its chip colour."""
+    rules = parse_css((CSS_DIR / "site-extra.css").read_text(encoding="utf-8"))
+
+    def declared(selector: str, declaration: tuple[str, str], width: str | None = None) -> bool:
+        return any(
+            selector in rule.selectors
+            and declaration in rule.declarations
+            and (width is None or any(width in c.replace(" ", "") for c in rule.context))
+            for rule in rules
+        )
+
+    assert declared(".content", ("justify-content", "center"))
+    assert declared(".doc", ("flex", "0 1 46rem"))
+    assert declared("html", ("font-size", "1.1875em"), "min-width:1800px")
+    assert declared("html", ("font-size", "1.25em"), "min-width:2200px")
+    for status in ("Accepted", "Proposed", "Deprecated", "Superseded"):
+        assert any(f".adr-status-{status}" in s for rule in rules for s in rule.selectors), status

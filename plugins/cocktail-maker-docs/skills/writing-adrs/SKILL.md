@@ -63,7 +63,7 @@ Set the status in the `:adr-status:` attribute.
 - `Deprecated`: the decision is no longer in effect, and no ADR replaces it.
 - `Superseded`: a newer ADR replaces the decision.
 
-The header partial shows a warning on deprecated and superseded ADRs.
+The header partial shows the status as a chip, and a superseded ADR names its successor in the same line.
 
 ## Supersede an ADR
 

@@ -380,3 +380,73 @@ footer.footer {
     border-top: 0;
   }
 }
+
+/* --- page layout on wide screens ------------------------------------------- */
+/* The article and its table of contents stand centred right of the nav.
+   The text column keeps 46rem, about 75 characters, and grows with the type. */
+
+.content {
+  justify-content: center;
+}
+
+.doc {
+  flex: 0 1 46rem;
+}
+
+@media (min-width: 1800px) {
+  html {
+    font-size: 1.1875em;
+  }
+}
+
+@media (min-width: 2200px) {
+  html {
+    font-size: 1.25em;
+  }
+}
+
+.toc-menu {
+  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink */
+}
+
+/* --- ADR header ------------------------------------------------------------ */
+/* The adr-header partial writes status, date and authors as one line, with the status as a chip. */
+
+.doc .adr-meta {
+  margin: 0 0 1.5rem;
+  padding: 0.55rem 0.8rem;
+  background: var(--cm-ink-raised);
+  border: 1px solid var(--cm-ink-elevated);
+  border-left: 4px solid var(--cm-amber);
+  border-radius: 6px;
+}
+
+.doc .adr-meta p {
+  margin: 0;
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-raised */
+  font-size: 0.9em;
+}
+
+.doc .adr-meta .adr-status {
+  display: inline-block;
+  margin-right: 0.35rem;
+  padding: 0.1rem 0.6rem;
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+  font-size: 0.85em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.doc .adr-meta .adr-status-Accepted {
+  color: var(--cm-green); /* contrast: --cm-green on --cm-ink-raised */
+}
+
+.doc .adr-meta .adr-status-Proposed {
+  color: var(--cm-amber-light); /* contrast: --cm-amber-light on --cm-ink-raised */
+}
+
+.doc .adr-meta :is(.adr-status-Deprecated, .adr-status-Superseded) {
+  color: var(--cm-ember-light); /* contrast: --cm-ember-light on --cm-ink-raised */
+}

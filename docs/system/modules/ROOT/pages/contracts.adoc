@@ -101,7 +101,7 @@ Whether the touch display draws from the same 5 V is not in any source.
 === Guarantees and limits
 
 * The Station computer is the only 5 V consumer in the power chain (xref:power.adoc[Power page], and xref:adr:004-power-architecture.adoc[SYS-004]).
-* The show front draws its power from the same power supply as the Pods (xref:adr:016-station-show-front.adoc[SYS-016] and <<IF-09>>).
+* The show front draws its power from the same power supply as the Pods (xref:adr:016-station-show-front.adoc[SYS-016]).
 * The 5 V are made from the 24 V DC rail by a DC/DC converter, behind the power supply, the main switch and the RCD or circuit breaker (xref:power.adoc[Power page]).
 * The power supply is a MeanWell NDR-120-24 with 120 W, 24 V and 5 A, and it also feeds the Pods (xref:hardware.adoc[Hardware page]).
   The Hardware page shows a "5 V Step-Down" and names no part for it.
@@ -540,7 +540,7 @@ Its power comes from the Power Management Unit (<<IF-02>>).
 === Fault behaviour
 
 * When the Station stops or the link breaks, the show front keeps its last state until someone switches the machine off (xref:adr:016-station-show-front.adoc[SYS-016]).
-  Air and light are harmless in that state.
+  That state must stay harmless (IF-09-R05).
 * A fault of the show front never stops or delays a drink (IF-09-R02).
 
 === Requirements
@@ -550,8 +550,9 @@ Its power comes from the Power Management Unit (<<IF-02>>).
 | ID | Requirement | Goals | Met by
 | [[IF-09-R01]]IF-09-R01 | The Station software computes every effect, and the show front only carries out commands. | QG-06 | xref:adr:016-station-show-front.adoc[SYS-016]
 | [[IF-09-R02]]IF-09-R02 | A command to the show front or a fault of it never stops or delays a drink and never blocks the Station execution context. | QG-03 | xref:adr:016-station-show-front.adoc[SYS-016] and xref:station:adr:005-sender-receiver-execution-model.adoc[STA-005]
-| [[IF-09-R03]]IF-09-R03 | The load of the show front at full effect stays inside the power budget of the power supply. | QG-03 | open
+| [[IF-09-R03]]IF-09-R03 | The mechanical design states the load of the show front at full effect, so that the budget of IF-03-R01 can count it. | QG-03 | open
 | [[IF-09-R04]]IF-09-R04 | A liquid of the show front never reaches the electronics and never touches the flow path of a drink. | QG-01, QG-02 | open
+| [[IF-09-R05]]IF-09-R05 | Any state that the show front holds without commands stays harmless for the Guests and for the electronics of the Station until the machine is switched off. | QG-01 | open
 |===
 
 === Open questions

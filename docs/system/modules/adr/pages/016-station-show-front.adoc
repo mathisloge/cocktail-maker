@@ -13,7 +13,7 @@ include::partial$adr-header.adoc[]
 
 The bottles of a Pod are hidden (xref:015-food-contact-plastic-bottles.adoc[SYS-015]), so the Guests no longer see an ingredient flow.
 Station and Pods are separate (xref:001-system-split.adoc[SYS-001]).
-A Pod joins the Station only by power (xref:system::contracts.adoc#IF-03[IF-03]), by data (xref:system::contracts.adoc#IF-01[IF-01]) and by the drink tubes (xref:system::contracts.adoc#IF-06[IF-06]).
+A Pod joins the Station only by power (xref:system::contracts.adoc#IF-03[IF-03]), by data (xref:system::contracts.adoc#IF-01[IF-01]) and by the drink tubes (xref:system::contracts.adoc#IF-06[IF-06]), and these cables and tubes are its mechanical link (xref:system::contracts.adoc#IF-07[IF-07]).
 The Pods should stand hidden wherever there is room, and the machine should look the same with any number of Pods.
 The Station already knows every pour, because it starts each pour and gets the event when it ends (xref:system::protocol.adoc[System protocol page]).
 
@@ -22,6 +22,7 @@ The Station already knows every pour, because it starts each pour and gets the e
 * **Attraction:** the machine should be a show for the Guests.
 This is a product wish, and no quality goal covers it, so the goals below are limits that the effects must keep.
 * **No effect on the drinks:** an effect or its fault never stops or delays a drink (QG-03).
+* **No harm from the show front:** a liquid of the show front never reaches the electronics or a drink, and a state that it holds after a fault stays harmless (QG-01).
 * **No protocol change:** the effects need no change to the protocol between the Station and the Pods (QG-06).
 
 == Quality Goals
@@ -35,6 +36,8 @@ This is a product wish, and no quality goal covers it, so the goals below are li
 The Station is everything that the Guest sees, and the Pods stand hidden.
 The Station shows each pour to the Guests with bubbles and light, on its show front.
 The Station software computes every effect and sends direct commands to the show front (xref:system::contracts.adoc#IF-09[IF-09]).
+The show front only carries out these commands, and a command or a fault of it never blocks the execution context of the Station or delays a drink (xref:station:adr:005-sender-receiver-execution-model.adoc[STA-005]).
+The show front draws its power from the Power Management Unit (xref:system::contracts.adoc#IF-02[IF-02]).
 No Pod knows about the effects, and the protocol of IF-01 does not change.
 How the show front is built is left to the mechanical design.
 
@@ -61,7 +64,7 @@ Rejected: the mechanical design delivers hardware and bought parts and no softwa
 * **Bad:** The show front may hold a liquid next to the electronics of the Station, and its leak protection is not designed yet.
 * **Bad:** An effect lags the pour by the time a message takes over the link to the show front.
 * **Bad:** After a fault of the Station the show front keeps its last state until someone switches the machine off.
-Air and light are harmless in that state.
+That state must stay harmless (xref:system::contracts.adoc#IF-09-R05[IF-09-R05]).
 
 === Effect on the Quality Goals
 

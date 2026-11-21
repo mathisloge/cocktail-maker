@@ -405,15 +405,24 @@ footer.footer {
   }
 }
 
-.toc-menu {
-  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink */
+/* A page without a TOC keeps its column where the pages with a TOC have it. */
+@media screen and (min-width: 1024px) {
+  .content:not(:has(> aside.toc.sidebar)) > .doc {
+    margin-right: 11rem;
+  }
+}
+
+@media screen and (min-width: 1216px) {
+  .content:not(:has(> aside.toc.sidebar)) > .doc {
+    margin-right: 14rem;
+  }
 }
 
 /* --- ADR header ------------------------------------------------------------ */
 /* The adr-header partial writes status, date and authors as one line, with the status as a chip. */
 
 .doc .adr-meta {
-  margin: 0 0 1.5rem;
+  margin: 1rem 0 1.5rem;
   padding: 0.55rem 0.8rem;
   background: var(--cm-ink-raised);
   border: 1px solid var(--cm-ink-elevated);
@@ -444,7 +453,7 @@ footer.footer {
 }
 
 .doc .adr-meta .adr-status-Proposed {
-  color: var(--cm-amber-light); /* contrast: --cm-amber-light on --cm-ink-raised */
+  color: var(--cm-slate-light); /* contrast: --cm-slate-light on --cm-ink-raised */
 }
 
 .doc .adr-meta :is(.adr-status-Deprecated, .adr-status-Superseded) {

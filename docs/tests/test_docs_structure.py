@@ -2599,3 +2599,25 @@ def test_adr_header_partials_match() -> None:
     for status in ("Proposed", "Accepted", "Deprecated", "Superseded"):
         assert f"[.adr-status.adr-status-{status}]#{status}#" in texts[0], status
     assert "|===" not in texts[0], "the ADR header is still a table"
+
+
+ADR_STATUSES = ("Proposed", "Accepted", "Deprecated", "Superseded")
+
+
+@pytest.mark.parametrize("prefix", sorted(ADR_PAGES))
+def test_adr_status_is_known_and_superseded_names_its_successor(prefix: str) -> None:
+    problems = []
+    for path in sorted(ADR_PAGES[prefix].glob("[0-9][0-9][0-9]-*.adoc")):
+        text = path.read_text(encoding="utf-8")
+        status = re.search(r"^:adr-status: (.*)$", text, re.MULTILINE)
+        if not status or status.group(1).strip() not in ADR_STATUSES:
+            problems.append(f"{path.name}: status {status.group(1) if status else None!r}")
+        elif status.group(1).strip() == "Superseded" and not re.search(r"^:adr-superseded-by: \S", text, re.MULTILINE):
+            problems.append(f"{path.name}: superseded without :adr-superseded-by:")
+    assert problems == []
+
+
+def test_adr_header_prints_the_successor_only_when_set() -> None:
+    text = (REPO / "docs" / "system" / "modules" / "adr" / "partials" / "adr-header.adoc").read_text(encoding="utf-8")
+    assert "ifdef::adr-superseded-by[by {adr-superseded-by}]" in text
+    assert "]#Superseded# by" not in text

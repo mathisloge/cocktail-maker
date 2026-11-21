@@ -224,7 +224,7 @@ body {
 /* --- table of contents ---------------------------------------------------- */
 
 .toc-menu {
-  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink */
+  color: var(--cm-sand); /* contrast: --cm-sand on --cm-ink */
 }
 
 .toc .toc-menu h3 {

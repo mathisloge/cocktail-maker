@@ -648,3 +648,11 @@ def test_wide_screen_layout():
     assert declared("html", ("font-size", "1.25em"), "min-width:2200px")
     for status in ("Accepted", "Proposed", "Deprecated", "Superseded"):
         assert any(f".adr-status-{status}" in s for rule in rules for s in rule.selectors), status
+
+
+def test_toc_uses_the_readable_sand():
+    """dark.css loads after site-extra.css, so the TOC colour must live in dark.css."""
+    dark = parse_css((CSS_DIR / "dark.css").read_text(encoding="utf-8"))
+    extra = parse_css((CSS_DIR / "site-extra.css").read_text(encoding="utf-8"))
+    assert any(".toc-menu" in rule.selectors and ("color", "var(--cm-sand)") in rule.declarations for rule in dark)
+    assert not any(".toc-menu" in rule.selectors for rule in extra)

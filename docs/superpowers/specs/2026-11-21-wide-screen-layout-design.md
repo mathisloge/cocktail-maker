@@ -38,7 +38,7 @@ The ADR header needs a new `adr-header.adoc` partial, because CSS cannot turn th
 * The partial writes one paragraph with the role `adr-meta`.
   It holds a span with the roles `adr-status` and `adr-status-<status>`, then "by <successor>" for a superseded ADR, then the date and the authors, separated by " · ".
   The warning boxes for Deprecated and Superseded go, because the chip says the same.
-* The status colours: Accepted `--cm-green`, Proposed `--cm-amber-light`, Deprecated and Superseded `--cm-ember-light`, each on `--cm-ink-raised`.
+* The status colours: Accepted `--cm-green`, Proposed `--cm-slate-light`, Deprecated and Superseded `--cm-ember-light`, each on `--cm-ink-raised`.
 * Both copies of the partial, in `docs/system` and in `docs/station`, stay identical.
 
 ## Constraints

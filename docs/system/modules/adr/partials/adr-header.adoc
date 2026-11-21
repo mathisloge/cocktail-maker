@@ -12,6 +12,7 @@ ifeval::["{adr-status}" == "Deprecated"]
 [.adr-status.adr-status-Deprecated]#Deprecated#
 endif::[]
 ifeval::["{adr-status}" == "Superseded"]
-[.adr-status.adr-status-Superseded]#Superseded# by {adr-superseded-by}
+[.adr-status.adr-status-Superseded]#Superseded#
+ifdef::adr-superseded-by[by {adr-superseded-by}]
 endif::[]
 · {adr-date} · {adr-authors}

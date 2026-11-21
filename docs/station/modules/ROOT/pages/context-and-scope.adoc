@@ -1,6 +1,6 @@
 = 3 Context and Scope
 
-This chapter scopes the rest of this document to the Station application itself, one of the two building blocks introduced in the xref:system::building-blocks.adoc[System building block view].
+This chapter scopes the rest of this document to the Station application itself, one of the building blocks introduced in the xref:system::building-blocks.adoc[System building block view].
 It defines who and what the Station exchanges information with, without repeating the machine-wide black-box view, which xref:system::context-and-scope.adoc[System context and scope] already covers.
 
 == Business Context
@@ -43,9 +43,17 @@ Everything else in this document is scoped inside the "Station" box above.
 | Filesystem, read and write
 | Station-local configuration, changed by an Operator and persisted across restarts.
 
+| Persisted active glass volumes
+| Filesystem, read and write
+| The active pour volumes of each glass, changed by an Operator and persisted across restarts.
+
 | Persisted fill levels
 | Filesystem, read and write
 | The last known fill level of each dispenser, persisted across restarts.
+
+| Show front controller
+| The show front of the Station
+| Open: the controller and its link are not chosen yet (xref:system:adr:016-station-show-front.adoc[SYS-016]).
 
 | Touch display
 | Guest and Operator

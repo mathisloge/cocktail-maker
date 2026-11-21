@@ -13,7 +13,7 @@ It hosts the Guest UI and the Operator UI on the same touch display, owns the do
 * Let a Guest browse available recipes, select a glass, and start a mix without any instructions.
 * Turn a recipe into a sequence of dispensing actions, scaled to the chosen glass, and carry them out by commanding the appropriate Pods.
 * Track which Pods are connected and reflect their live state to the UI.
-* Let an Operator configure recipes' supporting data (ingredients, glasses, pod-to-ingredient assignment) and calibrate a dispenser, gated behind authentication.
+* Let an Operator choose the active glass volumes and the ingredient-to-dispenser mapping and calibrate a dispenser, gated behind authentication.
 
 == Quality Goals
 
@@ -29,7 +29,7 @@ The quality goals driving the Station's architecture are the machine-wide goals 
 | Orders and receives a drink using only the touch screen, with no instructions needed.
 
 | Operator
-| Refills, cleans, calibrates, and configures recipes, ingredients, and glasses without needing deep
+| Refills, cleans, calibrates, and chooses the glass volumes and the ingredient-to-dispenser mapping without needing deep
 technical expertise.
 
 | Station maintainer

@@ -6,7 +6,8 @@
 include::partial$adr-header.adoc[]
 
 == Context
-The Station's {cpp} codebase is organized into several internal libraries with clear conceptual boundaries between them, foundations, domain model, Pod communication, and user interface, as described in xref:ROOT:building-blocks.adoc[].
+The Station's {cpp} codebase is organized into internal libraries with clear boundaries between them: foundations (`cm.core`), the domain model together with Pod communication (`cm`), and the user interface (`cm.gui`), plus the simulated Pods (`cm.sim`) and the test helpers (`cm.testing`).
+The building blocks Domain Model and Pod Communication of xref:ROOT:building-blocks.adoc[] share the module `cm`, so the compiler does not separate those two.
 Those boundaries need to be enforced by the compiler rather than by convention alone, and the traditional {cpp} header pitfalls, repeatedly re-parsed headers and implementation detail leaking into every file that includes a header, should be avoided as the codebase grows.
 
 === Decision Drivers

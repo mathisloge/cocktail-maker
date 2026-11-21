@@ -10,12 +10,14 @@ include::partial$adr-header.adoc[]
 The Station must carry out many operations that take an unpredictable amount of time without blocking the Guest- or Operator-facing UI: communicating with several independently timed Pods at once, and driving a recipe as a sequence of dispensing actions, each waiting on its own Pod's acknowledgement and, for longer-running actions, a later completion event (xref:system::protocol.adoc[System protocol concept]).
 Dispensing is a safety- and food-safety-relevant action (xref:system::quality-goals.adoc[System quality goals], QG-01 and QG-02).
 Therefore, the concurrency model must make it easy to reason about which operations can run simultaneously and what state they can affect, rather than opening the door to data races across freely spawned threads.
+
 === Decision Drivers
 
 * **Safety & State Simplicity:** Dispensing is a safety-critical domain.
 The architecture must prevent data races and complex mutex synchronization around shared domain and UI state (QG-01, QG-02).
 * **Sequential Readability:** Multi-step asynchronous protocols (request → acknowledgement → delayed completion event) should be readable as straight-line code rather than fragmented callback chains (QG-06).
 * **Technology Exploration:** As an experimental hobby project, a primary driver is evaluating modern {cpp}20 coroutine ecosystems, specifically the recently introduced Boost.Cobalt library, in a realistic architectural setting.
+
 == Quality Goals
 
 * xref:system::quality-goals.adoc#QG-01[QG-01]: One shared execution context means no thread touches the domain and UI state concurrently, so there are no data races in a dispensing system.
@@ -25,15 +27,19 @@ The architecture must prevent data races and complex mutex synchronization aroun
 
 == Decision
 We will run Pod communication and recipe execution as coroutines on a single shared Boost.Asio execution context, using Boost.Cobalt for coroutine-friendly building blocks such as awaitable results and channels.
+
 == Alternatives Considered
+
 === Callback-based asynchronous I/O
 Boost.Asio can be used directly with completion-handler callbacks, without a coroutine layer on top.
 Rejected: the Station's communication patterns (a request followed by an acknowledgement and, for some commands, a later completion event) are naturally sequential.
 Expressing them as chained callbacks was judged significantly harder to read, maintain, and debug than expressing the same sequence as a coroutine that cleanly suspends and resumes at each step.
+
 === A thread per Pod
 Each connected Pod could be handled on its own dedicated OS thread, communicating with the rest of the Station through explicit thread synchronization (mutexes, condition variables).
 Rejected: this would require synchronizing access to shared domain and UI state across multiple threads.
 In a system where reasoning correctly about concurrency is a food-safety concern, introducing multi-threaded state access adds a class of concurrency bugs (deadlocks, race conditions) that a single shared execution context avoids entirely.
+
 == Consequences
 * **Good:** the multi-step communication patterns used with Pods can be written as clear, straight-line coroutine code that suspends and resumes at each step, completely avoiding "callback hell."
 * **Good:** a single shared execution context means the domain and UI state that coroutines touch is never accessed concurrently, removing an entire class of synchronization bugs by design.

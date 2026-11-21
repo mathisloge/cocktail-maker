@@ -13,10 +13,10 @@ rpi: "Raspberry Pi (Station) · Station computer" {
   workdir: "Working directory · plain files" {
     class: boundary
     data: "Recipe, ingredient, and glass data · plain data files" {class: block}
-    mapping: "Ingredient-to-dispenser mapping · plain file" {class: block}
+    state: "Station state · plain files" {class: block}
   }
   app -> workdir.data: "reads at startup" {class: data}
-  app -> workdir.mapping: "reads and writes" {class: [data; key]}
+  app -> workdir.state: "reads and writes" {class: [data; key]}
 }
 pod1: "Pod · Pod controller with Zephyr firmware" {class: external}
 pod2: "Pod · Pod controller with Zephyr firmware" {class: external}
@@ -27,8 +27,9 @@ rpi.app -> podN: "talks over USB CDC" {class: data}
 ----
 Where does the Station run, which files does it keep, and how does it reach the Pods?
 
-All data the Station persists, the recipe/ingredient/glass catalog, the ingredient-to-dispenser mapping and the fill levels, lives as plain files under the service's working directory rather than a database server.
+All data the Station persists, the recipe/ingredient/glass catalog, the ingredient-to-dispenser mapping, the active glass volumes and the fill levels, lives as plain files under the service's working directory rather than a database server.
 This keeps the deployment self-contained on a single device, at the cost of tying correct operation to the service always being started from the intended working directory.
+The move to NixOS is decided (xref:adr:006-nixos-deployment.adoc[STA-006]) and not done yet.
 See xref:risks-and-technical-debt.adoc[].
 
 Two build configurations exist side by side from the same codebase.

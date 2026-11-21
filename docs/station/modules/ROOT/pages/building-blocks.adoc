@@ -9,16 +9,19 @@ This page shows the blocks inside the Station.
 [d2, target="station-building-blocks", format="svg", link=self]
 ----
 include::system:ROOT:partial$d2-style.d2[]
+vars: { d2-config: { layout-engine: elk } }
 direction: down
 station: "Station · Raspberry Pi · Slint UI" {
   class: boundary
   ui: "User Interface · Guest and Operator screens\npresents the Guest ordering flow\nand the Operator UI\non the same window" {class: block}
   domain: "Domain Model & Application ·\nrecipes, ingredients, glasses, Pods\nowns the domain data, tracks Pods,\nand drives recipe execution" {class: block}
   podcomm: "Pod Communication · discovery and wire protocol\ndiscovers Pods and speaks\nthe Station side of the shared protocol" {class: block}
+  show: "Show Front Control · planned (SYS-016)\nturns pour events into effects\nof the show front" {class: block}
   foundations: "Foundations · shared building blocks\nlogging, strong domain identifiers,\nunit-safe quantities,\nretry and timeout helpers" {class: block}
   ui -> domain: "reads state,\nforwards user actions" {class: normal}
   domain -> podcomm: "dispatches commands,\nreceives status and events" {class: [data; key]}
   domain -> foundations: "uses" {class: normal}
+  domain -> show: "reports pour events" {class: normal}
   podcomm -> foundations: "uses" {class: normal}
   ui -> foundations: "uses" {class: normal}
 }
@@ -26,7 +29,7 @@ station: "Station · Raspberry Pi · Slint UI" {
 Which blocks make up the Station, and which block uses which?
 
 .Domain Model & Application
-* Owns the recipe, ingredient, and glass catalogs, the persisted ingredient-to-dispenser mapping, and the persisted fill level of each dispenser.
+* Owns the recipe, ingredient, and glass catalogs, the persisted ingredient-to-dispenser mapping, the persisted active pour volumes of each glass, and the persisted fill level of each dispenser.
 * Tracks which Pods are connected and what each one reports about itself.
 * Turns a selected recipe into a sequence of dispensing actions and coordinates their execution.
 
@@ -38,13 +41,18 @@ Which blocks make up the Station, and which block uses which?
 * Presents the Guest ordering flow and the Operator UI behind the same window.
 * Reflects live domain and Pod state without owning any of it itself, and forwards user actions back into the Domain Model.
 
+.Show Front Control
+* Is planned and not built yet (xref:system:adr:016-station-show-front.adoc[SYS-016]).
+* Turns pour started, pour finished, ingredient, recipe, idle and fault into effects of the show front, and drives its controller.
+* Never blocks the execution context, and a fault in it never stops or delays a drink.
+
 .Foundations
 * Provides logging, strong domain identifiers, unit-safe physical quantities, and retry and timeout helpers shared by every other building block.
 
 == Level 2: Domain Model & Application
 
 * *Catalogs:* the recipe, ingredient, and glass data loaded from the local data files described in xref:context-and-scope.adoc[].
-* *Station configuration and state:* the persisted ingredient-to-dispenser mapping and fill levels, and the live, in-memory state of each connected Pod that the UI observes.
+* *Station configuration and state:* the persisted ingredient-to-dispenser mapping, glass pour volumes and fill levels, and the live, in-memory state of each connected Pod that the UI observes.
 * *Pod registry and dispatch:* tracks connected Pods and routes a command to the right one.
 * *Recipe execution:* scales and adjusts a recipe for the chosen glass, and executes it as a sequence of commands dispatched to the owning Pods, reporting progress as it goes.
 A single pour asks for a refill and pours the rest when it comes up short, and leaves the dialog itself to the UI.

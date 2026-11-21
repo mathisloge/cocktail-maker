@@ -618,3 +618,14 @@ def test_quality_scenarios_are_cards():
     assert ("border-left", "4px solid var(--cm-amber)") in declarations
     assert ("grid-column", "2 / -1") in declarations
     assert all(s.startswith(card) for rule in rules for s in rule.selectors)
+    spanning = [rule for rule in rules if ("grid-column", "2 / -1") in rule.declarations]
+    assert any(":nth-of-type(10)" in s and ":nth-of-type(12)" in s for rule in spanning for s in rule.selectors)
+    muted = [rule for rule in rules if ("color", "var(--cm-sand-soft)") in rule.declarations]
+    assert muted, "no muted rule for Goal, Q42, Verification and State"
+    assert not any("n+9" in s or "(10)" in s or "(12)" in s for rule in muted for s in rule.selectors), (
+        "Value and Checks must keep the normal text colour"
+    )
+    phone = [rule for rule in rules if any("max-width:768px" in c.replace(" ", "") for c in rule.context)]
+    phone_declarations = {(prop, value) for rule in phone for prop, value in rule.declarations}
+    assert ("grid-template-columns", "max-content 1fr") in phone_declarations
+    assert ("grid-column", "auto") in phone_declarations

@@ -308,12 +308,15 @@ footer.footer {
   margin: 0;
   padding: 0.6rem 1rem;
   background: var(--cm-ink-elevated);
+  color: var(--cm-cream); /* contrast: --cm-cream on --cm-ink-elevated */
 }
 
 .doc .sect2:has(> h3[id^="QS-"]) .dlist {
   margin: 0;
 }
 
+/* Goal and Q42 share the top row.
+   Value cannot fit next to Verification, so dense placement moves State up into that row. */
 .doc .sect2:has(> h3[id^="QS-"]) dl {
   display: grid;
   grid-template-columns: max-content 1fr max-content 1fr;
@@ -349,8 +352,8 @@ footer.footer {
   grid-column: 2 / -1;
 }
 
-/* Goal and Q42 share the top row, and State moves up into the row of Verification. */
-.doc .sect2:has(> h3[id^="QS-"]) dd:is(:nth-of-type(-n+2), :nth-of-type(n+9)) {
+/* Goal, Q42, Verification and State are short labels in a smaller, muted text. */
+.doc .sect2:has(> h3[id^="QS-"]) dd:is(:nth-of-type(-n+2), :nth-of-type(9), :nth-of-type(11)) {
   color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-raised */
   font-size: 0.85rem;
 }
@@ -371,5 +374,9 @@ footer.footer {
 
   .doc .sect2:has(> h3[id^="QS-"]) :is(dt, dd) {
     grid-column: auto !important;
+  }
+
+  .doc .sect2:has(> h3[id^="QS-"]) :is(dt, dd):nth-of-type(11) {
+    border-top: 0;
   }
 }

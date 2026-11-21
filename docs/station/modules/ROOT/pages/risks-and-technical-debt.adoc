@@ -1,7 +1,7 @@
 = 11 Risks and Technical Debt
 
 This chapter lists known risks and technical debt in the Station's current architecture.
-Trade-offs already knowingly accepted when choosing its core technologies are documented as consequences of the corresponding decision instead: xref:adr:001-ui-toolkit.adoc[STA-001], xref:adr:002-cpp-module-compilation-model.adoc[STA-002], and xref:adr:003-asynchronous-execution-model.adoc[STA-003].
+Trade-offs already knowingly accepted when choosing its core technologies are documented as consequences of the corresponding decision instead: xref:adr:001-ui-toolkit.adoc[STA-001], xref:adr:002-cpp-module-compilation-model.adoc[STA-002], xref:adr:003-asynchronous-execution-model.adoc[STA-003] and xref:adr:005-sender-receiver-execution-model.adoc[STA-005].
 
 * *Working-directory-relative persistence:* both the read-only recipe/ingredient/glass data and the read-write ingredient-to-dispenser mapping and fill levels are located relative to the process's current working directory rather than a fixed, installed location.
 Starting the Station from an unintended working directory silently changes, or loses access to, its data instead of failing loudly.

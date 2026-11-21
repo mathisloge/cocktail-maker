@@ -1,0 +1,117 @@
+= SYS-015: Food-contact HDPE and PP bottles may hold ingredients
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-11-21
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+A Pod holds each ingredient in a bottle that stands on its own load cell.
+The Pods now stand hidden from the Guests, so the look of a bottle does not matter, only its function, size and price.
+The bottle set of the Mechanics design (xref:mechanics::index.adoc[Mechanics overview page]) is a 1 l glass milk bottle.
+A design round with eight such bottles gives a Pod of about 880 × 670 × 570 mm with 8 l of ingredients.
+Eight square 2 l HDPE wide-neck bottles give a Pod of about 880 × 340 × 520 mm with 16 l.
+An Operator lifts a bottle out to refill or clean it, and a glass bottle breaks when it hits an edge.
+
+xref:009-wetted-parts.adoc[SYS-009] allowed only tubes and stainless steel parts to touch a liquid.
+It did not name the bottle at all, so it did not even cover the glass bottle.
+This ADR supersedes SYS-009.
+
+The EU rules for plastics in contact with food are EU 1935/2004 and EU 10/2011.
+EU 10/2011 tests a plastic with food simulants.
+Simulant D1 (50 % ethanol) is used for alcoholic foods above 20 %, simulant C for beverages of 6 to 20 % vol, and simulants A and B for aqueous and acidic foods such as juices.
+A contact of more than 1 day and up to 3 days is tested for 3 days, and a contact at room temperature is tested at 40 °C.
+No simulant exists for spirits above 50 % vol.
+
+=== Decision Drivers
+
+* **Food-safe bottles:** a bottle touches every ingredient, so its material must be food-safe and the proof must be checkable (QG-02).
+* **Safe handling:** an Operator lifts a bottle out of the Pod, and a broken bottle must not cut the Operator or spill an ingredient (QG-04).
+* **Free choice for printed parts:** the material of a printed part follows its mechanical needs, as in SYS-009 (QG-06).
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-02[QG-02]: Every part that touches an ingredient is a food-grade tube, a stainless steel part, glass, or a plastic part with a declaration that covers the ingredients and the contact time.
+* xref:system::quality-goals.adoc#QG-04[QG-04]: An Operator lifts a bottle out without the risk of breaking it, and empties and rinses it at the end of each event.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: No printed part touches a liquid, so printed parts still change material and shape without a food-safety review.
+* xref:system::quality-requirements.adoc#QS-09[QS-09]: The parts along the flow path are counted against the list of this ADR.
+
+== Decision
+
+These parts may touch an ingredient or a drink: food-grade tubes, stainless steel parts, glass, and HDPE or PP.
+HDPE and PP are allowed for bottles, caps and fittings, and not for tubes.
+An HDPE or PP part needs a declaration of compliance under EU 1935/2004 and EU 10/2011.
+The declaration covers the food simulants A, B, C and D1, or all food types, at least 3 days at 40 °C, and repeated use.
+No 3D printed part touches a liquid.
+An ingredient stays in a bottle for at most 48 h, and then the Operator empties and rinses the bottle.
+Each bottle holds one ingredient.
+
+== Alternatives Considered
+
+=== Glass bottle sets as hidden bottles
+
+The 1 l glass bottle sets stay as the hidden bottles of a Pod.
+
+Rejected: the Pod is twice as deep and holds half the volume, and a glass bottle breaks when an Operator lifts it out.
+
+=== Larger glass bottles
+
+Glass bottles of 1.5 to 3 l replace the bottle sets.
+
+Rejected: they need a new bottle, holder and dip tube, and they break when an Operator lifts them out.
+
+=== Polycarbonate
+
+Clear polycarbonate gastronomy tubs hold the ingredients.
+
+Rejected: polycarbonate can craze with alcohol and cleaners, and it may contain bisphenol A.
+
+=== PET
+
+PET bottles hold the ingredients.
+
+Rejected: PET is fine for short contact, but it is not dishwasher safe.
+
+=== Bag-in-box
+
+Bags in boxes hold the ingredients.
+
+Rejected: the bags are single use, and standard film is only rated to about 17 % alcohol.
+
+=== HDPE and PP without a time limit
+
+Ingredients stay in an HDPE or PP bottle for as long as an Operator wants.
+
+Rejected: the declaration then needs tests of 10 days and longer, and ethanol loss through the wall and stress cracking start to matter.
+
+=== Bottles with an outlet at the bottom
+
+Each bottle has an outlet with a quick coupling at the bottom, as in some commercial drink dispensers.
+
+Rejected: liquid always stands at the coupling, and a leak empties the bottle onto the load cell and toward the electronics (xref:system::contracts.adoc#IF-07-R04[IF-07-R04]).
+
+== Consequences
+
+* **Good:** A Pod is half as deep and holds twice the volume.
+* **Good:** A bottle does not break when an Operator lifts it out or drops it.
+* **Good:** The food-safety argument names every material that touches a liquid, including the bottle.
+* **Good:** The open question on the material of the barbed fittings is answered, because PP fittings with a declaration are allowed.
+* **Bad:** No candidate bottle has a published declaration that covers alcohol today, so Mechanics must ask the makers for one.
+* **Bad:** HDPE takes up strong aromas such as anethole or limonene, so a bottle serves one ingredient only and is replaced when it smells or is worn.
+* **Bad:** The 48 h limit adds a step for the Operator at the end of each event.
+* **Bad:** Spirits above 50 % vol are covered by no release of the tube or the bottle, because simulant D1 is 50 % ethanol.
+The risk is small at 48 h of contact, but it stays open.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-02[QG-02]: Neutral.
+The list of allowed materials grows, but every new material needs a declaration that covers the ingredients and the contact time.
+* xref:system::quality-goals.adoc#QG-04[QG-04]: Better and worse.
+A bottle does not break, but the Operator empties and rinses every bottle after at most 48 h.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Neutral, because no printed part touches a liquid, as before.
+* xref:system::quality-requirements.adoc#QS-09[QS-09]: Neutral, because the count now checks the declaration of each plastic part as well.

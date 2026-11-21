@@ -1,11 +1,11 @@
 = SYS-009: Only tubes and stainless steel parts touch liquids
 // Fill in the variables
 // one-of: Proposed, Accepted, Deprecated, Superseded
-:adr-status: Accepted
+:adr-status: Superseded
 :adr-date: 2026-11-15
 :adr-authors: {gh}mathisloge[@mathisloge]
 // when adr-status == Superseded provide the new ADR.
-// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
+:adr-superseded-by: xref:015-food-contact-plastic-bottles.adoc[SYS-015]
 
 include::partial$adr-header.adoc[]
 

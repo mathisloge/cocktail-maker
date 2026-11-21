@@ -31,6 +31,7 @@
 ** xref:adr:013-pod-pumps-and-valves.adoc[]
 ** xref:adr:014-quality-model-q42.adoc[]
 ** xref:adr:015-food-contact-plastic-bottles.adoc[]
+** xref:adr:016-station-show-front.adoc[]
 * xref:quality-requirements.adoc[]
 * xref:risks-and-technical-debt.adoc[]
 * xref:glossary.adoc[]

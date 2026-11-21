@@ -7,6 +7,7 @@ Zooming into the machine, the system is partitioned into three functional domain
 [d2, target="conceptual-blocks", format="svg", link=self]
 ----
 include::system:ROOT:partial$d2-style.d2[]
+vars: { d2-config: { layout-engine: elk } }
 direction: down
 guest: "Guest" {class: actor}
 operator: "Operator" {class: actor}
@@ -18,6 +19,7 @@ machine: "Sir-Mix-A-Lot · cocktail-maker" {
   station: "Station · Raspberry Pi, touchscreen · C++/Slint\norchestrates the entire system,\nruns the UI, manages recipes\nand handles Pod state" {class: block}
   pod: "Pod · Pod controller, steppers, load cells, valves\nautonomous unit,\none or more per machine,\ndispenses exact ingredient amounts\nand reports back" {class: block}
   power_management_unit: "Power Management Unit · power supply\ninternally transforms\nexternal 230 V AC to safe\n5 V and 24 V DC levels" {class: power-part}
+  show_front: "Show Front · show columns\nshows the pours\nto the Guests" {class: block}
 }
 guest -> machine.station: "interacts with UI\nto order drinks" {class: interaction}
 operator -> machine.station: "uses Operator UI\n(calibration, cleaning cycles)" {class: interaction}
@@ -30,6 +32,8 @@ machine.station -> machine.pod: "IF-01 · sends dispense commands\nand reads sta
 ingredients -> machine.pod: "IF-05 · are drawn into tubing\nvia pumps" {class: fluid}
 machine.pod -> glass: "IF-06 · pours through the\nStation fluid hub" {class: fluid}
 machine.pod -> machine.station: "IF-07 · is mounted on,\ncabled to" {class: mechanical}
+machine.station -> machine.show_front: "drives the\neffects" {class: data}
+machine.show_front -> guest: "shows the pours" {class: interaction}
 ----
 Which blocks make up the machine, and how do they work with the people and inputs around it?
 
@@ -41,6 +45,8 @@ A Pod receives a command, executes it autonomously by driving its actuators, and
 Operators interact physically with Pods for maintenance.
 The xref:mechanics::building-blocks.adoc[Mechanics building block view] describes the mechanical parts of a Pod.
 * **Power Management Unit:** The internal bridge between the external power grid and the low-voltage electronics.
+* **Show front:** The visible front of the Station with 8 show columns that bubble and light up while the Station pours.
+Only the Station drives it, and no Pod knows about it (xref:adr:016-station-show-front.adoc[SYS-016]).
 
 The split of the Station and Pod's is decided in xref:adr:001-system-split.adoc[]
 

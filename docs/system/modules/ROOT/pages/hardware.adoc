@@ -22,12 +22,17 @@ station: "Station · main control and power" {
   rpi: "Raspberry Pi 5 · Station computer" {class: data-part}
   display: "RPi Touch Display 2 · touch display" {class: interaction-part}
   fluid_hub: "Station Fluid Hub · manifold / collection" {class: fluid-part}
+  show_controller: "Show Controller · LED and air pump driver ·\nopen, see SYS-016" {class: data-part}
+  show_front: "Show Front · 8 show columns,\n24 V air pumps, WS2811 LED lines" {class: mechanical-part}
 
   ac_in -> switch: supplies AC {class: power}
   switch -> psu: supplies AC {class: power}
   psu -> step_down: supplies 24 V {class: power}
   step_down -> rpi: supplies 5 V DC {class: power}
   rpi -> display: drives the display over the DSI ribbon {class: data}
+  rpi -> show_controller: "sends the effects\n(open, SYS-016)" {class: data}
+  psu -> show_controller: supplies 24 V {class: power}
+  show_controller -> show_front: "drives air pumps and\nLED lines at 24 V" {class: power}
 }
 
 pod1: "Pod 1 · one of several" {

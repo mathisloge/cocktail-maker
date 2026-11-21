@@ -428,7 +428,7 @@ Neither housing exists yet.
 | [[IF-07-R01]]IF-07-R01 | An Operator removes or replaces a Pod as a single unit without special tools. | QG-04 | xref:adr:002-pysical-pod-connection.adoc[SYS-002]
 | [[IF-07-R02]]IF-07-R02 | A Pod stays where it is while bottles are changed, while the Operator works on it and when the machine is bumped. | QG-01, QG-03 | open
 | [[IF-07-R03]]IF-07-R03 | A pulled or pinched cable of a Pod never leaves a live conductor exposed or a Pod pouring. | QG-01 | open
-| [[IF-07-R04]]IF-07-R04 | Liquid from a Pod or from the fluid path never reaches the electronics of the Pod or the Station. | QG-01, QG-03 | open
+| [[IF-07-R04]]IF-07-R04 | Liquid from a Pod, from the fluid path or from a show column never reaches the electronics of the Pod or the Station. | QG-01, QG-03 | open
 | [[IF-07-R05]]IF-07-R05 | Station and Pod housings fit together. | QG-06 | open
 | [[IF-07-R06]]IF-07-R06 | The protective earth conductor stays joined when a Pod is mounted, and a Pod cannot be mounted without it. | QG-01 | open
 |===

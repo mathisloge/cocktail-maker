@@ -1,0 +1,71 @@
+= SYS-016: The Station owns the show front
+// Fill in the variables
+// one-of: Proposed, Accepted, Deprecated, Superseded
+:adr-status: Accepted
+:adr-date: 2026-11-21
+:adr-authors: {gh}mathisloge[@mathisloge]
+// when adr-status == Superseded provide the new ADR.
+// :adr-superseded-by: xref:NNN-new-decision.adoc[SYS-NNN]
+
+include::partial$adr-header.adoc[]
+
+== Context
+
+The bottles of a Pod are hidden (xref:015-food-contact-plastic-bottles.adoc[SYS-015]), so the Guests no longer see an ingredient flow.
+A Mechanics design round put eight acrylic columns on the front of each Pod.
+Each column is filled with water and propylene glycol, and it bubbles and lights up while its ingredient pours.
+A machine has one Station and one or more Pods (xref:001-system-split.adoc[SYS-001]).
+The Pods should stand hidden wherever there is room, and the machine should look the same with any number of Pods.
+The Station already knows every pour: it starts each pour and gets the event when it ends (xref:system::protocol.adoc[System protocol page]).
+
+=== Decision Drivers
+
+* **A visible pour:** a Guest sees that the machine works on the drink (QG-05).
+* **No effect on the drinks:** a fault of the effects never stops or delays a drink (QG-03).
+* **No protocol change:** the effects need no change to the protocol between the Station and the Pods (QG-06).
+
+== Quality Goals
+
+* xref:system::quality-goals.adoc#QG-05[QG-05]: The show front shows a Guest which ingredient pours and that the drink is on its way.
+* xref:system::quality-goals.adoc#QG-03[QG-03]: A failed show front never stops or delays a drink, and its effects never block the Station.
+* xref:system::quality-goals.adoc#QG-01[QG-01]: The liquid of a show column is a second liquid next to the electronics of the Station.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: No Pod knows about the show front, so the protocol and the Pod firmware stay as they are.
+
+== Decision
+
+The Station owns the show front: 8 show columns with water and 30 to 40 % propylene glycol, one 24 V air pump and one WS2811 LED line (24 V) for each show column.
+The Station alone drives the show front, from events it already has: pour started, pour finished, ingredient, recipe, idle and fault.
+
+* A rule in the Station software maps these events to a show column and an effect.
+The animations and the meaning of a show column stay open.
+* No Pod knows about the show front, and the protocol does not change.
+* A failed show front never stops or delays a drink.
+* The effects never block the Station execution context (xref:station:adr:003-asynchronous-execution-model.adoc[STA-003]).
+* The liquid of a show column never reaches the Raspberry Pi, the display or the power supply, and it never touches the flow path of a drink.
+
+== Alternatives Considered
+
+=== Show columns on each Pod
+
+Each Pod has 8 show columns, air pumps and LED lines, and its Pod controller drives them on its free heater and fan outputs.
+
+Rejected: the LED lines from the show columns to the glass would cross the boundary between a Pod and the Station (xref:system::contracts.adoc#IF-07[IF-07]).
+The look of the machine would also depend on the number of Pods and on where they stand.
+
+== Consequences
+
+* **Good:** The Station looks the same with any number of Pods, and the Pods stand hidden anywhere.
+* **Good:** The protocol and the Pod firmware do not change.
+* **Good:** The effects can change in the Station software alone.
+* **Bad:** The Station gets one more controller for the air pumps and the LED lines.
+Which controller is still open: a WLED controller on a wired link is the favourite, and a controller with our own firmware or drivers on the Raspberry Pi are the other choices.
+* **Bad:** The Station holds a second liquid next to its electronics, and its leak protection is not designed yet.
+* **Bad:** An effect lags the pour by the time a message takes over USB.
+* **Bad:** There are 8 show columns, but the Pods can hold more than 8 ingredients, so a show column does not always stand for one ingredient.
+
+=== Effect on the Quality Goals
+
+* xref:system::quality-goals.adoc#QG-05[QG-05]: Better, because a Guest sees the pour.
+* xref:system::quality-goals.adoc#QG-03[QG-03]: Neutral, because a failed show front never stops a drink.
+* xref:system::quality-goals.adoc#QG-01[QG-01]: Worse, because a leak of a show column can reach the electronics of the Station until the leak protection is designed.
+* xref:system::quality-requirements.adoc#QG-06[QG-06]: Neutral, because the protocol and the Pod firmware stay as they are.

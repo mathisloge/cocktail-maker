@@ -27,3 +27,5 @@ Tare	Taking the current load on a load cell as its zero point.	Pod
 Fill level	The amount of liquid left in the bottle of a dispenser.	System	FillLevelRecord	fill state;filling level
 Dispense	To pour a given volume of one ingredient through one dispenser.	System	DispenseCommand	
 Transaction	One request from the Station and the Pod's answer to it, linked by an ID in the protocol and never shown to a Guest.	System	TransactionId	
+Show front	The visible front of the Station with the show columns, which shows the pours to the Guests and never touches a drink.	System		
+Show column	An acrylic column of the show front, filled with water and propylene glycol, that bubbles and lights up while the Station pours.	System		show bottle;bubble column

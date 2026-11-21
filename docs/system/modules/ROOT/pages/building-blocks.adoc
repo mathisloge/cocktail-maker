@@ -1,7 +1,7 @@
 = 5 Building Block View
 
 The xref:context-and-scope.adoc[system context] shows the cocktail-maker as one black box.
-Zooming into the machine, the system is partitioned into three functional domains.
+Zooming into the machine, the system is partitioned into three functional domains, and the Station carries a show front.
 
 .Building blocks of the machine
 [d2, target="conceptual-blocks", format="svg", link=self]
@@ -47,6 +47,7 @@ The xref:mechanics::building-blocks.adoc[Mechanics building block view] describe
 * **Power Management Unit:** The internal bridge between the external power grid and the low-voltage electronics.
 * **Show front:** The visible front of the Station with 8 show columns that bubble and light up while the Station pours.
 Only the Station drives it, and no Pod knows about it (xref:adr:016-station-show-front.adoc[SYS-016]).
+The show front is part of the Station, so its link to the Station is internal and has no contract.
 
 The split of the Station and Pod's is decided in xref:adr:001-system-split.adoc[]
 

@@ -310,6 +310,7 @@ The pump side of the line is designed, and the bottle side (bottle holder, suppl
 === Open questions
 
 * Which HDPE or PP bottle has a declaration of compliance as SYS-015 requires, and how does it sit on its load cell?
+* Is the bought 5 mm barbed fitting PP with a declaration as SYS-015 requires, since the Mechanics bill of materials names no material?
 * Which release covers spirits above 50 % vol, since simulant D1 of the tube and the bottle is 50 % ethanol?
 * Must a bottle be found wrong when the Operator puts the wrong one in (IF-05-R02), and how?
 

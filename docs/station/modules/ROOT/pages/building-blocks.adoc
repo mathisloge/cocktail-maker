@@ -43,7 +43,7 @@ Which blocks make up the Station, and which block uses which?
 
 .Show Front Control
 * Is planned and not built yet (xref:system:adr:016-station-show-front.adoc[SYS-016]).
-* Turns pour started, pour finished, ingredient, recipe, idle and fault into effects of the show front, and drives its controller.
+* Computes every effect of the show front from pour started, pour finished, ingredient, recipe, idle and fault, and sends direct commands to it (xref:system::contracts.adoc#IF-09[System contract IF-09]).
 * Never blocks the execution context, and a fault in it never stops or delays a drink.
 
 .Foundations

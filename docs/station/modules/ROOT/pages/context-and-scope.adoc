@@ -51,9 +51,9 @@ Everything else in this document is scoped inside the "Station" box above.
 | Filesystem, read and write
 | The last known fill level of each dispenser, persisted across restarts.
 
-| Show front controller
+| Effect commands
 | The show front of the Station
-| Open: the controller and its link are not chosen yet (xref:system:adr:016-station-show-front.adoc[SYS-016]).
+| Direct commands per effect channel (xref:system::contracts.adoc#IF-09[System contract IF-09]). The link is not chosen yet.
 
 | Touch display
 | Guest and Operator

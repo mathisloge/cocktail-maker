@@ -101,7 +101,7 @@ Whether the touch display draws from the same 5 V is not in any source.
 === Guarantees and limits
 
 * The Station computer is the only 5 V consumer in the power chain (xref:power.adoc[Power page], and xref:adr:004-power-architecture.adoc[SYS-004]).
-* The show front takes 24 V DC for its air pumps and LED lines from the same power supply as the Pods (xref:adr:016-station-show-front.adoc[SYS-016]).
+* The show front draws its power from the same power supply as the Pods (xref:adr:016-station-show-front.adoc[SYS-016] and <<IF-09>>).
 * The 5 V are made from the 24 V DC rail by a DC/DC converter, behind the power supply, the main switch and the RCD or circuit breaker (xref:power.adoc[Power page]).
 * The power supply is a MeanWell NDR-120-24 with 120 W, 24 V and 5 A, and it also feeds the Pods (xref:hardware.adoc[Hardware page]).
   The Hardware page shows a "5 V Step-Down" and names no part for it.
@@ -434,7 +434,7 @@ Neither housing exists yet.
 | [[IF-07-R01]]IF-07-R01 | An Operator removes or replaces a Pod as a single unit without special tools. | QG-04 | xref:adr:002-pysical-pod-connection.adoc[SYS-002]
 | [[IF-07-R02]]IF-07-R02 | A Pod stays where it is while bottles are changed, while the Operator works on it and when the machine is bumped. | QG-01, QG-03 | open
 | [[IF-07-R03]]IF-07-R03 | A pulled or pinched cable of a Pod never leaves a live conductor exposed or a Pod pouring. | QG-01 | open
-| [[IF-07-R04]]IF-07-R04 | Liquid from a Pod, from the fluid path or from a show column never reaches the electronics of the Pod or the Station. | QG-01, QG-03 | open
+| [[IF-07-R04]]IF-07-R04 | Liquid from a Pod or from the fluid path never reaches the electronics of the Pod or the Station. | QG-01, QG-03 | open
 | [[IF-07-R05]]IF-07-R05 | Station and Pod housings fit together. | QG-06 | open
 | [[IF-07-R06]]IF-07-R06 | The protective earth conductor stays joined when a Pod is mounted, and a Pod cannot be mounted without it. | QG-01 | open
 |===
@@ -515,3 +515,55 @@ The pump side is designed, and the Pod housing is not.
 * xref:mechanics::pump.adoc[Mechanics pump page] and xref:mechanics::pump-service.adoc[Mechanics pump service page]
 * xref:mechanics::pod-electronics.adoc[Mechanics Pod electronics page]
 * xref:mechanics:adr:002-pump-fixed-occlusion-bed.adoc[CM3D-002] and xref:mechanics:adr:004-pump-closed-housing-bearing-lid.adoc[CM3D-004]
+
+[[IF-09]]
+== IF-09: Station software to show front
+
+Sides:: The Station software (Station docs) and the show front hardware (Mechanics docs).
+Kind:: data
+Status:: Partly decided
+
+=== What crosses
+
+Direct commands cross from the Station software to the show front, one per effect channel: air on or off, and light with a colour and a brightness.
+The show front carries them out and computes nothing of its own.
+Its power comes from the Power Management Unit (<<IF-02>>).
+
+=== Guarantees and limits
+
+* The Station software computes every effect from its own events (xref:adr:016-station-show-front.adoc[SYS-016]).
+* The show front has hardware and bought parts and no effect logic (xref:adr:016-station-show-front.adoc[SYS-016]).
+* The mechanical design states the number of effect channels, the link to the Station and the load of the show front.
+* No Pod takes part, and the protocol of <<IF-01>> does not change (xref:adr:016-station-show-front.adoc[SYS-016]).
+* Not in any source: the link, the number of channels, the load.
+
+=== Fault behaviour
+
+* When the Station stops or the link breaks, the show front keeps its last state until someone switches the machine off (xref:adr:016-station-show-front.adoc[SYS-016]).
+  Air and light are harmless in that state.
+* A fault of the show front never stops or delays a drink (IF-09-R02).
+
+=== Requirements
+
+[cols="2,6,2,3", options="header"]
+|===
+| ID | Requirement | Goals | Met by
+| [[IF-09-R01]]IF-09-R01 | The Station software computes every effect, and the show front only carries out commands. | QG-06 | xref:adr:016-station-show-front.adoc[SYS-016]
+| [[IF-09-R02]]IF-09-R02 | A command to the show front or a fault of it never stops or delays a drink and never blocks the Station execution context. | QG-03 | xref:adr:016-station-show-front.adoc[SYS-016] and xref:station:adr:005-sender-receiver-execution-model.adoc[STA-005]
+| [[IF-09-R03]]IF-09-R03 | The load of the show front at full effect stays inside the power budget of the power supply. | QG-03 | open
+| [[IF-09-R04]]IF-09-R04 | A liquid of the show front never reaches the electronics and never touches the flow path of a drink. | QG-01, QG-02 | open
+|===
+
+=== Open questions
+
+* Which link carries the commands, and how many effect channels does the show front have?
+* Which load does the show front draw at full effect, and does it fit the budget of <<IF-03-R01,IF-03-R01>> and xref:quality-requirements.adoc#QS-21[QS-21]?
+* How is a leak of the show front kept away from the electronics of the Station (IF-09-R04)?
+* How fast must an effect follow the start and the end of a pour?
+  It gets no requirement, because the show front is a product wish that no quality goal covers.
+
+=== Sources
+
+* xref:adr:016-station-show-front.adoc[SYS-016]
+* xref:station::building-blocks.adoc[Station building block view]
+* xref:adr:004-power-architecture.adoc[SYS-004]

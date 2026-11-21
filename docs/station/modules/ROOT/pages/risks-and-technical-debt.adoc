@@ -36,5 +36,5 @@ The Operator UI will offer a restart per Pod, and it stays without effect until 
 * *Reconnecting a Pod:* discovery only reports a port when it appears, so a Pod whose session ended stays away until it is unplugged.
 The Operator UI will offer a reconnect per Pod.
 It needs the Station to end that Pod's session and open its port again.
-* *Show front leak protection:* the show columns hold water and propylene glycol next to the Raspberry Pi, the display and the power supply (xref:system:adr:016-station-show-front.adoc[SYS-016]).
+* *Show front leak protection:* the show front may hold a liquid next to the Raspberry Pi, the display and the power supply (xref:system::contracts.adoc#IF-09-R04[System contract IF-09-R04]).
 How a leak is kept away from them is not designed yet.

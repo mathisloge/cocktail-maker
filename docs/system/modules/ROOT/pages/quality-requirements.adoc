@@ -677,7 +677,7 @@ Checks:: xref:contracts.adoc#IF-01-R04[IF-01-R04], xref:adr:006-protocol-seriali
 Goal:: xref:quality-goals.adoc#QG-03[QG-03]
 Q42:: #reliable
 Source:: The Station, its show front and all Pods run at the same time.
-Stimulus:: All pumps of all Pods start at the same instant and pump water against the outlet, while the show front runs all air pumps and LED lines at full effect.
+Stimulus:: All pumps of all Pods start at the same instant and pump water against the outlet, while the show front runs at full effect.
 Artifact:: Power Management Unit
 Environment:: Normal operation, with the Station running and the largest configuration of Pods.
 The mains voltage is the nominal voltage.

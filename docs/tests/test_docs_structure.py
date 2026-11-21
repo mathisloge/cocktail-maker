@@ -1884,7 +1884,7 @@ def test_scenario_problems_reader() -> None:
     assert any("sections" in p for p in scenario_problems(lead + reordered, NORMAL_SCENARIOS))
     no_details = _scenario(sections=("Contracts", "Open"))
     assert any("sections" in p for p in scenario_problems(lead + no_details, NORMAL_SCENARIOS))
-    for bad in ("* xref:contracts.adoc#IF-09[IF-09]: x", "* IF-01-R12: x"):
+    for bad in ("* xref:contracts.adoc#IF-99[IF-99]: x", "* IF-01-R12: x"):
         assert any(
             "not a defined ID" in p for p in scenario_problems(lead + _scenario(contracts=bad), NORMAL_SCENARIOS)
         )
@@ -1906,7 +1906,7 @@ def test_scenario_problems_reader() -> None:
     )
     assert any(
         "names no defined ID" in p
-        for p in scenario_problems(lead + _scenario(open_section="* see IF-09"), NORMAL_SCENARIOS)
+        for p in scenario_problems(lead + _scenario(open_section="* see IF-99"), NORMAL_SCENARIOS)
     )
     assert scenario_problems(lead + _scenario(open_section="Nothing open."), NORMAL_SCENARIOS) == []
     labelled = "shape: sequence_diagram\na -> b: x (open, IF-01-R01) {class: data}"
@@ -2324,7 +2324,7 @@ def test_quality_scenario_problems_reader() -> None:
     assert problems(_qs(Value="none", State="Open")) == []
     for checks in (
         "see the protocol",
-        "xref:contracts.adoc#IF-09[IF-09]",
+        "xref:contracts.adoc#IF-99[IF-99]",
         "xref:contracts.adoc#IF-01-R99[IF-01-R99]",
         "xref:runtime-view.adoc#no-such[x]",
         "xref:fault-scenarios.adoc#switching-on[x]",

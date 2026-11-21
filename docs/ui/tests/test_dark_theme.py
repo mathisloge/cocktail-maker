@@ -602,3 +602,19 @@ def test_404_title_has_no_component():
         pytest.skip("the build wrote no 404.html (the playbook sets no site.url)")
     title = page_title(path)
     assert title.endswith(" · Sir-Mix-A-Lot Docs") and title.count(" · ") == 1
+
+
+def test_quality_scenarios_are_cards():
+    """The scenarios of the quality page render as cards, and the rules touch no other definition list."""
+    card = normalise_selector('.doc .sect2:has(> h3[id^="QS-"])')
+    rules = [
+        rule
+        for rule in parse_css((CSS_DIR / "site-extra.css").read_text(encoding="utf-8"))
+        if any(card in s for s in rule.selectors)
+    ]
+    declarations = {(prop, value) for rule in rules for prop, value in rule.declarations}
+    assert ("grid-template-columns", "max-content 1fr max-content 1fr") in declarations
+    assert ("grid-auto-flow", "row dense") in declarations
+    assert ("border-left", "4px solid var(--cm-amber)") in declarations
+    assert ("grid-column", "2 / -1") in declarations
+    assert all(s.startswith(card) for rule in rules for s in rule.selectors)

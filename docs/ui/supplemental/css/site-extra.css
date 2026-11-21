@@ -289,3 +289,87 @@ footer.footer {
   background: var(--cm-ink);
   border: 2px dashed var(--cm-sand);
 }
+
+/* --- quality scenarios ----------------------------------------------------- */
+/* Each scenario of the quality page is a card, and its fields form a grid.
+   The positions 1 to 12 follow the field order that the docs test fixes:
+   Goal, Q42, Source, Stimulus, Artifact, Environment, Response, Measure, Verification, Value, State, Checks. */
+
+.doc .sect2:has(> h3[id^="QS-"]) {
+  background: var(--cm-ink-raised);
+  border: 1px solid var(--cm-ink-elevated);
+  border-left: 4px solid var(--cm-amber);
+  border-radius: 8px;
+  margin: 1.25rem 0;
+  overflow: hidden;
+}
+
+.doc .sect2:has(> h3[id^="QS-"]) > h3 {
+  margin: 0;
+  padding: 0.6rem 1rem;
+  background: var(--cm-ink-elevated);
+}
+
+.doc .sect2:has(> h3[id^="QS-"]) .dlist {
+  margin: 0;
+}
+
+.doc .sect2:has(> h3[id^="QS-"]) dl {
+  display: grid;
+  grid-template-columns: max-content 1fr max-content 1fr;
+  grid-auto-flow: row dense;
+  margin: 0;
+}
+
+.doc .sect2:has(> h3[id^="QS-"]) :is(dt, dd) {
+  margin: 0;
+  padding: 0.3rem 1rem 0.3rem 0;
+}
+
+.doc .sect2:has(> h3[id^="QS-"]) dt {
+  padding: 0.45rem 1rem 0.3rem;
+  color: var(--cm-amber); /* contrast: --cm-amber on --cm-ink-raised */
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doc .sect2:has(> h3[id^="QS-"]) dd p {
+  margin: 0;
+}
+
+/* Source to Measure, Value and Checks: the label on the left and the text over the other columns. */
+.doc .sect2:has(> h3[id^="QS-"]) dt:is(:nth-of-type(n+3):nth-of-type(-n+8), :nth-of-type(10), :nth-of-type(12)) {
+  grid-column: 1;
+}
+
+.doc .sect2:has(> h3[id^="QS-"]) dd:is(:nth-of-type(n+3):nth-of-type(-n+8), :nth-of-type(10), :nth-of-type(12)) {
+  grid-column: 2 / -1;
+}
+
+/* Goal and Q42 share the top row, and State moves up into the row of Verification. */
+.doc .sect2:has(> h3[id^="QS-"]) dd:is(:nth-of-type(-n+2), :nth-of-type(n+9)) {
+  color: var(--cm-sand-soft); /* contrast: --cm-sand-soft on --cm-ink-raised */
+  font-size: 0.85rem;
+}
+
+.doc .sect2:has(> h3[id^="QS-"]) :is(dt, dd):nth-of-type(-n+2) {
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--cm-ink-elevated);
+}
+
+.doc .sect2:has(> h3[id^="QS-"]) :is(dt, dd):is(:nth-of-type(9), :nth-of-type(11)) {
+  border-top: 1px dashed var(--cm-ink-elevated);
+}
+
+@media (max-width: 768px) {
+  .doc .sect2:has(> h3[id^="QS-"]) dl {
+    grid-template-columns: max-content 1fr;
+  }
+
+  .doc .sect2:has(> h3[id^="QS-"]) :is(dt, dd) {
+    grid-column: auto !important;
+  }
+}
